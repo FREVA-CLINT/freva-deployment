@@ -1,0 +1,37 @@
+---
+- hosts: backendservers
+
+  vars:
+    - ansible_python_interpreter: "{{ backend_ansible_python_interpreter }}"
+  tasks:
+  - name: Cleaning up temporary files
+    file:
+      state: absent
+      path: /tmp/evaluation_system
+  - name: Cloning the evluation_system reposiotry
+    git:
+      repo: "{{ backend_git_url }}"
+      dest: /tmp/evaluation_system
+      version: "{{ backend_branch }}"
+  - name: Inserting evaluation_system.conf
+    copy: src={{ backend_dump }} dest=/tmp/evaluation_system/evaluation_system.conf
+  - name: Deploying evaluation_system
+    shell:
+      cmd: $PYTHON3 deploy.py {{ backend_root_dir }} --python {{python_version}} --arch {{backend_arch}}
+      chdir: /tmp/evaluation_system
+    environment:
+        PYTHON3: "{{ ansible_python_interpreter }}"
+  - name: "create folder freva into the share folder"
+    shell:
+      cmd: mkdir -p "{{ backend_root_dir }}/share/freva/"
+      warn: false 
+  - name: Copying Private key files
+    copy: src={{backend_private_keyfile}} dest={{ backend_root_dir }}/share/freva/{{ project_name }}.key
+  - name: Copying Public key file
+    copy: src={{ backend_keyfile }} dest={{ item }}
+    with_items:
+      - "{{ backend_root_dir }}/share/freva/{{ project_name }}.crt"
+  - name: Deleting temporary files
+    file:
+      state: absent
+      path: /tmp/evaluation_system

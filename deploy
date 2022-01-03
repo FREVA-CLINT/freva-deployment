@@ -1,0 +1,545 @@
+#!/usr/bin/env python3
+
+import argparse
+from getpass import getuser, getpass
+import logging
+import os
+from pathlib import Path
+import random
+import re
+import shlex
+import string
+import sys
+from subprocess import run, PIPE
+from tempfile import NamedTemporaryFile, TemporaryDirectory, mkdtemp
+import toml
+import yaml
+
+# We need pymysql for ansible to work
+
+logging.basicConfig(format="%(name)s - %(levelname)s - %(message)s", level=logging.INFO)
+logger = logging.getLogger(__file__)
+
+
+def parse_args():
+    """Consturct command line argument parser."""
+
+    ap = argparse.ArgumentParser(
+        prog="freva_deployment",
+        description="""Deploy freva.""",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    ap.add_argument("project_name", type=str, help="Name of the project")
+    ap.add_argument(
+        "--steps",
+        type=str,
+        nargs="+",
+        default=["services", "web", "backend"],
+        choices=["services", "web", "backend", "db", "solr", "backup"],
+        help="The services/code stack to be deployed",
+    )
+    ap.add_argument(
+        "--python", type=str, default="3.9", help="Python version to be used"
+    )
+    ap.add_argument(
+        "--cert",
+        "--cert_file",
+        "--cert-file",
+        type=Path,
+        default=None,
+        help="Path to public certificate file. If none is given, "
+        "default, a file will be created.",
+    )
+    ap.add_argument(
+        "--backend_arch",
+        "--backend-arch",
+        type=str,
+        default="Linux-x86_64",
+        choices=[
+            "Linux-aarch64",
+            "Linux-ppc64le",
+            "Linux-s390x",
+            "Linux-x86_64",
+            "MacOSX-x86_64",
+        ],
+        help="Choose the correct deployment architecture for the backend.",
+    )
+    args = ap.parse_args()
+    services = {"services": ["db", "vault", "solr", "backup"]}
+    steps = []
+
+    for step in args.steps:
+        try:
+            steps += services[step]
+        except KeyError:
+            steps += [step]
+    args.steps = steps
+    return args
+
+
+class DeployFactory:
+
+    _tf = None
+    master_pass = None
+    inventory_file = None
+    step_order = ("db", "vault", "solr", "backend", "web", "backup")
+
+    def _create_self_signed_cert(self, certfile=None):
+        """Get all information, that is needed to create a self signed certificate."""
+        certfile = (
+            certfile
+            or Path(__file__).parent.absolute() / "vault" / f"{self.project_name}.crt"
+        )
+        certfile.parent.mkdir(exist_ok=True, parents=True)
+        logger.info(f"Creating Self Signed Certificate file: {certfile}")
+        msg = """You are about to be asked to enter information that will be incorporated
+    into your certificate request.
+    What you are about to enter is what is called a Distinguished Name or a DN.
+    There are quite a few fields but you can leave some blank
+    For some fields there will be a default value,
+    If you enter '.', the field will be left blank."""
+        print(msg)
+        for file in certfile.with_suffix(".key"), certfile:
+            try:
+                file.unlink()
+            except FileNotFoundError:
+                pass
+        defaults = dict(
+            C="DE",
+            ST="Hamburg",
+            L="Hamburg",
+            O="Deutsches Klimarechenzentrum GmbH",
+            OU="DM",
+            CN="freva.dkrz.de",
+            emailAddress="freva@dkrz.de",
+        )
+        steps = dict(
+            C=input(f'Country Name (2 letter code) [{defaults["C"]}]: '),
+            ST=input(f'State or Province Name (full name) [{defaults["ST"]}]: '),
+            L=input(f'Locality Name (eg, city) [{defaults["L"]}]: '),
+            O=input(f'Organization Name (eg, company) [{defaults["O"]}]: '),
+            OU=input(f'Organization Unit Name (eg, section) [{defaults["OU"]}]: '),
+            CN=input(
+                f'Common Name (eg, e.g. server FQDN or YOUR name) [{defaults["CN"]}]: '
+            ),
+            emailAddress=input(
+                f'Email Address (eg, e.g. server FQDN or YOUR name) [{defaults["emailAddress"]}]: '
+            ),
+        )
+        sub_j = "/".join(f"{k}={v.strip() or defaults[k]}" for (k, v) in steps.items())
+        cmd = (
+            f"openssl req -newkey rsa:4096 -x509 -sha256 -nodes -out {certfile}"
+            f' -keyout {certfile.with_suffix(".key")} -subj "/{sub_j} "'
+        )
+        res = run(shlex.split(cmd), stdout=PIPE, stderr=PIPE, check=False)
+        for file in certfile.with_suffix(".key"), certfile:
+            if not file.is_file():
+                raise FileNotFoundError(
+                    f"Certificate creation failed,check the command:\n {cmd}"
+                )
+        return certfile
+
+    def create_self_signed_cert(self):
+        print(self._cert_file)
+        if not self._cert_file:
+            self._cert_file = self._create_self_signed_cert()
+        elif not Path(self._cert_file).is_file():
+            logger.warning("Certificate file does not exist, creating new one")
+            self._cert_file = self._create_self_signed_cert(self._cert_file)
+        self._cert_file = Path(self._cert_file).absolute()
+
+    def _prep_vault(self):
+        self.create_self_signed_cert()
+        self._get_passwd()
+
+    def _prep_db(self):
+
+        self._get_passwd()
+
+    def _prep_solr(self):
+        return
+
+    def _prep_backend(self):
+        self.create_self_signed_cert()
+        return
+
+    def _prep_web(self):
+        self._prep_backend()
+        _webserver_items = {}
+        web_conf = Path(self._td.name) / "freva_web.toml"
+        web_conf = Path("freva_web.toml")
+        try:
+            _webserver_items = {
+                k.replace("web_", "").upper(): v
+                for (k, v) in self.cfg["webservers:vars"].items()
+            }
+        except KeyError:
+            raise KeyError(
+                "No webservers:vars section given, please configure the webservers:vars"
+            )
+        try:
+            with Path(_webserver_items["homepage_text"]).open() as f:
+                _webserver_items["homepage_text"] = f.read()
+        except:
+            pass
+        logo = Path(self.cfg["webservers:vars"].get("web_institution_logo", ""))
+        alias = self.cfg["webservers:vars"].pop("web_server_alias", [])
+        if isinstance(alias, str):
+            alias = alias.split(",")
+        alias = ",".join([a for a in alias if a.strip()])
+        if not alias:
+            alias = "none"
+        self.cfg["webservers:vars"]["web_server_alias"] = alias
+        web_host = self.cfg["webservers"]["hosts"]
+        if web_host == "127.0.0.1":
+            web_host = "localhost"
+        self.cfg["webservers:vars"]["web_host"] = web_host
+        _webserver_items["INSTITUTION_LOGO"] = f"logo{logo.suffix}"
+        try:
+            with Path(_webserver_items["ABOUT_US_TEXT"]).open() as f:
+                _webserver_items["ABOUT_US_TEXT"] = f.read()
+        except:
+            pass
+        try:
+            _webserver_items["IMPRINT"] = _webserver_items["ADDRESS"].split(",")
+        except AttributeError:
+            pass
+        with web_conf.open("w") as f:
+            toml.dump(_webserver_items, f)
+        for key in ("backendservers:vars", "webservers:vars"):
+            self.cfg[key]["web_config_file"] = str(web_conf.absolute())
+            self.cfg[key]["web_institution_logo"] = str(logo.absolute())
+            self.cfg[key]["web_institution_logo_suffix"] = logo.suffix
+        return
+
+    def _prep_backup(self):
+        self._get_passwd()
+        return
+
+    def _check_passwd(self, master_pass, minlen=8):
+
+        is_ok = len(master_pass) > minlen
+        for check in ("[a-z]", "[A-Z]", "[0-9]"):
+            if not re.search(check, master_pass):
+                is_ok = False
+                break
+        is_ok *= len([True for c in "[_@$#$%^&*-!]" if c in master_pass]) > 0
+        if not is_ok:
+            raise ValueError(
+                f"Password must be at least {minlen} characters long, have alphanumeric characters, both, lower and upper case characters, as well as special characters."
+            )
+        master_pass_2 = getpass("Re enter master password\n: ")
+        if master_pass != master_pass_2:
+            raise ValueError(f"Passwords do not match")
+
+    def _get_passwd(self):
+
+        if self.master_pass is None:
+            logger.info("Creating Master Password")
+            master_pass = getpass(self._pass_msg)
+            self._check_passwd(master_pass)
+            self.master_pass = master_pass
+        return self.master_pass
+
+    def __enter__(self):
+        self._td = TemporaryDirectory(prefix="inventory")
+        self.inventory_file = Path(self._td.name) / "inventory"
+        return self
+
+    def __exit__(self, type, value, traceback):
+        self._td.cleanup()
+
+    def _read_cfg(self, cfg_file):
+        try:
+            with cfg_file.open() as f:
+                return toml.load(f)
+        except FileNotFoundError:
+            raise ValueError(
+                "Error: copy inventory.tmpl to inventory and"
+                " adjust its seetings accordingly"
+            )
+
+    @property
+    def servers(self):
+        servers = {}
+        self.cfg["vaultservers"] = self.cfg["backupservers"] = {
+            "hosts": self.cfg["dbservers"]["hosts"]
+        }
+        for step in self.step_order:
+            try:
+                servers[f"{step}"] = self.cfg[f"{step}servers"]["hosts"].split(",")
+            except KeyError:
+                servers[f"{step}"] = self.cfg["services"]["hosts"].split(",")
+        return servers
+
+    def _get(self, key, value, category, default=""):
+        if key in ("git_url", "root_dir", "branch"):
+            key = f"{category}_{key}"
+        if not value:
+            return f"{key}={default}"
+        return f"{key}={value}"
+
+    @property
+    def git_url(self):
+        try:
+            return self.cfg["backendservers:vars"]["git_url"]
+        except KeyError:
+            raise KeyError(
+                "You must set git_url and branch keys in backendservers:vars in the inventory file"
+            )
+
+    @property
+    def git_branch(self):
+        try:
+            return self.cfg["backendservers:vars"]["branch"]
+        except KeyError:
+            raise KeyError(
+                "You must set git_url and branch keys in backendservers:vars in the inventory file"
+            )
+
+    def _add_local(self, config):
+        cfg = """
+[local]
+127.0.0.1
+[local:vars]
+db_db={db}
+db_passwd={passwd}
+db_host={host}
+db_dump={dump_file}
+db_port={port}
+user={user}
+local_ansible_python_interpreter={interpreter}
+""".format(
+            db=config["db.db"],
+            passwd=self.db_pass,
+            host=config["db.host"],
+            dump_file=self.dump_file,
+            port=config.get("db.port", 3306),
+            interpreter=self.python_prefix,
+            user=getuser(),
+        )
+        return cfg
+
+    def check_config(self):
+        for section in self.cfg.keys():
+            for key, value in self.cfg[section].items():
+                if (
+                    not value
+                    and not key.startswith("admin")
+                    and not isinstance(value, bool)
+                ):
+                    raise ValueError(f"{key} in {section} is empty in {self._inv_tmpl}")
+
+    def get_files_copy(self, key):
+        return dict(
+            db=self.dump_file,
+            solr=(self.aux_dir / "managed-schema").absolute(),
+            backend=(self._inv_tmpl.parent / "evaluation_system.conf").absolute(),
+            web=(self._inv_tmpl.parent / "evaluation_system.conf").absolute(),
+        ).get(key, "")
+
+    @property
+    def db_pass(self):
+        if self._db_pass:
+            return self._db_pass
+        punctuations = "!@$^&*()_+-;:|,.%"
+        num_chars, num_digits, num_punctuations = 20, 4, 4
+        num_chars -= num_digits + num_punctuations
+        characters = [
+            "".join([random.choice(string.ascii_letters) for i in range(num_chars)]),
+            "".join([random.choice(string.digits) for i in range(num_digits)]),
+            "".join([random.choice(punctuations) for i in range(num_punctuations)]),
+        ]
+        characters = "".join(characters)
+        self._db_pass = "".join(random.sample(characters, len(characters)))
+        return self._db_pass
+
+    def parse_config(self):
+        """Create config files for anisble and evaluation_system.conf."""
+
+        logger.info("Parsing configurations")
+        cfg = []
+        _default = {"admins": getuser(), "branch": "master"}
+        self.check_config()
+        for section in ("backendservers", "webservers"):
+            for key, value in self.cfg[f"{section}:vars"].items():
+                self._eval_conf[key] = value or _default.get(key, "")
+        servers = {}
+        project_name = self.project_name.replace("-", "_")
+        for to_copy in ("vault", "backup"):
+            self.cfg[f"{to_copy}servers:vars"] = self.cfg["dbservers:vars"]
+        for key, values in self.servers.items():
+            cfg.append(f"[{key}servers]")
+            for servername in values:
+                if servername.strip():
+                    cfg.append(servername.strip())
+                servers[key] = cfg[-1]
+            cfg.append(f"[{key}servers:vars]")
+            self.cfg[f"{key}servers:vars"][
+                f"{key}_ansible_python_interpreter"
+            ] = self.cfg[f"{key}servers:vars"].get(
+                "ansible_python_interpreter", str(self.python_prefix)
+            )
+            try:
+                self.cfg[f"{key}servers:vars"].pop("ansible_python_interpreter")
+            except KeyError:
+                pass
+            for var_key, var_value in self.cfg[f"{key}servers:vars"].items():
+                cfg.append(
+                    self._get(
+                        var_key, var_value, key, default=_default.get(var_key, "")
+                    )
+                )
+                n_key = var_key.replace(f"{key}_", f"{key}.")
+
+                self._eval_conf[n_key] = var_value or _default.get(var_key, "")
+            hostname = self.cfg[f"{key}servers:vars"].get("db_host", values[0])
+            key_file = self._cert_file or Path(mkdtemp(suffix=".crt"))
+            cfg.append(f"{key}_host={hostname}")
+            cfg.append(f"{key}_keyfile={key_file.absolute()}")
+            cfg.append(
+                f'{key}_private_keyfile={key_file.with_suffix(".key").absolute()}'
+            )
+            cfg.append(f"root_passwd={self.master_pass}")
+            cfg.append(f"{key}_passwd={self.db_pass}")
+            cfg.append(f"{key}_name={project_name}_{key}")
+            cfg.append(f"{key}_dump={self.get_files_copy(key)}")
+            cfg.append(f"user={getuser()}")
+            cfg.append(f"root_dir={Path(__file__).parent.absolute()}")
+            cfg.append(f"project_name={self.project_name}")
+            cfg.append(f"backend_git_url={self.git_url}")
+            cfg.append(f"backend_branch={self.git_branch}")
+            cfg.append(
+                f'backend_root_dir={self.cfg["backendservers:vars"]["root_dir"]}'
+            )
+            self._eval_conf[f"{key}.host"] = servers[key]
+            cfg.append(f"python_version={self.python_version}")
+            if key == "backend":
+                cfg.append(f"backend_arch={self._backend_arch}")
+        cfg = "\n".join(cfg) + self._add_local(self._eval_conf)
+        self.db_name = self._eval_conf.pop("db.db")
+        self.db_user = self._eval_conf.pop("db.user")
+        with self.inventory_file.open("w") as f:
+            f.write(cfg)
+        self._eval_conf["project_name"] = self.project_name
+        with self._cfg_tmpl.open("r") as f:
+            _cfg_new = []
+            for line in f.readlines():
+                key = line.split("=")[0].strip()
+                if key in self._eval_conf.keys():
+                    _cfg_new.append(f"{key}={self._eval_conf[key]}\n")
+                else:
+                    _cfg_new.append(line)
+        with (self._inv_tmpl.parent / "evaluation_system.conf").open("w") as f:
+            f.write("".join(_cfg_new))
+        self.create_sql_dump()
+        print(cfg)
+
+    def create_sql_dump(self):
+        """Create a sql dump file to create tables."""
+
+        logger.info("Creating database dump file.")
+        head = """
+FLUSH PRIVILEGES;
+USE mysql;
+CREATE USER IF NOT EXISTS '{user}'@'localhost' IDENTIFIED BY '{passwd}';
+CREATE USER IF NOT EXISTS '{user}'@'%' IDENTIFIED BY '{passwd}';
+CREATE DATABASE IF NOT EXISTS {db};
+ALTER USER '{user}'@'localhost' IDENTIFIED BY '{passwd}';
+ALTER USER '{user}'@'%' IDENTIFIED BY '{passwd}';
+FLUSH PRIVILEGES;
+GRANT ALL PRIVILEGES ON {db}.* TO '{user}'@'%' WITH GRANT OPTION;
+GRANT ALL PRIVILEGES ON {db}.* TO '{user}'@'localhost' WITH GRANT OPTION;
+FLUSH PRIVILEGES;
+USE {db};
+
+""".format(
+            user=self.db_user, db=self.db_name, passwd=self.db_pass
+        )
+
+        with self.dump_file.open("w") as f:
+            tail = (self.aux_dir / "create_tables.sql").open("r").read()
+            f.write(head + tail)
+
+    @property
+    def dump_file(self):
+        return Path(self._td.name) / "sql_dump.sql"
+
+    @property
+    def dump_playbook(self):
+
+        return Path("/tmp") / "ansible-playbook.yml"
+        return Path(self._td.name) / "ansible-playbook.yml"
+
+    @property
+    def python_prefix(self):
+        """Get the path of the new conda evnironment."""
+        return Path(sys.exec_prefix) / "bin" / "python3"
+
+    @property
+    def aux_dir(self):
+        """Directory with auxillary files."""
+        return Path(__file__).parent / "config"
+
+    @property
+    def playbook_dir(self):
+        """The location of all playbooks."""
+        return Path(__file__).parent / "playbooks"
+
+    @property
+    def _pass_msg(self):
+        return (
+            "Set a master password, this password will be used to create\n"
+            "a self signed certificate for accessing the freva credentials "
+            "as mysql root password.\n: "
+        )
+
+    @property
+    def steps(self):
+        steps = []
+        for step in self.step_order:
+            if step in self._steps and step not in steps:
+                steps.append(step)
+            if step == "db" and step in self._steps:
+                steps.append("vault")
+        return steps
+
+    def __init__(self, arguments):
+        self._db_pass = None
+        self.project_name = arguments.project_name
+        self._steps = arguments.steps
+        self._cert_file = arguments.cert
+        self._backend_arch = arguments.backend_arch
+        self.python_version = arguments.python
+        self._inv_tmpl = self.aux_dir / "inventory"
+        self._cfg_tmpl = self.aux_dir / "evaluation_system.conf.tmpl"
+        self.cfg = self._read_cfg(self._inv_tmpl)
+        self.inventory_file = self.inventory_file or Path(NamedTemporaryFile().name)
+        self._eval_conf = {}
+
+    def create_playbooks(self):
+        """Create the ansible playbook form all steps."""
+        logger.info("Creating Ansible playbooks")
+        [getattr(self, f"_prep_{s}")() for s in self.step_order if s in self.steps]
+        self.parse_config()
+        playbook = []
+        for step in self.steps:
+            playbook_file = self.playbook_dir / f"{step}-server-playbook.yml"
+            with playbook_file.open() as f:
+                playbook += yaml.safe_load(f)
+        with self.dump_playbook.open("w") as f:
+            yaml.dump(playbook, f)
+
+    def play(self):
+        """Play the ansible playbook."""
+        self.create_playbooks()
+        ansible = Path(sys.exec_prefix) / "bin" / "ansible-playbook"
+        logger.info("Playing the playbooks with ansible")
+        cmd = f"{ansible} -i {self.inventory_file} {self.dump_playbook}"
+        res = os.system(cmd + " --ask-become-pass --ask-pass")
+
+
+if __name__ == "__main__":
+    args = parse_args()
+    with DeployFactory(args) as DF:
+        DF.play()

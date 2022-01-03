@@ -1,0 +1,93 @@
+---
+- hosts: solrservers
+
+  vars:
+    - ansible_python_interpreter: "{{ solr_ansible_python_interpreter }}"
+    - continer_name: "{{ solr_name }}"
+    - docker_cmd: "--name {{ solr_name }} -p {{ solr_port }}:8983 -t {{ solr_name }}:latest"
+  tasks:
+    - name: Registering systemctl path
+      stat:
+        path: /usr/bin/systemctl
+      register: systemctl
+    - name: Stopping services
+      shell: systemctl stop {{ project_name }}; systemctl stop {{project_name}}-solr; echo 0
+    - pause: seconds=5
+    - name: Creating docker network
+      shell: docker network create "{{ project_name }}"; echo 0
+      become: yes
+    - name: Deleting existing contianer
+      shell: docker stop "{{ solr_name }}"; docker rm "{{ solr_name }}"; docker rmi -f "{{solr_name}}"; echo 0
+      become: yes
+    - name: Cleaning existing directory structure
+      shell:
+        cmd: rm -rf /mnt/{{ project_name }}/solr_service
+        warn: false
+      become: yes
+    - name: Creating directory structure
+      shell:
+        cmd: mkdir -p /mnt/{{ project_name }}/solr_service
+        warn: false
+      become: yes
+    - name: Copy systemd files
+      copy:
+        src: "{{ root_dir }}/{{ item }}"
+        dest: /tmp/{{ item }}
+        mode: '0755'
+      with_items:
+        - "systemd.service"
+        - "create_systemd.sh"
+    - name: Copy docker kill script
+      copy:
+        src: "{{ root_dir }}/kill_container"
+        dest: /usr/local/bin/kill_container
+        mode: '0755'
+      become: yes
+    - name: Change directory permissions
+      shell:
+        cmd: chown -R 8983:8983 /mnt/{{ project_name }}/solr_service
+        warn: false
+      become: yes
+    - name: Copy auxillary files to target machine
+      copy: src="{{ root_dir }}/solr_service" dest=/tmp
+    - name: Buildigin solr images
+      shell:
+        chdir: /tmp/solr_service
+        cmd: docker build -t {{ solr_name }}:latest .
+      become: yes
+    - name: Creating the solr docker container
+      become: yes
+      shell: docker run -d {{docker_cmd }}
+    - name: Starting solr service
+      become: yes
+      shell:  cat /tmp/systemd.service|sed 's#%CONTAINER#{{ continer_name }}#g'|sed 's#%PROJECT#{{ project_name }}#g' > /tmp/tmp_solr && mv /tmp/tmp_solr /etc/systemd/system/{{ project_name }}-solr.service && /tmp/create_systemd.sh {{project_name}}-solr
+      when: systemctl.stat.exists == true
+    - pause: seconds=3
+    - name: Creating the solr cores
+      become: yes
+      shell: |
+        docker exec -it --user=solr "{{ solr_name }}" bin/solr create_core -c latest -d example/files/conf
+        docker exec -it --user=solr "{{ solr_name }}" bin/solr create_core -c "{{ solr_core }}" -d example/files/conf
+    - name: Adding schema to solr server
+      copy: src={{ root_dir }}/solr_service/managed-schema dest=/tmp/managed-schema
+    - name: Inserting schema into solr docker
+      become: yes
+      shell: |
+        docker cp /tmp/managed-schema {{ solr_name }}:/var/solr/data/latest/conf/managed-schema
+        docker cp /tmp/managed-schema {{ solr_name }}:/var/solr/data/{{ solr_core }}/conf/managed-schema
+    - name: Restarting docker container
+      become: yes
+      shell: systemctl restart "{{ project_name }}-solr"
+      when: systemctl.stat.exists == true
+    - name: Deleting other files
+      file:
+        state: absent
+        path: "{{ item }}"
+      with_items:
+        - /tmp/create_systemd.sh
+        - /tmp/systemd.service
+        - /tmp/managed-schema
+    - name: Delete temporary files
+      shell:
+        cmd: rm -rf /tmp/solr_service
+        warn: false
