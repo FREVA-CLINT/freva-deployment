@@ -1,0 +1,4 @@
+#!/bin/sh
+
+docker stop $1 &> /dev/null
+exit 0

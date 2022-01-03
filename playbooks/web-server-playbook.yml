@@ -1,0 +1,105 @@
+---
+- hosts: backendservers
+
+  vars:
+    - ansible_python_interpreter: "{{ backend_ansible_python_interpreter }}"
+  tasks:
+  - name: Getting register to the freva logo
+    stat:
+      path: "{{ web_institution_logo }}"
+    register: logo
+  - name: Creating share directory
+    shell:
+      cmd: mkdir -p "{{backend_root_dir}}/share/freva/web"
+      warn: false
+  - name: Copy the logo if exists
+    copy:
+      src: "{{ web_institution_logo }}"
+      dest: "{{backend_root_dir}}/share/freva/web/logo.{{web_institution_logo_suffix}}"
+    when: logo.stat.exists == true
+  - name: Adding freva web config to the backend structure
+    copy: src={{ web_config_file }} dest={{ backend_root_dir }}/share/freva/web/freva_web_conf.toml
+
+- hosts: webservers
+
+  vars:
+    - ansible_python_interpreter: "{{ web_ansible_python_interpreter }}"
+#    - docker_cmd: "--dns 8.8.8.8 -p 80:80 -p 443:443 --net {{ project_name }} -v {{ backend_root_dir }}:{{ backend_root_dir }} -v {{ backend_root_dir }}/share/preview:/var/www/html/app/static/preview --name"
+    - docker_cmd: "-p 8000:8000 -p 80:80 -p 443:443 -v {{ backend_root_dir }}:{{ backend_root_dir }} -v {{ backend_root_dir }}/share/preview:/var/www/html/app/static/preview --name"
+    - container_name: "{{ project_name }}_web"
+  tasks:
+  - name: Getting register to backend dir
+    stat:
+      path: "{{ backend_root_dir }}/etc/evaluation_system.conf"
+    register: backend
+  - name: Registering systemctl path
+    stat:
+      path: /usr/bin/systemctl
+    register: systemctl
+  - name: Exit if backend does not exist
+    fail:
+      msg: "Error: backend not available on machine. The backend hasn't been deployed yet, or wasn't mounted into its expected location: {{backend_root_dir}}"
+    when: backend.stat.exists == false
+  - name: Stopping services
+    shell: docker stop {{web_name}}; docker rm {{web_name}}; systemctl stop {{ project_name }}; systemctl stop {{project_name}}-web; echo 0
+    ignore_errors: yes
+    become: yes
+  - name: Creating docker network
+    shell: docker network create "{{ project_name }}"; echo 0
+    become: yes
+  - name: Creating tmporary files
+    shell:
+      cmd: mkdir -p "/tmp/{{project_name}}_web"
+      warn: false
+  - name: Deleting existing web-directory
+    file:
+      state: absent
+      path: /mnt/{{ project_name }}/web_service
+    become: yes
+  - name: Copy Dockerfile,entrypoint,freva_web.conf(apache conf) files
+    copy:
+      src:  "{{ root_dir }}/web/{{ item }}"
+      dest: "/tmp/{{project_name}}_web/{{ item }}"
+      mode: '0755'
+    with_items:
+      - "Dockerfile"
+      - "entrypoint.sh"
+      - "docker_cmd.sh"
+      - "freva_web.conf"
+      - "create_web_conf.py"
+  - name: Adjusting freva_web.conf
+    shell:
+      chdir: "/tmp/{{project_name}}_web"
+      cmd: "{{ansible_python_interpreter}} create_web_conf.py freva_web.conf freva_web.conf --website={{project_website}} --root-dir={{backend_root_dir}} --project-name={{project_name}} --python=3.9 --alias={{web_server_alias}} --server-name={{web_host}}"
+      warn: false
+  - name: Build freva_web image
+    become: yes
+    shell:
+      chdir: "/tmp/{{project_name}}_web"
+      cmd: docker build --build-arg=python_version={{python_version}} --build-arg=backend_url={{backend_git_url}} --build-arg=backend_branch={{backend_branch}} --build-arg=build_root=/mnt/{{project_name}}/web_service --build-arg=git_url={{web_git_url}} --build-arg=git_branch={{web_branch}} --build-arg=root_dir={{backend_root_dir}} --build-arg=PROJECT_NAME={{project_name}}  -t {{ container_name }} .
+  - name: Moving temporary build folder to target destination
+    become: yes
+    shell:
+      cmd: mkdir -p /mnt/{{project_name}}/web_service
+      warn: false
+  - name: Run freva_web image
+    become: yes
+    shell: "docker run -d {{docker_cmd}} {{container_name}} {{container_name}}"
+  - name: Copy systemd files
+    copy:
+      src: "{{ root_dir }}/{{ item }}"
+      dest: /tmp/{{ item }}
+      mode: '0755'
+    with_items:
+      - "systemd.service"
+      - "create_systemd.sh"
+  - name: Creating systemd service
+    become: yes
+    shell: "cat /tmp/systemd.service|sed 's#%CONTAINER#{{ container_name }}#g'|sed 's#%PROJECT#{{ project_name }}#g' > /tmp/tmp_db && mv /tmp/tmp_db /etc/systemd/system/{{ project_name }}-web.service && /tmp/create_systemd.sh {{project_name}}-web"
+    when: systemctl.stat.exists == true
+  - pause: seconds=5
+  - name: Deleting tmporary files
+    shell:
+      cmd: rm -r /tmp/{{project_name}}_web
+      warn: false
+    become: yes

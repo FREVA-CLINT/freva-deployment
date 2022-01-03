@@ -1,0 +1,85 @@
+---
+- hosts: vaultservers
+
+  vars:
+    - ansible_python_interpreter: "{{ db_ansible_python_interpreter }}"
+    - continer_name: "{{ vault_name }}"
+    - docker_cmd: "--net {{ project_name }} --cap-add=IPC_LOCK -p 5002:5002 --name={{ vault_name }} {{ vault_name }}:latest"
+  tasks:
+    - name: Registering systemctl path
+      stat:
+        path: /usr/bin/systemctl
+      register: systemctl
+    - name: Stopping services
+      shell: docker stop {{vault_name}}; docker rm {{vault_name}}; systemctl stop {{ project_name }}; systemctl stop {{project_name}}-vault; echo 0
+      ignore_errors: yes
+      become: yes
+    - name: Creating docker network
+      shell: docker network create "{{ project_name }}"; echo 0
+      become: yes
+    - name: Deleting any existing container
+      shell: docker stop "{{ vault_name }}"; docker rm "{{ vault_name }}"; docker rmi -f "{{ vault_name }}" ;echo 0
+      become: yes
+    - name: Copy auxillary files to target machine
+      copy: src="{{ root_dir }}/vault" dest=/tmp
+    - name: Copy public key file to target machine
+      copy:
+        src: "{{ vault_keyfile }}"
+        dest: "/tmp/vault/{{ project_name }}.crt"
+    - name: Copy private key file to target machine
+      copy:
+        src: "{{ vault_private_keyfile }}"
+        dest: "/tmp/vault/{{ project_name }}.key"
+    - name: Copy systemd files
+      copy:
+        src: "{{ root_dir }}/{{ item }}"
+        dest: /tmp/{{ item }}
+        mode: '0755'
+      with_items:
+        - "systemd.service"
+        - "create_systemd.sh"
+    - name: Copy docker kill script
+      copy:
+        src: "{{ root_dir }}/kill_container"
+        dest: /usr/local/bin/kill_container
+        mode: '0755'
+      become: yes
+    - name: Cleaning existing directory structure
+      shell:
+        cmd: rm -rf /mnt/{{ project_name }}/vault_service
+        warn: false
+      become: yes
+    - name: Creating directory structure
+      shell:
+        cmd: mkdir -p /mnt/{{ project_name }}/vault_service
+        warn: false
+      become: yes
+    - name: Build vault images
+      shell:
+        chdir: /tmp/vault
+        cmd: docker build --build-arg=project={{ project_name }} --build-arg=rootpw={{ root_passwd }} -t {{ vault_name }}:latest .
+      become: yes
+    - name: Create vault container
+      become: yes
+      shell: docker run -d {{docker_cmd}}
+    - name: Creating system service
+      become: yes
+      shell: "cat /tmp/systemd.service|sed 's#%STARTCMD#{{docker_cmd}}#g'|sed 's#%CONTAINER#{{ continer_name }}#g'|sed 's#%PROJECT#{{ project_name }}#g' > /tmp/tmp_vault && mv /tmp/tmp_vault /etc/systemd/system/{{ project_name }}-vault.service && /tmp/create_systemd.sh {{project_name}}-vault"
+      when: systemctl.stat.exists == true
+      ignore_errors: yes
+    - pause: seconds=3
+    - name: Insert secrets
+      command: docker exec -it {{ vault_name }} vault kv put kv/read-eval db.container={{ vault_name }} db.passwd='{{ vault_passwd }}' db.host='{{ vault_host }}' db.user='{{ db_user }}' db.db='{{ db_db }}' db.port='{{ db_port }}'
+      become: yes
+    - name: Delete temporary files
+      shell:
+        cmd: rm -rf /tmp/vault
+        warn: false
+      become: yes
+    - name: Deleting other files
+      file:
+        state: absent
+        path: "{{ item }}"
+      with_items:
+        - /tmp/create_systemd.sh
+        - /tmp/systemd.service

@@ -1,0 +1,87 @@
+---
+- hosts: backupservers
+
+  vars:
+    - ansible_python_interpreter: "{{ vault_ansible_python_interpreter }}"
+    - docker_cmd: "--net {{ project_name }} -v /mnt/{{ project_name }}:/mnt -v /mnt/{{ project_name }}/backup_service:/etc/periodic --name={{ project_name }}_backup {{ project_name }}_backup"
+    - continer_name: "{{ project_name }}_backup"
+  tasks:
+  - name: Registering systemctl path
+    stat:
+      path: /usr/bin/systemctl
+    register: systemctl
+    - name: Stopping services
+      shell: systemctl stop {{ project_name }}; systemctl stop {{project_name}}-backup; echo 0
+      ignore_errors: yes
+    - name: Creating docker network
+      shell: docker network create "{{ project_name }}"; echo 0
+      become: yes
+    - name: Deleting any existing container
+      shell: docker stop {{ project_name }}_backup; docker rm {{ project_name }}_backup; docker rmi -f {{project_name}}_backup;echo 0
+      become: yes
+    - name: Copy auxillary files to target machine
+      copy: src="{{ root_dir }}/backup_service" dest=/tmp
+    - name: Copy systemd files
+      copy:
+        src: "{{ root_dir }}/{{ item }}"
+        dest: /tmp/{{ item }}
+        mode: '0755'
+      with_items:
+        - "systemd.service"
+        - "create_systemd.sh"
+    - name: Copy docker kill script
+      copy:
+        src: "{{ root_dir }}/kill_container"
+        dest: /usr/local/bin/kill_container
+        mode: '0755'
+      become: yes
+    - name: Cleaning existing directory structure
+      shell:
+        cmd: rm -rf /mnt/{{ project_name }}/backup_service
+        warn: false
+      become: yes
+    - name: Creating cron directory structure
+      shell:
+        cmd: mkdir -p /mnt/{{ project_name }}/backup_service/{{ item }}
+        warn: false
+      with_items:
+        - hourly
+        - daily
+        - weekly
+        - monthly
+        - 15min
+      become: yes
+    - name: Building backup image
+      shell:
+        chdir: /tmp/backup_service
+        cmd: docker build --build-arg=project={{ project_name }} --build-arg=rootpw={{ root_passwd }} --build-arg=db_user={{ db_user }} -t {{ project_name }}_backup:latest .
+      become: yes
+    - name: Creating backup cron jobs
+      shell: echo -e "#!/bin/sh\n\n/usr/local/bin/backup_rotate /mnt/{{ item }}_service /mnt/backup/{{ item }}_service" > /mnt/{{ project_name }}/backup_service/daily/{{ item }}; chmod +x /mnt/{{ project_name }}/backup_service/daily/{{ item }};
+      with_items:
+        - solr
+        - db
+      become: yes
+    - name: Creating cron job for password rotate
+      shell: cp /tmp/backup_service/rotate_passwd /mnt/{{ project_name }}/backup_service/daily/; chmod +x /mnt/{{ project_name }}/backup_service/daily/rotate_passwd;
+      become: yes
+    - name: Creating backup service
+      become: yes
+      shell: docker run -d {{docker_cmd}}
+    - name: Starting backup service
+      become: yes
+      shell: cat /tmp/systemd.service|sed 's#%CONTAINER#{{ continer_name }}#g'|sed 's#%PROJECT#{{ project_name }}#g' > /tmp/tmp_backup && mv /tmp/tmp_backup /etc/systemd/system/{{ project_name }}-backup.service && /tmp/create_systemd.sh {{project_name}}-backup
+      when: systemctl.stat.exists == true
+    - name: Deleting temporary files
+      shell:
+        cmd: rm -rf /tmp/backup_service
+        warn: false
+      become: yes
+    - name: Deleting other files
+      file:
+        state: absent
+        path: "{{ item }}"
+      with_items:
+        - /tmp/create_systemd.sh
+        - /tmp/systemd.service
+

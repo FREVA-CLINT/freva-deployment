@@ -1,0 +1,167 @@
+#!/usr/bin/env python3
+import argparse
+import configparser
+import logging
+import hashlib
+from os import path as osp
+from pathlib import Path
+import re
+import shlex
+import sys
+from subprocess import CalledProcessError
+import shutil
+import urllib.request
+from tempfile import NamedTemporaryFile, TemporaryDirectory
+
+
+CONDA_URL="https://repo.anaconda.com/miniconda/Miniconda3-latest-{arch}.sh"
+
+logging.basicConfig(format='%(name)s - %(levelname)s - %(message)s', level=logging.INFO)
+logger = logging.getLogger(__file__)
+
+
+def reporthook(count, block_size, total_size):
+    if count == 0:
+        return
+    progress_size = int(count * block_size)
+    frac = count * block_size / total_size
+    percent = int(100 * frac)
+    bar = '#' * int(frac * 40)
+    msg = "\rDownloading: [{0:<{1}}] | {2}% Completed".format(
+           bar, 40, round(percent, 2))
+    sys.stdout.write(msg)
+    sys.stdout.flush()
+
+
+def parse_args(argv=None):
+    """Consturct command line argument parser."""
+
+    ap = argparse.ArgumentParser(prog='install_ansible',
+            description="""This Programm installs ansible""", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+
+    ap.add_argument('--shell', type=str, default='bash',
+                    help='Shell type')
+    ap.add_argument('--arch', type=str, default='Linux-x86_64',
+                   choices=['Linux-x86_64', 'MacOSX-x86_64', 'Linux-armv7l',
+                            'Linux-ppc64le', 'Linux-s390x', 'Linux-x86',
+                            'Linux-x86_64', 'MacOSX-arm64', 'MacOSX-x86'
+                            'Windows-x86', 'Windows-x86_64'],
+                   help='The architecture for the current system')
+    args = ap.parse_args()
+    return args
+
+
+
+class Installer:
+    '''Class to install ansible.'''
+
+    packages = ['ansible', 'conda', 'mysqlclient', 'pymysql', 'pyaml',
+                'ipython', 'pip', 'sshpass', 'vault', 'openssl', 'rsync', 'toml']
+
+    @staticmethod
+    def run_cmd(cmd, **kwargs):
+        """Run a given command."""
+
+        res = os.system(cmd)
+        if res != 0:
+            raise CalledProcessError(res, cmd)
+
+    def _download_conda_script(self, td):
+
+        conda_script = td / 'miniconda.sh'
+        tmp_env = td / 'env'
+        logger.info('Downloading miniconda script')
+        urllib.request.urlretrieve(CONDA_URL.format(arch=self.arch),
+                                  filename=str(conda_script),
+                                  reporthook=reporthook)
+        self.check_hash(conda_script)
+        conda_script.touch(0o755)
+        cmd = f"{self.shell} {conda_script} -p {tmp_env} -b -f -u"
+        logger.info(f'Installing miniconda:\n\t{cmd}')
+        self.run_cmd(cmd)
+        return tmp_env / 'bin' / 'conda'
+
+    def which(self, command):
+
+        cmd_path = shutil.which(command)
+        if not cmd_path:
+            raise ValueError(f'Command not found: {command}, consider installing {command}')
+        return cmd_path
+
+    def create_conda(self):
+        """Create the conda environment."""
+
+        with TemporaryDirectory(prefix='conda') as td:
+            if 'windows' in self.arch.lower():
+                # We don't create a conda env in Windows but use an existing one
+                conda_cmd = self.which('conda')
+            else:
+                conda_cmd = self._download_conda_script(Path(td))
+            cmd = f"{conda_cmd} create -c {self.channel} -q -p {self.install_prefix} {' '.join(self.packages)} -y"
+            logger.info(f'Creating conda environment:\n\t {cmd}')
+            self.run_cmd(cmd)
+
+    def check_hash(self, filename):
+
+        url="https://repo.anaconda.com/miniconda"
+        archive = urllib.request.urlopen(url).read().decode()
+        md5sum = ''
+        for line in archive.split('</tr>'):
+            if CONDA_VERSION.format(arch=self.arch) in line:
+                md5sum = line.split('<td>')[-1].strip().strip('</td>')
+        md5_hash = hashlib.md5()
+        with filename.open('rb') as f:
+            for byte_block in iter(lambda: f.read(4096),b""):
+                md5_hash.update(byte_block)
+        if md5_hash.hexdigest() != md5sum:
+            raise ValueError('Download failed, md5sum mismatch: {md5sum} ')
+
+    def pip_install(self, *pkgs):
+        """Install additional packages using pip."""
+
+        cmd = f"{self.python_prefix} -m pip install {' '.join(pkgs)}"
+        logger.info(f'Installing additional packages\n\t {cmd}')
+        self.run_cmd(cmd)
+
+    def __init__(self, args):
+
+        for arg in vars(args):
+            setattr(self, arg, getattr(args,arg))
+        self.install_prefix = Path(__file__).parent.absolute() / 'ansible'
+        self.install_prefix.mkdir(exist_ok=True, parents=True)
+        self.channel = 'conda-forge'
+
+    def create_config(self):
+        """Copy evaluation_system.conf to etc."""
+
+        this_dir = Path(__file__).absolute().parent
+        config_file = 'evaluation_system.conf'
+        defaults = dict(root_dir=self.install_prefix,
+                        base_dir_location=self.install_prefix / 'work',
+                        base_dir='evaluation_system',
+                        project_name='evaluation_system',)
+        with (this_dir / config_file).open() as f:
+            config = f.readlines()
+        for nn, line in enumerate(config):
+            cfg_key = line.split('=')[0].strip()
+            if cfg_key in defaults:
+                value = line.split('=')[-1].strip()
+                if not value:
+                    value = defaults[cfg_key]
+                config[nn] = f'{cfg_key}={value}\n'
+        with (self.install_prefix / 'etc' / config_file).open('w') as f:
+            f.write(''.join(config))
+
+    @property
+    def python_prefix(self):
+        """Get the path of the new conda evnironment."""
+        return self.install_prefix / 'bin' / 'python3'
+if __name__ == '__main__':
+    import sys, os
+    args = parse_args(sys.argv)
+    Inst = Installer(args)
+    Inst.create_conda()
+    print('Installer completed you can now make ansible available '
+          f'using the following command:\n source {Inst.install_prefix/"bin"/"activate"}')
+    print('If your system does not have ansible installed you can set\n '
+          f'the ansible_python_interpreter={Inst.install_prefix/"bin"/"python"}')

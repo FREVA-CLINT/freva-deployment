@@ -1,0 +1,7 @@
+ansible/*
+test.conf
+freva_web.toml
+config/evaluation_system.conf
+config/inventory
+*.key
+*.crt
