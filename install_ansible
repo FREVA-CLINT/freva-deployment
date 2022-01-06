@@ -74,7 +74,6 @@ class Installer:
         urllib.request.urlretrieve(CONDA_URL.format(arch=self.arch),
                                   filename=str(conda_script),
                                   reporthook=reporthook)
-        self.check_hash(conda_script)
         conda_script.touch(0o755)
         cmd = f"{self.shell} {conda_script} -p {tmp_env} -b -f -u"
         logger.info(f'Installing miniconda:\n\t{cmd}')
@@ -100,21 +99,6 @@ class Installer:
             cmd = f"{conda_cmd} create -c {self.channel} -q -p {self.install_prefix} {' '.join(self.packages)} -y"
             logger.info(f'Creating conda environment:\n\t {cmd}')
             self.run_cmd(cmd)
-
-    def check_hash(self, filename):
-
-        url="https://repo.anaconda.com/miniconda"
-        archive = urllib.request.urlopen(url).read().decode()
-        md5sum = ''
-        for line in archive.split('</tr>'):
-            if CONDA_VERSION.format(arch=self.arch) in line:
-                md5sum = line.split('<td>')[-1].strip().strip('</td>')
-        md5_hash = hashlib.md5()
-        with filename.open('rb') as f:
-            for byte_block in iter(lambda: f.read(4096),b""):
-                md5_hash.update(byte_block)
-        if md5_hash.hexdigest() != md5sum:
-            raise ValueError('Download failed, md5sum mismatch: {md5sum} ')
 
     def pip_install(self, *pkgs):
         """Install additional packages using pip."""

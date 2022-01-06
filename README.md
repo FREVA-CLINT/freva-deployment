@@ -23,8 +23,22 @@ The following software/packages need to be installed on your system:
 - sshpass
 - libselinux-python3 (on CentOS systems only)
 
-## Option 2: Creating a local installation of ansible (without root access) 
-If ansible is not available on your system you can install it via the `install_ansible` command:
+## Option 2: Installing ansible to a already existing anaconda environment:
+If you are running an anaconda environment you can simply install anaconda into an existing conda environment:
+
+```bash
+conda install -c conda-forge ansible
+```
+
+or create a new conda environment:
+
+```bash
+conda create -c conda-forge -n freva-deployment -c conda-forge pip conda ansible
+```
+
+## Option 3: Creating a local installation of ansible (without root access) 
+If ansible is not available on your system and/or you don't have sufficient rights to install it you can install it 
+you can still install it via the `install_ansible` command:
 
 ```bash
 python install_ansible --help
@@ -47,7 +61,7 @@ python install_ansible; source ./ansible/bin/activate
 ```
 instead of sourcing the environment you can also use conda actvate: `conda actviate ./ansible`; if you have conda installed.
 
-This command installs ansible and all required python packages. 
+This command installs ansible and all required python packages.
 > **_Note:_** On *CentOS* python SELinux libraries need to be installed. If you choose to install ansible via the `install_ansible` you'll have to use `conda` to install libselinux for your CentOS version. For example : `conda install -c conda-forge  libselinux-cos7-x86_64`
 
 ## Installing docker and sudo access to the service servers
