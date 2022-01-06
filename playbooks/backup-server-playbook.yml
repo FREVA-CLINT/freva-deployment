@@ -6,10 +6,10 @@
     - docker_cmd: "--net {{ project_name }} -v /mnt/{{ project_name }}:/mnt -v /mnt/{{ project_name }}/backup_service:/etc/periodic --name={{ project_name }}_backup {{ project_name }}_backup"
     - continer_name: "{{ project_name }}_backup"
   tasks:
-  - name: Registering systemctl path
-    stat:
+    - name: Registering systemctl path
+      stat:
       path: /usr/bin/systemctl
-    register: systemctl
+      register: systemctl
     - name: Stopping services
       shell: systemctl stop {{ project_name }}; systemctl stop {{project_name}}-backup; echo 0
       ignore_errors: yes
