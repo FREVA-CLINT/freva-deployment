@@ -81,12 +81,11 @@ ansible_python_interpreter=/sw/spack-rhel6/miniforge3-4.9.2-3-Linux-x86_64-pwdbq
 After successful configuration you can run the ansible deployment. This is done via the `deploy` script:
 
 ```bash
-python deploy --help
-usage: freva_deployment [-h]
-                        [--steps {services,web,backend,db,solr,backup} [{services,web,backend,db,solr,backup} ...]]
-                        [--python PYTHON] [--cert CERT]
-                        [--backend_arch {Linux-aarch64,Linux-ppc64le,Linux-s390x,Linux-x86_64,MacOSX-x86_64}]
-                        project_name
+usage: deploy [-h] [--config CONFIG]
+              [--steps {services,web,backend,db,solr,backup} [{services,web,backend,db,solr,backup} ...]]
+              [--python PYTHON] [--cert CERT]
+              [--backend_arch {Linux-aarch64,Linux-ppc64le,Linux-s390x,Linux-x86_64,MacOSX-x86_64}]
+              project_name
 
 Deploy freva.
 
@@ -95,6 +94,9 @@ positional arguments:
 
 optional arguments:
   -h, --help            show this help message and exit
+  --config CONFIG, -c CONFIG
+                        Path to ansible inventory file. (default:
+                        /home/wilfred/workspace/deployment/config/inventory)
   --steps {services,web,backend,db,solr,backup} [{services,web,backend,db,solr,backup} ...]
                         The services/code stack to be deployed (default: ['services', 'web',
                         'backend'])
