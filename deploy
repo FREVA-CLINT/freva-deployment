@@ -25,11 +25,13 @@ def parse_args():
     """Consturct command line argument parser."""
 
     ap = argparse.ArgumentParser(
-        prog="freva_deployment",
+        prog="deploy",
         description="""Deploy freva.""",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     ap.add_argument("project_name", type=str, help="Name of the project")
+    ap.add_argument("--config", "-c", type=Path, help="Path to ansible inventory file.",
+                    default=Path(__file__).parent / "config" / "inventory")
     ap.add_argument(
         "--steps",
         type=str,
@@ -266,10 +268,11 @@ class DeployFactory:
             "hosts": self.cfg["dbservers"]["hosts"]
         }
         for step in self.step_order:
-            try:
-                servers[f"{step}"] = self.cfg[f"{step}servers"]["hosts"].split(",")
-            except KeyError:
-                servers[f"{step}"] = self.cfg["services"]["hosts"].split(",")
+            if step in self.steps:
+                try:
+                    servers[f"{step}"] = self.cfg[f"{step}servers"]["hosts"].split(",")
+                except KeyError:
+                    servers[f"{step}"] = self.cfg["services"]["hosts"].split(",")
         return servers
 
     def _get(self, key, value, category, default=""):
@@ -298,6 +301,8 @@ class DeployFactory:
             )
 
     def _add_local(self, config):
+        if not "db" in self.steps:
+            return ""
         cfg = """
 [local]
 127.0.0.1
@@ -321,7 +326,12 @@ local_ansible_python_interpreter={interpreter}
         return cfg
 
     def check_config(self):
+        sections = []
         for section in self.cfg.keys():
+            for step in self.steps:
+                if section.startswith(step) and section not in sections:
+                    sections.append(section)
+        for section in sections:
             for key, value in self.cfg[section].items():
                 if (
                     not value
@@ -354,6 +364,11 @@ local_ansible_python_interpreter={interpreter}
         self._db_pass = "".join(random.sample(characters, len(characters)))
         return self._db_pass
 
+    @property
+    def needs_backend(self):
+        """Define the steps that need the backend config."""
+        return ["web"]
+
     def parse_config(self):
         """Create config files for anisble and evaluation_system.conf."""
 
@@ -362,12 +377,14 @@ local_ansible_python_interpreter={interpreter}
         _default = {"admins": getuser(), "branch": "master"}
         self.check_config()
         for section in ("backendservers", "webservers"):
-            for key, value in self.cfg[f"{section}:vars"].items():
-                self._eval_conf[key] = value or _default.get(key, "")
+            if section.strip("servers") in self.steps:
+                for key, value in self.cfg[f"{section}:vars"].items():
+                    self._eval_conf[key] = value or _default.get(key, "")
         servers = {}
         project_name = self.project_name.replace("-", "_")
         for to_copy in ("vault", "backup"):
-            self.cfg[f"{to_copy}servers:vars"] = self.cfg["dbservers:vars"]
+            if to_copy in self.steps:
+                self.cfg[f"{to_copy}servers:vars"] = self.cfg["dbservers:vars"]
         for key, values in self.servers.items():
             cfg.append(f"[{key}servers]")
             for servername in values:
@@ -407,18 +424,19 @@ local_ansible_python_interpreter={interpreter}
             cfg.append(f"user={getuser()}")
             cfg.append(f"root_dir={Path(__file__).parent.absolute()}")
             cfg.append(f"project_name={self.project_name}")
-            cfg.append(f"backend_git_url={self.git_url}")
-            cfg.append(f"backend_branch={self.git_branch}")
-            cfg.append(
-                f'backend_root_dir={self.cfg["backendservers:vars"]["root_dir"]}'
-            )
             self._eval_conf[f"{key}.host"] = servers[key]
+            if key in self.needs_backend:
+                cfg.append(f"backend_git_url={self.git_url}")
+                cfg.append(f"backend_branch={self.git_branch}")
+                cfg.append(
+                    f'backend_root_dir={self.cfg["backendservers:vars"]["root_dir"]}'
+                )
             cfg.append(f"python_version={self.python_version}")
             if key == "backend":
                 cfg.append(f"backend_arch={self._backend_arch}")
         cfg = "\n".join(cfg) + self._add_local(self._eval_conf)
-        self.db_name = self._eval_conf.pop("db.db")
-        self.db_user = self._eval_conf.pop("db.user")
+        self.db_name = self._eval_conf.pop("db.db", "")
+        self.db_user = self._eval_conf.pop("db.user", "")
         with self.inventory_file.open("w") as f:
             f.write(cfg)
         self._eval_conf["project_name"] = self.project_name
@@ -511,7 +529,7 @@ USE {db};
         self._cert_file = arguments.cert
         self._backend_arch = arguments.backend_arch
         self.python_version = arguments.python
-        self._inv_tmpl = self.aux_dir / "inventory"
+        self._inv_tmpl = arguments.config
         self._cfg_tmpl = self.aux_dir / "evaluation_system.conf.tmpl"
         self.cfg = self._read_cfg(self._inv_tmpl)
         self.inventory_file = self.inventory_file or Path(NamedTemporaryFile().name)
