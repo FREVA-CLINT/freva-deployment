@@ -211,7 +211,7 @@ class DeployFactory:
         for key in ("backendservers:vars", "webservers:vars"):
             self.cfg[key]["web_config_file"] = str(web_conf.absolute())
             self.cfg[key]["web_institution_logo"] = str(logo.absolute())
-            self.cfg[key]["web_institution_logo_suffix"] = logo.suffix
+            self.cfg[key]["web_institution_logo_suffix"] = logo.suffix or ".png"
         return
 
     def _prep_backup(self):
@@ -367,7 +367,7 @@ local_ansible_python_interpreter={interpreter}
     @property
     def needs_backend(self):
         """Define the steps that need the backend config."""
-        return ["web"]
+        return ["web", "backend"]
 
     def parse_config(self):
         """Create config files for anisble and evaluation_system.conf."""
