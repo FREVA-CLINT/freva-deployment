@@ -57,6 +57,8 @@ db_db=''
 ['solrservers:vars']
 solr_port=8983
 solr_core='files'
+# Set the memory for the solr server
+solr_mem='4g'
 ## Ansible needs a python3 interpreter, which can be set for custom python3 instances
 #ansible_python_interpreter=
 ##If you need a different user name you can set it here:
@@ -73,6 +75,10 @@ branch='freva-dev'
 base_dir_location=''
 ## The directory where the backend will be installed
 root_dir=''
+# Set the target architecutre of the system where the backend will be installed
+# to. You can choose from the following options:
+# Linux-x86_64 (default), Linux-aarch64, Linux-ppc64le, Linux-s390x, MacOSX-x86_64
+backend_arch='Linux-x86_64'
 ##If you need a different user name you can set it here:
 #ansible_user='username'
 ## Ansible needs a python3 interpreter, which can be set for custom python3 instances
