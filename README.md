@@ -97,8 +97,7 @@ After successful configuration you can run the ansible deployment. This is done 
 ```bash
 usage: deploy [-h] [--config CONFIG]
               [--steps {services,web,backend,db,solr,backup} [{services,web,backend,db,solr,backup} ...]]
-              [--python PYTHON] [--cert CERT]
-              [--backend_arch {Linux-aarch64,Linux-ppc64le,Linux-s390x,Linux-x86_64,MacOSX-x86_64}]
+              [--python PYTHON] [--cert CERT] [--wipe] [--ask-pass]
               project_name
 
 Deploy freva.
@@ -118,14 +117,25 @@ optional arguments:
   --cert CERT, --cert_file CERT, --cert-file CERT
                         Path to public certificate file. If none is given, default, a file will be
                         created. (default: None)
-  --backend_arch {Linux-aarch64,Linux-ppc64le,Linux-s390x,Linux-x86_64,MacOSX-x86_64}, --backend-arch {Linux-aarch64,Linux-ppc64le,Linux-s390x,Linux-x86_64,MacOSX-x86_64}
-                        Choose the correct deployment architecture for the backend. (default:
-                        Linux-x86_64)
+  --wipe                This option will empty any pre-existing folders/docker volumes. (Useful for a
+                        truely fresh start) (default: False)
+  --ask-pass            Connect to server via ssh passwd instead of public key. (default: False)
 ```
 
 You will need to give a project name, for example `xces-ces` or `regiklim-ces`.
 The `--steps` flags can be used if not all services should be deployed.
 > **_Note:_** The database name of the the MariaDB database will be set to the project name.
+
+# Accessing the services after deployment:
+If the target machine where the services (solr, mariadb, web) where deployed
+is a Linux machine you will have a `systemd` unit for each service was created.
+You can control the the service via systemd. The of the unit has the following
+structure `project_name-service`. For example `freva_dev-solr`:
+
+```bash
+systemctl status freva_dev-solr
+```
+The same applies for mariadb and web service.
 
 # Kown Issues:
 Below are possible solutions to some known issues:
