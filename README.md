@@ -22,7 +22,7 @@ To install ansible you have three different options:
 The following software/packages need to be installed on your system:
 - python3.6+
 - ansible
-- python3 yaml packages
+- python3 yaml toml packages
 - python3 pymysql packages
 - sshpass
 - libselinux-python3 (on CentOS systems only)
@@ -31,13 +31,13 @@ The following software/packages need to be installed on your system:
 If you are running an anaconda environment you can simply install ansible into an existing conda environment:
 
 ```bash
-conda install -c conda-forge ansible
+conda install -c conda-forge ansible yaml toml
 ```
 
 or create a new conda environment:
 
 ```bash
-conda create -c conda-forge -n freva-deployment -c conda-forge pip conda ansible
+conda create -c conda-forge -n freva-deployment -c conda-forge pip conda ansible toml yaml
 ```
 
 ### Option 3: Creating a local installation of ansible (without admin rights)
