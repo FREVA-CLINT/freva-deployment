@@ -53,19 +53,13 @@ def parse_args():
         "default, a file will be created.",
     )
     ap.add_argument(
-        "--backend_arch",
-        "--backend-arch",
-        type=str,
-        default="Linux-x86_64",
-        choices=[
-            "Linux-aarch64",
-            "Linux-ppc64le",
-            "Linux-s390x",
-            "Linux-x86_64",
-            "MacOSX-x86_64",
-        ],
-        help="Choose the correct deployment architecture for the backend.",
+        "--wipe",
+        action="store_true",
+        default=False,
+        help="This option will empty any pre-existing folders/docker volumes. (Useful for a truely fresh start)",
     )
+    ap.add_argument("--ask-pass", help="Connect to server via ssh passwd instead of public key.",
+                    action="store_true", default=False)
     args = ap.parse_args()
     services = {"services": ["db", "vault", "solr", "backup"]}
     steps = []
@@ -432,8 +426,7 @@ local_ansible_python_interpreter={interpreter}
                     f'backend_root_dir={self.cfg["backendservers:vars"]["root_dir"]}'
                 )
             cfg.append(f"python_version={self.python_version}")
-            if key == "backend":
-                cfg.append(f"backend_arch={self._backend_arch}")
+            cfg.append(f"wipe={self.wipe}")
         cfg = "\n".join(cfg) + self._add_local(self._eval_conf)
         self.db_name = self._eval_conf.pop("db.db", "")
         self.db_user = self._eval_conf.pop("db.user", "")
@@ -525,9 +518,10 @@ USE {db};
     def __init__(self, arguments):
         self._db_pass = None
         self.project_name = arguments.project_name
+        self.ask_pass = arguments.ask_pass
         self._steps = arguments.steps
+        self.wipe = arguments.wipe #{True:'true', False:'false'}[arguments.wipe]
         self._cert_file = arguments.cert
-        self._backend_arch = arguments.backend_arch
         self.python_version = arguments.python
         self._inv_tmpl = arguments.config
         self._cfg_tmpl = self.aux_dir / "evaluation_system.conf.tmpl"
@@ -554,7 +548,9 @@ USE {db};
         ansible = Path(sys.exec_prefix) / "bin" / "ansible-playbook"
         logger.info("Playing the playbooks with ansible")
         cmd = f"{ansible} -i {self.inventory_file} {self.dump_playbook}"
-        res = os.system(cmd + " --ask-become-pass --ask-pass")
+        if self.ask_pass:
+            cmd += " --ask-pass"
+        res = os.system(cmd + " --ask-become-pass")
 
 
 if __name__ == "__main__":
