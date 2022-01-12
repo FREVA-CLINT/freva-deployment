@@ -1,20 +1,24 @@
 # Deployment of the Free Evaluation Framework Freva
 
-The code in this repository is used to deploy freva in different computing environments. The general strategy is to split deployment into 4 different steps, these are :
+The code in this repository is used to deploy freva in different computing environments. The general strategy is to split the deployment into 4 different steps, these are :
 - Deploy MariaDB service via docker
-- Deploy a Hashicorp Vault service for storing and retrieving passwords and other sensitive data via docker
+- Deploy a Hashicorp Vault service for storing and retrieving passwords and other sensitive data via docker (this step get automatically activated once the MariaDB service is set)
 - Deploy Apache Solr service via docker
 - Deploy command line interface backend ([evaluation_system](https://gitlab.dkrz.de/freva/evaluation_system))
 - Deploy web frontend ([freva_web](https://gitlab.dkrz.de/freva/freva_web))
 
 
-> **_Note:_** A vault server is deployed to centrally store all passwords and other sensitive data. During the deployment of the vault server a public key is generated which is used to open the vault. This public key will be saved in the `evaluation_system` backend root directory. Only if saved key and the key in the vault match, secrets can be retrieved. You should therfore always deploy the vault server, the mariadb server and the `evaluation_system` backend togehter.
+> **_Note:_** A vault server is auto deployed once the mariadb server is deploed. The vault centrally stores all passwords and other sensitive data. During the deployment of the vault server a public key is generated which is used to open the vault. This public key will be saved in the `evaluation_system` backend root directory. Only if saved this key and the key in the vault match, secrets can be retrieved. Therefore it might be a good idea to deploy, the mariadb server (and with it the vault) and the `evaluation_system` backend togehter.
 
 On *CentOS* python SELinux libraries need to be installed. If you choose to install ansible via the `install_ansible` you'll have to use `conda` to install libselinux for your CentOS version. For example : `conda install -c conda-forge  libselinux-cos7-x86_64`
 
 # Pre-Requisites
-The main work will be done by [ansible](https://docs.ansible.com/ansible/latest/index.html), hence the system which executes the deployment will need ansible. 
-## Option 1: Installing all required packages via the systems software repository
+The main work will be done by [ansible](https://docs.ansible.com/ansible/latest/index.html), hence the system which executes the deployment will need ansible.
+Since we are using ansible we can use this deployment routine from any \*nix system (like a Mac-book). You do not need to run the depoyment on the machines where things get installed.
+The only requirement is that you have to setup ansible and you can establish ssh connections to the servers.
+## Install ansible on the (local) deployment machine:
+To install ansible you have three different options:
+### Option 1: Installing all required packages via the systems software repository (with admin rights)
 The following software/packages need to be installed on your system:
 - python3.6+
 - ansible
@@ -23,8 +27,8 @@ The following software/packages need to be installed on your system:
 - sshpass
 - libselinux-python3 (on CentOS systems only)
 
-## Option 2: Installing ansible to a already existing anaconda environment:
-If you are running an anaconda environment you can simply install anaconda into an existing conda environment:
+### Option 2: Installing ansible to an already existing anaconda environment:
+If you are running an anaconda environment you can simply install ansible into an existing conda environment:
 
 ```bash
 conda install -c conda-forge ansible
@@ -36,8 +40,8 @@ or create a new conda environment:
 conda create -c conda-forge -n freva-deployment -c conda-forge pip conda ansible
 ```
 
-## Option 3: Creating a local installation of ansible (without root access) 
-If ansible is not available on your system and/or you don't have sufficient rights to install it you can install it 
+### Option 3: Creating a local installation of ansible (without admin rights)
+If ansible is not available on your system and/or you don't have sufficient rights to install it, you can install it 
 you can still install it via the `install_ansible` command:
 
 ```bash
@@ -66,7 +70,7 @@ This command installs ansible and all required python packages.
 
 ## Installing docker and sudo access to the service servers
 Since the services of MariaDB and Apache Solr will be deployed on docker container images, docker needs to be available on the target servers. Usually installing and running docker requires *root* privileges.
-So on the servers that will be running docker you will need root access. There exist an option to install and run docker without root, information on a root-less docker option
+Hence, on the servers that will be running docker you will need root access. There exist an option to install and run docker without root, information on a root-less docker option
 can be found [on the docker docs](https://docs.docker.com/engine/security/rootless/)
 
 # Configuring the deployment
@@ -127,9 +131,9 @@ The `--steps` flags can be used if not all services should be deployed.
 > **_Note:_** The database name of the the MariaDB database will be set to the project name.
 
 # Accessing the services after deployment:
-If the target machine where the services (solr, mariadb, web) where deployed
-is a Linux machine you will have a `systemd` unit for each service was created.
-You can control the the service via systemd. The of the unit has the following
+If the target machine where the services (solr, mariadb, web) were deployed
+is a Linux machine you will have a `systemd` unit service was created.
+You can control the the service via systemd. The unit has the following
 structure `project_name-service`. For example `freva_dev-solr`:
 
 ```bash
