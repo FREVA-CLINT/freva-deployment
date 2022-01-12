@@ -25,7 +25,7 @@
   vars:
     - ansible_python_interpreter: "{{ web_ansible_python_interpreter }}"
 #    - docker_cmd: "--dns 8.8.8.8 -p 80:80 -p 443:443 --net {{ project_name }} -v {{ backend_root_dir }}:{{ backend_root_dir }} -v {{ backend_root_dir }}/share/preview:/var/www/html/app/static/preview --name"
-    - docker_cmd: "-p 8000:8000 -p 80:80 -p 443:443 -v {{ backend_root_dir }}:{{ backend_root_dir }} -v {{ backend_root_dir }}/share/preview:/var/www/html/app/static/preview --name"
+    - docker_cmd: "-p 8000:8000 -p 80:80 -p 443:443 -v {{ backend_root_dir }}:{{ backend_root_dir }}:z -v {{ backend_root_dir }}/share/preview:/var/www/html/app/static/preview:z --name"
     - container_name: "{{ project_name }}_web"
   tasks:
   - name: Getting register to backend dir
@@ -103,3 +103,4 @@
       cmd: rm -r /tmp/{{project_name}}_web
       warn: false
     become: yes
+    when: wipe == true

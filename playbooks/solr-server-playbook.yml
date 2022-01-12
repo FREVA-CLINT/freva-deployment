@@ -4,7 +4,7 @@
   vars:
     - ansible_python_interpreter: "{{ solr_ansible_python_interpreter }}"
     - continer_name: "{{ solr_name }}"
-    - docker_cmd: "--name {{ solr_name }} -p {{ solr_port }}:8983 -t {{ solr_name }}:latest"
+    - docker_cmd: "-e SOLR_HEAP={{solr_mem}} -v /mnt/{{project_name}}/solr_service:/var/solr/data:z --name {{ solr_name }} -p {{ solr_port }}:8983 -t {{ solr_name }}:latest"
   tasks:
     - name: Registering systemctl path
       stat:
@@ -24,6 +24,7 @@
         cmd: rm -rf /mnt/{{ project_name }}/solr_service
         warn: false
       become: yes
+      when: wipe == true
     - name: Creating directory structure
       shell:
         cmd: mkdir -p /mnt/{{ project_name }}/solr_service
@@ -50,7 +51,7 @@
       become: yes
     - name: Copy auxillary files to target machine
       copy: src="{{ root_dir }}/solr_service" dest=/tmp
-    - name: Buildigin solr images
+    - name: Building solr images
       shell:
         chdir: /tmp/solr_service
         cmd: docker build -t {{ solr_name }}:latest .
@@ -66,15 +67,8 @@
     - name: Creating the solr cores
       become: yes
       shell: |
-        docker exec -it --user=solr "{{ solr_name }}" bin/solr create_core -c latest -d example/files/conf
-        docker exec -it --user=solr "{{ solr_name }}" bin/solr create_core -c "{{ solr_core }}" -d example/files/conf
-    - name: Adding schema to solr server
-      copy: src={{ root_dir }}/solr_service/managed-schema dest=/tmp/managed-schema
-    - name: Inserting schema into solr docker
-      become: yes
-      shell: |
-        docker cp /tmp/managed-schema {{ solr_name }}:/var/solr/data/latest/conf/managed-schema
-        docker cp /tmp/managed-schema {{ solr_name }}:/var/solr/data/{{ solr_core }}/conf/managed-schema
+        docker exec -it --user=solr "{{ solr_name }}" /bin/bash create_core.sh latest
+        docker exec -it --user=solr "{{ solr_name }}" /bin/bash create_core.sh "{{ solr_core }}"
     - name: Restarting docker container
       become: yes
       shell: systemctl restart "{{ project_name }}-solr"
@@ -86,7 +80,6 @@
       with_items:
         - /tmp/create_systemd.sh
         - /tmp/systemd.service
-        - /tmp/managed-schema
     - name: Delete temporary files
       shell:
         cmd: rm -rf /tmp/solr_service

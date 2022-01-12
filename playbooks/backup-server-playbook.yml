@@ -40,6 +40,7 @@
         cmd: rm -rf /mnt/{{ project_name }}/backup_service
         warn: false
       become: yes
+      when: {{ wipe }} == true
     - name: Creating cron directory structure
       shell:
         cmd: mkdir -p /mnt/{{ project_name }}/backup_service/{{ item }}

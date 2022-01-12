@@ -49,6 +49,7 @@
         cmd: rm -rf /mnt/{{ project_name }}/vault_service
         warn: false
       become: yes
+      when: wipe == true
     - name: Creating directory structure
       shell:
         cmd: mkdir -p /mnt/{{ project_name }}/vault_service
