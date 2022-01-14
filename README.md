@@ -27,6 +27,11 @@ The following software/packages need to be installed on your system:
 - sshpass
 - libselinux-python3 (on CentOS systems only)
 
+To install the rquired python packages simply execute the following command:
+
+```bash
+python3 -m pip install -r requirements.txt
+```
 ### Option 2: Installing ansible to an already existing anaconda environment:
 If you are running an anaconda environment you can simply install ansible into an existing conda environment:
 
