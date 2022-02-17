@@ -24,7 +24,6 @@
 
   vars:
     - ansible_python_interpreter: "{{ web_ansible_python_interpreter }}"
-#    - docker_cmd: "--dns 8.8.8.8 -p 80:80 -p 443:443 --net {{ project_name }} -v {{ core_root_dir }}:{{ core_root_dir }} -v {{ core_root_dir }}/share/preview:/var/www/html/app/static/preview --name"
     - docker_cmd: "-p 8000:8000 -p 80:80 -p 443:443 -v {{ core_root_dir }}:{{ core_root_dir }}:z -v {{ core_root_dir }}/share/preview:/var/www/html/app/static/preview:z --name"
     - container_name: "{{ project_name }}_web"
   tasks:
@@ -58,7 +57,7 @@
     become: yes
   - name: Copy Dockerfile,entrypoint,freva_web.conf(apache conf) files
     copy:
-      src:  "{{ root_dir }}/web/{{ item }}"
+      src:  "{{ asset_dir }}/web/{{ item }}"
       dest: "/tmp/{{project_name}}_web/{{ item }}"
       mode: '0755'
     with_items:

@@ -32,7 +32,7 @@
       become: yes
     - name: Copy systemd files
       copy:
-        src: "{{ root_dir }}/scripts/{{ item }}"
+        src: "{{ asset_dir }}/scripts/{{ item }}"
         dest: /tmp/{{ item }}
         mode: '0755'
       with_items:
@@ -40,7 +40,7 @@
         - "create_systemd.sh"
     - name: Copy docker kill script
       copy:
-        src: "{{ root_dir }}/scripts/kill_container"
+        src: "{{ asset_dir }}/scripts/kill_container"
         dest: /usr/local/bin/kill_container
         mode: '0755'
       become: yes
@@ -50,7 +50,7 @@
         warn: false
       become: yes
     - name: Copy auxillary files to target machine
-      copy: src="{{ root_dir }}/solr_service" dest=/tmp
+      copy: src="{{ asset_dir }}/solr_service" dest=/tmp
     - name: Building solr images
       shell:
         chdir: /tmp/solr_service

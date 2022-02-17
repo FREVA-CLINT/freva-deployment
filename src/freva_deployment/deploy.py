@@ -9,6 +9,8 @@ import string
 from subprocess import run
 import sys
 from tempfile import NamedTemporaryFile, TemporaryDirectory, mkdtemp
+
+from rich.console import Console
 import toml
 import yaml
 
@@ -47,13 +49,22 @@ class DeployFactory:
 
     def _prep_vault(self):
         """Prepare the vault."""
+        self.cfg["vault"] = self.cfg["db"].copy()
         if self.master_pass is None:
             self.master_pass = get_passwd()
+        self.cfg["vault"]["config"]["root_passwd"] = self.master_pass
+        self.cfg["vault"]["config"]["passwd"] = self.db_pass
+        self.cfg["vault"]["config"]["keyfile"] = self.public_key_file
+        self.cfg["vault"]["config"]["private_keyfile"] = self.private_key_file
 
     def _prep_db(self):
         """prepare the mariadb service."""
         if self.master_pass is None:
             self.master_pass = get_passwd()
+        self.cfg["db"]["config"]["root_passwd"] = self.master_pass
+        self.cfg["db"]["config"]["passwd"] = self.db_pass
+        self.cfg["db"]["config"]["keyfile"] = self.public_key_file
+        self.cfg["db"]["config"]["private_keyfile"] = self.private_key_file
         for key in ("name", "user", "db"):
             self.cfg["db"]["config"].setdefault(key, "freva")
         self.cfg["db"]["config"].setdefault("port", "3306")
@@ -67,9 +78,15 @@ class DeployFactory:
     def _prep_core(self):
         """prepare the core deployment."""
         self.cfg["core"]["config"].setdefault("install_dir", "")
+        self.cfg["core"]["config"].setdefault("admins", getuser())
+        self.cfg["core"]["config"].setdefault("branch", "master")
+        self.cfg["core"]["config"]["keyfile"] = self.public_key_file
+        self.cfg["core"]["config"]["private_keyfile"] = self.private_key_file
 
     def _prep_web(self):
         """prepare the web deployment."""
+        self.cfg["web"]["config"].setdefault("admins", getuser())
+        self.cfg["web"]["config"].setdefault("branch", "master")
         self._prep_core()
         _webserver_items = {}
         web_conf = Path(self._td.name) / "freva_web.toml"
@@ -119,8 +136,14 @@ class DeployFactory:
             self.cfg[key]["config"]["web_institution_logo_suffix"] = logo_suffix
 
     def _prep_backup(self):
+        """Prepare the config for the backup step."""
+        self.cfg["backup"] = self.cfg["db"].copy()
         if self.master_pass is None:
             self.master_pass = get_passwd()
+        self.cfg["backup"]["config"]["root_passwd"] = self.master_pass
+        self.cfg["backup"]["config"]["passwd"] = self.db_pass
+        self.cfg["backup"]["config"]["keyfile"] = self.public_key_file
+        self.cfg["backup"]["config"]["private_keyfile"] = self.private_key_file
 
     def __enter__(self):
         self._td = TemporaryDirectory(prefix="inventory")
@@ -235,22 +258,16 @@ class DeployFactory:
                 config[step]["vars"][f"core_{key}"] = value
         config[step]["vars"][f"{step}_hostname"] = self.cfg[step]["hosts"]
         config[step]["vars"][f"{step}_name"] = f"{self.project_name}_{step}"
-        config[step]["vars"]["root_dir"] = str(asset_dir)
+        config[step]["vars"]["asset_dir"] = str(asset_dir)
         config[step]["vars"]["user"] = getuser()
         config[step]["vars"]["python_version"] = self.python_version
         config[step]["vars"]["wipe"] = self.wipe
         config[step]["vars"][f"{step}_ansible_python_interpreter"] = self.cfg[step][
             "config"
         ].get("ansible_python_interpreter", "/usr/bin/python3")
-        if step in ("db", "vault", "backup"):
-            config[step]["vars"]["root_passwd"] = self.master_pass
-            config[step]["vars"][f"{step}_passwd"] = self.db_pass
         dump_file = self.get_files_copy(step)
         if dump_file:
             config[step]["vars"][f"{step}_dump"] = str(dump_file)
-        if step in ("db", "vault", "backup", "core"):
-            config[step]["vars"][f"{step}_keyfile"] = self.public_key_file
-            config[step]["vars"][f"{step}_private_keyfile"] = self.private_key_file
 
     def parse_config(self) -> str:
         """Create config files for anisble and evaluation_system.conf."""
@@ -259,22 +276,18 @@ class DeployFactory:
         config = {}
         project_name = self.project_name.replace("-", "_")
         for step in self.steps:
-            self.cfg.setdefault(step, {"config": {}})
-            if step in ("core", "web"):
-                self.cfg[step]["config"].setdefault("admins", getuser())
-                self.cfg[step]["config"].setdefault("branch", "master")
             config[step] = {}
-            if step in ("vault", "backup"):
-                # Copy entries for db to vault and backup
-                self.cfg[step] = self.cfg["db"].copy()
             config[step]["hosts"] = self.cfg[step]["hosts"]
             config[step]["vars"] = {}
             for key, value in self.cfg[step]["config"].items():
-                new_key = f"{step}_{key}"
+                if key not in ("root_passwd", ):
+                    new_key = f"{step}_{key}"
+                else:
+                    new_key = key
                 config[step]["vars"][new_key] = value
             config[step]["vars"]["project_name"] = project_name
-            self._set_additional_config_values(step, config)
             # Add additional keys
+            self._set_additional_config_values(step, config)
         if "db" in self.steps:
             config.update(self._add_local_config(config["db"]["vars"]))
         return yaml.dump(config)
@@ -394,7 +407,6 @@ USE {db};
                 for key, value in keys:
                     if line.startswith(value):
                         cfg = self.cfg[key]["config"].get(value, "")
-                        print(key, value, cfg)
                         lines[nn] = f"{value}={cfg}\n"
                 for s in ("solr", "db"):
                     for key in server_keys:
@@ -413,13 +425,12 @@ USE {db};
         inventory = self.parse_config()
         with self.inventory_file.open("w") as f:
             f.write(inventory)
-        print(inventory)
+        Console().print(inventory, style="red", markup=True)
         logger.info("Playing the playbooks with ansible")
         cmd = f"ansible-playbook -i {self.inventory_file} {self.dump_playbook}"
         if self.ask_pass:
             cmd += " --ask-pass"
         cmd += " --ask-become-pass"
-        print(cmd)
         try:
             run(shlex.split(cmd), env=os.environ.copy(), cwd=str(asset_dir))
         except KeyboardInterrupt:
