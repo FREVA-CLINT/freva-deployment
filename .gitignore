@@ -5,6 +5,10 @@ config/evaluation_system.conf
 config/inventory
 __pycache__/*
 src/freva_deployment/__pycache__
+src/freva_deployment/cli/__pycache__
+src/freva_deployment/ui/deployment_tui/__pycache__
+src/freva_deployment/ui/__pycache__
+*.pyc
 *.egg*
 *.key
 *.crt

@@ -52,6 +52,7 @@ setup(name="freva_deployment",
       entry_points={
           "console_scripts": [
               "deploy-freva = freva_deployment.cli:cli",
+              "deploy-freva-tui = freva_deployment.ui.deployment_tui:tui"
           ]},
       install_requires=[
           "appdirs",
