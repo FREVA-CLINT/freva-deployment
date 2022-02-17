@@ -1,0 +1,39 @@
+---
+- hosts: core
+
+  vars:
+    - ansible_python_interpreter: "{{ core_ansible_python_interpreter }}"
+  tasks:
+  - name: Cleaning up temporary files
+    file:
+      state: absent
+      path: /tmp/evaluation_system
+  - name: Cloning the evluation_system reposiotry
+    git:
+      repo: "{{ core_git_url }}"
+      dest: /tmp/evaluation_system
+      version: "{{ core_branch }}"
+  - name: Create folder freva into the share folder
+    shell:
+      cmd: mkdir -p "{{ core_root_dir }}/etc/freva/"
+      warn: false
+  - name: Copying Private key files
+    copy: src={{core_private_keyfile}} dest={{ core_root_dir }}/etc/freva/{{ project_name }}.key
+  - name: Copying Public key file
+    copy: src={{ core_keyfile }} dest={{ core_root_dir }}/etc/freva/{{ project_name }}.crt
+  - name: Inserting evaluation_system.conf
+    copy: src={{ core_dump }} dest={{ item }}
+    with_items:
+      - "/tmp/evaluation_system/evaluation_system.conf"
+      - "{{ core_root_dir }}/etc/freva/evaluation_system.conf"
+  - name: Deploying evaluation_system
+    shell:
+      cmd: $PYTHON3 deploy.py {{ core_install_dir }} --python {{python_version}} --arch {{core_arch}}
+      chdir: /tmp/evaluation_system
+    environment:
+        PYTHON3: "{{ ansible_python_interpreter }}"
+    when: (core_install_dir is defined) and (core_install_dir|length > 0)
+  - name: Deleting temporary files
+    file:
+      state: absent
+      path: /tmp/evaluation_system

@@ -1,0 +1,159 @@
+# This is the default ansible "inventory" file.
+#
+#   - Comments begin with the "#" character
+#   - Blank lines are ignored
+#   - Groups of hosts are delimited by [header] elements
+#   - You can enter hostnames or ip addresses
+#   - A hostname/ip can be a member of multiple groups
+# On this hostnames the freva web frontend will be deployed
+[web]
+# Set the hostnames where all services (database, solr, vault) will be
+# deployed
+hosts = ""
+
+# If you have multiple hosts following a pattern you can specify
+# them like this:
+
+##hosts = "alpha.example.org,beta.example.org,192.168.1.100,192.168.1.110"
+##hosts = "www[001:006].example.com"
+
+# Ex 3: A collection of database servers in the "dbservers" group
+
+## Here"s another example of host ranges, this time there are no
+## leading 0s:
+
+##hosts = "db-[99:101]-node.example.com"
+[solr]
+hosts = ""
+
+## Set the hostnames running the mariadb service
+[db]
+hosts = ""
+
+[core]
+### Set the hostnames where the command line interface of freva will be installed
+### The following hostnames will run the mariadb server
+hosts = ""
+
+
+### CONFIGURATION VARIABLES
+##The following section defines important variables, which have to be set
+##in order to deploy the system correctly
+##
+[db.config]
+## Config variables for the database service
+port = 3306
+user = ""
+db = ""
+##If you need a different user name you can set it here:
+#ansible_user = "username"
+## You can set the db_host seperately, if none is given (default)
+## the one from the hostsnames above are taken
+##db_host = ""
+## Ansible needs a python3 interpreter, which can be set for custom python3 instances
+#ansible_python_interpreter = ""
+##If you need a different user name you can set it here:
+#ansible_python_interpreter="/usr/bin/python3"
+[solr.config]
+## Config variables for the solr service
+port = 8983
+core = "files"
+# Set the memory for the solr server
+mem = "4g"
+## Ansible needs a python3 interpreter, which can be set for custom python3 instances
+#ansible_python_interpreter = ""
+##If you need a different user name you can set it here:
+#ansible_user = "username"
+
+[core.config]
+## List of user(s) that can alter the configuration of the freva cmd line interface
+## If blank, the user that runs the deployment is chosen
+admins = ""
+## The path where the core should be INSTALLED, leave blank if you have
+## already an installed instance but just need configuration.
+install_dir=""
+## The url to the git repository of the evaluation_system
+git_url = "https://gitlab.dkrz.de/freva/evaluation_system.git"
+## Which branch of the evaluation_system should be deployed
+branch = "freva-dev"
+## The directory where the user specific output will be stored
+base_dir_location = ""
+## The directory where the project configuration files will be stored
+root_dir = ""
+# Set the target architecutre of the system where the backend will be installed
+# to. You can choose from the following options:
+# Linux-x86_64 (default), Linux-aarch64, Linux-ppc64le, Linux-s390x, MacOSX-x86_64
+arch = "Linux-x86_64"
+##If you need a different user name you can set it here:
+#ansible_user = "username"
+## Ansible needs a python3 interpreter, which can be set for custom python3 instances
+#ansible_python_interpreter = ""
+
+
+[web.config]
+## List of user that can alter the configuration of freva web
+project_website = "www.freva.dkrz.de"
+## The url to the git repository of freva_web
+git_url = "https://gitlab.dkrz.de/freva/freva_web.git"
+## Which branch of the evaluation_system should be deployed
+branch = "master"
+## Ansible needs a python3 interpreter, which can be set for custom python3 instances
+#ansible_python_interpreter = ""
+##If you need a different user name you can set it here:
+#ansible_user = "username"
+##Set the path to the logo
+institution_logo = ""
+##Set html colors
+main_color = "Tomato"
+border_color = "#6c2e1f"
+hover_color = "#d0513a"
+## The about us text is a small blurb about freva within the project
+about_us_text = ""
+## Set a list of email addresses for contacts
+contacts = ""
+## Now set postal address
+address = ["Project name",
+           "German Climate Computing Centre (DKRZ)",
+           "Bundesstr. 45a",
+           "20146 Hamburg",
+           "Germany."]
+## Here you can set a lengthy project description.
+## You can also set a path to a filename that contains the information.
+## Instead of text you can set a path to a file containing the text, like a html file.
+homepage_text = "Bal bla bla."
+## Set a one line blurb of the project
+hompage_heading = "Short description of the project."
+## Set the name of the project/institution
+institution_name = "FreVa"
+## Set the slurm scheduler host
+scheduler_host = ["mistal.dkrz.de"]
+
+## Settings for ldap
+## Ldap server name(s)
+auth_ldap_server_uri = ["ldap://mldap0.hpc.dkrz.de",
+                        "ldap://mldap1.hpc.dkrz.de"]
+## Set the group that will be allowed to log on
+allowed_group = "test_group"
+## Set the ldap search user base
+ldap_user_base = "cn=users,cn=accounts,dc=dkrz,dc=de"
+## Set the ldap search group base, note: do not add the allowed_group as it will be auto added
+ldap_group_base = "cn=groups,cn=accounts,dc=dkrz,dc=de"
+## distinguished name (dn) for the ldap user
+ldap_user_dn = "uid=dkrzagent,cn=sysaccounts,cn=etc,dc=dkrz,dc=de"
+## set the passwd for the ldap user
+ldap_user_pw = "dkrzprox"
+#######
+## Set the hosts that are allowed to execute wsgi code
+allowed_hosts = ["www.freva.dkrz.de", "localhost"]
+## Turn on/off debug mode on the website
+debug=true
+## Which plugin id should be used for the web tour
+guest_tour_result = 105
+## Set the menu entries
+# Menu entries consist of three entries these are:
+# [Label, url, html_id] -> e.g Plugins, plugins:home, plugin_menu
+menu_entries = [["Plugins","plugins:home", "plugin_menu"],
+                ["Data-Browser", "solr:data_browser","browser_menu"],
+                ["Result-Browser", "history:result_browser","result_browser_menu"],
+                ["History","history:history","history_menu"],
+                ["Help", "plugins:about","doc_menu"]]
