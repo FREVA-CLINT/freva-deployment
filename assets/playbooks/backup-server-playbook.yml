@@ -1,5 +1,5 @@
 ---
-- hosts: backupservers
+- hosts: backup
 
   vars:
     - ansible_python_interpreter: "{{ vault_ansible_python_interpreter }}"
@@ -23,7 +23,7 @@
       copy: src="{{ root_dir }}/backup_service" dest=/tmp
     - name: Copy systemd files
       copy:
-        src: "{{ root_dir }}/{{ item }}"
+        src: "{{ root_dir }}/scripts/{{ item }}"
         dest: /tmp/{{ item }}
         mode: '0755'
       with_items:
@@ -31,7 +31,7 @@
         - "create_systemd.sh"
     - name: Copy docker kill script
       copy:
-        src: "{{ root_dir }}/kill_container"
+        src: "{{ root_dir }}/scripts/kill_container"
         dest: /usr/local/bin/kill_container
         mode: '0755'
       become: yes
@@ -40,7 +40,7 @@
         cmd: rm -rf /mnt/{{ project_name }}/backup_service
         warn: false
       become: yes
-      when: {{ wipe }} == true
+      when: wipe == true
     - name: Creating cron directory structure
       shell:
         cmd: mkdir -p /mnt/{{ project_name }}/backup_service/{{ item }}

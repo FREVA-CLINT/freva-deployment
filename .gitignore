@@ -3,5 +3,8 @@ test.conf
 freva_web.toml
 config/evaluation_system.conf
 config/inventory
+__pycache__/*
+src/freva_deployment/__pycache__
+*.egg*
 *.key
 *.crt

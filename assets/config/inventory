@@ -1,143 +1,140 @@
-# This is the default ansible 'inventory' file.
+# This is the default ansible "inventory" file.
 #
-#   - Comments begin with the '#' character
+#   - Comments begin with the "#" character
 #   - Blank lines are ignored
 #   - Groups of hosts are delimited by [header] elements
 #   - You can enter hostnames or ip addresses
 #   - A hostname/ip can be a member of multiple groups
 # On this hostnames the freva web frontend will be deployed
-['webservers']
+["webservers"]
 # Set the hostnames where all services (database, solr, vault) will be
 # deployed
-hosts=''
+hosts="127.0.0.1"
 
 # If you have multiple hosts following a pattern you can specify
 # them like this:
 
-##hosts='alpha.example.org,beta.example.org,192.168.1.100,192.168.1.110'
-##hosts='www[001:006].example.com'
+##hosts="alpha.example.org,beta.example.org,192.168.1.100,192.168.1.110"
+##hosts="www[001:006].example.com"
 
-# Ex 3: A collection of database servers in the 'dbservers' group
+# Ex 3: A collection of database servers in the "dbservers" group
 
-## Here's another example of host ranges, this time there are no
+## Here"s another example of host ranges, this time there are no
 ## leading 0s:
 
-##hosts='db-[99:101]-node.example.com'
-['solrservers']
-hosts=''
+##hosts="db-[99:101]-node.example.com"
+["solrservers"]
+hosts="www-regiklim.dkrz.de"
 
 ## Set the hostnames running the mariadb service
-['dbservers']
-hosts=''
+["dbservers"]
+hosts="127.0.0.1"
 
-['backendservers']
+["backendservers"]
 ### Set the hostnames where the command line interface of freva will be installed
 ### The following hostnames will run the mariadb server
-hosts=''
+hosts="127.0.0.1"
 
 
 ### VARIABLES
 ##The following section defines important variables, which have to be set
 ##in order to deploy the system correctly
 ##
-['dbservers:vars']
+["dbservers:vars"]
 ## Variables for the webserver
-db_port=3306
-db_user=''
-db_db=''
+db_user="freva"
+db_db="freva"
+db_port=10000
+db_host="127.0.0.1"
+#db_passwd="T3st"
 ##If you need a different user name you can set it here:
-#ansible_user='username'
+#ansible_user="username"
 ## You can set the db_host seperately, if none is given (default)
 ## the one from the hostsnames above are taken
-##db_host=''
+##db_host=""
 ## Ansible needs a python3 interpreter, which can be set for custom python3 instances
 #ansible_python_interpreter=
 ##If you need a different user name you can set it here:
 #ansible_python_interpreter=/usr/bin/python3
-['solrservers:vars']
-solr_port=8983
-solr_core='files'
-# Set the memory for the solr server
-solr_mem='4g'
+["solrservers:vars"]
+solr_port=8999
+solr_core="files"
+solr_mem="4g"
 ## Ansible needs a python3 interpreter, which can be set for custom python3 instances
-#ansible_python_interpreter=
+ansible_python_interpreter="/usr/bin/python3"
 ##If you need a different user name you can set it here:
-#ansible_user='username'
+ansible_user="k204230"
 
-['backendservers:vars']
+["backendservers:vars"]
 ## List of user that can alter the configuration of the freva cmd line interface
-admins=''
+admins="wilfred"
 ## The url to the git repository of the evaluation_system
-git_url='https://gitlab.dkrz.de/freva/evaluation_system.git'
+git_url="https://gitlab.dkrz.de/freva/evaluation_system.git"
 ## Which branch of the evaluation_system should be deployed
-branch='freva-dev'
+branch="conda_dev_env"
 ## The directory where the user specific output will be stored
-base_dir_location=''
+base_dir_location="/home/wilfred/freva-ces/work"
 ## The directory where the backend will be installed
-root_dir=''
-# Set the target architecutre of the system where the backend will be installed
-# to. You can choose from the following options:
-# Linux-x86_64 (default), Linux-aarch64, Linux-ppc64le, Linux-s390x, MacOSX-x86_64
-backend_arch='Linux-x86_64'
+root_dir="/home/wilfred/freva-ces"
 ##If you need a different user name you can set it here:
-#ansible_user='username'
+#ansible_user="username"
 ## Ansible needs a python3 interpreter, which can be set for custom python3 instances
 #ansible_python_interpreter=
 ##If you need a different user name you can set it here:
-#ansible_user=''
+#ansible_user=""
 
 
-['webservers:vars']
+["webservers:vars"]
 ## List of user that can alter the configuration of freva web
-project_website='www.freva.dkrz.de'
+project_website="www.freva.dkrz.de"
 ## The url to the git repository of freva_web
-git_url='https://gitlab.dkrz.de/freva/freva_web.git'
+git_url="https://gitlab.dkrz.de/freva/freva_web.git"
 ## Which branch of the evaluation_system should be deployed
-branch='master'
+branch="master"
 ## Ansible needs a python3 interpreter, which can be set for custom python3 instances
 #ansible_python_interpreter=
 ##If you need a different user name you can set it here:
-#ansible_user='username'
+#ansible_user="username"
 ##Set the path to the logo
-web_institution_logo=''
+web_institution_logo="None"
 ##Set html colors
-web_main_color='Tomato'
-web_border_color='#6c2e1f'
-web_hover_color='#d0513a'
+web_main_color="Tomato"
+web_border_color="#6c2e1f"
+web_hover_color="#d0513a"
 ## The about us text is a small blurb about freva within the project
-web_about_us_text=''
+web_about_us_text="Testing"
 ## Set a list of email addresses for contacts
-web_contacts=''
+web_contacts="Testing"
 ## Now set postal address
-web_address=['Project name', 'German Climate Computing Centre (DKRZ)', 'Bundesstr. 45a', '20146 Hamburg', 'Germany.']
+web_address=["Project name", "German Climate Computing Centre (DKRZ)", "Bundesstr. 45a", "20146 Hamburg", "Germany."]
 ## Here you can set a lengthy project description.
 ## You can also set a path to a filename that contains the information.
 ## Instead of text you can set a path to a file containing the text, like a html file.
-web_homepage_text='Bal bla bla.'
+web_homepage_text="Bal bla bla."
 ## Set a one line blurb of the project
-web_hompage_heading='Short description of the project.'
+web_hompage_heading="Short description of the project."
 ## Set the name of the project/institution
-web_institution_name='FreVa'
+web_institution_name="FreVa"
 ## Set the slurm scheduler host
-web_scheduler_host=['mistal.dkrz.de']
+web_scheduler_host=["mistal.dkrz.de"]
 
 ## Settings for ldap
 ## Ldap server name(s)
-web_auth_ldap_server_uri=['ldap://mldap0.hpc.dkrz.de',
-                      'ldap://mldap1.hpc.dkrz.de']
+web_auth_ldap_server_uri=["ldap://mldap0.hpc.dkrz.de",
+                      "ldap://mldap1.hpc.dkrz.de"]
 ## Set the group that will be allowed to log on
-web_allowed_group='test_group'
+web_allowed_group="test_group"
 ## Set the ldap search user base
-web_ldap_user_base='cn=users,cn=accounts,dc=dkrz,dc=de'
+web_ldap_user_base="cn=users,cn=accounts,dc=dkrz,dc=de"
 ## Set the ldap search group base, note: do not add the allowed_group as it will be auto added
-web_ldap_group_base='cn=groups,cn=accounts,dc=dkrz,dc=de'
+web_ldap_group_base="cn=groups,cn=accounts,dc=dkrz,dc=de"
 ## distinguished name (dn) for the ldap user
-web_ldap_user_dn = 'uid=dkrzagent,cn=sysaccounts,cn=etc,dc=dkrz,dc=de'
+web_ldap_user_dn = "uid=dkrzagent,cn=sysaccounts,cn=etc,dc=dkrz,dc=de"
 ## set the passwd for the ldap user
-web_ldap_user_pw='dkrzprox'
+web_ldap_user_pw="dkrzprox"
 #######
 ## Set the hosts that are allowed to execute wsgi code
-web_allowed_hosts=['www.freva.dkrz.de', 'localhost']
+web_allowed_hosts=["www.freva.dkrz.de", "localhost"]
 ## Turn on/off debug mode on the website
 web_debug=true
 ## Which plugin id should be used for the web tour
@@ -145,8 +142,8 @@ web_guest_tour_result=105
 ## Set the menu entries
 # Menu entries consist of three entries these are:
 # [Label, url, html_id] -> e.g Plugins, plugins:home, plugin_menu
-web_menu_entries=[['Plugins','plugins:home', 'plugin_menu'],
-                  ['Data-Browser', 'solr:data_browser','browser_menu'],
-                  ['Result-Browser', 'history:result_browser','result_browser_menu'],
-                  ['History','history:history','history_menu'],
-                  ['Help', 'plugins:about','doc_menu']]
+web_menu_entries=[["Plugins","plugins:home", "plugin_menu"],
+                  ["Data-Browser", "solr:data_browser","browser_menu"],
+                  ["Result-Browser", "history:result_browser","result_browser_menu"],
+                  ["History","history:history","history_menu"],
+                  ["Help", "plugins:about","doc_menu"]]

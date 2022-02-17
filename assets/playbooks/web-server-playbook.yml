@@ -1,8 +1,8 @@
 ---
-- hosts: backendservers
+- hosts: core
 
   vars:
-    - ansible_python_interpreter: "{{ backend_ansible_python_interpreter }}"
+    - ansible_python_interpreter: "{{ core_ansible_python_interpreter }}"
   tasks:
   - name: Getting register to the freva logo
     stat:
@@ -10,36 +10,36 @@
     register: logo
   - name: Creating share directory
     shell:
-      cmd: mkdir -p "{{backend_root_dir}}/share/freva/web"
+      cmd: mkdir -p "{{core_root_dir}}/share/freva/web"
       warn: false
   - name: Copy the logo if exists
     copy:
       src: "{{ web_institution_logo }}"
-      dest: "{{backend_root_dir}}/share/freva/web/logo.{{web_institution_logo_suffix}}"
+      dest: "{{core_root_dir}}/share/freva/web/logo.{{web_institution_logo_suffix}}"
     when: logo.stat.exists == true
-  - name: Adding freva web config to the backend structure
-    copy: src={{ web_config_file }} dest={{ backend_root_dir }}/share/freva/web/freva_web_conf.toml
+  - name: Adding freva web config to the core structure
+    copy: src={{ web_config_file }} dest={{ core_root_dir }}/share/freva/web/freva_web_conf.toml
 
-- hosts: webservers
+- hosts: web
 
   vars:
     - ansible_python_interpreter: "{{ web_ansible_python_interpreter }}"
-#    - docker_cmd: "--dns 8.8.8.8 -p 80:80 -p 443:443 --net {{ project_name }} -v {{ backend_root_dir }}:{{ backend_root_dir }} -v {{ backend_root_dir }}/share/preview:/var/www/html/app/static/preview --name"
-    - docker_cmd: "-p 8000:8000 -p 80:80 -p 443:443 -v {{ backend_root_dir }}:{{ backend_root_dir }}:z -v {{ backend_root_dir }}/share/preview:/var/www/html/app/static/preview:z --name"
+#    - docker_cmd: "--dns 8.8.8.8 -p 80:80 -p 443:443 --net {{ project_name }} -v {{ core_root_dir }}:{{ core_root_dir }} -v {{ core_root_dir }}/share/preview:/var/www/html/app/static/preview --name"
+    - docker_cmd: "-p 8000:8000 -p 80:80 -p 443:443 -v {{ core_root_dir }}:{{ core_root_dir }}:z -v {{ core_root_dir }}/share/preview:/var/www/html/app/static/preview:z --name"
     - container_name: "{{ project_name }}_web"
   tasks:
-  - name: Getting register to backend dir
+  - name: Getting register to core dir
     stat:
-      path: "{{ backend_root_dir }}/etc/evaluation_system.conf"
-    register: backend
+      path: "{{ core_root_dir }}/etc/evaluation_system.conf"
+    register: core
   - name: Registering systemctl path
     stat:
       path: /usr/bin/systemctl
     register: systemctl
-  - name: Exit if backend does not exist
+  - name: Exit if core does not exist
     fail:
-      msg: "Error: backend not available on machine. The backend hasn't been deployed yet, or wasn't mounted into its expected location: {{backend_root_dir}}"
-    when: backend.stat.exists == false
+      msg: "Error: core not available on machine. The core hasn't been deployed yet, or wasn't mounted into its expected location: {{core_root_dir}}"
+    when: core.stat.exists == false
   - name: Stopping services
     shell: docker stop {{web_name}}; docker rm {{web_name}}; systemctl stop {{ project_name }}; systemctl stop {{project_name}}-web; echo 0
     ignore_errors: yes
@@ -70,13 +70,13 @@
   - name: Adjusting freva_web.conf
     shell:
       chdir: "/tmp/{{project_name}}_web"
-      cmd: "{{ansible_python_interpreter}} create_web_conf.py freva_web.conf freva_web.conf --website={{project_website}} --root-dir={{backend_root_dir}} --project-name={{project_name}} --python=3.9 --alias={{web_server_alias}} --server-name={{web_host}}"
+      cmd: "{{ansible_python_interpreter}} create_web_conf.py freva_web.conf freva_web.conf --website={{project_website}} --root-dir={{core_root_dir}} --project-name={{project_name}} --python=3.9 --alias={{web_server_alias}} --server-name={{web_host}}"
       warn: false
   - name: Build freva_web image
     become: yes
     shell:
       chdir: "/tmp/{{project_name}}_web"
-      cmd: docker build --build-arg=python_version={{python_version}} --build-arg=backend_url={{backend_git_url}} --build-arg=backend_branch={{backend_branch}} --build-arg=build_root=/mnt/{{project_name}}/web_service --build-arg=git_url={{web_git_url}} --build-arg=git_branch={{web_branch}} --build-arg=root_dir={{backend_root_dir}} --build-arg=PROJECT_NAME={{project_name}}  -t {{ container_name }} .
+      cmd: docker build --build-arg=python_version={{python_version}} --build-arg=core_url={{core_git_url}} --build-arg=core_branch={{core_branch}} --build-arg=build_root=/mnt/{{project_name}}/web_service --build-arg=git_url={{web_git_url}} --build-arg=git_branch={{web_branch}} --build-arg=root_dir={{core_root_dir}} --build-arg=PROJECT_NAME={{project_name}}  -t {{ container_name }} .
   - name: Moving temporary build folder to target destination
     become: yes
     shell:
