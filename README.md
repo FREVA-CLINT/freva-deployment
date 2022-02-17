@@ -13,65 +13,29 @@ The code in this repository is used to deploy freva in different computing envir
 On *CentOS* python SELinux libraries need to be installed. If you choose to install ansible via the `install_ansible` you'll have to use `conda` to install libselinux for your CentOS version. For example : `conda install -c conda-forge  libselinux-cos7-x86_64`
 
 # Pre-Requisites
-The main work will be done by [ansible](https://docs.ansible.com/ansible/latest/index.html), hence the system which executes the deployment will need ansible.
+The main work will be done by [ansible](https://docs.ansible.com/ansible/latest/index.html), hence some level of familiarity with ansible is advantagous.
 Since we are using ansible we can use this deployment routine from any \*nix system (like a Mac-book). You do not need to run the depoyment on the machines where things get installed.
 The only requirement is that you have to setup ansible and you can establish ssh connections to the servers.
-## Install ansible on the (local) deployment machine:
-To install ansible you have three different options:
-### Option 1: Installing all required packages via the systems software repository (with admin rights)
+### Installing all required packages via pip
 The following software/packages need to be installed on your system:
 - python3.6+
-- ansible
-- python3 yaml toml packages
-- python3 pymysql packages
-- sshpass
+- pip for python 3
 - libselinux-python3 (on CentOS systems only)
 
 To install the rquired python packages simply execute the following command:
 
 ```bash
-python3 -m pip install -r requirements.txt
+python3 -m pip install git+https://gitlab.dkrz.de/freva/deployment.git
 ```
-### Option 2: Installing ansible to an already existing anaconda environment:
-If you are running an anaconda environment you can simply install ansible into an existing conda environment:
+
+or into userspace
 
 ```bash
-conda install -c conda-forge ansible yaml toml
+python3 -m pip install --user git+https://gitlab.dkrz.de/freva/deployment.git
 ```
-
-or create a new conda environment:
-
-```bash
-conda create -c conda-forge -n freva-deployment -c conda-forge pip conda ansible toml yaml
-```
-
-### Option 3: Creating a local installation of ansible (without admin rights)
-If ansible is not available on your system and/or you don't have sufficient rights to install it, you can install it 
-you can still install it via the `install_ansible` command:
-
-```bash
-python install_ansible --help
-usage: install_ansible [-h] [--shell SHELL]
-                       [--arch {Linux-x86_64,MacOSX-x86_64,Linux-armv7l,Linux-ppc64le,Linux-s390x,Linux-x86,Linux-x86_64,MacOSX-arm64,MacOSX-x86Windows-x86,Windows-x86_64}]
-
-This Programm installs ansible
-
-optional arguments:
-  -h, --help            show this help message and exit
-  --shell SHELL         Shell type (default: bash)
-  --arch {Linux-x86_64,MacOSX-x86_64,Linux-armv7l,Linux-ppc64le,Linux-s390x,Linux-x86,Linux-x86_64,MacOSX-arm64,MacOSX-x86Windows-x86,Windows-x86_64}
-                        The architecture for the current system (default:
-                        Linux-x86_64)
-
-```
-> **_Note:_**: If you're using Windows you will need to have a working anaconda version installed on your machine and need to use the anaconda command prompt to execute the deployment.
-```bash
-python install_ansible; source ./ansible/bin/activate
-```
-instead of sourcing the environment you can also use conda actvate: `conda actviate ./ansible`; if you have conda installed.
 
 This command installs ansible and all required python packages.
-> **_Note:_** On *CentOS* python SELinux libraries need to be installed. If you choose to install ansible via the `install_ansible` you'll have to use `conda` to install libselinux for your CentOS version. For example : `conda install -c conda-forge  libselinux-cos7-x86_64`
+> **_Note:_** On *CentOS* python SELinux libraries need to be installed. You will need to install libselinux for your CentOS version.
 
 ## Installing docker and sudo access to the service servers
 Since the services of MariaDB and Apache Solr will be deployed on docker container images, docker needs to be available on the target servers. Usually installing and running docker requires *root* privileges.
@@ -101,10 +65,10 @@ ansible_python_interpreter=/sw/spack-rhel6/miniforge3-4.9.2-3-Linux-x86_64-pwdbq
 ```
 
 # Running the deployment
-After successful configuration you can run the ansible deployment. This is done via the `deploy` script:
+After successful configuration you can run the ansible deployment. This is done via the `deploy-freva` command:
 
 ```bash
-usage: deploy [-h] [--config CONFIG]
+usage: deploy-freva [-h] [--config CONFIG]
               [--steps {services,web,backend,db,solr,backup} [{services,web,backend,db,solr,backup} ...]]
               [--python PYTHON] [--cert CERT] [--wipe] [--ask-pass]
               project_name
@@ -118,7 +82,7 @@ optional arguments:
   -h, --help            show this help message and exit
   --config CONFIG, -c CONFIG
                         Path to ansible inventory file. (default:
-                        /home/wilfred/workspace/deployment/config/inventory)
+                        /home/wilfred/.config/freva/deployment/inventory.toml)
   --steps {services,web,backend,db,solr,backup} [{services,web,backend,db,solr,backup} ...]
                         The services/code stack to be deployed (default: ['services', 'web',
                         'backend'])
