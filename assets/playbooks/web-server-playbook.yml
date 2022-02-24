@@ -10,26 +10,26 @@
     register: logo
   - name: Creating share directory
     shell:
-      cmd: mkdir -p "{{core_root_dir}}/share/freva/web"
+      cmd: mkdir -p "{{core_root_dir}}/freva/web"
       warn: false
   - name: Copy the logo if exists
     copy:
       src: "{{ web_institution_logo }}"
-      dest: "{{core_root_dir}}/share/freva/web/logo.{{web_institution_logo_suffix}}"
+      dest: "{{core_root_dir}}/freva/web/logo.{{web_institution_logo_suffix}}"
     when: logo.stat.exists == true
   - name: Adding freva web config to the core structure
-    copy: src={{ web_config_file }} dest={{ core_root_dir }}/share/freva/web/freva_web_conf.toml
+    copy: src={{ web_config_file }} dest={{ core_root_dir }}/freva/web/freva_web_conf.toml
 
 - hosts: web
 
   vars:
     - ansible_python_interpreter: "{{ web_ansible_python_interpreter }}"
-    - docker_cmd: "-p 8000:8000 -p 80:80 -p 443:443 -v {{ core_root_dir }}:{{ core_root_dir }}:z -v {{ core_root_dir }}/share/preview:/var/www/html/app/static/preview:z --name"
+    - docker_cmd: "-p 8000:8000 -p 80:80 -p 443:443 -v /mnt/{{project_name}}/web_service:/srv/http:z -v {{ core_root_dir }}:{{ core_root_dir }}:z -v {{ core_root_dir }}/share/preview:/srv/http/static/preview:z --name"
     - container_name: "{{ project_name }}_web"
   tasks:
   - name: Getting register to core dir
     stat:
-      path: "{{ core_root_dir }}/etc/evaluation_system.conf"
+      path: "{{ core_root_dir }}/freva/evaluation_system.conf"
     register: core
   - name: Registering systemctl path
     stat:
@@ -40,7 +40,7 @@
       msg: "Error: core not available on machine. The core hasn't been deployed yet, or wasn't mounted into its expected location: {{core_root_dir}}"
     when: core.stat.exists == false
   - name: Stopping services
-    shell: docker stop {{web_name}}; docker rm {{web_name}}; systemctl stop {{ project_name }}; systemctl stop {{project_name}}-web; echo 0
+    shell: docker stop {{container_name}}; docker rm {{container_name}}; systemctl stop {{ project_name }}; systemctl stop {{project_name}}-web; echo 0
     ignore_errors: yes
     become: yes
   - name: Creating docker network
@@ -66,10 +66,12 @@
       - "docker_cmd.sh"
       - "freva_web.conf"
       - "create_web_conf.py"
+      - "add-aur.sh"
+      - "setup_web.sh"
   - name: Adjusting freva_web.conf
     shell:
       chdir: "/tmp/{{project_name}}_web"
-      cmd: "{{ansible_python_interpreter}} create_web_conf.py freva_web.conf freva_web.conf --website={{project_website}} --root-dir={{core_root_dir}} --project-name={{project_name}} --python=3.9 --alias={{web_server_alias}} --server-name={{web_host}}"
+      cmd: "{{ansible_python_interpreter}} create_web_conf.py freva_web.conf freva_web.conf --website={{web_project_website}} --root-dir={{core_root_dir}} --project-name={{project_name}} --alias={{web_server_alias}} --server-name={{web_host}}"
       warn: false
   - name: Build freva_web image
     become: yes
@@ -86,7 +88,7 @@
     shell: "docker run -d {{docker_cmd}} {{container_name}} {{container_name}}"
   - name: Copy systemd files
     copy:
-      src: "{{ root_dir }}/{{ item }}"
+      src: "{{ asset_dir }}/scripts/{{ item }}"
       dest: /tmp/{{ item }}
       mode: '0755'
     with_items:
@@ -97,9 +99,11 @@
     shell: "cat /tmp/systemd.service|sed 's#%CONTAINER#{{ container_name }}#g'|sed 's#%PROJECT#{{ project_name }}#g' > /tmp/tmp_db && mv /tmp/tmp_db /etc/systemd/system/{{ project_name }}-web.service && /tmp/create_systemd.sh {{project_name}}-web"
     when: systemctl.stat.exists == true
   - pause: seconds=5
+  - name: Building django page
+    become: yes
+    shell: docker exec -it {{container_name}} /bin/bash /tmp/setup_web.sh {{root_passwd}} {{web_admin}}
   - name: Deleting tmporary files
     shell:
       cmd: rm -r /tmp/{{project_name}}_web
       warn: false
     become: yes
-    when: wipe == true

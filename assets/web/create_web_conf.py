@@ -29,7 +29,7 @@ def parse_args(argv=None):
     return args
 
 def edit_config(args,
-        project_root='/var/www/html/app',
+        project_root='/srv/http',
         variables=('website',
                    'root_dir',
                    'project_name',

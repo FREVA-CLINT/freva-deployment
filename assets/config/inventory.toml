@@ -69,17 +69,22 @@ mem = "4g"
 ## List of user(s) that can alter the configuration of the freva cmd line interface
 ## If blank, the user that runs the deployment is chosen
 admins = ""
-## The path where the core should be INSTALLED, leave blank if you have
-## already an installed instance but just need configuration.
+## The path where the core should be installed
 install_dir=""
+## The directory where the project configuration files will be stored, leave
+## blank to use the same directory as `install_dir`
+root_dir = ""
+## If you which not to install a core instance but only configure one set the
+## install variable to false. This can be useful if you have a central instance
+## of freva deployed and want to setup a project specific configuration that
+## uses this central instance
+install = true
 ## The url to the git repository of the evaluation_system
 git_url = "https://gitlab.dkrz.de/freva/evaluation_system.git"
 ## Which branch of the evaluation_system should be deployed
 branch = "freva-dev"
 ## The directory where the user specific output will be stored
 base_dir_location = ""
-## The directory where the project configuration files will be stored
-root_dir = ""
 # Set the target architecutre of the system where the backend will be installed
 # to. You can choose from the following options:
 # Linux-x86_64 (default), Linux-aarch64, Linux-ppc64le, Linux-s390x, MacOSX-x86_64
