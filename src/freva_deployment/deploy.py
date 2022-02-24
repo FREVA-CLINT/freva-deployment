@@ -28,7 +28,6 @@ class DeployFactory:
     inventory_file = None
     step_order: tuple[str, ...] = ("db", "vault", "solr", "core", "web", "backup")
     _steps_with_cert: tuple[str, ...] = ("db", "vault", "core", "web")
-    _allow_empty: tuple[str] = ("install_dir",)
 
     @property
     def private_key_file(self) -> str:
@@ -77,17 +76,22 @@ class DeployFactory:
 
     def _prep_core(self):
         """prepare the core deployment."""
-        self.cfg["core"]["config"].setdefault("install_dir", "")
         self.cfg["core"]["config"].setdefault("admins", getuser())
-        self.cfg["core"]["config"].setdefault("branch", "master")
+        self.cfg["core"]["config"].setdefault("branch", "freva-dev")
+        install_dir = self.cfg["core"]["config"]["install_dir"]
+        self.cfg["core"]["config"].setdefault("root_dir", install_dir)
         self.cfg["core"]["config"]["keyfile"] = self.public_key_file
         self.cfg["core"]["config"]["private_keyfile"] = self.private_key_file
 
     def _prep_web(self):
         """prepare the web deployment."""
-        self.cfg["web"]["config"].setdefault("admins", getuser())
         self.cfg["web"]["config"].setdefault("branch", "master")
         self._prep_core()
+        admin = self.cfg["core"]["config"]["admins"]
+        if not isinstance(admin, str):
+           self.cfg["web"]["config"]["admin"] = admin[0]
+        else:
+           self.cfg["web"]["config"]["admin"] = admin
         _webserver_items = {}
         web_conf = Path(self._td.name) / "freva_web.toml"
         web_conf = Path("freva_web.toml")
@@ -105,18 +109,18 @@ class DeployFactory:
                 _webserver_items["homepage_text"] = f.read()
         except Exception:
             pass
-        logo = Path(self.cfg["web"]["config"].get("web_institution_logo", ""))
-        alias = self.cfg["web"]["config"].pop("web_server_alias", [])
+        logo = Path(self.cfg["web"]["config"].get("institution_logo", ""))
+        alias = self.cfg["web"]["config"].pop("server_alias", [])
         if isinstance(alias, str):
             alias = alias.split(",")
         alias = ",".join([a for a in alias if a.strip()])
         if not alias:
             alias = "none"
-        self.cfg["web"]["config"]["web_server_alias"] = alias
+        self.cfg["web"]["config"]["server_alias"] = alias
         web_host = self.cfg["web"]["hosts"]
         if web_host == "127.0.0.1":
             web_host = "localhost"
-        self.cfg["web"]["config"]["web_host"] = web_host
+        self.cfg["web"]["config"]["host"] = web_host
         _webserver_items["INSTITUTION_LOGO"] = f"logo{logo.suffix}"
         try:
             with Path(_webserver_items["ABOUT_US_TEXT"]).open() as f:
@@ -131,9 +135,12 @@ class DeployFactory:
             toml.dump(_webserver_items, f)
         for key in ("core", "web"):
             logo_suffix = logo.suffix or ".png"
-            self.cfg[key]["config"]["web_config_file"] = str(web_conf.absolute())
-            self.cfg[key]["config"]["web_institution_logo"] = str(logo.absolute())
-            self.cfg[key]["config"]["web_institution_logo_suffix"] = logo_suffix
+            self.cfg[key]["config"]["config_file"] = str(web_conf.absolute())
+            self.cfg[key]["config"]["institution_logo"] = str(logo.absolute())
+            self.cfg[key]["config"]["institution_logo_suffix"] = logo_suffix
+        if self.master_pass is None:
+            self.master_pass = get_passwd()
+        self.cfg["web"]["config"]["root_passwd"] = self.master_pass
 
     def _prep_backup(self):
         """Prepare the config for the backup step."""
@@ -215,7 +222,6 @@ class DeployFactory:
                     not value
                     and not key.startswith("admin")
                     and not isinstance(value, bool)
-                    and key not in self._allow_empty
                 ):
                     raise ValueError(f"{key} in {section} is empty in {self._inv_tmpl}")
 
@@ -269,12 +275,11 @@ class DeployFactory:
         if dump_file:
             config[step]["vars"][f"{step}_dump"] = str(dump_file)
 
-    def parse_config(self) -> str:
+    def parse_config(self) -> tuple[str, str]:
         """Create config files for anisble and evaluation_system.conf."""
         logger.info("Parsing configurations")
         self.check_config()
         config = {}
-        project_name = self.project_name.replace("-", "_")
         for step in self.steps:
             config[step] = {}
             config[step]["hosts"] = self.cfg[step]["hosts"]
@@ -285,11 +290,12 @@ class DeployFactory:
                 else:
                     new_key = key
                 config[step]["vars"][new_key] = value
-            config[step]["vars"]["project_name"] = project_name
+            config[step]["vars"]["project_name"] = self.project_name
             # Add additional keys
             self._set_additional_config_values(step, config)
         if "db" in self.steps:
             config.update(self._add_local_config(config["db"]["vars"]))
+
         return yaml.dump(config)
 
     def _create_sql_dump(self):
@@ -425,7 +431,13 @@ USE {db};
         inventory = self.parse_config()
         with self.inventory_file.open("w") as f:
             f.write(inventory)
-        Console().print(inventory, style="red", markup=True)
+        if self.master_pass:
+            inventory_str = inventory.replace(
+                    self.master_pass, "*"*len(self.master_pass)
+            )
+        else:
+            inventory_str = inventory
+        Console().print(inventory_str, style="bold", markup=True)
         logger.info("Playing the playbooks with ansible")
         cmd = f"ansible-playbook -i {self.inventory_file} {self.dump_playbook}"
         if self.ask_pass:
