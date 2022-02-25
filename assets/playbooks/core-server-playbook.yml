@@ -36,7 +36,7 @@
     when: (core_install is true)
   - name: Configuring evaluation_system
     shell:
-      cmd: $PYTHON3 deploy.py {{ core_install_dir }} -s --python {{python_version}} --arch {{core_arch}} --no-conda
+      cmd: $PYTHON3 deploy.py {{ core_install_dir }} -s --arch {{core_arch}} --no-conda
       chdir: /tmp/evaluation_system
     environment:
         PYTHON3: "{{ ansible_python_interpreter }}"

@@ -4,17 +4,17 @@ import json
 import tomlkit
 import npyscreen
 from pathlib import Path
+import time
 import threading
-from .base import logger, selectFile
-from .deploy_forms import WebScreen, DBScreen, SolrScreen, CoreScreen, RunForm
 
+from .base import selectFile
+from .deploy_forms import WebScreen, DBScreen, SolrScreen, CoreScreen, RunForm
 from freva_deployment.utils import asset_dir, config_dir
 
 
 class MainApp(npyscreen.NPSAppManaged):
-    def onStart(self):
-        # When Application starts, set up the Forms that will be used.
-        # These two forms are persistent between each edit.
+    def onStart(self) -> None:
+        """When Application starts, set up the Forms that will be used."""
         self.cache_dir.mkdir(exist_ok=True, parents=True)
         self.steps = []
         self.setup = {}
@@ -34,19 +34,15 @@ class MainApp(npyscreen.NPSAppManaged):
         self._save_thread = threading.Thread(target=self._auto_save)
         # self._save_thread.start()
 
-    def _add_froms(self):
-
-        self._forms["core"] = self.addForm(
-            "MAIN",
-            CoreScreen,
-            name="Core deployment",
-        )
+    def _add_froms(self) -> None:
+        """Add forms to edit the deploy steps to the main window."""
+        self._forms["core"] = self.addForm("MAIN", CoreScreen, name="Core deployment",)
         self._forms["web"] = self.addForm("SECOND", WebScreen, name="Web deployment")
         self._forms["db"] = self.addForm("THIRD", DBScreen, name="Database deployment")
         self._forms["solr"] = self.addForm("FOURTH", SolrScreen, name="Solr deployment")
         self._setup_form = self.addForm("SETUP", RunForm, name="Apply the Deployment")
 
-    def exit_application(self, *args, **kwargs):
+    def exit_application(self, *args, **kwargs) -> None:
         value = npyscreen.notify_ok_cancel(
             kwargs.get("msg", "Exit Application?"), title=""
         )
@@ -55,7 +51,7 @@ class MainApp(npyscreen.NPSAppManaged):
             self.editing = False
             self.switchFormNow()
 
-    def change_form(self, name):
+    def change_form(self, name: str) -> None:
         # Switch forms.  NB. Do *not* call the .edit() method directly (which
         # would lead to a memory leak and ultimately a recursion error).
         # Instead, use the method .switchForm to change forms.
@@ -68,7 +64,7 @@ class MainApp(npyscreen.NPSAppManaged):
     def check_missing_config(self, stop_at_missing: bool = True) -> str | None:
         """Evaluate all forms."""
         for step, form_obj in self._forms.items():
-            cfg = form_obj.get_config()
+            cfg = form_obj.check_config()
             if cfg is None and stop_at_missing:
                 return self._steps_lookup[step]
             if form_obj.use.value:
@@ -84,24 +80,26 @@ class MainApp(npyscreen.NPSAppManaged):
             try:
                 self.check_missing_config(stop_at_missing=False)
                 self.save_config_to_file()
-            except Exception as e:
+            except Exception:
                 pass
 
-    def save_dialog(self):
+    def save_dialog(self) -> None:
+        """Careate a dialoge that allows for saving the config file."""
 
         the_selected_file = selectFile(
             select_dir=False, must_exist=False, file_extentions=[".toml"]
         )
         if the_selected_file:
             self._setup_form.inventory_file.value = the_selected_file
-            self.save_config_to_file()
+            self.save_config_to_file(write_toml_file=True)
 
-    def _update_config(self, config_file):
+    def _update_config(self, config_file: Path | str) -> None:
+        """Update the maindow after a new configuration has been loaded."""
 
         try:
             with open(config_file) as f:
                 self.config = tomlkit.load(f)
-        except Exception as e:
+        except Exception:
             return
         self.resetHistory()
         self.editing = True
@@ -109,7 +107,8 @@ class MainApp(npyscreen.NPSAppManaged):
         self._add_froms()
         self._setup_form.inventory_file.value = config_file
 
-    def load_dialog(self):
+    def load_dialog(self) -> None:
+        """Careate a dialoge that allows for loading a config file."""
 
         the_selected_file = selectFile(
             select_dir=False, must_exist=True, file_extentions=[".toml"]
@@ -151,7 +150,7 @@ class MainApp(npyscreen.NPSAppManaged):
         try:
             with open(asset_dir / "config" / "inventory.toml") as f:
                 config_tmpl = tomlkit.load(f)
-        except Exception as e:
+        except Exception:
             config_tmpl = self.config.copy()
         for step, settings in self.config.items():
             config_tmpl[step]["hosts"] = settings["hosts"]
@@ -168,7 +167,9 @@ class MainApp(npyscreen.NPSAppManaged):
         """The user cachedir."""
         return Path(appdirs.user_cache_dir()) / "freva-deployment"
 
-    def _read_cache(self, key, default=""):
+    def _read_cache(
+        self, key: str, default: str | list | bool = ""
+    ) -> str | bool | list:
         try:
             with open(self.cache_dir / "freva_deployment.json", "r") as f:
                 return json.load(f).get(key, default)
@@ -176,16 +177,18 @@ class MainApp(npyscreen.NPSAppManaged):
             return default
 
     @property
-    def _steps(self):
-
+    def _steps(self) -> str:
+        """Read the deployment-steps from the cache."""
         return self._read_cache("steps", [])
 
     @property
-    def cert_file(self):
+    def cert_file(self) -> str:
+        """Read the certificate file from the cache."""
         return self._read_cache("cert_file", "")
 
     @property
-    def save_file(self):
+    def save_file(self) -> str:
+        """Read the file that stores the configuration from the cache."""
         fall_back = config_dir / "inventory.toml"
         return self._read_cache("save_file", str(fall_back))
 

@@ -73,6 +73,8 @@ class DeployFactory:
     def _prep_core(self):
         """prepare the core deployment."""
         self.cfg["core"]["config"].setdefault("admins", getuser())
+        if not self.cfg["core"]["config"]["admins"]:
+            self.cfg["core"]["config"]["admins"] = getuser()
         self.cfg["core"]["config"].setdefault("branch", "freva-dev")
         install_dir = self.cfg["core"]["config"]["install_dir"]
         self.cfg["core"]["config"].setdefault("root_dir", install_dir)
@@ -156,12 +158,12 @@ class DeployFactory:
     def __exit__(self, type, value, traceback):
         self._td.cleanup()
 
-    def _read_cfg(self, cfg_file):
+    def _read_cfg(self):
         try:
-            with cfg_file.open() as f:
+            with self._inv_tmpl.open() as f:
                 return toml.load(f)
         except FileNotFoundError:
-            raise FileNotFoundError(f"No such file {cfg_file}")
+            raise FileNotFoundError(f"No such file {self._inv_tmpl}")
 
     @property
     def git_url(self):
@@ -371,9 +373,9 @@ USE {db};
         self._steps = steps
         self.wipe = wipe
         self._cert_file = cert_file
-        self._inv_tmpl = config_file
+        self._inv_tmpl = Path(config_file or config_dir / "inventory.toml")
         self._cfg_tmpl = self.aux_dir / "evaluation_system.conf.tmpl"
-        self.cfg = self._read_cfg(self._inv_tmpl or config_dir / "inventory.toml")
+        self.cfg = self._read_cfg()
         _inventory = self.inventory_file or NamedTemporaryFile().name
         self.inventory_file = Path(_inventory).with_suffix(".yaml")
 

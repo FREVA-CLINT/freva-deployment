@@ -1,8 +1,9 @@
 from __future__ import annotations
-from functools import partial
 import os
 from pathlib import Path
-import npyscreen, curses
+
+import curses
+import npyscreen
 import logging
 
 
@@ -11,15 +12,22 @@ logger: logging.Logger = logging.getLogger("deploy-freva-tui")
 
 
 class FileSelector(npyscreen.FileSelector):
-    def __init__(self, *args, file_extentions=[".toml"], **kwargs):
+    """FileSelector widget that allows for filtering file extensions."""
+
+    file_extentions: list[str]
+    """List of allowed file extensions."""
+
+    def __init__(
+        self, *args, file_extentions: str | list[str] = [".toml"], **kwargs
+    ) -> None:
 
         if isinstance(file_extentions, str):
-            file_extentions = [file_extentions]
-        self.file_extentions = file_extentions
-        # self.how_exited_handers[npyscreen.wgwidget.EXITED_ESCAPE] = self.exit_editing
+            self.file_extentions = [file_extentions]
+        else:
+            self.file_extentions = file_extentions
         super().__init__(*args, **kwargs)
 
-    def update_grid(self):
+    def update_grid(self) -> None:
         if self.value:
             self.value = os.path.expanduser(self.value)
         if not os.path.exists(self.value):
@@ -62,7 +70,7 @@ class FileSelector(npyscreen.FileSelector):
         self.display()
 
 
-def selectFile(starting_value=None, *args, **keywords):
+def selectFile(starting_value: str = "", *args, **keywords):
     F = FileSelector(*args, **keywords)
     F.set_colors()
     F.wCommand.show_bold = True
@@ -84,12 +92,15 @@ class BaseForm(npyscreen.FormMultiPageWithMenus, npyscreen.FormWithMenus):
     """Base class for forms."""
 
     def get_host(self, key) -> str:
+        """Read the host name(s) from the main windows config."""
         host = self.parentApp.config[key]["hosts"]
         if isinstance(host, str):
             host = [v.strip() for v in host.split(",") if v.strip()]
         return ",".join(host)
 
-    def get_config(self):
+    def check_config(
+        self,
+    ) -> dict[str, str | dict[str, str | list | int | bool | None]]:
         """Check if the from entries are valid."""
         config = {}
         for key, (obj, mandatory) in self.input_fields.items():
@@ -97,11 +108,13 @@ class BaseForm(npyscreen.FormMultiPageWithMenus, npyscreen.FormWithMenus):
                 value = obj.values[obj.value]
             except AttributeError:
                 value = obj.value
-            if isinstance(value, str) and mandatory:
-                if not value and self.use.value:
+            if isinstance(value, str):
+                if not value and self.use.value and mandatory:
                     msg = f"MISSING ENTRY FOR: {obj.name}"
                     npyscreen.notify_confirm(msg, title="ERROR")
                     return
+                elif not value and not mandatory:
+                    continue
             config[key] = value
         cfg = dict(hosts=config.pop("hosts"))
         cfg["config"] = config
@@ -110,7 +123,8 @@ class BaseForm(npyscreen.FormMultiPageWithMenus, npyscreen.FormWithMenus):
                 cfg["config"][key] = value.split(",")
         return cfg
 
-    def draw_form(self):
+    def draw_form(self) -> None:
+        """Overload the draw_from method from, this is done to add menus."""
         super().draw_form()
         menus = [
             " " + self.__class__.MENU_KEY + ":Main Menu ",
@@ -131,7 +145,8 @@ class BaseForm(npyscreen.FormMultiPageWithMenus, npyscreen.FormWithMenus):
                 self.columns - X - 1,
             )
 
-    def change_forms(self, *args, **keywords):
+    def change_forms(self, *args, **keywords) -> None:
+        """Cycle between the deployment config forms."""
         name = self.name.lower()
         keys = self.parentApp._steps_lookup.keys()
         steps = list(self.parentApp._steps_lookup.values())
@@ -144,15 +159,16 @@ class BaseForm(npyscreen.FormMultiPageWithMenus, npyscreen.FormWithMenus):
         self.parentApp.current_form = "core"
         self.parentApp.change_form("MAIN")
 
-    def whenDisplayText(self, argument):
-        npyscreen.notify_confirm(argument)
+    # def whenDisplayText(self, argument):
+    #    npyscreen.notify_confirm(argument)
 
-    def run_deployment(self, *args):
-
+    def run_deployment(self, *args) -> None:
+        """Switch to the deployment setup form."""
         self.parentApp.current_form = self.name
         self.parentApp.change_form("SETUP")
 
-    def create(self):
+    def create(self) -> None:
+        """Setup the form."""
         self.how_exited_handers[
             npyscreen.wgwidget.EXITED_ESCAPE
         ] = self.parentApp.exit_application

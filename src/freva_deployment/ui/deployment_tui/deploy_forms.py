@@ -1,9 +1,7 @@
 from __future__ import annotations
-import curses
+from getpass import getuser
 import npyscreen
-from tempfile import NamedTemporaryFile
 from pathlib import Path
-import toml
 
 from .base import BaseForm, logger
 from freva_deployment import AVAILABLE_PYTHON_VERSIONS, AVAILABLE_CONDA_ARCHS
@@ -12,9 +10,9 @@ from freva_deployment import AVAILABLE_PYTHON_VERSIONS, AVAILABLE_CONDA_ARCHS
 class CoreScreen(BaseForm):
     """Form for the core deployment configuration."""
 
-    step = "core"
+    step: str = "core"
 
-    def _add_widgets(self):
+    def _add_widgets(self) -> None:
         """Add widgets to the screen."""
         cfg = self.parentApp.config["core"]["config"]
         self.list_keys = []
@@ -55,6 +53,18 @@ class CoreScreen(BaseForm):
                 ),
                 True,
             ),
+            install=(
+                self.add(
+                    npyscreen.CheckBox,
+                    max_height=2,
+                    value=cfg.get("install", True),
+                    editable=True,
+                    name=("Install a new instance of the core, or just add a new "
+                          "configuration."),
+                    scroll_exit=True,
+                ),
+                True
+            ),
             root_dir=(
                 self.add(
                     npyscreen.TitleFilename,
@@ -73,6 +83,14 @@ class CoreScreen(BaseForm):
                     value=cfg.get("base_dir_location", ""),
                 ),
                 True,
+            ),
+            admins=(
+                self.add(
+                    npyscreen.TitleText,
+                    name="Set the admin user(s) - comma separated",
+                    value=cfg.get("admins", getuser())
+            ),
+            False,
             ),
             python_version=(
                 self.add(
@@ -117,9 +135,9 @@ class CoreScreen(BaseForm):
 class WebScreen(BaseForm):
     """Form for the web deployment configuration."""
 
-    step = "web"
+    step: str = "web"
 
-    def _add_widgets(self):
+    def _add_widgets(self) -> None:
         """Add widgets to the screen."""
         self.list_keys = "contacts", "address", "auth_ldap_server_uri", "scheduler_host"
         cfg = self.parentApp.config["web"]["config"]
@@ -261,7 +279,10 @@ class WebScreen(BaseForm):
             auth_ldap_server_uri=(
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
-                    name="Ldap server name(s) used for authentication - comma separated",
+                    name=(
+                        "Ldap server name(s) used for authentication - comma "
+                        "separated"
+                    ),
                     value=",".join(
                         cfg.get(
                             "auth_ldap_server_uri",
@@ -294,8 +315,7 @@ class WebScreen(BaseForm):
                     npyscreen.TitleText,
                     name="Ldap search keys for group base",
                     value=cfg.get(
-                        "ldap_group_base",
-                        "cn=groups,cn=accounts,dc=dkrz,dc=de",
+                        "ldap_group_base", "cn=groups,cn=accounts,dc=dkrz,dc=de",
                     ),
                 ),
                 True,
@@ -341,9 +361,9 @@ class WebScreen(BaseForm):
 class DBScreen(BaseForm):
     """Form for the core deployment configuration."""
 
-    step = "db"
+    step: str = "db"
 
-    def _add_widgets(self):
+    def _add_widgets(self) -> None:
         """Add widgets to the screen."""
         self.list_keys = []
         cfg = self.parentApp.config["db"]["config"]
@@ -395,9 +415,9 @@ class DBScreen(BaseForm):
 class SolrScreen(BaseForm):
     """Form for the solr deployment configuration."""
 
-    step = "solr"
+    step: str = "solr"
 
-    def _add_widgets(self):
+    def _add_widgets(self) -> None:
         """Add widgets to the screen."""
         self.list_keys = []
         cfg = self.parentApp.config["solr"]["config"]
@@ -456,17 +476,20 @@ class SolrScreen(BaseForm):
 
 
 class RunForm(npyscreen.FormMultiPageAction):
-    def on_ok(self):
+    """Definition of the form that applies the actual deployment."""
+
+    def on_ok(self) -> None:
+        """Define what happens once the `ok` for applying the deployment is hit."""
         if not self.project_name.value:
             npyscreen.notify_confirm("You have to set a project name", title="ERROR")
             return
-        missing_form = self.parentApp.check_missing_config()
+        missing_form: None | str = self.parentApp.check_missing_config()
         if missing_form:
             msg = f"You have a missing parameter: {missing_form}"
             npyscreen.notify_confirm(msg, title="ERROR")
             self.parentApp.change_form(missing_form)
             return
-        cert_file = self.cert_file.value or ""
+        cert_file: str = self.cert_file.value or ""
         if cert_file:
             if not Path(cert_file).exists() or not Path(cert_file).is_file():
                 msg = f"Public certificate file `{cert_file}` must exist or empty."
@@ -474,18 +497,18 @@ class RunForm(npyscreen.FormMultiPageAction):
                 return
         self.parentApp._thread_stop.set()
         save_file = self.parentApp.save_config_to_file(write_toml_file=True)
-        steps = ",".join(set(self.parentApp.steps))
         self.parentApp.setup = {
             "project_name": self.project_name.value,
             "steps": list(set(self.parentApp.steps)),
-            "config": str(save_file) or None,
+            "config_file": str(save_file) or None,
             "cert_file": str(cert_file) or None,
             "wipe": bool(self.wipe.value),
-            "ask-pass": bool(self.use_ssh_pw.value),
+            "ask_pass": bool(self.use_ssh_pw.value),
         }
         self.parentApp.exit_application(msg="Do you want to continue?")
 
-    def on_cancel(self):
+    def on_cancel(self) -> None:
+        """Define what happens after the the cancel button is hit."""
         name = self.parentApp.current_form.lower()
         for step, form_name in self.parentApp._steps_lookup.items():
             if name.startswith(step):
@@ -494,13 +517,15 @@ class RunForm(npyscreen.FormMultiPageAction):
                 return
         self.parentApp.change_form("MAIN")
 
-    def create(self):
+    def create(self) -> None:
+        """Custom definitions executed when the from gets created."""
         self.how_exited_handers[
             npyscreen.wgwidget.EXITED_ESCAPE
         ] = self.parentApp.exit_application
         self._add_widgets()
 
-    def _add_widgets(self):
+    def _add_widgets(self) -> None:
+        """Add the widgets to the form."""
 
         wipe = self.parentApp._read_cache("wipe", False)
         ssh_pw = self.parentApp._read_cache("ssh_pw", True)
