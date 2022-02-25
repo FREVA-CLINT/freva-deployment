@@ -33,16 +33,17 @@ def get_passwd(min_characters: int = 8) -> str:
     str: The password
     """
     logger.info("Creating Password")
+    msg = ""
     while True:
         try:
-            return _create_passwd(min_characters)
+            return _create_passwd(min_characters, msg)
         except ValueError as e:
-            logger.error(e.__str__())
+            msg = e.__str__() + " Re-enter password\n:"
 
 
-def _create_passwd(min_characters: int) -> str:
+def _create_passwd(min_characters: int, msg: str = "") -> str:
     """Create passwords."""
-    master_pass = getpass(password_prompt)
+    master_pass = getpass(msg or password_prompt)
     is_ok = len(master_pass) > min_characters
     for check in ("[a-z]", "[A-Z]", "[0-9]"):
         if not re.search(check, master_pass):
