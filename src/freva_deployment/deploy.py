@@ -14,11 +14,7 @@ from rich.console import Console
 import toml
 import yaml
 
-from .utils import (asset_dir,
-                    config_dir,
-                    create_self_signed_cert,
-                    get_passwd,
-                    logger)
+from .utils import asset_dir, config_dir, create_self_signed_cert, get_passwd, logger
 
 
 class DeployFactory:
@@ -89,9 +85,9 @@ class DeployFactory:
         self._prep_core()
         admin = self.cfg["core"]["config"]["admins"]
         if not isinstance(admin, str):
-           self.cfg["web"]["config"]["admin"] = admin[0]
+            self.cfg["web"]["config"]["admin"] = admin[0]
         else:
-           self.cfg["web"]["config"]["admin"] = admin
+            self.cfg["web"]["config"]["admin"] = admin
         _webserver_items = {}
         web_conf = Path(self._td.name) / "freva_web.toml"
         web_conf = Path("freva_web.toml")
@@ -266,7 +262,6 @@ class DeployFactory:
         config[step]["vars"][f"{step}_name"] = f"{self.project_name}_{step}"
         config[step]["vars"]["asset_dir"] = str(asset_dir)
         config[step]["vars"]["user"] = getuser()
-        config[step]["vars"]["python_version"] = self.python_version
         config[step]["vars"]["wipe"] = self.wipe
         config[step]["vars"][f"{step}_ansible_python_interpreter"] = self.cfg[step][
             "config"
@@ -285,7 +280,7 @@ class DeployFactory:
             config[step]["hosts"] = self.cfg[step]["hosts"]
             config[step]["vars"] = {}
             for key, value in self.cfg[step]["config"].items():
-                if key not in ("root_passwd", ):
+                if key not in ("root_passwd",):
                     new_key = f"{step}_{key}"
                 else:
                     new_key = key
@@ -366,7 +361,6 @@ USE {db};
         project_name: str,
         steps: list[str] = ["services", "core", "web"],
         cert_file: str | None = None,
-        python_version: str = "3.10",
         config_file: Path | str | None = None,
         ask_pass: bool = False,
         wipe: bool = False,
@@ -377,7 +371,6 @@ USE {db};
         self._steps = steps
         self.wipe = wipe
         self._cert_file = cert_file
-        self.python_version = python_version
         self._inv_tmpl = config_file
         self._cfg_tmpl = self.aux_dir / "evaluation_system.conf.tmpl"
         self.cfg = self._read_cfg(self._inv_tmpl or config_dir / "inventory.toml")
@@ -399,10 +392,12 @@ USE {db};
     def create_eval_config(self) -> None:
         """Create and dump the evaluation_systme.config."""
         logger.info("Creating evaluation_system.conf")
-        keys = (("core", "admins"),
-                ("web", "project_website"),
-                ("core", "root_dir"),
-                ("core", "base_dir_location"))
+        keys = (
+            ("core", "admins"),
+            ("web", "project_website"),
+            ("core", "root_dir"),
+            ("core", "base_dir_location"),
+        )
         server_keys = ("core", "port")
         cfg_file = asset_dir / "config" / "evaluation_system.conf.tmpl"
         with cfg_file.open() as f:
@@ -433,7 +428,7 @@ USE {db};
             f.write(inventory)
         if self.master_pass:
             inventory_str = inventory.replace(
-                    self.master_pass, "*"*len(self.master_pass)
+                self.master_pass, "*" * len(self.master_pass)
             )
         else:
             inventory_str = inventory

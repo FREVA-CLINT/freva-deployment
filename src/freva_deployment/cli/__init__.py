@@ -33,9 +33,6 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
         help="The services/code stack to be deployed",
     )
     ap.add_argument(
-        "--python", type=str, default="3.10", help="Python version to be used"
-    )
-    ap.add_argument(
         "--cert",
         "--cert_file",
         "--cert-file",
@@ -48,8 +45,10 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
         "--wipe",
         action="store_true",
         default=False,
-        help=("This option will empty any pre-existing folders/docker volumes. "
-              "(Useful for a truely fresh start)")
+        help=(
+            "This option will empty any pre-existing folders/docker volumes. "
+            "(Useful for a truely fresh start)"
+        ),
     )
     ap.add_argument(
         "--ask-pass",
@@ -74,14 +73,13 @@ def cli(argv: list[str] | None = None) -> None:
     """Run the command line interface."""
     args = parse_args(argv)
     with DeployFactory(
-                        args.project_name,
-                        steps=args.steps,
-                        cert_file=args.cert,
-                        python_version=args.python,
-                        config_file=args.config,
-                        ask_pass=args.ask_pass,
-                        wipe=args.wipe
-                        ) as DF:
+        args.project_name,
+        steps=args.steps,
+        cert_file=args.cert,
+        config_file=args.config,
+        ask_pass=args.ask_pass,
+        wipe=args.wipe,
+    ) as DF:
         DF.play()
 
 

@@ -1,4 +1,3 @@
-
 from .main_window import MainApp
 
 
@@ -9,3 +8,5 @@ def tui() -> None:
         main_app.run()
     except KeyboardInterrupt:
         pass
+    if main_app.setup:
+        print(main_app.setup)

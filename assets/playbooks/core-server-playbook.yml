@@ -28,7 +28,7 @@
       - "{{ core_root_dir }}/freva/evaluation_system.conf"
   - name: Deploying evaluation_system
     shell:
-      cmd: $PYTHON3 deploy.py {{ core_install_dir }} -s --python {{python_version}} --arch {{core_arch}}
+      cmd: $PYTHON3 deploy.py {{ core_install_dir }} -s --python {{core_python_version}} --arch {{core_arch}}
       chdir: /tmp/evaluation_system
     environment:
         PYTHON3: "{{ ansible_python_interpreter }}"

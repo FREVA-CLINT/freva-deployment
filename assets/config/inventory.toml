@@ -85,6 +85,8 @@ git_url = "https://gitlab.dkrz.de/freva/evaluation_system.git"
 branch = "freva-dev"
 ## The directory where the user specific output will be stored
 base_dir_location = ""
+# Set the anaconda python version that should be deployed
+python_version = "3.10"
 # Set the target architecutre of the system where the backend will be installed
 # to. You can choose from the following options:
 # Linux-x86_64 (default), Linux-aarch64, Linux-ppc64le, Linux-s390x, MacOSX-x86_64

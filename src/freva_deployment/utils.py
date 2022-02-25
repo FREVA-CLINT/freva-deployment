@@ -13,9 +13,11 @@ logger = logging.getLogger("freva-deployment")
 
 config_dir = Path(appdirs.user_config_dir()) / "freva" / "deployment"
 asset_dir = Path(appdirs.user_data_dir()) / "freva" / "deployment"
-password_prompt = ("Set a master password, this password will be used to create\n"
-                   "a self signed certificate for accessing the freva credentials "
-                   "as mysql root password.\n: ")
+password_prompt = (
+    "Set a master password, this password will be used to create\n"
+    "a self signed certificate for accessing the freva credentials "
+    "as mysql root password.\n: "
+)
 
 
 def get_passwd(min_characters: int = 8) -> str:
@@ -49,9 +51,11 @@ def _create_passwd(min_characters: int) -> str:
     is_ok *= len([True for c in "[_@$#$%^&*-!]" if c in master_pass]) > 0
     if not is_ok:
         raise ValueError(
-            (f"Password must be at least {min_characters} characters long, "
-             "have alphanumeric characters, both, lower and upper case "
-             "characters, as well as special characters.")
+            (
+                f"Password must be at least {min_characters} characters long, "
+                "have alphanumeric characters, both, lower and upper case "
+                "characters, as well as special characters."
+            )
         )
     master_pass_2 = getpass("Re enter master password\n: ")
     if master_pass != master_pass_2:
@@ -109,8 +113,10 @@ If you enter '.', the field will be left blank."""
             f'Common Name (eg, e.g. server FQDN or YOUR name) [{defaults["CN"]}]: '
         ),
         emailAddress=input(
-            ("Email Address (eg, e.g. server FQDN or YOUR name) "
-             f'[{defaults["emailAddress"]}]: ')
+            (
+                "Email Address (eg, e.g. server FQDN or YOUR name) "
+                f'[{defaults["emailAddress"]}]: '
+            )
         ),
     )
     sub_j = "/".join(f"{k}={v.strip() or defaults[k]}" for (k, v) in steps.items())

@@ -77,7 +77,7 @@
     become: yes
     shell:
       chdir: "/tmp/{{project_name}}_web"
-      cmd: docker build --build-arg=python_version={{python_version}} --build-arg=core_url={{core_git_url}} --build-arg=core_branch={{core_branch}} --build-arg=build_root=/mnt/{{project_name}}/web_service --build-arg=git_url={{web_git_url}} --build-arg=git_branch={{web_branch}} --build-arg=root_dir={{core_root_dir}} --build-arg=PROJECT_NAME={{project_name}}  -t {{ container_name }} .
+      cmd: docker build --build-arg=core_url={{core_git_url}} --build-arg=core_branch={{core_branch}} --build-arg=build_root=/mnt/{{project_name}}/web_service --build-arg=git_url={{web_git_url}} --build-arg=git_branch={{web_branch}} --build-arg=root_dir={{core_root_dir}} --build-arg=PROJECT_NAME={{project_name}}  -t {{ container_name }} .
   - name: Moving temporary build folder to target destination
     become: yes
     shell:
