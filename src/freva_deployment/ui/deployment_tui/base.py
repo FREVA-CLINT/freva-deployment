@@ -7,7 +7,7 @@ import npyscreen
 import logging
 
 
-logging.basicConfig(filename="mylog.log", level=logging.DEBUG)
+logging.basicConfig(level=logging.DEBUG)
 logger: logging.Logger = logging.getLogger("deploy-freva-tui")
 
 

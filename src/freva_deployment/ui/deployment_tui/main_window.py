@@ -179,7 +179,7 @@ class MainApp(npyscreen.NPSAppManaged):
     @property
     def _steps(self) -> str:
         """Read the deployment-steps from the cache."""
-        return self._read_cache("steps", [])
+        return self._read_cache("steps", ["core", "web", "db", "solr"])
 
     @property
     def cert_file(self) -> str:

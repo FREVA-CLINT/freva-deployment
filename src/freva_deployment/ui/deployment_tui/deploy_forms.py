@@ -227,11 +227,11 @@ class WebScreen(BaseForm):
                         cfg.get(
                             "address",
                             [
-                                "freva"
-                                "German Climate Computing Centre (DKRZ)"
-                                "Bundesstr. 45a"
-                                "20146 Hamburg"
-                                "Germany"
+                                "freva",
+                                "German Climate Computing Centre (DKRZ)",
+                                "Bundesstr. 45a",
+                                "20146 Hamburg",
+                                "Germany",
                             ],
                         )
                     ),

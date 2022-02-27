@@ -14,28 +14,47 @@ On *CentOS* python SELinux libraries need to be installed. If you choose to inst
 
 # Pre-Requisites
 The main work will be done by [ansible](https://docs.ansible.com/ansible/latest/index.html), hence some level of familiarity with ansible is advantagous.
-Since we are using ansible we can use this deployment routine from any \*nix system (like a Mac-book). You do not need to run the depoyment on the machines where things get installed.
+Since we are using ansible we can use this deployment routine from a workstation computer (like a Mac-book). You do not need to run the depoyment on the machines where things get installed.
 The only requirement is that you have to setup ansible and you can establish ssh connections to the servers.
-### Installing all required packages via pip
-The following software/packages need to be installed on your system:
-- python3.6+
-- pip for python 3
-- libselinux-python3 (on CentOS systems only)
+### Preperation on windows based system.
+Currently ansible is not natively available on windows based systems. To install the deployment on a window system you have two basic options:
 
-To install the rquired python packages simply execute the following command:
+#### 1. Installing ansible via cygwin:
+You can use the unix runtime environment [cygwin](https://www.cygwin.com) to download and install the needed software. Just follow the steps listed on the web page to setup cygwin on your windows system. In order to be able to install the freva deployment programm you'll first need to install the following packages via cygwin:
+
+- python3
+- python3-devel
+- git
+- make
+- python3.X-paramiko
+- libffi-devel
+- ansible
+
+We also recommend installing a command line based text editor like vim, nano, etc.
+
+After installing the above listed packages via cygwin you can clone and install the freva deployment:
 
 ```bash
-python3 -m pip install git+https://gitlab.dkrz.de/freva/deployment.git
+git clone https://gitlab.dkrz.de/freva/deployment.git
+cd deployment
+python3 -m pip -r install requirements_windows.txt
 ```
-
-or into userspace
+### Installation on \*nix systems or wsl.
+If you're using Linux, OsX or a Windows subsystem for Linux (WSL) you won't need any pre-requiremnts for installing the freva deployment prgramm. It should be sufficient to install the deployment via:
 
 ```bash
-python3 -m pip install --user git+https://gitlab.dkrz.de/freva/deployment.git
+git clone https://gitlab.dkrz.de/freva/deployment.git
+cd deployment
+python3 -m pip -r install (--user) requirements_nix.txt
 ```
 
 This command installs ansible and all required python packages.
 > **_Note:_** On *CentOS* python SELinux libraries need to be installed. You will need to install libselinux for your CentOS version.
+
+```bash
+python3 -m pip install (--user) libselinux-python3
+```
+
 
 ## Installing docker and sudo access to the service servers
 Since the services of MariaDB and Apache Solr will be deployed on docker container images, docker needs to be available on the target servers. Usually installing and running docker requires *root* privileges.

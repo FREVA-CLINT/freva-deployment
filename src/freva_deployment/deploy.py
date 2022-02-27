@@ -11,7 +11,7 @@ import sys
 from tempfile import NamedTemporaryFile, TemporaryDirectory, mkdtemp
 
 from rich.console import Console
-import toml
+import tomlkit
 import yaml
 
 from .utils import asset_dir, config_dir, create_self_signed_cert, get_passwd, logger

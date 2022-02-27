@@ -59,9 +59,6 @@ setup(
     },
     install_requires=[
         "appdirs",
-        "ansible",
-        "paramiko",
-        "PyQt5",
         "npyscreen",
         "pyyml",
         "rich",
