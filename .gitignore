@@ -5,6 +5,8 @@ config/evaluation_system.conf
 config/inventory
 __pycache__/*
 build/
+docs/_build/
+my.log
 src/freva_deployment/__pycache__
 src/freva_deployment/cli/__pycache__
 src/freva_deployment/ui/deployment_tui/__pycache__

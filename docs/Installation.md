@@ -1,25 +1,25 @@
-# Deployment of the Free Evaluation Framework Freva
+# Installation the Free Evaluation Framework Freva
 
-The code in this repository is used to deploy freva in different computing environments. The general strategy is to split the deployment into 4 different steps, these are :
+As mentioned before the installation process for reva can be seperated in different steps, these are :
 - Deploy MariaDB service via docker
 - Deploy a Hashicorp Vault service for storing and retrieving passwords and other sensitive data via docker (this step get automatically activated once the MariaDB service is set)
 - Deploy Apache Solr service via docker
-- Deploy command line interface backend ([evaluation_system](https://gitlab.dkrz.de/freva/evaluation_system))
-- Deploy web frontend ([freva_web](https://gitlab.dkrz.de/freva/freva_web))
+- Deploy the core library ([evaluation_system](https://gitlab.dkrz.de/freva/evaluation_system)) and a command line interface (cli)
+- Deploy a web web base ui ([freva_web](https://gitlab.dkrz.de/freva/freva_web))
 
 
 > **_Note:_** A vault server is auto deployed once the mariadb server is deploed. The vault centrally stores all passwords and other sensitive data. During the deployment of the vault server a public key is generated which is used to open the vault. This public key will be saved in the `evaluation_system` backend root directory. Only if saved this key and the key in the vault match, secrets can be retrieved. Therefore it might be a good idea to deploy, the mariadb server (and with it the vault) and the `evaluation_system` backend togehter.
 
 On *CentOS* python SELinux libraries need to be installed. If you choose to install ansible via the `install_ansible` you'll have to use `conda` to install libselinux for your CentOS version. For example : `conda install -c conda-forge  libselinux-cos7-x86_64`
 
-# Pre-Requisites
+## Pre-Requisites
 The main work will be done by [ansible](https://docs.ansible.com/ansible/latest/index.html), hence some level of familiarity with ansible is advantagous.
 Since we are using ansible we can use this deployment routine from a workstation computer (like a Mac-book). You do not need to run the depoyment on the machines where things get installed.
 The only requirement is that you have to setup ansible and you can establish ssh connections to the servers.
 ### Preperation on windows based system.
 Currently ansible is not natively available on windows based systems. To install the deployment on a window system you have two basic options:
 
-#### 1. Installation on Windows via cygwin:
+#### Installation on Windows via cygwin:
 You can use the unix runtime environment [cygwin](https://www.cygwin.com) to download and install the needed software. Just follow the steps listed on the web page to setup cygwin on your windows system. In order to be able to install the freva deployment programm you'll first need to install the following packages via cygwin:
 
 - python3
@@ -56,34 +56,29 @@ python3 -m pip install (--user) libselinux-python3
 ```
 
 
-## Installing docker and sudo access to the service servers
+### Installing docker and sudo access to the service servers
 Since the services of MariaDB and Apache Solr will be deployed on docker container images, docker needs to be available on the target servers. Usually installing and running docker requires *root* privileges.
 Hence, on the servers that will be running docker you will need root access. There exist an option to install and run docker without root, information on a root-less docker option
 can be found [on the docker docs](https://docs.docker.com/engine/security/rootless/)
 
-# Configuring the deployment
-Once everything is setup the deployment can be configured via the main config file.  A template of a typical deployment configuration can be found in `config/inventory.tmpl`. 
-**Please copy this file first to** `config/inventory`. After the file has been copied you have to edit it. You will need to set at least one `hostname` in the following sections:
+### Configuring the deployment
+Once everything is setup the deployment can be configured via the main config file. 
+A typical deployment configuration can be found in `~/.config/freva/deployment/inventory.tmpl`.
+After the file has been copied you have to edit it. You will need to set at least one `hosts` in the following sections:
 
-- solrservers (hostname of the apache solr server)
-- dbservers (hostname of the MariaDB server)
-- webservers (hostname that will host the web site)
-- backendservers (hostname(s) where the command line interface will be installed)
+- solr.hosts (hostname of the apache solr server)
+- db.hosts (hostname of the MariaDB server)
+- web.hosts (hostname that will host the web site)
+- core.hosts (hostname(s) where the command line interface will be installed)
 
-Two typical server topography could look the following:
-| ![](docs/Topography.jpg) |
-|:--:| 
-| *Two different server structures*. In setup I the services are running on the same host that servers two docker containers. The website is deployed on a dedicated server while the backend is installed on a hpc login node with access to a gpfs/lustre file system. Setup II deploys the MariaDB and Solr services on dedicated servers. The command line interfaces are also deployed on independent servers.|
----
-
-## Setting the python environment
-Some systems do not have access to python3.6+ by default (/usr/bin/python3). In such cases you can overwrite the `ansible_python_interpreter` in the inventory settings of the server section to point ansible to a custom `python3` bindary. For example
+### Setting the python environment
+Some systems do not have access to python3.8+ by default (/usr/bin/python3). In such cases you can overwrite the `ansible_python_interpreter` in the inventory settings of the server section to point ansible to a custom `python3` bindary. For example
 
 ```
 ansible_python_interpreter=/sw/spack-rhel6/miniforge3-4.9.2-3-Linux-x86_64-pwdbqi/bin/python3
 ```
 
-# Running the deployment
+## Running the deployment
 After successful configuration you can run the ansible deployment. This is done via the `deploy-freva` command:
 
 ```bash
@@ -118,7 +113,7 @@ You will need to give a project name, for example `xces-ces` or `regiklim-ces`.
 The `--steps` flags can be used if not all services should be deployed.
 > **_Note:_** The database name of the the MariaDB database will be set to the project name.
 
-# Accessing the services after deployment:
+## Accessing the services after deployment:
 If the target machine where the services (solr, mariadb, web) were deployed
 is a Linux machine you will have a `systemd` unit service was created.
 You can control the the service via systemd. The unit has the following
@@ -129,7 +124,7 @@ systemctl status freva_dev-solr
 ```
 The same applies for mariadb and web service.
 
-# Kown Issues:
+## Kown Issues:
 Below are possible solutions to some known issues:
 
 ### SSH connection fails:
@@ -176,5 +171,5 @@ git config --global user.email your@email.com
 ```
 
 
-# Advanced: Adjusting the playbook
+## Advanced: Adjusting the playbook
 Playbook templates and be found the in the `playbooks` directory. You can also add new variables to the playbook if they are present in the `config/inventory` file.

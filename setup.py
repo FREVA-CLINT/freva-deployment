@@ -65,6 +65,16 @@ setup(
         "toml",
         "tomlkit",
     ],
+    extras_require={
+        'docs': [
+              'sphinx',
+              'nbsphinx',
+              'recommonmark',
+              'sphinx_rtd_theme',
+              'ipython',  # For nbsphinx syntax highlighting
+              'sphinxcontrib_github_alt',
+              ],
+    },
     python_requires=">=3.8",
     classifiers=[
         "Development Status :: 3 - Alpha",
