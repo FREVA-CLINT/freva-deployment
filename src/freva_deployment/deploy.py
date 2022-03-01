@@ -77,6 +77,9 @@ class DeployFactory:
     def _prep_core(self):
         """prepare the core deployment."""
         self.cfg["core"]["config"].setdefault("admins", getuser())
+        become_user = self.cfg["core"]["config"].pop("ansible_become_user", "")
+        if become_user:
+            self.cfg["core"]["config"]["ansible_become_user"] = become_user
         if not self.cfg["core"]["config"]["admins"]:
             self.cfg["core"]["config"]["admins"] = getuser()
         self.cfg["core"]["config"].setdefault("branch", "freva-dev")
@@ -286,7 +289,7 @@ class DeployFactory:
             config[step]["hosts"] = self.cfg[step]["hosts"]
             config[step]["vars"] = {}
             for key, value in self.cfg[step]["config"].items():
-                if key not in ("root_passwd",):
+                if key not in ("root_passwd", ):
                     new_key = f"{step}_{key}"
                 else:
                     new_key = key

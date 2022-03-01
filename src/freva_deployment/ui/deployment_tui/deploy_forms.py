@@ -107,6 +107,14 @@ class CoreScreen(BaseForm):
             ),
             False,
             ),
+            ansible_become_user=(
+                self.add(
+                    npyscreen.TitleText,
+                    name="Set an (additional) username that has privileges to install the core",
+                    value=cfg.get("ansible_become_user", ""),
+                ),
+                False,
+            ),
             python_version=(
                 self.add(
                     npyscreen.TitleCombo,

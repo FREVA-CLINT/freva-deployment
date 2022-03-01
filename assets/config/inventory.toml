@@ -91,6 +91,10 @@ python_version = "3.10"
 # to. You can choose from the following options:
 # Linux-x86_64 (default), Linux-aarch64, Linux-ppc64le, Linux-s390x, MacOSX-x86_64
 arch = "Linux-x86_64"
+## If you need to install the core or its configuration as a different user you can
+## set the ansible_become_user variable, this will install the the core as a 
+## different user
+#ansible_become_user = "username"
 ##If you need a different user name you can set it here:
 #ansible_user = "username"
 ## Ansible needs a python3 interpreter, which can be set for custom python3 instances
