@@ -11,7 +11,7 @@ import sys
 from tempfile import NamedTemporaryFile, TemporaryDirectory, mkdtemp
 
 from rich.console import Console
-import tomlkit
+import toml
 import yaml
 
 from .utils import asset_dir, config_dir, create_self_signed_cert, get_passwd, logger
@@ -56,12 +56,16 @@ class DeployFactory:
         """prepare the mariadb service."""
         if self.master_pass is None:
             self.master_pass = get_passwd()
+        host = self.cfg["db"]["hosts"]
         self.cfg["db"]["config"]["root_passwd"] = self.master_pass
         self.cfg["db"]["config"]["passwd"] = self.db_pass
         self.cfg["db"]["config"]["keyfile"] = self.public_key_file
         self.cfg["db"]["config"]["private_keyfile"] = self.private_key_file
         for key in ("name", "user", "db"):
             self.cfg["db"]["config"].setdefault(key, "freva")
+        db_host = self.cfg["db"]["config"].get("host", "")
+        if not db_host:
+            self.cfg["db"]["config"]["host"] = host
         self.cfg["db"]["config"].setdefault("port", "3306")
         self._create_sql_dump()
 
@@ -161,7 +165,7 @@ class DeployFactory:
     def _read_cfg(self):
         try:
             with self._inv_tmpl.open() as f:
-                return toml.load(f)
+                return dict(toml.load(f))
         except FileNotFoundError:
             raise FileNotFoundError(f"No such file {self._inv_tmpl}")
 
@@ -263,7 +267,7 @@ class DeployFactory:
         config[step]["vars"][f"{step}_hostname"] = self.cfg[step]["hosts"]
         config[step]["vars"][f"{step}_name"] = f"{self.project_name}_{step}"
         config[step]["vars"]["asset_dir"] = str(asset_dir)
-        config[step]["vars"]["user"] = getuser()
+        config[step]["vars"][f"ansible_user"] = self.cfg[step]["config"].get("ansible_user", getuser())
         config[step]["vars"]["wipe"] = self.wipe
         config[step]["vars"][f"{step}_ansible_python_interpreter"] = self.cfg[step][
             "config"

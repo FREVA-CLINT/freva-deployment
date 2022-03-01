@@ -7,7 +7,7 @@ import npyscreen
 import logging
 
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(filename='my.log', level=logging.DEBUG)
 logger: logging.Logger = logging.getLogger("deploy-freva-tui")
 
 
@@ -91,15 +91,30 @@ def selectFile(starting_value: str = "", *args, **keywords):
 class BaseForm(npyscreen.FormMultiPageWithMenus, npyscreen.FormWithMenus):
     """Base class for forms."""
 
+    def get_config(self, key) -> dict[str, str|bool|list[...,str]]:
+        """Read the configuration for a step.""" 
+        try:
+            cfg = self.parentApp.config[key].copy()
+            if not isinstance(cfg, dict):
+                cfg = {"config": {}}
+        except (KeyError, AttributeError, TypeError):
+                cfg = {"config": {}}
+        cfg.setdefault("config", {})
+        return cfg["config"]
+
     def get_host(self, key) -> str:
         """Read the host name(s) from the main windows config."""
-        host = self.parentApp.config[key]["hosts"]
+        try:
+            host = self.parentApp.config[key]["hosts"]
+        except (TypeError, KeyError):
+            return ""
         if isinstance(host, str):
             host = [v.strip() for v in host.split(",") if v.strip()]
         return ",".join(host)
 
     def check_config(
         self,
+        notify: bool = True,
     ) -> dict[str, str | dict[str, str | list | int | bool | None]]:
         """Check if the from entries are valid."""
         config = {}
@@ -109,8 +124,8 @@ class BaseForm(npyscreen.FormMultiPageWithMenus, npyscreen.FormWithMenus):
             except AttributeError:
                 value = obj.value
             if isinstance(value, str):
-                if not value and self.use.value and mandatory:
-                    msg = f"MISSING ENTRY FOR: {obj.name}"
+                if not value and self.use.value and mandatory and notify:
+                    msg = f"MISSING ENTRY FOR {self.step}: {obj.name}"
                     npyscreen.notify_confirm(msg, title="ERROR")
                     return
                 elif not value and not mandatory:

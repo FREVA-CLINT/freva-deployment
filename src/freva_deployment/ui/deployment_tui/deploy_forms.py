@@ -7,6 +7,29 @@ from .base import BaseForm, logger
 from freva_deployment import AVAILABLE_PYTHON_VERSIONS, AVAILABLE_CONDA_ARCHS
 
 
+def get_index(values: list[...,str|int], target: str|int, default: int = 0) -> int:
+    """Get the index target item in list.
+
+    Parameters:
+    ===========
+    values:
+        the list of values that is searched
+    target:
+        the item the list of values that is searched for
+    default:
+        if nothing is found return the default value
+
+    Returns:
+    ========
+    int: Index of the the target item in the list
+    """
+
+    for n, value in enumerate(values):
+        if value == target:
+            return n
+    return default
+
+
 class CoreScreen(BaseForm):
     """Form for the core deployment configuration."""
 
@@ -14,20 +37,12 @@ class CoreScreen(BaseForm):
 
     def _add_widgets(self) -> None:
         """Add widgets to the screen."""
-        cfg = self.parentApp.config["core"]["config"]
         self.list_keys = []
+        cfg = self.get_config(self.step)
         arch = cfg.get("arch", AVAILABLE_CONDA_ARCHS[0])
         python_version = cfg.get("python_version", AVAILABLE_PYTHON_VERSIONS[-1])
-        arch_idx = 0
-        python_version_idx = -1
-        for n in range(len(AVAILABLE_CONDA_ARCHS)):
-            if AVAILABLE_CONDA_ARCHS[n] == arch:
-                arch_idx = n
-                break
-        for n in range(len(AVAILABLE_PYTHON_VERSIONS)):
-            if AVAILABLE_PYTHON_VERSIONS[n] == python_version:
-                python_version_idx = n
-                break
+        arch_idx = get_index(AVAILABLE_CONDA_ARCHS, arch, 0)
+        python_version_idx = get_index(AVAILABLE_PYTHON_VERSIONS, python_version, -1)
         self.input_fields: dict[str, tuple[npyscreen.TitleText, bool]] = dict(
             hosts=(
                 self.add(
@@ -140,7 +155,7 @@ class WebScreen(BaseForm):
     def _add_widgets(self) -> None:
         """Add widgets to the screen."""
         self.list_keys = "contacts", "address", "auth_ldap_server_uri", "scheduler_host"
-        cfg = self.parentApp.config["web"]["config"]
+        cfg = self.get_config(self.step)
         for key in self.list_keys:
             if key in cfg:
                 if isinstance(cfg[key], str):
@@ -177,7 +192,7 @@ class WebScreen(BaseForm):
                     name="Path to the logo, leave blank for default logo",
                     value=cfg.get("institution_logo", ""),
                 ),
-                True,
+                False,
             ),
             main_color=(
                 self.add_widget_intelligent(
@@ -362,17 +377,18 @@ class DBScreen(BaseForm):
     """Form for the core deployment configuration."""
 
     step: str = "db"
-
     def _add_widgets(self) -> None:
         """Add widgets to the screen."""
         self.list_keys = []
-        cfg = self.parentApp.config["db"]["config"]
+        cfg = self.get_config(self.step)
+        db_ports: list[...,int] = list(range(3300, 3320))
+        port_idx = get_index(db_ports, cfg.get("port", 3306), 6)
         self.input_fields: dict[str, tuple[npyscreen.TitleText, bool]] = dict(
             hosts=(
                 self.add(
                     npyscreen.TitleText,
                     name="Server Name(s) where the database service is deployed:",
-                    value=self.get_host("core"),
+                    value=self.get_host("db"),
                 ),
                 True,
             ),
@@ -380,16 +396,24 @@ class DBScreen(BaseForm):
                 self.add(
                     npyscreen.TitleText,
                     name="Database user:",
-                    value="evaluation_system",
+                    value=cfg.get("user", "evaluation_system"),
                 ),
                 True,
+            ),
+            db=(
+                self.add(
+                    npyscreen.TitleText,
+                    name="Database name:",
+                    value=cfg.get("db", "evaluation_system")
+            ),
+            True,
             ),
             port=(
                 self.add(
                     npyscreen.TitleCombo,
                     name="Database Port",
-                    value=6,
-                    values=[i for i in range(3300, 3320)],
+                    value=port_idx,
+                    values=db_ports,
                 ),
                 True,
             ),
@@ -420,7 +444,9 @@ class SolrScreen(BaseForm):
     def _add_widgets(self) -> None:
         """Add widgets to the screen."""
         self.list_keys = []
-        cfg = self.parentApp.config["solr"]["config"]
+        cfg = self.get_config(self.step)
+        solr_ports: list[...,int] = list(range(8980, 9000))
+        port_idx = get_index(solr_ports, cfg.get("port", 8983), 3)
         self.input_fields: dict[str, tuple[npyscreen.TitleText, bool]] = dict(
             hosts=(
                 self.add(
@@ -434,8 +460,8 @@ class SolrScreen(BaseForm):
                 self.add(
                     npyscreen.TitleCombo,
                     name="Virtual memory (in GB) for the solr server:",
-                    value=5,
-                    values=[f"{i/10}g" for i in range(5, 100, 5)],
+                    value=3,
+                    values=[f"{i}g" for i in range(1, 10)],
                 ),
                 True,
             ),
@@ -443,8 +469,8 @@ class SolrScreen(BaseForm):
                 self.add(
                     npyscreen.TitleCombo,
                     name="Solr port:",
-                    value=3,
-                    values=[i for i in range(8980, 9000)],
+                    value=port_idx,
+                    values=solr_ports,
                 ),
                 True,
             ),
@@ -485,8 +511,6 @@ class RunForm(npyscreen.FormMultiPageAction):
             return
         missing_form: None | str = self.parentApp.check_missing_config()
         if missing_form:
-            msg = f"You have a missing parameter: {missing_form}"
-            npyscreen.notify_confirm(msg, title="ERROR")
             self.parentApp.change_form(missing_form)
             return
         cert_file: str = self.cert_file.value or ""

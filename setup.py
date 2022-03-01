@@ -62,6 +62,7 @@ setup(
         "npyscreen",
         "pyyml",
         "rich",
+        "toml",
         "tomlkit",
     ],
     python_requires=">=3.8",

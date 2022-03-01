@@ -64,7 +64,7 @@ class MainApp(npyscreen.NPSAppManaged):
     def check_missing_config(self, stop_at_missing: bool = True) -> str | None:
         """Evaluate all forms."""
         for step, form_obj in self._forms.items():
-            cfg = form_obj.check_config()
+            cfg = form_obj.check_config(notify=stop_at_missing)
             if cfg is None and stop_at_missing:
                 return self._steps_lookup[step]
             if form_obj.use.value:
@@ -83,13 +83,15 @@ class MainApp(npyscreen.NPSAppManaged):
             except Exception:
                 pass
 
-    def save_dialog(self) -> None:
+    def save_dialog(self, *args, **kwargs) -> None:
         """Careate a dialoge that allows for saving the config file."""
 
         the_selected_file = selectFile(
             select_dir=False, must_exist=False, file_extentions=[".toml"]
         )
         if the_selected_file:
+            the_selected_file = str(Path(the_selected_file).expanduser().absolute())
+            self.check_missing_config(stop_at_missing=False)
             self._setup_form.inventory_file.value = the_selected_file
             self.save_config_to_file(write_toml_file=True)
 
@@ -107,7 +109,7 @@ class MainApp(npyscreen.NPSAppManaged):
         self._add_froms()
         self._setup_form.inventory_file.value = config_file
 
-    def load_dialog(self) -> None:
+    def load_dialog(self, *args, **kwargs) -> None:
         """Careate a dialoge that allows for loading a config file."""
 
         the_selected_file = selectFile(
@@ -143,7 +145,7 @@ class MainApp(npyscreen.NPSAppManaged):
                 f,
                 indent=3,
             )
-        if not write_toml_file:
+        if write_toml_file is False:
             return
         save_file = save_file or cache_file
         save_file = Path(save_file).expanduser().absolute()
