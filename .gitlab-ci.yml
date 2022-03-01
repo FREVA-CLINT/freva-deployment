@@ -10,9 +10,7 @@ pages:
     - cd docs && make html
   before_script:
       python3 -m pip install .[docs]
-  after_script:
-    - mv docs/build/html public/
   artifacts:
     when: always
     paths:
-      - public/
+      - docs/build/html
