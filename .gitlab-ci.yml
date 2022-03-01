@@ -9,7 +9,7 @@ pages:
   script:
     - cd docs && make html
   before_script:
-      python3 -m pip install .[docs]
+    - python3 -m pip install .[docs]
   after_script:
     - mv docs/build/html public/
   artifacts:
