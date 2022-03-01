@@ -13,4 +13,4 @@ pages:
   artifacts:
     when: always
     paths:
-      - docs/build/html
+      - docs/_build/html
