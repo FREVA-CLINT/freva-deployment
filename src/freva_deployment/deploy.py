@@ -24,6 +24,7 @@ class DeployFactory:
     inventory_file = None
     step_order: tuple[str, ...] = ("db", "vault", "solr", "core", "web", "backup")
     _steps_with_cert: tuple[str, ...] = ("db", "vault", "core", "web")
+    _config_keys : list[str, ...] = []
 
     @property
     def private_key_file(self) -> str:
@@ -44,6 +45,7 @@ class DeployFactory:
 
     def _prep_vault(self):
         """Prepare the vault."""
+        self._config_keys.append("valut")
         self.cfg["vault"] = self.cfg["db"].copy()
         if self.master_pass is None:
             self.master_pass = get_passwd()
@@ -54,6 +56,7 @@ class DeployFactory:
 
     def _prep_db(self):
         """prepare the mariadb service."""
+        self._config_keys.append("db")
         if self.master_pass is None:
             self.master_pass = get_passwd()
         host = self.cfg["db"]["hosts"]
@@ -71,11 +74,13 @@ class DeployFactory:
 
     def _prep_solr(self):
         """prepare the apache solr service."""
+        self._config_keys.append("solr")
         for key, default in dict(core="files", mem="4g", port=8983).items():
             self.cfg["solr"]["config"].setdefault(key, default)
 
     def _prep_core(self):
         """prepare the core deployment."""
+        self._config_keys.append("core")
         self.cfg["core"]["config"].setdefault("admins", getuser())
         become_user = self.cfg["core"]["config"].pop("ansible_become_user", "")
         if become_user:
@@ -90,6 +95,7 @@ class DeployFactory:
 
     def _prep_web(self):
         """prepare the web deployment."""
+        self._config_keys.append("web")
         self.cfg["web"]["config"].setdefault("branch", "master")
         self._prep_core()
         admin = self.cfg["core"]["config"]["admins"]
@@ -149,6 +155,7 @@ class DeployFactory:
 
     def _prep_backup(self):
         """Prepare the config for the backup step."""
+        self._config_keys.append("backup")
         self.cfg["backup"] = self.cfg["db"].copy()
         if self.master_pass is None:
             self.master_pass = get_passwd()
@@ -218,7 +225,7 @@ class DeployFactory:
     def check_config(self):
         sections = []
         for section in self.cfg.keys():
-            for step in self.steps:
+            for step in self._config_keys:
                 if section.startswith(step) and section not in sections:
                     sections.append(section)
         for section in sections:
@@ -284,7 +291,7 @@ class DeployFactory:
         logger.info("Parsing configurations")
         self.check_config()
         config = {}
-        for step in self.steps:
+        for step in set(self._config_keys):
             config[step] = {}
             config[step]["hosts"] = self.cfg[step]["hosts"]
             config[step]["vars"] = {}
@@ -297,7 +304,7 @@ class DeployFactory:
             config[step]["vars"]["project_name"] = self.project_name
             # Add additional keys
             self._set_additional_config_values(step, config)
-        if "db" in self.steps:
+        if "db" in self._config_keys:
             config.update(self._add_local_config(config["db"]["vars"]))
 
         return yaml.dump(config)
