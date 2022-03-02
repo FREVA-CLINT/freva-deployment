@@ -63,7 +63,7 @@ class CoreScreen(BaseForm):
             install_dir=(
                 self.add(
                     npyscreen.TitleFilename,
-                    name="Core Installation directory:",
+                    name="Anaconda installation dir. for core:",
                     value=cfg.get("install_dir", ""),
                 ),
                 True,

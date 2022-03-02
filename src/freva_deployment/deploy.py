@@ -24,7 +24,7 @@ class DeployFactory:
     inventory_file = None
     step_order: tuple[str, ...] = ("db", "vault", "solr", "core", "web", "backup")
     _steps_with_cert: tuple[str, ...] = ("db", "vault", "core", "web")
-    _config_keys : list[str, ...] = []
+    _config_keys : list[str] = []
 
     @property
     def private_key_file(self) -> str:
@@ -34,7 +34,7 @@ class DeployFactory:
     @property
     def public_key_file(self) -> str:
         """Path to the public certificate file."""
-        if not any([step in self._steps_with_cert for step in self.steps]):
+        if not any((step in self._steps_with_cert for step in self.steps)):
             return str(Path(mkdtemp(suffix=".crt")))
         if not self._cert_file:
             self._cert_file = config_dir / "keys" / f"{self.project_name}.crt"
@@ -45,7 +45,7 @@ class DeployFactory:
 
     def _prep_vault(self):
         """Prepare the vault."""
-        self._config_keys.append("valut")
+        self._config_keys.append("vault")
         self.cfg["vault"] = self.cfg["db"].copy()
         if self.master_pass is None:
             self.master_pass = get_passwd()
@@ -70,6 +70,7 @@ class DeployFactory:
         if not db_host:
             self.cfg["db"]["config"]["host"] = host
         self.cfg["db"]["config"].setdefault("port", "3306")
+        self._prep_vault()
         self._create_sql_dump()
 
     def _prep_solr(self):
@@ -116,7 +117,7 @@ class DeployFactory:
                 "No web config section given, please configure the web.config"
             )
         try:
-            with Path(_webserver_items["homepage_text"]).open() as f:
+            with Path(_webserver_items["homepage_text"]).open("r") as f:
                 _webserver_items["homepage_text"] = f.read()
         except Exception:
             pass
@@ -277,7 +278,7 @@ class DeployFactory:
         config[step]["vars"][f"{step}_hostname"] = self.cfg[step]["hosts"]
         config[step]["vars"][f"{step}_name"] = f"{self.project_name}_{step}"
         config[step]["vars"]["asset_dir"] = str(asset_dir)
-        config[step]["vars"][f"ansible_user"] = self.cfg[step]["config"].get("ansible_user", getuser())
+        config[step]["vars"]["ansible_user"] = self.cfg[step]["config"].get("ansible_user", getuser())
         config[step]["vars"]["wipe"] = self.wipe
         config[step]["vars"][f"{step}_ansible_python_interpreter"] = self.cfg[step][
             "config"
@@ -329,10 +330,9 @@ USE {db};
 
 """.format(
             user=self.cfg["db"]["config"]["user"],
-            db=self.cfg["db"]["config"]["name"],
+            db=self.cfg["db"]["config"]["db"],
             passwd=self.db_pass,
         )
-
         with self.dump_file.open("w") as f:
             tail = (self.aux_dir / "create_tables.sql").open("r").read()
             f.write(head + tail)
