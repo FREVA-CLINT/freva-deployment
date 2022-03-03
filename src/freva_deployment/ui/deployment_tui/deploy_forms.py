@@ -7,7 +7,7 @@ from .base import BaseForm, logger
 from freva_deployment import AVAILABLE_PYTHON_VERSIONS, AVAILABLE_CONDA_ARCHS
 
 
-def get_index(values: list[...,str|int], target: str|int, default: int = 0) -> int:
+def get_index(values: list[str | int], target: str | int, default: int = 0) -> int:
     """Get the index target item in list.
 
     Parameters:
@@ -45,7 +45,7 @@ class CoreScreen(BaseForm):
         python_version_idx = get_index(AVAILABLE_PYTHON_VERSIONS, python_version, -1)
         self.input_fields: dict[str, tuple[npyscreen.TitleText, bool]] = dict(
             hosts=(
-                self.add(
+                self.add_widget_intelligent(
                     npyscreen.TitleText,
                     name="Server Name(s) where core is deployed:",
                     value=self.get_host("core"),
@@ -53,7 +53,7 @@ class CoreScreen(BaseForm):
                 True,
             ),
             branch=(
-                self.add(
+                self.add_widget_intelligent(
                     npyscreen.TitleText,
                     name="Deploy branch:",
                     value=cfg.get("branch", "freva-dev"),
@@ -61,7 +61,7 @@ class CoreScreen(BaseForm):
                 True,
             ),
             install_dir=(
-                self.add(
+                self.add_widget_intelligent(
                     npyscreen.TitleFilename,
                     name="Anaconda installation dir. for core:",
                     value=cfg.get("install_dir", ""),
@@ -69,19 +69,21 @@ class CoreScreen(BaseForm):
                 True,
             ),
             install=(
-                self.add(
+                self.add_widget_intelligent(
                     npyscreen.CheckBox,
                     max_height=2,
                     value=cfg.get("install", True),
                     editable=True,
-                    name=("Install a new instance of the core, or just add a new "
-                          "configuration."),
+                    name=(
+                        "Install a new instance of the core, or just add a new "
+                        "configuration."
+                    ),
                     scroll_exit=True,
                 ),
-                True
+                True,
             ),
             root_dir=(
-                self.add(
+                self.add_widget_intelligent(
                     npyscreen.TitleFilename,
                     name=(
                         "Project configuration file directory "
@@ -89,10 +91,10 @@ class CoreScreen(BaseForm):
                     ),
                     value=cfg.get("root_dir", ""),
                 ),
-                True,
+                False,
             ),
             base_dir_location=(
-                self.add(
+                self.add_widget_intelligent(
                     npyscreen.TitleText,
                     name="Plugin data directory (user work dir.):",
                     value=cfg.get("base_dir_location", ""),
@@ -100,23 +102,24 @@ class CoreScreen(BaseForm):
                 True,
             ),
             admins=(
-                self.add(
+                self.add_widget_intelligent(
                     npyscreen.TitleText,
                     name="Set the admin user(s) - comma separated",
-                    value=cfg.get("admins", getuser())
-            ),
-            False,
+                    value=cfg.get("admins", getuser()),
+                ),
+                False,
             ),
             ansible_become_user=(
-                self.add(
+                self.add_widget_intelligent(
                     npyscreen.TitleText,
-                    name="Set an (additional) username that has privileges to install the core",
+                    name=("Set an (additional) username that has privileges "
+                          "to install the core"),
                     value=cfg.get("ansible_become_user", ""),
                 ),
                 False,
             ),
             python_version=(
-                self.add(
+                self.add_widget_intelligent(
                     npyscreen.TitleCombo,
                     name="Set the python version that ist deployed.",
                     value=python_version_idx,
@@ -125,7 +128,7 @@ class CoreScreen(BaseForm):
                 True,
             ),
             arch=(
-                self.add(
+                self.add_widget_intelligent(
                     npyscreen.TitleCombo,
                     name=(
                         "Set the target architecutre of the system where "
@@ -137,7 +140,7 @@ class CoreScreen(BaseForm):
                 True,
             ),
             ansible_python_interpreter=(
-                self.add(
+                self.add_widget_intelligent(
                     npyscreen.TitleFilename,
                     name="Pythonpath on remote machine (leave blank for current path):",
                     value=cfg.get("ansible_python_interpreter", ""),
@@ -145,13 +148,22 @@ class CoreScreen(BaseForm):
                 False,
             ),
             ansible_user=(
-                self.add(
+                self.add_widget_intelligent(
                     npyscreen.TitleText,
                     name="Remote login user (leave blank for current user):",
                     value=cfg.get("ansible_user", ""),
                 ),
                 False,
             ),
+            git_path=(
+                self.add_widget_intelligent(
+                    npyscreen.TitleFilename,
+                    name="Path to the git executable (leave blank for default):",
+                    value=cfg.get("git_path", "git"),
+                ),
+                False,
+            ),
+
         )
 
 
@@ -385,15 +397,16 @@ class DBScreen(BaseForm):
     """Form for the core deployment configuration."""
 
     step: str = "db"
+
     def _add_widgets(self) -> None:
         """Add widgets to the screen."""
         self.list_keys = []
         cfg = self.get_config(self.step)
-        db_ports: list[...,int] = list(range(3300, 3320))
+        db_ports: list[..., int] = list(range(3300, 3320))
         port_idx = get_index(db_ports, cfg.get("port", 3306), 6)
         self.input_fields: dict[str, tuple[npyscreen.TitleText, bool]] = dict(
             hosts=(
-                self.add(
+                self.add_widget_intelligent(
                     npyscreen.TitleText,
                     name="Server Name(s) where the database service is deployed:",
                     value=self.get_host("db"),
@@ -401,7 +414,7 @@ class DBScreen(BaseForm):
                 True,
             ),
             user=(
-                self.add(
+                self.add_widget_intelligent(
                     npyscreen.TitleText,
                     name="Database user:",
                     value=cfg.get("user", "evaluation_system"),
@@ -409,15 +422,15 @@ class DBScreen(BaseForm):
                 True,
             ),
             db=(
-                self.add(
+                self.add_widget_intelligent(
                     npyscreen.TitleText,
                     name="Database name:",
-                    value=cfg.get("db", "evaluation_system")
-            ),
-            True,
+                    value=cfg.get("db", "evaluation_system"),
+                ),
+                True,
             ),
             port=(
-                self.add(
+                self.add_widget_intelligent(
                     npyscreen.TitleCombo,
                     name="Database Port",
                     value=port_idx,
@@ -426,7 +439,7 @@ class DBScreen(BaseForm):
                 True,
             ),
             ansible_python_interpreter=(
-                self.add(
+                self.add_widget_intelligent(
                     npyscreen.TitleFilename,
                     name="Pythonpath on remote machine (leave blank for current path):",
                     value=cfg.get("ansible_python_interpreter", ""),
@@ -434,7 +447,7 @@ class DBScreen(BaseForm):
                 False,
             ),
             ansible_user=(
-                self.add(
+                self.add_widget_intelligent(
                     npyscreen.TitleText,
                     name="Remote login user (leave blank for current user):",
                     value=cfg.get("ansible_user", ""),
@@ -453,11 +466,11 @@ class SolrScreen(BaseForm):
         """Add widgets to the screen."""
         self.list_keys = []
         cfg = self.get_config(self.step)
-        solr_ports: list[...,int] = list(range(8980, 9000))
+        solr_ports: list[..., int] = list(range(8980, 9000))
         port_idx = get_index(solr_ports, cfg.get("port", 8983), 3)
         self.input_fields: dict[str, tuple[npyscreen.TitleText, bool]] = dict(
             hosts=(
-                self.add(
+                self.add_widget_intelligent(
                     npyscreen.TitleText,
                     name="Server Name(s) where the solr service is deployed:",
                     value=self.get_host("solr"),
@@ -465,7 +478,7 @@ class SolrScreen(BaseForm):
                 True,
             ),
             mem=(
-                self.add(
+                self.add_widget_intelligent(
                     npyscreen.TitleCombo,
                     name="Virtual memory (in GB) for the solr server:",
                     value=3,
@@ -474,7 +487,7 @@ class SolrScreen(BaseForm):
                 True,
             ),
             port=(
-                self.add(
+                self.add_widget_intelligent(
                     npyscreen.TitleCombo,
                     name="Solr port:",
                     value=port_idx,
@@ -483,7 +496,7 @@ class SolrScreen(BaseForm):
                 True,
             ),
             core=(
-                self.add(
+                self.add_widget_intelligent(
                     npyscreen.TitleText,
                     name="Name of the standard solr core:",
                     value=cfg.get("core", "files"),
@@ -491,7 +504,7 @@ class SolrScreen(BaseForm):
                 True,
             ),
             ansible_python_interpreter=(
-                self.add(
+                self.add_widget_intelligent(
                     npyscreen.TitleFilename,
                     name="Pythonpath on remote machine (leave blank for current path):",
                     value=cfg.get("ansible_python_interpreter", ""),
@@ -499,7 +512,7 @@ class SolrScreen(BaseForm):
                 False,
             ),
             ansible_user=(
-                self.add(
+                self.add_widget_intelligent(
                     npyscreen.TitleText,
                     name="Remote login user (leave blank for current user):",
                     value=cfg.get("ansible_user", ""),
@@ -561,22 +574,22 @@ class RunForm(npyscreen.FormMultiPageAction):
 
         wipe = self.parentApp._read_cache("wipe", False)
         ssh_pw = self.parentApp._read_cache("ssh_pw", True)
-        self.project_name = self.add(
+        self.project_name = self.add_widget_intelligent(
             npyscreen.TitleText,
             name="Set the name of the project",
             value=self.parentApp._read_cache("project_name", ""),
         )
-        self.inventory_file = self.add(
+        self.inventory_file = self.add_widget_intelligent(
             npyscreen.TitleFilename,
             name="Save config as",
             value=str(self.parentApp.save_file),
         )
-        self.cert_file = self.add(
+        self.cert_file = self.add_widget_intelligent(
             npyscreen.TitleFilename,
             name="Select a public certificate file, defaults to `<project_name>.crt`",
             value=str(self.parentApp.cert_file),
         )
-        self.wipe = self.add(
+        self.wipe = self.add_widget_intelligent(
             npyscreen.CheckBox,
             max_height=2,
             value=wipe,
@@ -584,7 +597,7 @@ class RunForm(npyscreen.FormMultiPageAction):
             name="Delete all existing data on docker volumes (wipe)",
             scroll_exit=True,
         )
-        self.use_ssh_pw = self.add(
+        self.use_ssh_pw = self.add_widget_intelligent(
             npyscreen.CheckBox,
             max_height=2,
             value=ssh_pw,

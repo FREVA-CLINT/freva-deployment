@@ -7,7 +7,7 @@ import npyscreen
 import logging
 
 
-logging.basicConfig(filename='my.log', level=logging.DEBUG)
+logging.basicConfig(filename="my.log", level=logging.DEBUG)
 logger: logging.Logger = logging.getLogger("deploy-freva-tui")
 
 
@@ -91,14 +91,14 @@ def selectFile(starting_value: str = "", *args, **keywords):
 class BaseForm(npyscreen.FormMultiPageWithMenus, npyscreen.FormWithMenus):
     """Base class for forms."""
 
-    def get_config(self, key) -> dict[str, str|bool|list[...,str]]:
-        """Read the configuration for a step.""" 
+    def get_config(self, key) -> dict[str, str | bool | list[..., str]]:
+        """Read the configuration for a step."""
         try:
             cfg = self.parentApp.config[key].copy()
             if not isinstance(cfg, dict):
                 cfg = {"config": {}}
         except (KeyError, AttributeError, TypeError):
-                cfg = {"config": {}}
+            cfg = {"config": {}}
         cfg.setdefault("config", {})
         return cfg["config"]
 
@@ -113,8 +113,7 @@ class BaseForm(npyscreen.FormMultiPageWithMenus, npyscreen.FormWithMenus):
         return ",".join(host)
 
     def check_config(
-        self,
-        notify: bool = True,
+        self, notify: bool = True,
     ) -> dict[str, str | dict[str, str | list | int | bool | None]]:
         """Check if the from entries are valid."""
         config = {}

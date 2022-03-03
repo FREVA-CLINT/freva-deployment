@@ -99,6 +99,9 @@ arch = "Linux-x86_64"
 #ansible_user = "username"
 ## Ansible needs a python3 interpreter, which can be set for custom python3 instances
 #ansible_python_interpreter = ""
+## The core deployment needs git, if git is not in the default PATH vraiable
+## you can set the path to the git executable
+#git_path = ""
 
 
 [web.config]

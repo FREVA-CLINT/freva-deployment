@@ -2,6 +2,7 @@ from __future__ import annotations
 from .main_window import MainApp
 from freva_deployment.deploy import DeployFactory
 
+
 def tui() -> None:
     """Create and run text user interface (tui) for deployment."""
     try:

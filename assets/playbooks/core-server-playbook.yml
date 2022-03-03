@@ -3,11 +3,9 @@
 
   vars:
     - ansible_python_interpreter: "{{ core_ansible_python_interpreter }}"
-    - ansible_become_user: "{{ core_ansible_become_user }}"
+    - ansible_become_user: "{{ core_ansible_become_user if core_ansible_become_user is defined else 'root' }}"
     - ansible_become: "{{'yes' if core_ansible_become_user is defined else 'no' }}" 
   tasks:
-  - name: Show become variable
-    debug: msg={{ansible_become}}
   - name: Cleaning up temporary files
     file:
       state: absent
@@ -17,19 +15,7 @@
       repo: "{{ core_git_url }}"
       dest: /tmp/evaluation_system
       version: "{{ core_branch }}"
-  - name: Create folder freva into the share folder
-    shell:
-      cmd: mkdir -p "{{ core_root_dir }}/freva/"
-      warn: false
-  - name: Copying Private key files
-    copy: src={{core_private_keyfile}} dest={{ core_root_dir }}/freva/{{ project_name }}.key
-  - name: Copying Public key file
-    copy: src={{ core_keyfile }} dest={{ core_root_dir }}/freva/{{ project_name }}.crt
-  - name: Inserting evaluation_system.conf
-    copy: src={{ core_dump }} dest={{ item }}
-    with_items:
-      - "/tmp/evaluation_system/evaluation_system.conf"
-      - "{{ core_root_dir }}/freva/evaluation_system.conf"
+      executable: "{{core_git_path}}"
   - name: Deploying evaluation_system
     shell:
       cmd: $PYTHON3 deploy.py {{ core_install_dir }} -s --python {{core_python_version}} --arch {{core_arch}}
@@ -46,6 +32,23 @@
         PYTHON3: "{{ ansible_python_interpreter }}"
         EVALUATION_SYSTEM_CONFIG_FILE: "{{ core_root_dir }}/freva/evaluation_system.conf"
     when: (core_install is false)
+
+  - name: Create folder freva into the share folder
+    shell:
+      cmd: mkdir -p "{{ core_root_dir }}/freva/"
+      warn: false
+  - name: Inserting evaluation_sytem.conf file
+    copy:
+      src: "{{ core_dump }}"
+      dest: "{{ core_root_dir }}/freva/evaluation_system.conf"
+  - name: Inserting drs_config.toml file
+    copy:
+      src: "/tmp/evaluation_system/assets/drs_config.toml"
+      dest: "{{ core_root_dir }}/freva/drs_config.toml"
+  - name: Copying Private key files
+    copy: src={{core_private_keyfile}} dest={{ core_root_dir }}/freva/{{ project_name }}.key
+  - name: Copying Public key file
+    copy: src={{ core_keyfile }} dest={{ core_root_dir }}/freva/{{ project_name }}.crt
   - name: Deleting temporary files
     file:
       state: absent

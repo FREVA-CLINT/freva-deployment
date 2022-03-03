@@ -24,7 +24,7 @@ class DeployFactory:
     inventory_file = None
     step_order: tuple[str, ...] = ("db", "vault", "solr", "core", "web", "backup")
     _steps_with_cert: tuple[str, ...] = ("db", "vault", "core", "web")
-    _config_keys : list[str] = []
+    _config_keys: list[str] = []
 
     @property
     def private_key_file(self) -> str:
@@ -83,16 +83,16 @@ class DeployFactory:
         """prepare the core deployment."""
         self._config_keys.append("core")
         self.cfg["core"]["config"].setdefault("admins", getuser())
-        become_user = self.cfg["core"]["config"].pop("ansible_become_user", "")
-        if become_user:
-            self.cfg["core"]["config"]["ansible_become_user"] = become_user
         if not self.cfg["core"]["config"]["admins"]:
             self.cfg["core"]["config"]["admins"] = getuser()
         self.cfg["core"]["config"].setdefault("branch", "freva-dev")
         install_dir = self.cfg["core"]["config"]["install_dir"]
-        self.cfg["core"]["config"].setdefault("root_dir", install_dir)
+        root_dir = self.cfg["core"]["config"].get("root_dir", "")
+        if not root_dir:
+            self.cfg["core"]["config"]["root_dir"] = install_dir
         self.cfg["core"]["config"]["keyfile"] = self.public_key_file
         self.cfg["core"]["config"]["private_keyfile"] = self.private_key_file
+        self.cfg["core"]["config"].setdefault("git_path", "git")
 
     def _prep_web(self):
         """prepare the web deployment."""
@@ -432,14 +432,15 @@ USE {db};
                             lines[nn] = f"{s}.{key}={cfg}\n"
                     if line.startswith(f"{s}.host"):
                         lines[nn] = f"{s}.host={self.cfg[s]['hosts']}\n"
+        print(f'AAAA    {self.get_files_copy("core")}')
         with self.get_files_copy("core").open("w") as f:
             f.write("".join(lines))
 
     def play(self):
         """Play the ansible playbook."""
         self.create_playbooks()
-        self.create_eval_config()
         inventory = self.parse_config()
+        self.create_eval_config()
         with self.inventory_file.open("w") as f:
             f.write(inventory)
         if self.master_pass:
