@@ -16,6 +16,17 @@
       dest: /tmp/evaluation_system
       version: "{{ core_branch }}"
       executable: "{{core_git_path}}"
+  - name: Create folder freva into the share folder
+    shell:
+      cmd: mkdir -p "{{ core_root_dir }}/{{ item }}/"
+      warn: false
+    with_items:
+      - "freva"
+      - "plugins4freva"
+  - name: Inserting evaluation_sytem.conf file
+    copy:
+      src: "{{ core_dump }}"
+      dest: "{{ core_root_dir }}/freva/evaluation_system.conf"
   - name: Deploying evaluation_system
     shell:
       cmd: $PYTHON3 deploy.py {{ core_install_dir }} -s --python {{core_python_version}} --arch {{core_arch}}
@@ -32,19 +43,11 @@
         PYTHON3: "{{ ansible_python_interpreter }}"
         EVALUATION_SYSTEM_CONFIG_FILE: "{{ core_root_dir }}/freva/evaluation_system.conf"
     when: (core_install is false)
-
-  - name: Create folder freva into the share folder
-    shell:
-      cmd: mkdir -p "{{ core_root_dir }}/freva/"
-      warn: false
-  - name: Inserting evaluation_sytem.conf file
-    copy:
-      src: "{{ core_dump }}"
-      dest: "{{ core_root_dir }}/freva/evaluation_system.conf"
   - name: Inserting drs_config.toml file
     copy:
       src: "/tmp/evaluation_system/assets/drs_config.toml"
       dest: "{{ core_root_dir }}/freva/drs_config.toml"
+      remote_src: yes
   - name: Copying Private key files
     copy: src={{core_private_keyfile}} dest={{ core_root_dir }}/freva/{{ project_name }}.key
   - name: Copying Public key file
