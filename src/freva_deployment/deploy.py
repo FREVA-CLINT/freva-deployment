@@ -105,8 +105,6 @@ class DeployFactory:
         else:
             self.cfg["web"]["config"]["admin"] = admin
         _webserver_items = {}
-        web_conf = Path(self._td.name) / "freva_web.toml"
-        web_conf = Path("freva_web.toml")
         try:
             _webserver_items = {
                 k.replace("web_", "").upper(): v
@@ -143,11 +141,11 @@ class DeployFactory:
             _webserver_items["IMPRINT"] = _webserver_items["ADDRESS"].split(",")
         except AttributeError:
             pass
-        with web_conf.open("w") as f:
+        with self.web_conf_file.open("w") as f:
             toml.dump(_webserver_items, f)
         for key in ("core", "web"):
             logo_suffix = logo.suffix or ".png"
-            self.cfg[key]["config"]["config_file"] = str(web_conf.absolute())
+            self.cfg[key]["config"]["config_toml_file"] = str(self.web_conf_file)
             self.cfg[key]["config"]["institution_logo"] = str(logo.absolute())
             self.cfg[key]["config"]["institution_logo_suffix"] = logo_suffix
         if self.master_pass is None:
@@ -168,6 +166,8 @@ class DeployFactory:
     def __enter__(self):
         self._td = TemporaryDirectory(prefix="inventory")
         self.inventory_file = Path(self._td.name) / "inventory.yaml"
+        self.eval_conf_file = Path(self._td.name) / "evaluation_system.conf"
+        self.web_conf_file = Path(self._td.name) / "freva_web.toml"
         return self
 
     def __exit__(self, type, value, traceback):
@@ -242,8 +242,8 @@ class DeployFactory:
         return dict(
             db=self.dump_file,
             solr=(self.aux_dir / "managed-schema").absolute(),
-            core=(self._inv_tmpl.parent / "evaluation_system.conf").absolute(),
-            web=(self._inv_tmpl.parent / "evaluation_system.conf").absolute(),
+            core=self.eval_conf_file.absolute(),
+            web=self.eval_conf_file.absolute(),
         ).get(key, "")
 
     @property
@@ -432,7 +432,6 @@ USE {db};
                             lines[nn] = f"{s}.{key}={cfg}\n"
                     if line.startswith(f"{s}.host"):
                         lines[nn] = f"{s}.host={self.cfg[s]['hosts']}\n"
-        print(f'AAAA    {self.get_files_copy("core")}')
         with self.get_files_copy("core").open("w") as f:
             f.write("".join(lines))
 
