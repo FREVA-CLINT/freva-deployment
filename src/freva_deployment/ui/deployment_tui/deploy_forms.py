@@ -198,11 +198,11 @@ class WebScreen(BaseForm):
                 ),
                 True,
             ),
-            url=(
+            project_website=(
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
                     name="Url of the freva home page:",
-                    value=cfg.get("url", "www.freva.drkz.de"),
+                    value=cfg.get("url", ""),
                 ),
                 True,
             ),
