@@ -4,11 +4,11 @@
   vars:
     - ansible_python_interpreter: "{{ core_ansible_python_interpreter }}"
     - ansible_become_user: "{{ core_ansible_become_user if core_ansible_become_user is defined else 'root' }}"
-    - ansible_become: "{{'yes' if core_ansible_become_user is defined else 'no' }}" 
+    - ansible_become: "{{'yes' if core_ansible_become_user is defined else 'no' }}"
   tasks:
   - name: Getting register to the freva logo
     stat:
-      path: "{{ web_institution_logo }}"
+      path: "{{ core_institution_logo }}"
     register: logo
   - name: Creating share directory
     shell:
@@ -16,11 +16,11 @@
       warn: false
   - name: Copy the logo if exists
     copy:
-      src: "{{ web_institution_logo }}"
+      src: "{{ core_institution_logo }}"
       dest: "{{core_root_dir}}/freva/web/logo.{{web_institution_logo_suffix}}"
     when: logo.stat.exists == true
   - name: Adding freva web config to the core structure
-    copy: src={{ web_config_file }} dest={{ core_root_dir }}/freva/web/freva_web_conf.toml
+    copy: src={{ core_config_toml_file }} dest={{ core_root_dir }}/freva/web/freva_web_conf.toml
 
 - hosts: web
 
