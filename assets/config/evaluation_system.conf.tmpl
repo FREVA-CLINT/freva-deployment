@@ -69,18 +69,25 @@ solr.core=files
 
 [scheduler_options]
 module_command=${evaluation_system:root_dir}/freva/loadfreva.modules
-extra_modules=None
+chmod_output=True
+#option_account=
+#option_ntasks=4
+#extra_modules=None
 #source=${evaluation_system:root_dir}/freva/activate_sh
-option_partition=None
+#option_partition=None
+#option_mem=252GB
+#option_distribution=block
+#option_oversubscribe=None
+
 
 #[scheduler_options_extern]
 #module_command=${evaluation_system:root}/freva/loadfreva.modules
-extra_modules=None
+#extra_modules=None
 #source=${evaluation_system:root_dir}/freva/activate_sh
-option_partition=None
+#option_partition=None
 
 
-#[plugin:movieplotter]
-#python_path=${evaluation_system:root_dir}/plugin4freva/movieplotter/src
-#module=movieplotter
+#[plugin:animator]
+#python_path=${evaluation_system:root_dir}/plugins4freva/animator
+#module=animator
 
