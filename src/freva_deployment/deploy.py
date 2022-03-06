@@ -125,7 +125,7 @@ class DeployFactory:
             alias = alias.split(",")
         alias = ",".join([a for a in alias if a.strip()])
         if not alias:
-            alias = "none"
+            alias = self.cfg["web"]["hosts"]
         self.cfg["web"]["config"]["server_alias"] = alias
         web_host = self.cfg["web"]["hosts"]
         if web_host == "127.0.0.1":
@@ -276,7 +276,7 @@ class DeployFactory:
                 value = self.cfg["core"]["config"][key]
                 config[step]["vars"][f"core_{key}"] = value
         config[step]["vars"][f"{step}_hostname"] = self.cfg[step]["hosts"]
-        config[step]["vars"][f"{step}_name"] = f"{self.project_name}_{step}"
+        config[step]["vars"][f"{step}_name"] = f"{self.project_name}-{step}"
         config[step]["vars"]["asset_dir"] = str(asset_dir)
         config[step]["vars"]["ansible_user"] = self.cfg[step]["config"].get("ansible_user", getuser())
         config[step]["vars"]["wipe"] = self.wipe

@@ -71,6 +71,9 @@ mem = "4g"
 admins = ""
 ## The path where the core should be installed
 install_dir=""
+## Set the path to any existing conda executable on the target machine,
+## if not existing (default) a tmporary conda distribution will be downloaded
+conda_exec_path=""
 ## The directory where the project configuration files will be stored, leave
 ## blank to use the same directory as `install_dir`
 root_dir = ""

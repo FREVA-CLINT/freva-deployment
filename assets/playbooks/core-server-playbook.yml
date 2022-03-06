@@ -4,7 +4,8 @@
   vars:
     - ansible_python_interpreter: "{{ core_ansible_python_interpreter }}"
     - ansible_become_user: "{{ core_ansible_become_user if core_ansible_become_user is defined else 'root' }}"
-    - ansible_become: "{{'yes' if core_ansible_become_user is defined else 'no' }}" 
+    - allow_world_readable_tmpfiles: yes
+    - conda_exec_path: "{{ core_conda_exec_path if core_conda_exec_path is defined else '' }}"
   tasks:
   - name: Cleaning up temporary files
     file:
@@ -16,10 +17,22 @@
       dest: /tmp/evaluation_system
       version: "{{ core_branch }}"
       executable: "{{core_git_path}}"
+    become: "{{'yes' if core_ansible_become_user is defined else 'no' }}"
+  - name: Deploying evaluation_system
+    shell:
+      cmd: $PYTHON3 deploy.py {{ core_install_dir }} -s --python {{core_python_version}} --arch {{core_arch}}
+      chdir: /tmp/evaluation_system
+    environment:
+      CONDA_EXEC_PATH: "{{ conda_exec_path }}"
+      PYTHON3: "{{ ansible_python_interpreter }}"
+      EVALUATION_SYSTEM_CONFIG_FILE: "{{ core_root_dir }}/freva/evaluation_system.conf"
+    when: (core_install is true)
+    become: "{{'yes' if core_ansible_become_user is defined else 'no' }}"
   - name: Create folder freva into the share folder
     shell:
       cmd: mkdir -p "{{ core_root_dir }}/{{ item }}/"
       warn: false
+    become: "{{'yes' if core_ansible_become_user is defined else 'no' }}"
     with_items:
       - "freva"
       - "plugins4freva"
@@ -27,31 +40,27 @@
     copy:
       src: "{{ core_dump }}"
       dest: "{{ core_root_dir }}/freva/evaluation_system.conf"
-  - name: Deploying evaluation_system
-    shell:
-      cmd: $PYTHON3 deploy.py {{ core_install_dir }} -s --python {{core_python_version}} --arch {{core_arch}}
-      chdir: /tmp/evaluation_system
-    environment:
-        PYTHON3: "{{ ansible_python_interpreter }}"
-        EVALUATION_SYSTEM_CONFIG_FILE: "{{ core_root_dir }}/freva/evaluation_system.conf"
-    when: (core_install is true)
-  - name: Configuring evaluation_system
-    shell:
-      cmd: $PYTHON3 deploy.py {{ core_install_dir }} -s --arch {{core_arch}} --no-conda
-      chdir: /tmp/evaluation_system
-    environment:
-        PYTHON3: "{{ ansible_python_interpreter }}"
-        EVALUATION_SYSTEM_CONFIG_FILE: "{{ core_root_dir }}/freva/evaluation_system.conf"
-    when: (core_install is false)
+    become: "{{'yes' if core_ansible_become_user is defined else 'no' }}"
   - name: Inserting drs_config.toml file
     copy:
       src: "/tmp/evaluation_system/assets/drs_config.toml"
       dest: "{{ core_root_dir }}/freva/drs_config.toml"
       remote_src: yes
+    become: "{{'yes' if core_ansible_become_user is defined else 'no' }}"
+  - name: Configuring evaluation_system
+    shell:
+      cmd: $PYTHON3 deploy.py {{ core_install_dir }} -s --no-conda
+      chdir: /tmp/evaluation_system
+    environment:
+        PYTHON3: "{{ ansible_python_interpreter }}"
+        EVALUATION_SYSTEM_CONFIG_FILE: "{{ core_root_dir }}/freva/evaluation_system.conf"
+    become: "{{'yes' if core_ansible_become_user is defined else 'no' }}"
   - name: Copying Private key files
     copy: src={{core_private_keyfile}} dest={{ core_root_dir }}/freva/{{ project_name }}.key
+    become: "{{'yes' if core_ansible_become_user is defined else 'no' }}"
   - name: Copying Public key file
     copy: src={{ core_keyfile }} dest={{ core_root_dir }}/freva/{{ project_name }}.crt
+    become: "{{'yes' if core_ansible_become_user is defined else 'no' }}"
   - name: Deleting temporary files
     file:
       state: absent

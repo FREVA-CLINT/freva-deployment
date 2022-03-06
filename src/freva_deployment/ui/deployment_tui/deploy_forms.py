@@ -112,7 +112,7 @@ class CoreScreen(BaseForm):
             ansible_become_user=(
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
-                    name=("Set an (additional) username that has privileges "
+                    name=("Set a (additional) username that has privileges "
                           "to install the core"),
                     value=cfg.get("ansible_become_user", ""),
                 ),
@@ -126,6 +126,16 @@ class CoreScreen(BaseForm):
                     values=AVAILABLE_PYTHON_VERSIONS,
                 ),
                 True,
+            ),
+            conda_exec_path=(
+                self.add_widget_intelligent(
+                    npyscreen.TitleText,
+                    name=("Path any existing conda installation. "
+                          "Leave blank to "
+                          "install a temporary conda distribution"),
+                    value=cfg.get("conda_exec_path", ""),
+                ),
+                False,
             ),
             arch=(
                 self.add_widget_intelligent(
@@ -202,7 +212,7 @@ class WebScreen(BaseForm):
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
                     name="Url of the freva home page:",
-                    value=cfg.get("url", ""),
+                    value=cfg.get("project_website", ""),
                 ),
                 True,
             ),
