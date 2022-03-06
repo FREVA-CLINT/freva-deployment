@@ -15,6 +15,7 @@ as well as it's configuration, maintanance and administration.
 
    Architecture
    Installation
+   Transition
    modules
 
 
