@@ -16,7 +16,7 @@ ENV PROJECT_ROOT=/srv/http
 ENV ROOT_DIR=${root_dir}
 COPY ./docker_cmd.sh /usr/local/bin/
 COPY ./setup_web.sh /tmp
-COPY ./freva_web.conf /tmp/
+COPY ./freva_web.conf /etc
 COPY ./add-aur.sh /root
 RUN pacman -Syu --noconfirm --noprogressbar && \
     pacman -S --noconfirm --noprogressbar \
@@ -52,7 +52,7 @@ RUN aur-install mod_wsgi a2enmod-git npm && \
     django-datatable-view-compat \
     django-webpack-loader && \
     a2enmod ssl && a2enmod headers
-RUN cat /tmp/freva_web.conf >> /etc/httpd/conf/httpd.conf && rm /tmp/freva_web.conf
+RUN echo "IncludeOptional /srv/http/freva_web.conf" >> /etc/httpd/conf/httpd.conf
 ENV EVALUATION_SYSTEM_CONFIG_FILE=${root_dir}/freva/evaluation_system.conf
 COPY ./entrypoint.sh /usr/local/bin
 CMD ["bash", "/usr/local/bin/docker_cmd.sh"]

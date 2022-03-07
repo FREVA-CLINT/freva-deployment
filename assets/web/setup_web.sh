@@ -14,6 +14,7 @@ rm -r ${web_dir}/.git*
 cp -r ${web_dir}/* .
 rm -r ${web_dir}
 mkdir -p ${PROJECT_ROOT}/static/preview
+cp /etc/freva_web.conf .
 python manage.py migrate --fake contenttypes
 python manage.py migrate --fake-initial --noinput
 python manage.py createsuperuser \
