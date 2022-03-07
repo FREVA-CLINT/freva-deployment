@@ -27,7 +27,7 @@
   vars:
     - ansible_python_interpreter: "{{ web_ansible_python_interpreter }}"
     - docker_cmd: "-p 8000:8000 -p 80:80 -p 443:443 -v /mnt/{{project_name}}/web_service:/srv/http:z -v {{ core_root_dir }}:{{ core_root_dir }}:z -v {{ core_root_dir }}/share/preview:/srv/http/static/preview:z --name"
-    - container_name: "{{ project_name }}_web"
+    - container_name: "{{ project_name }}-web"
   tasks:
   - name: Getting register to core dir
     stat:
