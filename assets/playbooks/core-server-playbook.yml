@@ -55,6 +55,11 @@
         PYTHON3: "{{ ansible_python_interpreter }}"
         EVALUATION_SYSTEM_CONFIG_FILE: "{{ core_root_dir }}/freva/evaluation_system.conf"
     become: "{{'yes' if core_ansible_become_user is defined else 'no' }}"
+  - name: Creating preview directory
+    file:
+      path: {{ core_root_dir }}/share/preview
+      state: directory
+      mode: "u=rw,g=rw,o=r"
   - name: Copying Private key files
     copy: src={{core_private_keyfile}} dest={{ core_root_dir }}/freva/{{ project_name }}.key
     become: "{{'yes' if core_ansible_become_user is defined else 'no' }}"
