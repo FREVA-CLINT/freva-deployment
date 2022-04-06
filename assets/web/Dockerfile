@@ -45,7 +45,7 @@ RUN aur-install mod_wsgi a2enmod-git npm && \
     django-model-utils \
     django-templated-email \
     PyPDF2 \
-    pgtail \
+    pygtail \
     django-debug-toolbar \
     django-ipware \
     django-nose \
