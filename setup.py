@@ -53,27 +53,30 @@ setup(
     package_dir={"": "src"},
     entry_points={
         "console_scripts": [
-            "deploy-freva = freva_deployment.cli:cli",
+            "deploy-freva = freva_deployment.cli:deploy",
+            "freva-service = freva_deployment.cli:service",
             "deploy-freva-tui = freva_deployment.ui.deployment_tui:tui",
         ]
     },
+    setup_requires=["appdirs"],
     install_requires=[
         "appdirs",
         "npyscreen",
+        "pyncclient",
         "pyyml",
         "rich",
         "toml",
         "tomlkit",
     ],
     extras_require={
-        'docs': [
-              'sphinx',
-              'nbsphinx',
-              'recommonmark',
-              'sphinx_rtd_theme',
-              'ipython',  # For nbsphinx syntax highlighting
-              'sphinxcontrib_github_alt',
-              ],
+        "docs": [
+            "sphinx",
+            "nbsphinx",
+            "recommonmark",
+            "sphinx_rtd_theme",
+            "ipython",  # For nbsphinx syntax highlighting
+            "sphinxcontrib_github_alt",
+        ],
     },
     python_requires=">=3.8",
     classifiers=[

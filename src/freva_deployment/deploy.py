@@ -14,7 +14,15 @@ from rich.console import Console
 import toml
 import yaml
 
-from .utils import asset_dir, config_dir, create_self_signed_cert, get_passwd, logger
+from .utils import (
+    asset_dir,
+    config_dir,
+    create_self_signed_cert,
+    get_passwd,
+    logger,
+    upload_data_to_nextcloud,
+    download_data_from_nextcloud,
+)
 
 
 class DeployFactory:
@@ -38,10 +46,11 @@ class DeployFactory:
             return str(Path(mkdtemp(suffix=".crt")))
         if not self._cert_file:
             self._cert_file = config_dir / "keys" / f"{self.project_name}.crt"
-        if not self._cert_file.is_file():
+        _cert_file = Path(self._cert_file)
+        if not _cert_file.is_file():
             logger.warning("Certificate file does not exist, creating new one")
-            self._cert_file = create_self_signed_cert(self._cert_file)
-        return str(self._cert_file.absolute())
+            _cert_file = create_self_signed_cert(_cert_file)
+        return str(_cert_file.absolute())
 
     def _prep_vault(self):
         """Prepare the vault."""
@@ -231,12 +240,16 @@ class DeployFactory:
                     sections.append(section)
         for section in sections:
             for key, value in self.cfg[section]["config"].items():
-                if (
-                    not value
-                    and not key.startswith("admin")
-                    and not isinstance(value, bool)
-                ):
+                if not value and not self._empty_ok and not isinstance(value, bool):
                     raise ValueError(f"{key} in {section} is empty in {self._inv_tmpl}")
+
+    @property
+    def _empty_ok(self):
+        """Define all keys that can be empty."""
+        return [
+            "admins",
+            "conda_exec_path",
+        ]
 
     def get_files_copy(self, key):
         return dict(
@@ -278,7 +291,9 @@ class DeployFactory:
         config[step]["vars"][f"{step}_hostname"] = self.cfg[step]["hosts"]
         config[step]["vars"][f"{step}_name"] = f"{self.project_name}-{step}"
         config[step]["vars"]["asset_dir"] = str(asset_dir)
-        config[step]["vars"]["ansible_user"] = self.cfg[step]["config"].get("ansible_user", getuser())
+        config[step]["vars"]["ansible_user"] = self.cfg[step]["config"].get(
+            "ansible_user", getuser()
+        )
         config[step]["vars"]["wipe"] = self.wipe
         config[step]["vars"][f"{step}_ansible_python_interpreter"] = self.cfg[step][
             "config"
@@ -287,7 +302,7 @@ class DeployFactory:
         if dump_file:
             config[step]["vars"][f"{step}_dump"] = str(dump_file)
 
-    def parse_config(self) -> tuple[str, str]:
+    def parse_config(self) -> str:
         """Create config files for anisble and evaluation_system.conf."""
         logger.info("Parsing configurations")
         self.check_config()
@@ -297,7 +312,7 @@ class DeployFactory:
             config[step]["hosts"] = self.cfg[step]["hosts"]
             config[step]["vars"] = {}
             for key, value in self.cfg[step]["config"].items():
-                if key not in ("root_passwd", ):
+                if key not in ("root_passwd",):
                     new_key = f"{step}_{key}"
                 else:
                     new_key = key
@@ -307,7 +322,6 @@ class DeployFactory:
             self._set_additional_config_values(step, config)
         if "db" in self._config_keys:
             config.update(self._add_local_config(config["db"]["vars"]))
-
         return yaml.dump(config)
 
     def _create_sql_dump(self):
@@ -454,7 +468,27 @@ USE {db};
         if self.ask_pass:
             cmd += " --ask-pass"
         cmd += " --ask-become-pass"
+        cmd = shlex.split(cmd)
+        cmd = ["echo", "hallo"]
         try:
-            run(shlex.split(cmd), env=os.environ.copy(), cwd=str(asset_dir))
+            res = run(cmd, env=os.environ.copy(), cwd=str(asset_dir))
         except KeyboardInterrupt:
             pass
+        if res.returncode == 0:
+            self.upload_server_info(inventory)
+
+    def upload_server_info(self, inventory: str):
+        """Upload information on server information to shared nextcloud."""
+        server_info = {}
+        for step, info in yaml.safe_load(inventory).items():
+            ansible_step = dict(
+                ansible_python_interpreter=info["vars"][
+                    f"{step}_ansible_python_interpreter"
+                ]
+            )
+            hosts = info["hosts"]
+            if isinstance(hosts, str):
+                hosts = [hosts]
+            ansible_step["hosts"] = hosts
+            server_info[step] = ansible_step
+        upload_data_to_nextcloud(self.project_name, server_info)

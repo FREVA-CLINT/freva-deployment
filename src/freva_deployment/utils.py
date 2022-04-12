@@ -1,12 +1,18 @@
 """Collection of utils for deployment."""
 from __future__ import annotations
-import appdirs
 from getpass import getpass
 import logging
 from pathlib import Path
 import re
+import os
 import shlex
 from subprocess import run, PIPE
+from tempfile import NamedTemporaryFile, TemporaryDirectory
+import toml
+from typing import Union
+
+import appdirs
+import nextcloud_client
 
 logging.basicConfig(format="%(name)s - %(levelname)s - %(message)s", level=logging.INFO)
 logger = logging.getLogger("freva-deployment")
@@ -18,6 +24,62 @@ password_prompt = (
     "a self signed certificate for accessing the freva credentials "
     "as mysql root password.\n: "
 )
+
+
+def download_data_from_nextcloud(
+    public_url: str = "https://nextcloud.dkrz.de/s",
+) -> dict[str, dict[str, dict[str, Union[str, list[str]]]]]:
+    """Download server information from public next cloud share."""
+    token = "yas2RZHRDyiMaPj"
+    public_link = public_url + "/" + token
+    with NamedTemporaryFile(suffix=".json") as temp_f:
+        nc = nextcloud_client.Client.from_public_link(public_link)
+        try:
+            nc.get_file("/servers.toml", temp_f.name)
+        except nextcloud_client.HTTPResponseError:
+            return {}
+        with open(temp_f.name) as f_obj:
+            return toml.load(f_obj)
+
+
+def upload_data_to_nextcloud(
+    project_name: str,
+    server_info: dict[str, dict[str, Union[str, list[str]]]],
+    public_url: str = "https://nextcloud.dkrz.de/s",
+) -> None:
+    """Upload server information to public nextcloud share.
+
+    Parameters
+    ----------
+    project_name: str
+        Name of the freva project
+    server_info: dict[str, str]
+        Server names for each deployed service
+    public_url: str
+        The public nextcloud url where the information is upladed to.
+    """
+    token = "yas2RZHRDyiMaPj"
+    public_link = public_url + "/" + token
+    server_data = download_data_from_nextcloud()
+    for service, values in server_info.items():
+        try:
+            server_data[project_name][service] = values
+        except KeyError:
+            server_data[project_name] = {service: values}
+    cwd = os.getcwd()
+    with TemporaryDirectory() as td:
+        nc = nextcloud_client.Client.from_public_link(public_link)
+        os.chdir(td)
+        with open("servers.toml", "w") as f_obj:
+            toml.dump(server_data, f_obj)
+        try:
+            success = nc.drop_file("servers.toml")
+        except nextcloud_client.HTTPResponseError as e:
+            logger.error("Could not upload server data to %s", public_link)
+        finally:
+            os.chdir(cwd)
+        if success:
+            logger.info("Server information updated at %s", public_url)
 
 
 def get_passwd(min_characters: int = 8) -> str:

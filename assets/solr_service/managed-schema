@@ -93,7 +93,8 @@
   <field name="file_no_version" type="string" stored="false" indexed="true"/>
 
   <!-- everything else will get indexed but not stored -->
-  <dynamicField name="*" type="text_general" stored="false" indexed="true"/>
+  <field name="_root_" type="string" indexed="false" stored="false" docValues="false"/>
+  <dynamicField name="*" type="string" stored="true" indexed="true" multiValued="true"/>
   <!--
   <copyField source="content" dest="text_shingles"/>
   <copyField source="*" dest="_text_"/> -->
