@@ -1,6 +1,7 @@
+"""Call the freva tui."""
 from __future__ import annotations
-from .main_window import MainApp
 from freva_deployment.deploy import DeployFactory
+from .main_window import MainApp
 
 
 def tui() -> None:

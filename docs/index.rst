@@ -4,7 +4,7 @@
    contain the root `toctree` directive.
 
 Welcome to freva admin documentation!
-====================================
+=====================================
 
 This documentation gives an overview over the installation process of freva
 as well as it's configuration, maintanance and administration.
@@ -15,6 +15,7 @@ as well as it's configuration, maintanance and administration.
 
    Architecture
    Installation
+   Services
    Transition
    modules
 

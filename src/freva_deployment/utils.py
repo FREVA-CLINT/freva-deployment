@@ -8,11 +8,11 @@ import os
 import shlex
 from subprocess import run, PIPE
 from tempfile import NamedTemporaryFile, TemporaryDirectory
-import toml
 from typing import Union
 
 import appdirs
 import nextcloud_client
+import toml
 
 logging.basicConfig(format="%(name)s - %(levelname)s - %(message)s", level=logging.INFO)
 logger = logging.getLogger("freva-deployment")
@@ -28,7 +28,7 @@ password_prompt = (
 
 def download_data_from_nextcloud(
     public_url: str = "https://nextcloud.dkrz.de/s",
-) -> dict[str, dict[str, dict[str, Union[str, list[str]]]]]:
+) -> dict[str, dict[str, dict[str, str]]]:
     """Download server information from public next cloud share."""
     token = "yas2RZHRDyiMaPj"
     public_link = public_url + "/" + token
@@ -44,7 +44,7 @@ def download_data_from_nextcloud(
 
 def upload_data_to_nextcloud(
     project_name: str,
-    server_info: dict[str, dict[str, Union[str, list[str]]]],
+    server_info: dict[str, dict[str, str]],
     public_url: str = "https://nextcloud.dkrz.de/s",
 ) -> None:
     """Upload server information to public nextcloud share.
@@ -74,7 +74,7 @@ def upload_data_to_nextcloud(
             toml.dump(server_data, f_obj)
         try:
             success = nc.drop_file("servers.toml")
-        except nextcloud_client.HTTPResponseError as e:
+        except nextcloud_client.HTTPResponseError:
             logger.error("Could not upload server data to %s", public_link)
         finally:
             os.chdir(cwd)
@@ -106,13 +106,13 @@ def get_passwd(min_characters: int = 8) -> str:
 def _create_passwd(min_characters: int, msg: str = "") -> str:
     """Create passwords."""
     master_pass = getpass(msg or password_prompt)
-    is_ok = len(master_pass) > min_characters
+    is_ok: bool = len(master_pass) > min_characters
     for check in ("[a-z]", "[A-Z]", "[0-9]"):
         if not re.search(check, master_pass):
             is_ok = False
             break
-    is_ok *= len([True for c in "[_@$#$%^&*-!]" if c in master_pass]) > 0
-    if not is_ok:
+    is_safe: bool = len([True for c in "[_@$#$%^&*-!]" if c in master_pass]) > 0
+    if (is_ok * is_safe) is False:
         raise ValueError(
             (
                 f"Password must be at least {min_characters} characters long, "
@@ -126,15 +126,13 @@ def _create_passwd(min_characters: int, msg: str = "") -> str:
     return master_pass
 
 
-def create_self_signed_cert(certfile: Path | str, overwrite: bool = True) -> Path:
+def create_self_signed_cert(certfile: Path | str) -> Path:
     """Create a public and private key file.
 
     Parameters:
     ===========
     certfile:
         path of the certificate file.
-    overwrite:
-        overwrite any existing certificate files.
 
     Returns:
     ========

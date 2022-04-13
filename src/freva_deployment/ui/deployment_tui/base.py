@@ -5,6 +5,7 @@ from pathlib import Path
 import curses
 import npyscreen
 import logging
+from typing import cast
 
 
 logging.basicConfig(level=logging.DEBUG)
@@ -16,6 +17,8 @@ class FileSelector(npyscreen.FileSelector):
 
     file_extentions: list[str]
     """List of allowed file extensions."""
+    value: str
+    """The value of this file selector."""
 
     def __init__(
         self, *args, file_extentions: str | list[str] = [".toml"], **kwargs
@@ -91,7 +94,7 @@ def selectFile(starting_value: str = "", *args, **keywords):
 class BaseForm(npyscreen.FormMultiPageWithMenus, npyscreen.FormWithMenus):
     """Base class for forms."""
 
-    def get_config(self, key) -> dict[str, str | bool | list[..., str]]:
+    def get_config(self, key) -> dict[str, str | bool | list[str]]:
         """Read the configuration for a step."""
         try:
             cfg = self.parentApp.config[key].copy()
@@ -113,8 +116,9 @@ class BaseForm(npyscreen.FormMultiPageWithMenus, npyscreen.FormWithMenus):
         return ",".join(host)
 
     def check_config(
-        self, notify: bool = True,
-    ) -> dict[str, str | dict[str, str | list | int | bool | None]]:
+        self,
+        notify: bool = True,
+    ) -> dict[str, str | dict[str, str | list | int | bool | None]] | None:
         """Check if the from entries are valid."""
         config = {}
         for key, (obj, mandatory) in self.input_fields.items():
@@ -126,7 +130,7 @@ class BaseForm(npyscreen.FormMultiPageWithMenus, npyscreen.FormWithMenus):
                 if not value and self.use.value and mandatory and notify:
                     msg = f"MISSING ENTRY FOR {self.step}: {obj.name}"
                     npyscreen.notify_confirm(msg, title="ERROR")
-                    return
+                    return None
                 elif not value and not mandatory:
                     continue
             config[key] = value

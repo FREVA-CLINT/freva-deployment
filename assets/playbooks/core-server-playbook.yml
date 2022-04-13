@@ -51,7 +51,6 @@
     environment:
       CONDA_EXEC_PATH: "{{ conda_exec_path }}"
       PYTHON3: "{{ ansible_python_interpreter }}"
-      PYTHON_VERSION: "{{ core_python_version }}"
       EVALUATION_SYSTEM_CONFIG_FILE: "{{ core_root_dir }}/freva/evaluation_system.conf"
     when: (core_install is true)
     become: "{{'yes' if core_ansible_become_user is defined else 'no' }}"

@@ -1,5 +1,16 @@
 stages:
     - doc
+
+lint:
+  stage: doc
+  tags:
+    - sphinx
+  before_script:
+    - python3 -m pip install .[test]
+  script:
+    - mypy
+    - black --check src
+
 pages:
   stage: doc
   tags:

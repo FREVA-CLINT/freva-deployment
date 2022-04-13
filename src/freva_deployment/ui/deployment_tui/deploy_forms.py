@@ -2,13 +2,14 @@ from __future__ import annotations
 from getpass import getuser
 import npyscreen
 from pathlib import Path
+from typing import cast
 
 from .base import BaseForm, logger
 from freva_deployment import AVAILABLE_PYTHON_VERSIONS, AVAILABLE_CONDA_ARCHS
 
 
-def get_index(values: list[str | int], target: str | int, default: int = 0) -> int:
-    """Get the index target item in list.
+def get_index(values: list[str], target: str, default: int = 0) -> int:
+    """Get the target index of item in list.
 
     Parameters:
     ===========
@@ -37,12 +38,10 @@ class CoreScreen(BaseForm):
 
     def _add_widgets(self) -> None:
         """Add widgets to the screen."""
-        self.list_keys = []
+        self.list_keys: list[str] = []
         cfg = self.get_config(self.step)
-        arch = cfg.get("arch", AVAILABLE_CONDA_ARCHS[0])
-        python_version = cfg.get("python_version", AVAILABLE_PYTHON_VERSIONS[-1])
+        arch = cast(str, cfg.get("arch", AVAILABLE_CONDA_ARCHS[0]))
         arch_idx = get_index(AVAILABLE_CONDA_ARCHS, arch, 0)
-        python_version_idx = get_index(AVAILABLE_PYTHON_VERSIONS, python_version, -1)
         self.input_fields: dict[str, tuple[npyscreen.TitleText, bool]] = dict(
             hosts=(
                 self.add_widget_intelligent(
@@ -112,27 +111,22 @@ class CoreScreen(BaseForm):
             ansible_become_user=(
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
-                    name=("Set a (additional) username that has privileges "
-                          "to install the core"),
+                    name=(
+                        "Set a (additional) username that has privileges "
+                        "to install the core"
+                    ),
                     value=cfg.get("ansible_become_user", ""),
                 ),
                 False,
             ),
-            python_version=(
-                self.add_widget_intelligent(
-                    npyscreen.TitleCombo,
-                    name="Set the python version that ist deployed.",
-                    value=python_version_idx,
-                    values=AVAILABLE_PYTHON_VERSIONS,
-                ),
-                True,
-            ),
             conda_exec_path=(
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
-                    name=("Path any existing conda installation. "
-                          "Leave blank to "
-                          "install a temporary conda distribution"),
+                    name=(
+                        "Path any existing conda installation. "
+                        "Leave blank to "
+                        "install a temporary conda distribution"
+                    ),
                     value=cfg.get("conda_exec_path", ""),
                 ),
                 False,
@@ -173,7 +167,6 @@ class CoreScreen(BaseForm):
                 ),
                 False,
             ),
-
         )
 
 
@@ -187,10 +180,10 @@ class WebScreen(BaseForm):
         self.list_keys = "contacts", "address", "auth_ldap_server_uri", "scheduler_host"
         cfg = self.get_config(self.step)
         for key in self.list_keys:
-            if key in cfg:
-                if isinstance(cfg[key], str):
-                    cfg[key] = [v.strip() for v in cfg[key].split(",") if v.strip()]
-                    logger.warning(key, cfg[key])
+            if key in cfg and isinstance(cfg[key], str):
+                value = cast(str, cfg[key])
+                cfg[key] = [v.strip() for v in value.split(",") if v.strip()]
+                logger.warning(key, cfg[key])
         self.input_fields: dict[str, tuple[npyscreen.TitleText, bool]] = dict(
             hosts=(
                 self.add_widget_intelligent(
@@ -260,7 +253,9 @@ class WebScreen(BaseForm):
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
                     name="Email address for admin(s) - comma seperated",
-                    value=",".join(cfg.get("contatcs", ["admin@freva.dkrz.de"])),
+                    value=",".join(
+                        cast(list[str], cfg.get("contatcs", ["admin@freva.dkrz.de"]))
+                    ),
                 ),
                 True,
             ),
@@ -269,16 +264,19 @@ class WebScreen(BaseForm):
                     npyscreen.TitleText,
                     name="Institution address, comma separated",
                     value=",".join(
-                        cfg.get(
-                            "address",
-                            [
-                                "freva",
-                                "German Climate Computing Centre (DKRZ)",
-                                "Bundesstr. 45a",
-                                "20146 Hamburg",
-                                "Germany",
-                            ],
-                        )
+                        cast(
+                            list[str],
+                            cfg.get(
+                                "address",
+                                [
+                                    "freva",
+                                    "German Climate Computing Centre (DKRZ)",
+                                    "Bundesstr. 45a",
+                                    "20146 Hamburg",
+                                    "Germany",
+                                ],
+                            ),
+                        ),
                     ),
                 ),
                 True,
@@ -317,7 +315,9 @@ class WebScreen(BaseForm):
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
                     name="Slurm scheduler hostname",
-                    value=",".join(cfg.get("scheduler_host", ["mistral.dkrz.de"])),
+                    value=",".join(
+                        cast(list[str], cfg.get("scheduler_host", ["mistral.dkrz.de"]))
+                    ),
                 ),
                 True,
             ),
@@ -329,10 +329,16 @@ class WebScreen(BaseForm):
                         "separated"
                     ),
                     value=",".join(
-                        cfg.get(
-                            "auth_ldap_server_uri",
-                            ["ldap://mldap0.hpc.dkrz.de", "ldap://mldap1.hpc.dkrz.de"],
-                        )
+                        cast(
+                            list[str],
+                            cfg.get(
+                                "auth_ldap_server_uri",
+                                [
+                                    "ldap://mldap0.hpc.dkrz.de",
+                                    "ldap://mldap1.hpc.dkrz.de",
+                                ],
+                            ),
+                        ),
                     ),
                 ),
                 True,
@@ -360,7 +366,8 @@ class WebScreen(BaseForm):
                     npyscreen.TitleText,
                     name="Ldap search keys for group base",
                     value=cfg.get(
-                        "ldap_group_base", "cn=groups,cn=accounts,dc=dkrz,dc=de",
+                        "ldap_group_base",
+                        "cn=groups,cn=accounts,dc=dkrz,dc=de",
                     ),
                 ),
                 True,
@@ -410,10 +417,12 @@ class DBScreen(BaseForm):
 
     def _add_widgets(self) -> None:
         """Add widgets to the screen."""
-        self.list_keys = []
+        self.list_keys: list[str] = []
         cfg = self.get_config(self.step)
-        db_ports: list[..., int] = list(range(3300, 3320))
-        port_idx = get_index(db_ports, cfg.get("port", 3306), 6)
+        db_ports: list[int] = list(range(3300, 3320))
+        port_idx = get_index(
+            cast(list[str], list(map(str, db_ports))), str(cfg.get("port", 3306)), 6
+        )
         self.input_fields: dict[str, tuple[npyscreen.TitleText, bool]] = dict(
             hosts=(
                 self.add_widget_intelligent(
@@ -474,10 +483,12 @@ class SolrScreen(BaseForm):
 
     def _add_widgets(self) -> None:
         """Add widgets to the screen."""
-        self.list_keys = []
+        self.list_keys: list[str] = []
         cfg = self.get_config(self.step)
-        solr_ports: list[..., int] = list(range(8980, 9000))
-        port_idx = get_index(solr_ports, cfg.get("port", 8983), 3)
+        solr_ports: list[int] = list(range(8980, 9000))
+        port_idx = get_index(
+            [str(p) for p in solr_ports], str(cfg.get("port", 8983)), 3
+        )
         self.input_fields: dict[str, tuple[npyscreen.TitleText, bool]] = dict(
             hosts=(
                 self.add_widget_intelligent(

@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+"""Module to run the freva deployment."""
 from __future__ import annotations
 from getpass import getuser
 import os
@@ -21,7 +21,6 @@ from .utils import (
     get_passwd,
     logger,
     upload_data_to_nextcloud,
-    download_data_from_nextcloud,
 )
 
 
@@ -45,8 +44,8 @@ class DeployFactory:
         if not any((step in self._steps_with_cert for step in self.steps)):
             return str(Path(mkdtemp(suffix=".crt")))
         if not self._cert_file:
-            self._cert_file = config_dir / "keys" / f"{self.project_name}.crt"
-        _cert_file = Path(self._cert_file)
+            _cert_file = config_dir / "keys" / f"{self.project_name}.crt"
+        _cert_file = Path(self._cert_file or _cert_file)
         if not _cert_file.is_file():
             logger.warning("Certificate file does not exist, creating new one")
             _cert_file = create_self_signed_cert(_cert_file)
@@ -281,8 +280,8 @@ class DeployFactory:
         return ["web", "core"]
 
     def _set_additional_config_values(
-        self, step: str, config: dict[str, dict[str, str | int | bool]]
-    ) -> dict[str, dict[str, str | int | bool]]:
+        self, step: str, config: dict[str, dict[str, dict[str, str | int | bool]]]
+    ) -> None:
         """Set additional values to the configuration."""
         if step in self.needs_core:
             for key in ("git_url", "branch", "root_dir"):
@@ -306,7 +305,7 @@ class DeployFactory:
         """Create config files for anisble and evaluation_system.conf."""
         logger.info("Parsing configurations")
         self.check_config()
-        config = {}
+        config: dict[str, dict[str, dict[str, str | int | bool]]] = {}
         for step in set(self._config_keys):
             config[step] = {}
             config[step]["hosts"] = self.cfg[step]["hosts"]
@@ -400,7 +399,7 @@ USE {db};
         self.ask_pass = ask_pass
         self._steps = steps
         self.wipe = wipe
-        self._cert_file = cert_file
+        self._cert_file = cert_file or ""
         self._inv_tmpl = Path(config_file or config_dir / "inventory.toml")
         self._cfg_tmpl = self.aux_dir / "evaluation_system.conf.tmpl"
         self.cfg = self._read_cfg()
@@ -486,9 +485,6 @@ USE {db};
                     f"{step}_ansible_python_interpreter"
                 ]
             )
-            hosts = info["hosts"]
-            if isinstance(hosts, str):
-                hosts = [hosts]
-            ansible_step["hosts"] = hosts
+            ansible_step["hosts"] = info["hosts"]
             server_info[step] = ansible_step
         upload_data_to_nextcloud(self.project_name, server_info)

@@ -6,27 +6,30 @@ import npyscreen
 from pathlib import Path
 import time
 import threading
+from typing import Any, cast, Collection
 
-from .base import selectFile
+from .base import selectFile, BaseForm
 from .deploy_forms import WebScreen, DBScreen, SolrScreen, CoreScreen, RunForm
 from freva_deployment.utils import asset_dir, config_dir
 
 
 class MainApp(npyscreen.NPSAppManaged):
+    config: dict[str, Any] = dict()
+
     def onStart(self) -> None:
         """When Application starts, set up the Forms that will be used."""
         self.cache_dir.mkdir(exist_ok=True, parents=True)
-        self.steps = []
-        self.setup = {}
+        self.steps: list[str] = []
+        self.setup: dict[str, Any] = {}
         self._steps_lookup = {
             "core": "MAIN",
             "web": "SECOND",
             "solr": "FOURTH",
             "db": "THIRD",
         }
-        self._forms = {}
+        self._forms: dict[str, BaseForm] = {}
         self.current_form = "core"
-        self.config = self._read_cache("config", {})
+        self.config = cast(dict[str, Any], self._read_cache("config", {}))
         for step in self._steps_lookup.keys():
             self.config.setdefault(step, {"hosts": "", "config": {}})
         self._add_froms()
@@ -36,7 +39,11 @@ class MainApp(npyscreen.NPSAppManaged):
 
     def _add_froms(self) -> None:
         """Add forms to edit the deploy steps to the main window."""
-        self._forms["core"] = self.addForm("MAIN", CoreScreen, name="Core deployment",)
+        self._forms["core"] = self.addForm(
+            "MAIN",
+            CoreScreen,
+            name="Core deployment",
+        )
         self._forms["web"] = self.addForm("SECOND", WebScreen, name="Web deployment")
         self._forms["db"] = self.addForm("THIRD", DBScreen, name="Database deployment")
         self._forms["solr"] = self.addForm("FOURTH", SolrScreen, name="Solr deployment")
@@ -70,6 +77,7 @@ class MainApp(npyscreen.NPSAppManaged):
             if form_obj.use.value:
                 self.steps.append(step)
             self.config[step] = cfg
+        return None
 
     def _auto_save(self) -> None:
         """Auto save the current configuration."""
@@ -146,14 +154,14 @@ class MainApp(npyscreen.NPSAppManaged):
                 indent=3,
             )
         if write_toml_file is False:
-            return
+            return None
         save_file = save_file or cache_file
         save_file = Path(save_file).expanduser().absolute()
         try:
             with open(asset_dir / "config" / "inventory.toml") as f:
-                config_tmpl = tomlkit.load(f)
+                config_tmpl = cast(dict[str, Any], tomlkit.load(f))
         except Exception:
-            config_tmpl = self.config.copy()
+            config_tmpl = self.config
         for step, settings in self.config.items():
             config_tmpl[step]["hosts"] = settings["hosts"]
             for key, config in settings["config"].items():
@@ -170,8 +178,8 @@ class MainApp(npyscreen.NPSAppManaged):
         return Path(appdirs.user_cache_dir()) / "freva-deployment"
 
     def _read_cache(
-        self, key: str, default: str | list | bool = ""
-    ) -> str | bool | list:
+        self, key: str, default: str | list | bool | dict[str, str] = ""
+    ) -> str | bool | list | dict[str, str]:
         try:
             with open(self.cache_dir / "freva_deployment.json", "r") as f:
                 return json.load(f).get(key, default)
@@ -179,20 +187,20 @@ class MainApp(npyscreen.NPSAppManaged):
             return default
 
     @property
-    def _steps(self) -> str:
+    def _steps(self) -> list[str]:
         """Read the deployment-steps from the cache."""
-        return self._read_cache("steps", ["core", "web", "db", "solr"])
+        return cast(list[str], self._read_cache("steps", ["core", "web", "db", "solr"]))
 
     @property
     def cert_file(self) -> str:
         """Read the certificate file from the cache."""
-        return self._read_cache("cert_file", "")
+        return cast(str, self._read_cache("cert_file", ""))
 
     @property
     def save_file(self) -> str:
         """Read the file that stores the configuration from the cache."""
         fall_back = config_dir / "inventory.toml"
-        return self._read_cache("save_file", str(fall_back))
+        return cast(str, self._read_cache("save_file", str(fall_back)))
 
 
 if __name__ == "__main__":
