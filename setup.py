@@ -77,7 +77,7 @@ setup(
             "ipython",  # For nbsphinx syntax highlighting
             "sphinxcontrib_github_alt",
         ],
-        "test": ["mypy", "black"],
+        "test": ["mypy", "black", "types-toml"],
     },
     python_requires=">=3.8",
     classifiers=[
