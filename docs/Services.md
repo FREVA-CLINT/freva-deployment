@@ -1,5 +1,5 @@
 # Remote control of project services
-The installation routine saves the location of the services for each project in
+The installation routine saves the hosts of the services for each project in
 as central location. After deployment the project services can be restarted,
 stopped or started via the `freva-service` command.
 
