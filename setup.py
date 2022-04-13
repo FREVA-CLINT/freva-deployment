@@ -55,6 +55,7 @@ setup(
         "console_scripts": [
             "deploy-freva = freva_deployment.cli:deploy",
             "freva-service = freva_deployment.cli:service",
+            "freva-migrate = freva_deployment.cli:migrate",
             "deploy-freva-tui = freva_deployment.ui.deployment_tui:tui",
         ]
     },

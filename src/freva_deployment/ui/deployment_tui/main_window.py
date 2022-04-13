@@ -1,16 +1,19 @@
+"""The Freva deployment Text User Interface (TUI) helps to configure a
+deployment setup for a new instance of freva."""
 from __future__ import annotations
-import appdirs
 import json
-import tomlkit
-import npyscreen
 from pathlib import Path
 import time
 import threading
-from typing import Any, cast, Collection
+from typing import Any, cast
 
+import appdirs
+import npyscreen
+import tomlkit
+
+from freva_deployment.utils import asset_dir, config_dir
 from .base import selectFile, BaseForm
 from .deploy_forms import WebScreen, DBScreen, SolrScreen, CoreScreen, RunForm
-from freva_deployment.utils import asset_dir, config_dir
 
 
 class MainApp(npyscreen.NPSAppManaged):
@@ -35,7 +38,7 @@ class MainApp(npyscreen.NPSAppManaged):
         self._add_froms()
         self._thread_stop = threading.Event()
         self._save_thread = threading.Thread(target=self._auto_save)
-        # self._save_thread.start()
+        self._save_thread.start()
 
     def _add_froms(self) -> None:
         """Add forms to edit the deploy steps to the main window."""
@@ -54,6 +57,7 @@ class MainApp(npyscreen.NPSAppManaged):
             kwargs.get("msg", "Exit Application?"), title=""
         )
         if value is True:
+            self._thread_stop.set()
             self.setNextForm(None)
             self.editing = False
             self.switchFormNow()
@@ -82,7 +86,7 @@ class MainApp(npyscreen.NPSAppManaged):
     def _auto_save(self) -> None:
         """Auto save the current configuration."""
         while not self._thread_stop.is_set():
-            time.sleep(60)
+            time.sleep(0.5)
             if self._thread_stop.is_set():
                 break
             try:
