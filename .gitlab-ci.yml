@@ -8,7 +8,7 @@ lint:
   before_script:
     - python3 -m pip install .[test]
   script:
-    - mypy
+    - mypy --install-types
     - black --check src
 
 pages:
