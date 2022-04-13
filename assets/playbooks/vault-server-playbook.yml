@@ -21,7 +21,7 @@
       shell: docker stop "{{ vault_name }}"; docker rm "{{ vault_name }}"; docker rmi -f "{{ vault_name }}" ;echo 0
       become: yes
     - name: Copy auxillary files to target machine
-      copy: src="{{ root_dir }}/vault" dest=/tmp
+      copy: src="{{ asset_dir }}/vault" dest=/tmp
     - name: Copy public key file to target machine
       copy:
         src: "{{ vault_keyfile }}"
@@ -32,7 +32,7 @@
         dest: "/tmp/vault/{{ project_name }}.key"
     - name: Copy systemd files
       copy:
-        src: "{{ root_dir }}/scripts/{{ item }}"
+        src: "{{ asset_dir }}/scripts/{{ item }}"
         dest: /tmp/{{ item }}
         mode: '0755'
       with_items:
@@ -40,7 +40,7 @@
         - "create_systemd.sh"
     - name: Copy docker kill script
       copy:
-        src: "{{ root_dir }}/scripts/kill_container"
+        src: "{{ asset_dir }}/scripts/kill_container"
         dest: /usr/local/bin/kill_container
         mode: '0755'
       become: yes

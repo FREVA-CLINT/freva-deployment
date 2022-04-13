@@ -1,4 +1,4 @@
 #!/bin/bash
-apache2ctl -D FOREGROUND
+apachectl -D FOREGROUND
 
 

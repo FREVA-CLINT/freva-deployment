@@ -1,21 +1,85 @@
 """Collection of utils for deployment."""
 from __future__ import annotations
-import appdirs
 from getpass import getpass
 import logging
 from pathlib import Path
 import re
+import os
 import shlex
 from subprocess import run, PIPE
+from tempfile import NamedTemporaryFile, TemporaryDirectory
+from typing import Union
+
+import appdirs
+import nextcloud_client
+import toml
 
 logging.basicConfig(format="%(name)s - %(levelname)s - %(message)s", level=logging.INFO)
 logger = logging.getLogger("freva-deployment")
 
 config_dir = Path(appdirs.user_config_dir()) / "freva" / "deployment"
 asset_dir = Path(appdirs.user_data_dir()) / "freva" / "deployment"
-password_prompt = ("Set a master password, this password will be used to create\n"
-                   "a self signed certificate for accessing the freva credentials "
-                   "as mysql root password.\n: ")
+password_prompt = (
+    "Set a master password, this password will be used to create\n"
+    "a self signed certificate for accessing the freva credentials "
+    "as mysql root password.\n: "
+)
+
+
+def download_data_from_nextcloud(
+    public_url: str = "https://nextcloud.dkrz.de/s",
+) -> dict[str, dict[str, dict[str, str]]]:
+    """Download server information from public next cloud share."""
+    token = "yas2RZHRDyiMaPj"
+    public_link = public_url + "/" + token
+    with NamedTemporaryFile(suffix=".json") as temp_f:
+        nc = nextcloud_client.Client.from_public_link(public_link)
+        try:
+            nc.get_file("/servers.toml", temp_f.name)
+        except nextcloud_client.HTTPResponseError:
+            return {}
+        with open(temp_f.name) as f_obj:
+            return toml.load(f_obj)
+
+
+def upload_data_to_nextcloud(
+    project_name: str,
+    server_info: dict[str, dict[str, str]],
+    public_url: str = "https://nextcloud.dkrz.de/s",
+) -> None:
+    """Upload server information to public nextcloud share.
+
+    Parameters
+    ----------
+    project_name: str
+        Name of the freva project
+    server_info: dict[str, str]
+        Server names for each deployed service
+    public_url: str
+        The public nextcloud url where the information is upladed to.
+    """
+    token = "yas2RZHRDyiMaPj"
+    public_link = public_url + "/" + token
+    server_data = download_data_from_nextcloud()
+    for service, values in server_info.items():
+        try:
+            server_data[project_name][service] = values
+        except KeyError:
+            server_data[project_name] = {service: values}
+    cwd = os.getcwd()
+    with TemporaryDirectory() as td:
+        nc = nextcloud_client.Client.from_public_link(public_link)
+        os.chdir(td)
+        with open("servers.toml", "w") as f_obj:
+            toml.dump(server_data, f_obj)
+        try:
+            success = nc.drop_file("servers.toml")
+        except nextcloud_client.HTTPResponseError:
+            logger.error("Could not upload server data to %s", public_link)
+        finally:
+            os.chdir(cwd)
+        if success:
+            logger.info("Server information updated at %s", public_url)
 
 
 def get_passwd(min_characters: int = 8) -> str:
@@ -31,27 +95,30 @@ def get_passwd(min_characters: int = 8) -> str:
     str: The password
     """
     logger.info("Creating Password")
+    msg = ""
     while True:
         try:
-            return _create_passwd(min_characters)
+            return _create_passwd(min_characters, msg)
         except ValueError as e:
-            logger.error(e.__str__())
+            msg = e.__str__() + " Re-enter password\n:"
 
 
-def _create_passwd(min_characters: int) -> str:
+def _create_passwd(min_characters: int, msg: str = "") -> str:
     """Create passwords."""
-    master_pass = getpass(password_prompt)
-    is_ok = len(master_pass) > min_characters
+    master_pass = getpass(msg or password_prompt)
+    is_ok: bool = len(master_pass) > min_characters
     for check in ("[a-z]", "[A-Z]", "[0-9]"):
         if not re.search(check, master_pass):
             is_ok = False
             break
-    is_ok *= len([True for c in "[_@$#$%^&*-!]" if c in master_pass]) > 0
-    if not is_ok:
+    is_safe: bool = len([True for c in "[_@$#$%^&*-!]" if c in master_pass]) > 0
+    if (is_ok * is_safe) is False:
         raise ValueError(
-            (f"Password must be at least {min_characters} characters long, "
-             "have alphanumeric characters, both, lower and upper case "
-             "characters, as well as special characters.")
+            (
+                f"Password must be at least {min_characters} characters long, "
+                "have alphanumeric characters, both, lower and upper case "
+                "characters, as well as special characters."
+            )
         )
     master_pass_2 = getpass("Re enter master password\n: ")
     if master_pass != master_pass_2:
@@ -59,15 +126,13 @@ def _create_passwd(min_characters: int) -> str:
     return master_pass
 
 
-def create_self_signed_cert(certfile: Path | str, overwrite: bool = True) -> Path:
+def create_self_signed_cert(certfile: Path | str) -> Path:
     """Create a public and private key file.
 
     Parameters:
     ===========
     certfile:
         path of the certificate file.
-    overwrite:
-        overwrite any existing certificate files.
 
     Returns:
     ========
@@ -109,8 +174,10 @@ If you enter '.', the field will be left blank."""
             f'Common Name (eg, e.g. server FQDN or YOUR name) [{defaults["CN"]}]: '
         ),
         emailAddress=input(
-            ("Email Address (eg, e.g. server FQDN or YOUR name) "
-             f'[{defaults["emailAddress"]}]: ')
+            (
+                "Email Address (eg, e.g. server FQDN or YOUR name) "
+                f'[{defaults["emailAddress"]}]: '
+            )
         ),
     )
     sub_j = "/".join(f"{k}={v.strip() or defaults[k]}" for (k, v) in steps.items())

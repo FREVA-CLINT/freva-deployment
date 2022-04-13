@@ -12,6 +12,7 @@ ASSET_DIR = THIS_DIR / "assets"
 def prepare_config() -> None:
     """Create the freva config dir in loacal user directory."""
     import appdirs
+
     paths = {}
     for attr in ("user_config_dir", "user_data_dir"):
         usr_path = Path(getattr(appdirs, attr)()) / CONFIG_DIR
@@ -38,39 +39,56 @@ def read(*parts: str) -> str:
         return f.read()
 
 
-setup(name="freva_deployment",
-      version="2022.02",
-      author="Martin Bergemann",
-      author_email="martin.bergemann@dkrz.de",
-      maintainer="Martin Bergemann",
-      url="https://gitlab.dkrz.de/freva/deployment.git",
-      description="Deploy freva and its services on different machines.",
-      long_description=read("README.md"),
-      license="GPLv3",
-      packages=find_packages("src"),
-      package_dir={"": "src"},
-      entry_points={
-          "console_scripts": [
-              "deploy-freva = freva_deployment.cli:cli",
-          ]},
-      install_requires=[
-          "appdirs",
-          "ansible",
-          "paramiko",
-          "PyQt5",
-          "npyscreen",
-          "pyyml",
-          "toml",
-      ],
-      python_requires='>=3.8',
-      classifiers=[
-          'Development Status :: 3 - Alpha',
-          'Environment :: Console',
-          'Intended Audience :: Developers',
-          'Intended Audience :: Science/Research',
-          'License :: OSI Approved :: BSD License',
-          'Operating System :: POSIX :: Linux',
-          'Programming Language :: Python :: 3',
-      ]
-      )
+setup(
+    name="freva_deployment",
+    version="2022.02",
+    author="Martin Bergemann",
+    author_email="martin.bergemann@dkrz.de",
+    maintainer="Martin Bergemann",
+    url="https://gitlab.dkrz.de/freva/deployment.git",
+    description="Deploy freva and its services on different machines.",
+    long_description=read("README.md"),
+    license="GPLv3",
+    packages=find_packages("src"),
+    package_dir={"": "src"},
+    entry_points={
+        "console_scripts": [
+            "deploy-freva = freva_deployment.cli:deploy",
+            "freva-service = freva_deployment.cli:service",
+            "freva-migrate = freva_deployment.cli:migrate",
+            "deploy-freva-tui = freva_deployment.ui.deployment_tui:tui",
+        ]
+    },
+    setup_requires=["appdirs"],
+    install_requires=[
+        "appdirs",
+        "npyscreen",
+        "pyncclient",
+        "pyyml",
+        "rich",
+        "toml",
+        "tomlkit",
+    ],
+    extras_require={
+        "docs": [
+            "sphinx",
+            "nbsphinx",
+            "recommonmark",
+            "sphinx_rtd_theme",
+            "ipython",  # For nbsphinx syntax highlighting
+            "sphinxcontrib_github_alt",
+        ],
+        "test": ["mypy", "black", "types-toml"],
+    },
+    python_requires=">=3.8",
+    classifiers=[
+        "Development Status :: 3 - Alpha",
+        "Environment :: Console",
+        "Intended Audience :: Developers",
+        "Intended Audience :: Science/Research",
+        "License :: OSI Approved :: BSD License",
+        "Operating System :: POSIX :: Linux",
+        "Programming Language :: Python :: 3",
+    ],
+)
 prepare_config()
