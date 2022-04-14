@@ -1,7 +1,6 @@
 """Collection of utils for deployment."""
 from __future__ import annotations
 import base64
-from collections import namedtuple
 from getpass import getpass
 import hashlib
 import logging
@@ -12,7 +11,7 @@ import os
 import shlex
 from subprocess import run, PIPE
 from tempfile import NamedTemporaryFile, TemporaryDirectory
-from typing import cast, Generator, NamedTuple
+from typing import cast, NamedTuple
 
 import appdirs
 import nextcloud_client
