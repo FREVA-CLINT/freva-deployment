@@ -12,15 +12,16 @@ The code in this repository is used to deploy freva in different computing envir
 
 On *CentOS* python SELinux libraries need to be installed. If you choose to install ansible via the `install_ansible` you'll have to use `conda` to install libselinux for your CentOS version. For example : `conda install -c conda-forge  libselinux-cos7-x86_64`
 
-# Pre-Requisites
+## Pre-Requisites
 The main work will be done by [ansible](https://docs.ansible.com/ansible/latest/index.html), hence some level of familiarity with ansible is advantagous.
 Since we are using ansible we can use this deployment routine from a workstation computer (like a Mac-book). You do not need to run the depoyment on the machines where things get installed.
 The only requirement is that you have to setup ansible and you can establish ssh connections to the servers.
-### Preparation on windows based system.
-Currently ansible is not natively available on windows based systems. To install the deployment on a window system you have two basic options:
-
-#### 1. Installation on Windows via cygwin:
-You can use the unix runtime environment [cygwin](https://www.cygwin.com) to download and install the needed software. Just follow the steps listed on the web page to setup cygwin on your windows system. In order to be able to install the freva deployment programm you'll first need to install the following packages via cygwin:
+### Preparation on windows based system (without wsl).
+Currently ansible is not natively available on windows based systems. You can use the
+unix runtime environment [cygwin](https://www.cygwin.com) to download and install the
+needed software. Just follow the steps listed on the web page to setup
+cygwin on your windows system. In order to be able to install the freva deployment
+programm you'll first need to install the following packages via cygwin:
 
 - python3
 - python3-devel
@@ -53,12 +54,12 @@ python3 -m pip install (--user) libselinux-python3
 ```
 
 
-## Installing docker and sudo access to the service servers
+### Installing docker and sudo access to the service servers
 Since the services of MariaDB and Apache Solr will be deployed on docker container images, docker needs to be available on the target servers. Usually installing and running docker requires *root* privileges.
 Hence, on the servers that will be running docker you will need root access. There exist an option to install and run docker without root, information on a root-less docker option
 can be found [on the docker docs](https://docs.docker.com/engine/security/rootless/)
 
-# Configuring the deployment
+## Configuring the deployment
 Once everything is setup the deployment can be configured via the main config file.  A template of a typical deployment configuration can be found in `config/inventory.tmpl`.
 **Please copy this file first to** `config/inventory`. After the file has been copied you have to edit it. You will need to set at least one `hostname` in the following sections:
 
@@ -67,7 +68,7 @@ Once everything is setup the deployment can be configured via the main config fi
 - webservers (hostname that will host the web site)
 - backendservers (hostname(s) where the command line interface will be installed)
 
-## Setting the python and git path
+### Setting the python and git path
 Some systems do not have access to python3.6+ (/usr/bin/python3) or git by default.
 In such cases you can overwrite the `ansible_python_interpreter` in the inventory
 settings of the server section to point ansible to a custom `python3` bindary. For example
@@ -82,13 +83,13 @@ The same applies to the path to the git binary:
 git_path=/sw/spack-levante/git-2.31.1-25ve7r/bin/git
 ```
 
-# Running the deployment
+## Running the deployment
 After successful configuration you can run the deployment.
 The command `deploy-freva-tui` opens a text user interface (tui) that will walk
 you through the setup of the deployment.
 > **_Note:_** Navigation is similar to the one of the *nano* text editor. The shortcuts start with a `^` which indicates `CTRL+`.
 
-## Unique identifiers via a domain flag
+### Unique identifiers via a domain flag
 Different freva instances are installed across different institutions. Usually
 the different freva instances running at an institution are distinguished by
 a unique project name associated with each freva instance for example `xces`.
@@ -100,7 +101,7 @@ easy identification of the right freva instance for remote servicing.
 Please remember to set the correct domain flag for `deployment`, `servicing` and
 `migration` of an old freva system.
 
-## Deployment with existing configuration.
+### Deployment with existing configuration.
 If you already have a configuration saved in a toml base inventory file you can
 issue the `deploy-freva` command:
 
@@ -136,7 +137,7 @@ You will need to give a project name, for example `xces-ces` or `regiklim-ces`.
 The `--steps` flags can be used if not all services should be deployed.
 > **_Note:_** The database name of the MariaDB database will be set to the project name.
 
-# Accessing the services after deployment:
+## Accessing the services after deployment:
 If the target machine where the services (solr, mariadb, web) were deployed
 is a Linux machine you will have a `systemd` unit service was created.
 You can control the service via the `freva-service` command:
@@ -167,24 +168,24 @@ freva-service restart xces --services web --user k12345 --domain dkrz
 All services (`db`, `web` and `solr`) will be selected if the `--services` option
 is omitted.
 
-# Kown Issues:
+## Kown Issues:
 Below are possible solutions to some known issues:
 
-### SSH connection fails:
+#### SSH connection fails:
 
 ```python
 fatal: [host.name]: FAILED! => {"msg": "Using a SSH password instead of a key is not possible because Host Key checking is enabled and sshpass does not support this.  Please add this host's fingerprint to your known_hosts file to manage this host."}
 ```
 - This means that you've never logged on to the server. You can avoid this error message by simply logging on to the server for the first time.
 
-### Playbook complains about refused connections for the solr or db playbook
+#### Playbook complains about refused connections for the solr or db playbook
 
 ```python
 fatal: [localhost]: FAILED! => {"changed": true, "cmd": "docker run --name \"test_ces_db\" -e MYSQL_ROOT_PASSWORD=\"T3st\" -p \"3306\":3306 -d docker.io/library/mariadb", "delta": "0:00:00.229695", "end": "2021-05-27 16:10:58.553280", "msg": "non-zero return code", "rc": 125, "start": "2021-05-27 16:10:58.323585", "stderr": "docker: Error response from daemon: driver failed programming external connectivity on endpoint test_ces_db (d106bf1fe310a2ae0e012685df5a897874c61870c5241f7a2af2c4ce461794c2): Error starting userland proxy: listen tcp4 0.0.0.0:3306: bind: address already in use.", "stderr_lines": ["docker: Error response from daemon: driver failed programming external connectivity on endpoint test_ces_db (d106bf1fe310a2ae0e012685df5a897874c61870c5241f7a2af2c4ce461794c2): Error starting userland proxy: listen tcp4 0.0.0.0:3306: bind: address already in use."], "stdout": "895ba35cdf5dcf2d4ec86997aedf0637bf4020f2e9d3e5775221966dcfb820a5", "stdout_lines": ["895ba35cdf5dcf2d4ec86997aedf0637bf4020f2e9d3e5775221966dcfb820a5"]}
 ```
 - This means that there is already a service running on this port - in this case a local mariadb service. To avoid this error chose a different port in your `config/inventory` file.
 
-### Playbook cannot create database tables because connections fails
+#### Playbook cannot create database tables because connections fails
 
 ```python
 fatal: [localhost]: FAILED! => {"changed": false, "msg": "ERROR 1698 (28000): Access denied for user 'root'@'localhost'\n"}
@@ -198,7 +199,7 @@ you can figure out the `db_docker_name` using the following command:
 docker container ls
 ```
 
-### Git related unit tests in backend playbook fail
+#### Git related unit tests in backend playbook fail
 Git pull and push commands tend to fail if you haven't configured git. In this case change into the /tmp/evaluation_system directory of the host that runs the playbook
 then manually trigger the unit tests by
 
@@ -214,5 +215,5 @@ git config --global user.email your@email.com
 ```
 
 
-# Advanced: Adjusting the playbook
+## Advanced: Adjusting the playbook
 Playbook templates and be found the in the `playbooks` directory. You can also add new variables to the playbook if they are present in the `config/inventory` file.

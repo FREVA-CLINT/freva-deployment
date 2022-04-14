@@ -16,11 +16,12 @@ On *CentOS* python SELinux libraries need to be installed. If you choose to inst
 The main work will be done by [ansible](https://docs.ansible.com/ansible/latest/index.html), hence some level of familiarity with ansible is advantagous.
 Since we are using ansible we can use this deployment routine from a workstation computer (like a Mac-book). You do not need to run the depoyment on the machines where things get installed.
 The only requirement is that you have to setup ansible and you can establish ssh connections to the servers.
-### Preparation on windows based system.
-Currently ansible is not natively available on windows based systems. To install the deployment on a window system you have two basic options:
-
-#### 1. Installation on Windows via cygwin:
-You can use the unix runtime environment [cygwin](https://www.cygwin.com) to download and install the needed software. Just follow the steps listed on the web page to setup cygwin on your windows system. In order to be able to install the freva deployment programm you'll first need to install the following packages via cygwin:
+### Preparation on windows based system (without wsl).
+Currently ansible is not natively available on windows based systems. You can use the
+unix runtime environment [cygwin](https://www.cygwin.com) to download and install the
+needed software. Just follow the steps listed on the web page to setup
+cygwin on your windows system. In order to be able to install the freva deployment
+programm you'll first need to install the following packages via cygwin:
 
 - python3
 - python3-devel
