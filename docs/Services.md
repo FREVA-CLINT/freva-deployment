@@ -4,7 +4,9 @@ as central location. After deployment the project services can be restarted,
 stopped or started via the `freva-service` command.
 
 ```bash
-usage: freva-service [-h] [--services {web,db,solr} [{web,db,solr} ...]] [--user USER]
+freva-service --help
+usage: freva-service [-h] [--domain DOMAIN] [--services {web,db,solr} [{web,db,solr} ...]]
+                     [--user USER]
                      {start,stop,restart} project_name
 
 Interact with installed freva services.
@@ -15,6 +17,7 @@ positional arguments:
 
 options:
   -h, --help            show this help message and exit
+  --domain DOMAIN       Domain name of your organisation to create a uniq identifier. (default: dkrz)
   --services {web,db,solr} [{web,db,solr} ...]
                         The services to be started|stopped|restarted (default: ['solr', 'db', 'web'])
   --user USER, -u USER  connect as this user (default: None)
@@ -28,8 +31,11 @@ can be set by the `--services` option. By default all services (`db`, `web` and 
 will be modified. The `--user` flag can be set if the login user name to the
 target machine(s) differs from the current system user.
 
-The below example restarts the apache solr service in the `xces` project:
+The below example restarts the apache solr service in the `xces` project at DKRZ:
 
 ```bash
-freva-service restart xces --service solr --user k12345
+freva-service restart xces --service solr --user k12345 --domain dkrz
 ```
+
+> **_Note:_** All services (`db`, `web` and `solr`) will be selected if the `--services` option
+is omitted.

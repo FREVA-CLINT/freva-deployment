@@ -1,25 +1,25 @@
-# Installation the Free Evaluation Framework Freva
+# Deployment of the Free Evaluation Framework Freva
 
-As mentioned before the installation process for reva can be seperated in different steps, these are :
+The code in this repository is used to deploy freva in different computing environments. The general strategy is to split the deployment into 4 different steps, these are :
 - Deploy MariaDB service via docker
 - Deploy a Hashicorp Vault service for storing and retrieving passwords and other sensitive data via docker (this step get automatically activated once the MariaDB service is set)
 - Deploy Apache Solr service via docker
-- Deploy the core library ([evaluation_system](https://gitlab.dkrz.de/freva/evaluation_system)) and a command line interface (cli)
-- Deploy a web web base ui ([freva_web](https://gitlab.dkrz.de/freva/freva_web))
+- Deploy command line interface backend ([evaluation_system](https://gitlab.dkrz.de/freva/evaluation_system))
+- Deploy web front end ([freva_web](https://gitlab.dkrz.de/freva/freva_web))
 
 
-> **_Note:_** A vault server is auto deployed once the mariadb server is deploed. The vault centrally stores all passwords and other sensitive data. During the deployment of the vault server a public key is generated which is used to open the vault. This public key will be saved in the `evaluation_system` backend root directory. Only if saved this key and the key in the vault match, secrets can be retrieved. Therefore it might be a good idea to deploy, the mariadb server (and with it the vault) and the `evaluation_system` backend togehter.
+> **_Note:_** A vault server is auto deployed once the mariadb server is deployed. The vault centrally stores all passwords and other sensitive data. During the deployment of the vault server a public key is generated which is used to open the vault. This public key will be saved in the `evaluation_system` backend root directory. Only if saved this key and the key in the vault match, secrets can be retrieved. Therefore it might be a good idea to deploy, the mariadb server (and with it the vault) and the `evaluation_system` backend togehter.
 
 On *CentOS* python SELinux libraries need to be installed. If you choose to install ansible via the `install_ansible` you'll have to use `conda` to install libselinux for your CentOS version. For example : `conda install -c conda-forge  libselinux-cos7-x86_64`
 
-## Pre-Requisites
+# Pre-Requisites
 The main work will be done by [ansible](https://docs.ansible.com/ansible/latest/index.html), hence some level of familiarity with ansible is advantagous.
 Since we are using ansible we can use this deployment routine from a workstation computer (like a Mac-book). You do not need to run the depoyment on the machines where things get installed.
 The only requirement is that you have to setup ansible and you can establish ssh connections to the servers.
-### Preperation on windows based system.
+### Preparation on windows based system.
 Currently ansible is not natively available on windows based systems. To install the deployment on a window system you have two basic options:
 
-#### Installation on Windows via cygwin:
+#### 1. Installation on Windows via cygwin:
 You can use the unix runtime environment [cygwin](https://www.cygwin.com) to download and install the needed software. Just follow the steps listed on the web page to setup cygwin on your windows system. In order to be able to install the freva deployment programm you'll first need to install the following packages via cygwin:
 
 - python3
@@ -35,17 +35,14 @@ We also recommend installing a command line based text editor like vim, nano, et
 After installing the above listed packages via cygwin you can clone and install the freva deployment:
 
 ```bash
-git clone https://gitlab.dkrz.de/freva/deployment.git
-cd deployment
-python3 -m pip -r install requirements_windows.txt
+pip install (--user) git+https://gitlab.dkrz.de/freva/deployment.git
 ```
 ### Installation on \*nix systems or wsl.
 If you're using Linux, OsX or a Windows subsystem for Linux (WSL) it should be sufficient to issues the following commands:
 
 ```bash
-git clone https://gitlab.dkrz.de/freva/deployment.git
-cd deployment
-python3 -m pip -r install (--user) requirements_nix.txt
+pip install (--user) ansible
+pip install (--user) git+https://gitlab.dkrz.de/freva/deployment.git
 ```
 
 This command installs ansible and all required python packages.
@@ -56,54 +53,80 @@ python3 -m pip install (--user) libselinux-python3
 ```
 
 
-### Installing docker and sudo access to the service servers
+## Installing docker and sudo access to the service servers
 Since the services of MariaDB and Apache Solr will be deployed on docker container images, docker needs to be available on the target servers. Usually installing and running docker requires *root* privileges.
 Hence, on the servers that will be running docker you will need root access. There exist an option to install and run docker without root, information on a root-less docker option
 can be found [on the docker docs](https://docs.docker.com/engine/security/rootless/)
 
-### Configuring the deployment
-Once everything is setup the deployment can be configured via the main config file. 
-A typical deployment configuration can be found in `~/.config/freva/deployment/inventory.tmpl`.
-After the file has been copied you have to edit it. You will need to set at least one `hosts` in the following sections:
+# Configuring the deployment
+Once everything is setup the deployment can be configured via the main config file.  A template of a typical deployment configuration can be found in `config/inventory.tmpl`.
+**Please copy this file first to** `config/inventory`. After the file has been copied you have to edit it. You will need to set at least one `hostname` in the following sections:
 
-- solr.hosts (hostname of the apache solr server)
-- db.hosts (hostname of the MariaDB server)
-- web.hosts (hostname that will host the web site)
-- core.hosts (hostname(s) where the command line interface will be installed)
+- solrservers (hostname of the apache solr server)
+- dbservers (hostname of the MariaDB server)
+- webservers (hostname that will host the web site)
+- backendservers (hostname(s) where the command line interface will be installed)
 
-### Setting the python environment
-Some systems do not have access to python3.8+ by default (/usr/bin/python3). In such cases you can overwrite the `ansible_python_interpreter` in the inventory settings of the server section to point ansible to a custom `python3` bindary. For example
+## Setting the python and git path
+Some systems do not have access to python3.6+ (/usr/bin/python3) or git by default.
+In such cases you can overwrite the `ansible_python_interpreter` in the inventory
+settings of the server section to point ansible to a custom `python3` bindary. For example
 
 ```
 ansible_python_interpreter=/sw/spack-rhel6/miniforge3-4.9.2-3-Linux-x86_64-pwdbqi/bin/python3
 ```
 
-## Running the deployment
-After successful configuration you can run the ansible deployment. This is done via the `deploy-freva` command:
+The same applies to the path to the git binary:
+
+```
+git_path=/sw/spack-levante/git-2.31.1-25ve7r/bin/git
+```
+
+# Running the deployment
+After successful configuration you can run the deployment.
+The command `deploy-freva-tui` opens a text user interface (tui) that will walk
+you through the setup of the deployment.
+> **_Note:_** Navigation is similar to the one of the *nano* text editor. The shortcuts start with a `^` which indicates `CTRL+`.
+
+## Unique identifiers via a domain flag
+Different freva instances are installed across different institutions. Usually
+the different freva instances running at an institution are distinguished by
+a unique project name associated with each freva instance for example `xces`.
+To make the project names unique across institutions (domains) a domain flag
+should be set for the deployment. For example all freva instances running at
+the German Climate Computing Centre will get the `dkrz` domain flag while freva
+instances running at Free Uni Berlin get the `fub` domain flag. This allows for
+easy identification of the right freva instance for remote servicing.
+Please remember to set the correct domain flag for `deployment`, `servicing` and
+`migration` of an old freva system.
+
+## Deployment with existing configuration.
+If you already have a configuration saved in a toml base inventory file you can
+issue the `deploy-freva` command:
 
 ```bash
+deploy-freva --help
 usage: deploy-freva [-h] [--config CONFIG]
-              [--steps {services,web,backend,db,solr,backup} [{services,web,backend,db,solr,backup} ...]]
-              [--python PYTHON] [--cert CERT] [--wipe] [--ask-pass]
-              project_name
+                    [--steps {services,web,core,db,solr,backup} [{services,web,core,db,solr,backup} ...]]
+                    [--cert CERT] [--domain DOMAIN] [--wipe] [--ask-pass]
+                    project_name
 
-Deploy freva.
+Deploy freva and its services on different machines.
 
 positional arguments:
   project_name          Name of the project
 
-optional arguments:
+options:
   -h, --help            show this help message and exit
   --config CONFIG, -c CONFIG
                         Path to ansible inventory file. (default:
                         /home/wilfred/.config/freva/deployment/inventory.toml)
-  --steps {services,web,backend,db,solr,backup} [{services,web,backend,db,solr,backup} ...]
-                        The services/code stack to be deployed (default: ['services', 'web',
-                        'backend'])
-  --python PYTHON       Python version to be used (default: 3.9)
+  --steps {services,web,core,db,solr,backup} [{services,web,core,db,solr,backup} ...]
+                        The services/code stack to be deployed (default: ['services', 'web', 'core'])
   --cert CERT, --cert_file CERT, --cert-file CERT
                         Path to public certificate file. If none is given, default, a file will be
                         created. (default: None)
+  --domain DOMAIN       Domain name of your organisation to create a uniq identifier. (default: dkrz)
   --wipe                This option will empty any pre-existing folders/docker volumes. (Useful for a
                         truely fresh start) (default: False)
   --ask-pass            Connect to server via ssh passwd instead of public key. (default: False)
@@ -111,20 +134,40 @@ optional arguments:
 
 You will need to give a project name, for example `xces-ces` or `regiklim-ces`.
 The `--steps` flags can be used if not all services should be deployed.
-> **_Note:_** The database name of the the MariaDB database will be set to the project name.
+> **_Note:_** The database name of the MariaDB database will be set to the project name.
 
-## Accessing the services after deployment:
+# Accessing the services after deployment:
 If the target machine where the services (solr, mariadb, web) were deployed
 is a Linux machine you will have a `systemd` unit service was created.
-You can control the the service via systemd. The unit has the following
-structure `project_name-service`. For example `freva_dev-solr`:
+You can control the service via the `freva-service` command:
 
 ```bash
-systemctl status freva_dev-solr
-```
-The same applies for mariadb and web service.
+freva-service --help                                                                      (freva-dev)
+usage: freva-service [-h] [--domain DOMAIN] [--services {web,db,solr} [{web,db,solr} ...]]
+                     [--user USER]
+                     {start,stop,restart} project_name
 
-## Kown Issues:
+Interact with installed freva services.
+
+positional arguments:
+  {start,stop,restart}  The start|stop|restart command for the service
+  project_name          Name of the project
+
+options:
+  -h, --help            show this help message and exit
+  --domain DOMAIN       Domain name of your organisation to create a uniq identifier. (default: dkrz)
+  --services {web,db,solr} [{web,db,solr} ...]
+                        The services to be started|stopped|restarted (default: ['solr', 'db', 'web'])
+  --user USER, -u USER  connect as this user (default: None)
+```
+The following command restarts `web` server for the `xces` project at dkrz:
+```bash
+freva-service restart xces --services web --user k12345 --domain dkrz
+```
+All services (`db`, `web` and `solr`) will be selected if the `--services` option
+is omitted.
+
+# Kown Issues:
 Below are possible solutions to some known issues:
 
 ### SSH connection fails:
@@ -132,9 +175,9 @@ Below are possible solutions to some known issues:
 ```python
 fatal: [host.name]: FAILED! => {"msg": "Using a SSH password instead of a key is not possible because Host Key checking is enabled and sshpass does not support this.  Please add this host's fingerprint to your known_hosts file to manage this host."}
 ```
-- This means that you've never logged on to the server. You can avaoid this error message by simply logging on to the server for the first time.
+- This means that you've never logged on to the server. You can avoid this error message by simply logging on to the server for the first time.
 
-### Playbook coplains about refused connections for the solr or db playbook
+### Playbook complains about refused connections for the solr or db playbook
 
 ```python
 fatal: [localhost]: FAILED! => {"changed": true, "cmd": "docker run --name \"test_ces_db\" -e MYSQL_ROOT_PASSWORD=\"T3st\" -p \"3306\":3306 -d docker.io/library/mariadb", "delta": "0:00:00.229695", "end": "2021-05-27 16:10:58.553280", "msg": "non-zero return code", "rc": 125, "start": "2021-05-27 16:10:58.323585", "stderr": "docker: Error response from daemon: driver failed programming external connectivity on endpoint test_ces_db (d106bf1fe310a2ae0e012685df5a897874c61870c5241f7a2af2c4ce461794c2): Error starting userland proxy: listen tcp4 0.0.0.0:3306: bind: address already in use.", "stderr_lines": ["docker: Error response from daemon: driver failed programming external connectivity on endpoint test_ces_db (d106bf1fe310a2ae0e012685df5a897874c61870c5241f7a2af2c4ce461794c2): Error starting userland proxy: listen tcp4 0.0.0.0:3306: bind: address already in use."], "stdout": "895ba35cdf5dcf2d4ec86997aedf0637bf4020f2e9d3e5775221966dcfb820a5", "stdout_lines": ["895ba35cdf5dcf2d4ec86997aedf0637bf4020f2e9d3e5775221966dcfb820a5"]}
@@ -146,18 +189,18 @@ fatal: [localhost]: FAILED! => {"changed": true, "cmd": "docker run --name \"tes
 ```python
 fatal: [localhost]: FAILED! => {"changed": false, "msg": "ERROR 1698 (28000): Access denied for user 'root'@'localhost'\n"}
 ```
-- This is a common problem if you've set the mariadb docker host to be localhost. You can avoid the problem by setting the `db_host` variable to a non localhost type IP like 172.17.0.1. If you're not sure what IP to use try the following command 
+- This is a common problem if you've set the mariadb docker host to be localhost. You can avoid the problem by setting the `db_host` variable to a non localhost type IP like 172.17.0.1. If you're not sure what IP to use try the following command
 ```
 docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' db_docker_name
-``` 
-you can figure out the `db_docker_name` using the following command: 
+```
+you can figure out the `db_docker_name` using the following command:
 ```
 docker container ls
 ```
 
 ### Git related unit tests in backend playbook fail
 Git pull and push commands tend to fail if you haven't configured git. In this case change into the /tmp/evaluation_system directory of the host that runs the playbook
-then manually trigger the unit tests by 
+then manually trigger the unit tests by
 
 ```
 FREVA_ENV=/path/to/root_dir make tests
@@ -171,5 +214,5 @@ git config --global user.email your@email.com
 ```
 
 
-## Advanced: Adjusting the playbook
+# Advanced: Adjusting the playbook
 Playbook templates and be found the in the `playbooks` directory. You can also add new variables to the playbook if they are present in the `config/inventory` file.

@@ -1,115 +1,106 @@
-
-
 # Transitioning guide
 
-The following serves as a guide to transition an existing freva instance (within the python*2* frame work) to the new (python*3* based) version.
+The following serves as a guide to transition an existing freva instance
+(within the python*2* frame work) to the new (python*3* based) version.
+
+We have created a small command line interface (`freva-migrate`) that
+helps migrating content of an existing freva framework to the new one.
+The `freva-migrate` command has two sub commands:
+
+```bash
+freva-migrate --help
+usage: freva-migrate [-h] [-v] {database,drs-config} ...
+
+Utilities to handle migrations from old freva systems.
+
+positional arguments:
+  {database,drs-config}
+                        Migration commands:
+    database            Use this command to migrate an existing freva database to a recently set up
+                        system.
+    drs-config          Migrate old drs structure definitions to new toml style.
+
+options:
+  -h, --help            show this help message and exit
+  -v, --verbose         Verbosity level (default: 0)
+
+```
 
 ## Transition to new DRS Config
 
-In the old version the DRS File configuration, that is the definitions defining the metadata of datasets, was hard coded into the module `evaluation_system.model.file`. In the new version this configuration is saved in a designated [toml](https://toml.io/en/) file (drs_confif.toml). To read an existing DRS Configuration from an 'old' instance of freva and convert it to the new freva DRS Config toml file use the following script:
+In the old version the DRS File configuration, that is the definitions
+defining the metadata of datasets, was hard coded into the module
+`evaluation_system.model.file`. In the new version this configuration
+is saved in a designated [toml](https://toml.io/en/) file (drs_confif.toml).
+To read an existing DRS Configuration from an 'old' instance of freva and
+convert it to the new freva DRS Config toml file use the `drs-config` sub-coammand
+of the `freva-migrate` command line interface.
+
+```
+freva-migrate drs-config --help
+usage: freva-migrate drs-config [-h] [--python-path python-path]
+
+Freva drs structure migration
+
+options:
+  -h, --help            show this help message and exit
+  --python-path python-path
+                        Python path of the old freva instance, leave blank if you loaded the old freva
+                        module / source file. (default: None)
+```
+
+> **_Note:_** You can either load/source the old freva instance or simply point the `--python-path` option to the python path of the old freva.
+
+Once the command has been executed the resulting `drs_config.toml` should be
+place next to the `evaluation_system.conf` file. That is the `freva` folder within the
+`root_dir` location of the new freva instance, for example `/mnt/project/freva`.
 
 
-I will create a script soon.
 
+## Transition to new Database
+The new system has witnessed small changes to the database structure the `database`
+sub-command of the `freva-migrate` command helps to transition to this new
+database structure. To migrate a database of a old installation of the freva
+system to a freshly deployed freva instance used the following command:
 
-Once the script has been created place the resulting `drs_config.toml` next to the `evaluation_system.conf` file into the `freva` folder within the `root_dir` location of the new freva instace, for example `/mnt/poroject/freva`.
+```
+freva-migrate database --help
+usage: freva-migrate database [-h] [--python-path PYTHON_PATH] [--domain DOMAIN] project-name cert-file
 
+Freva database migration
+
+positional arguments:
+  project-name          The project name for the recently deployed freva system
+  cert-file             Path to the public certificate file.
+
+options:
+  -h, --help            show this help message and exit
+  --python-path PYTHON_PATH
+                        Python path of the old freva instance, leave blank if you load the old freva
+                        module / source file. (default: None)
+  --domain DOMAIN       Domain name of your organisation to create a uniq identifier. (default: dkrz)
+```
+
+The `cert-file` positional argument refers the public certificate file that was
+created during the deployment process and is needed to establish a connection to
+the new database. You can either use the one that has been
+saved by the deployment or use it from the freva config directory. By default
+the certificate file resides within `freva` path of the deployment `root_dir`
+for example `/mnt/project/freva/project.crt`. Also don't forget to set the domain
+name for your institution as a unique identifier.
+
+After the command has been applied the new database with its "old" content from
+the previous freva instance will be ready for use.
 
 ## Transitioning of the Plugins
 
-The freva plugins are an essential part of freva. Most likely the the transitioning from the old python2 to the new python3 based system, needs special care. A complete rewrite of the plugin manager is planned. This section should therefore seen as intermediate solutions for plugin transitioning. Generally there are three possibilities to transition the plugins. All of which come with advantages and disadvantages which should be outlined and discussed below. Please read the transitioning steps for each proposed transitioning guides and pick a method depending on your preferences:
+The freva plugins are an essential part of freva.
+Most likely the transitioning from the old python2 to the new python3 based
+system, needs special care. A complete rewrite of the plugin manager is planned.
+This section should therefore seen as intermediate solutions for plugin transitioning.
 
-
-**Note:** Currently there is a development version installed on mistral which can be made available by executing the following command:
-
-```bash
-module load clint regiklim-ces/2022.03
-```
-
-
-### I Plugin transitioning using the module system
-
-This method makes use of an available modules system. Hence modules has to be set up on the system.
-
-Below are the advantages of this method
-
-- Third party software such as R and additional libraries are dealt with by the modules system.
-
-Below you find drawbacks of this method:
-
-- modules on the system change over time. Hence reproducibility is not guaranteed neither is functionality if dependencies are updated by the system admins
-
-- software that is not available via modules system needs to be installed by hand (which is especially true for levante)
-
-- module names change from system to system. Hence plugins have to be adopted to run on each HPC system. Over the long run the plugin code might diverge.
-
-Overall I think this method is the leas favourable of all outlined methods. We should not use this method.
-
-All steps assume that a new version of the core library is installed and configured.
-
-#### Transitioning steps:
-
-1. clone the repository of a plugin, change into the directory and create a new branch.
-
-2. export the user plugin variable:
-
-```bash
-
-export EVALUATION_SYSTEM_PLUGINS=$PWD/path_to_wrapper_file,class_name
-
-freva plugin -l
-
-```
-
-Most certainly the plugin manger will output a warning, that the plugin could not be loaded. If it does change the plugins accordingly to make the warning messages go away.
-
-3. Once the plugin manager can load the plugins and the `freva plugin -l` command shows the plugin you have to load the right modules in the plugin if needed.
-
-4. If needed build plugin dependencies, e.g fortran source code.
-
-4. Execute the plugin and check if everything goes will.
-
-5. Fromat the plugin using black
-
-
-### II Plugin transitioning using a common plugin anaconda environment
-
-This method uses a common anaconda environment for all plugins. The plugin anaconda environment can be made available via the modules system. Below are the advantages of this method:
-
-- Once all dependencies are installed into the common anaconda environment, no special care has to be taken about the plugin transitioning.
-
-This are the disadvantages of this method:
-
-- Version mismatches and dependency conflicts might occur.
-- Not really reproducible, if noone keeps track of installed packages.
-
-
-#### Transitioning steps:
-
-1. clone the repository of a plugin, change into the directory and create a new branch.
-
-2. export the user plugin variable:
-
-```bash
-
-export EVALUATION_SYSTEM_PLUGINS=$PWD/path_to_wrapper_file,class_name
-
-freva plugin -l
-
-```
-
-Most certainly the plugin manger will output a warning, that the plugin could not be loaded. If it does change the plugins accordingly to make the warning messages go away.
-
-3. If needed build plugin dependencies, e.g fortran source code.
-4. Execute the plugin and check if everything goes will.
-5. Fromat the plugin using black
-
-
-### III Creating a designated anaconda environment for each plugin.
-
-In this method each plugin gets its own anaconda environment.
-
-Below are the advantages of this method:
+Currently we recommend creating an anaconda environment for each plugin.
+This approach has several advantages:
 
 - reproducible as each plugin will get a anaconda environment file
 - no version and dependency conflicts occur.
@@ -118,10 +109,9 @@ Below are the advantages of this method:
 These are the disadvantages of this method:
 
 - A anaconda environment file has to be created for each plugin.
-- The plugin manager has to be update to patch the PATH environment variable.
 
 
-#### Transitioning steps:
+### Transitioning steps:
 
 1. clone the repository of a plugin, change into the directory and create a new branch.
 
@@ -135,7 +125,8 @@ freva plugin -l
 
 ```
 
-Most certainly the plugin manger will output a warning, that the plugin could not be loaded. If it does change the plugins accordingly to make the warning messages go away.
+Most certainly the plugin manger will output a warning, that the plugin could not be loaded.
+If it does change the plugins accordingly to make the warning messages go away.
 
 3. Download the [conda environment file template](https://swift.dkrz.de/v1/dkrz_3d3c7abc-1681-4012-b656-3cc1058c52a9/k204230/freva-transition/plugin-env.yml) and the [Makefile template](https://swift.dkrz.de/v1/dkrz_3d3c7abc-1681-4012-b656-3cc1058c52a9/k204230/freva-transition/Makefile)
 
@@ -147,11 +138,11 @@ Most certainly the plugin manger will output a warning, that the plugin could no
 
 7. Execute the plugin and check if everything goes will.
 
-8. Fromat the plugin using black
+8. Format the plugin using black: `black -t py310 path_to_plugin.py`
 
 ### Transitioning `python2` plugins
 Python plugins (especially python2) need special care. The recommended strategy
-is to convert the plugin content to python3 if this is not possible a anaconda
+is to convert the plugin content to python3. If this is not possible an anaconda
 python2 environment should be created.
 
 If in the original plugin the plugin code directly executed in the `runTool`
@@ -182,7 +173,7 @@ def runTool(self, config_dict={}):
     return self.prepareOutput(config_dict["output_dir"])
 ```
 
-The above code should be split into two components, one that makes use of 
+The above code should be split into two components, one that makes use of
 `evaluation_system` to gather the data. And one that executes the actual plugin
 code.
 
@@ -237,4 +228,3 @@ if __name__ == "__main__":
         raise ValueError("Usage: {} path_to_json_file.json".format(sys.argv[0]))
     calculate(config["variable"], config["files"], config["output_dir"])
 ```
-
