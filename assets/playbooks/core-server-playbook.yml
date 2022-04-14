@@ -26,8 +26,6 @@
       recurse: yes
     with_items:
       - "{{ core_root_dir }}"
-      - "{{ core_root_dir}}/share/"
-      - "{{ core_root_dir}}/share/preview/"
       - "{{ core_root_dir }}/freva/"
       - "{{ core_root_dir }}/data/"
       - "{{ core_root_dir }}/plugins/"
@@ -35,9 +33,14 @@
 
   - name: Creating user work directory
     file:
-      path: "{{ core_base_dir_location }}"
+      path: "{{ item }}"
       state: directory
       mode: "u=srwtX,g=srwtX,o=rX"
+      recurse: yes
+    with_items:
+      - "{{ core_base_dir_location }}"
+      - "{{ core_root_dir}}/share/"
+      - "{{ core_root_dir}}/share/preview/"
     become: "{{'yes' if core_ansible_become_user is defined else 'no' }}"
   - name: Inserting evaluation_sytem.conf file
     copy:
