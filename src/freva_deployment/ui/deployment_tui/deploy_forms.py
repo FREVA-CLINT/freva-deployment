@@ -595,6 +595,7 @@ class RunForm(npyscreen.FormMultiPageAction):
 
         wipe = self.parentApp._read_cache("wipe", False)
         ssh_pw = self.parentApp._read_cache("ssh_pw", True)
+        domain = self.parentApp._read_cache("domain", "dkrz")
         self.project_name = self.add_widget_intelligent(
             npyscreen.TitleText,
             name="Set the name of the project",
@@ -604,6 +605,12 @@ class RunForm(npyscreen.FormMultiPageAction):
             npyscreen.TitleFilename,
             name="Save config as",
             value=str(self.parentApp.save_file),
+        )
+        self.domain = self.add_widget_intelligent(
+            npyscreen.TitleText,
+            name="Set your institution id as a domain for unique identification "
+            "of your project across domains",
+            value=domain,
         )
         self.cert_file = self.add_widget_intelligent(
             npyscreen.TitleFilename,

@@ -41,6 +41,8 @@ class DeployFactory:
     ask_pass: bool, default: False
         Instruct ansible to ask for a ssh password instead of using a public
         certificate file.
+    domain: str, default: dkrz
+        Domain name of your organisation to create a uniq identifier.
     wipe: bool, default: False
         Delete any existing deployment resources, such as docker volumes.
 
@@ -62,6 +64,7 @@ class DeployFactory:
         cert_file: str | None = None,
         config_file: Path | str | None = None,
         ask_pass: bool = False,
+        domain: str = "dkrz",
         wipe: bool = False,
     ) -> None:
 
@@ -79,6 +82,7 @@ class DeployFactory:
         self._cert_file = cert_file or ""
         self._inv_tmpl = Path(config_file or config_dir / "inventory.toml")
         self._cfg_tmpl = self.aux_dir / "evaluation_system.conf.tmpl"
+        self.domain = domain
         self.cfg = self._read_cfg()
 
     @property
@@ -490,7 +494,6 @@ USE {db};
         if self.ask_pass:
             cmd += " --ask-pass"
         cmd += " --ask-become-pass"
-        cmd = "echo hallo"
         try:
             res = run(
                 shlex.split(cmd), env=os.environ.copy(), cwd=str(asset_dir), check=False
@@ -502,13 +505,13 @@ USE {db};
 
     def upload_server_info(self, inventory: str) -> None:
         """Upload information on server information to shared nextcloud."""
-        server_info = {}
+        deployment_setup: dict[str, dict[str, str]] = {}
         for step, info in yaml.safe_load(inventory).items():
             ansible_step = dict(
-                ansible_python_interpreter=info["vars"][
-                    f"{step}_ansible_python_interpreter"
-                ]
+                python_path=info["vars"][f"{step}_ansible_python_interpreter"]
             )
             ansible_step["hosts"] = info["hosts"]
-            server_info[step] = ansible_step
-        upload_data_to_nextcloud(self.project_name, server_info)
+            deployment_setup[step] = ansible_step
+        upload_data_to_nextcloud(
+            self.project_name, deployment_setup, domain=self.domain
+        )

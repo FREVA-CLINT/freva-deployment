@@ -63,11 +63,13 @@ setup(
     install_requires=[
         "appdirs",
         "npyscreen",
+        "PyMySQL",
         "pyncclient",
         "pyyml",
         "rich",
         "toml",
         "tomlkit",
+        "requests",
     ],
     extras_require={
         "docs": [
@@ -78,7 +80,7 @@ setup(
             "ipython",  # For nbsphinx syntax highlighting
             "sphinxcontrib_github_alt",
         ],
-        "test": ["mypy", "black", "types-toml"],
+        "test": ["mypy", "black", "types-toml", "types-PyMySQL"],
     },
     python_requires=">=3.8",
     classifiers=[

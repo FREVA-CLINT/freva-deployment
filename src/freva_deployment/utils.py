@@ -1,18 +1,22 @@
 """Collection of utils for deployment."""
 from __future__ import annotations
+import base64
+from collections import namedtuple
 from getpass import getpass
+import hashlib
 import logging
+import json
 from pathlib import Path
 import re
 import os
 import shlex
 from subprocess import run, PIPE
 from tempfile import NamedTemporaryFile, TemporaryDirectory
-from typing import Union
+from typing import cast, Generator, NamedTuple
 
 import appdirs
 import nextcloud_client
-import toml
+import requests
 
 logging.basicConfig(format="%(name)s - %(levelname)s - %(message)s", level=logging.INFO)
 logger = logging.getLogger("freva-deployment")
@@ -25,26 +29,68 @@ password_prompt = (
     "as mysql root password.\n: "
 )
 
+ServiceInfo = NamedTuple(
+    "ServiceInfo", [("name", str), ("python_path", str), ("hosts", str)]
+)
+
+
+def get_setup_for_service(service: str, setups: list[ServiceInfo]) -> tuple[str, str]:
+    """Get the setup of a service configuration."""
+    for setup in setups:
+        if setup.name == service:
+            return setup.python_path, setup.hosts
+    raise KeyError("Service not found")
+
+
+def read_db_credentials(
+    cert_file: Path, db_host: str, port: int = 5002
+) -> dict[str, str]:
+    """Read database config."""
+    with cert_file.open() as f_obj:
+        key = "".join([k.strip() for k in f_obj.readlines() if not k.startswith("-")])
+        sha = hashlib.sha512(key.encode()).hexdigest()
+    url = f"http://{db_host}:{port}/vault/data/{sha}"
+    return requests.get(url).json()
+
 
 def download_data_from_nextcloud(
+    domain: str = "dkrz",
     public_url: str = "https://nextcloud.dkrz.de/s",
-) -> dict[str, dict[str, dict[str, str]]]:
-    """Download server information from public next cloud share."""
+) -> dict[str, list[ServiceInfo]]:
+    """Download server information from public next cloud share.
+
+    Parameters
+    ----------
+    domain: str, default: dkrz
+        Organization domain name where server information is stored.
+    public_url:
+        Url to the cloud storage object where the information is stored.
+
+    Returns
+    -------
+    dict[str, list[NamedTuple("service", [("name", str), ("python_path", str),
+                                     ("hosts", str)])]]
+    """
     token = "yas2RZHRDyiMaPj"
     public_link = public_url + "/" + token
     with NamedTemporaryFile(suffix=".json") as temp_f:
-        nc = nextcloud_client.Client.from_public_link(public_link)
+        next_c = nextcloud_client.Client.from_public_link(public_link)
         try:
-            nc.get_file("/servers.toml", temp_f.name)
+            next_c.get_file(f"/servers.{domain}", temp_f.name)
         except nextcloud_client.HTTPResponseError:
             return {}
-        with open(temp_f.name) as f_obj:
-            return toml.load(f_obj)
+        with open(temp_f.name, "rb") as f_obj:
+            config = json.loads(base64.b64decode(f_obj.read()).decode())
+    info: dict[str, list[ServiceInfo]] = {}
+    for proj, _conf in config.items():
+        info[cast(str, proj)] = [ServiceInfo(name=s, **c) for (s, c) in _conf.items()]
+    return info
 
 
 def upload_data_to_nextcloud(
     project_name: str,
-    server_info: dict[str, dict[str, str]],
+    deployment_setup: dict[str, dict[str, str]],
+    domain: str = "dkrz",
     public_url: str = "https://nextcloud.dkrz.de/s",
 ) -> None:
     """Upload server information to public nextcloud share.
@@ -53,27 +99,36 @@ def upload_data_to_nextcloud(
     ----------
     project_name: str
         Name of the freva project
-    server_info: dict[str, str]
+    deployment_setup: dict[str, str]
         Server names for each deployed service
+    domain: str, deault: drkz
+        Organization domain name where server information is stored.
     public_url: str
         The public nextcloud url where the information is upladed to.
     """
     token = "yas2RZHRDyiMaPj"
     public_link = public_url + "/" + token
-    server_data = download_data_from_nextcloud()
-    for service, values in server_info.items():
+    server_data = download_data_from_nextcloud(domain)
+    _upload_data: dict[str, dict[str, dict[str, str]]] = {}
+    for project, services in server_data.items():
+        _upload_data[project] = {}
+        for serv in services:
+            _upload_data[project][serv.name] = dict(
+                hosts=serv.hosts, python_path=serv.python_path
+            )
+    for service, config in deployment_setup.items():
         try:
-            server_data[project_name][service] = values
+            _upload_data[project_name][service] = config
         except KeyError:
-            server_data[project_name] = {service: values}
+            _upload_data[project_name] = {service: config}
     cwd = os.getcwd()
-    with TemporaryDirectory() as td:
-        nc = nextcloud_client.Client.from_public_link(public_link)
-        os.chdir(td)
-        with open("servers.toml", "w") as f_obj:
-            toml.dump(server_data, f_obj)
+    with TemporaryDirectory() as temp_dir:
+        next_c = nextcloud_client.Client.from_public_link(public_link)
+        os.chdir(temp_dir)
+        with open(f"servers.{domain}", "wb") as f_obj:
+            f_obj.write(base64.b64encode(json.dumps(_upload_data).encode()))
         try:
-            success = nc.drop_file("servers.toml")
+            success = next_c.drop_file(f"servers.{domain}")
         except nextcloud_client.HTTPResponseError:
             logger.error("Could not upload server data to %s", public_link)
         finally:

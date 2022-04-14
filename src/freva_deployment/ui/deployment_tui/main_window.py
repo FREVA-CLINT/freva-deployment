@@ -138,6 +138,7 @@ class MainApp(npyscreen.NPSAppManaged):
         cert_file = self._setup_form.cert_file.value
         project_name = self._setup_form.project_name.value
         wipe = self._setup_form.wipe.value
+        domain = self._setup_form.domain.value
         ssh_pw = self._setup_form.use_ssh_pw.value
         if isinstance(wipe, list):
             wipe = bool(wipe[0])
@@ -152,6 +153,7 @@ class MainApp(npyscreen.NPSAppManaged):
                     "project_name": project_name,
                     "wipe": wipe,
                     "ssh_pw": ssh_pw,
+                    "domain": domain,
                     "config": self.config,
                 },
                 f,

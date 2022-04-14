@@ -42,6 +42,12 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
         "default, a file will be created.",
     )
     ap.add_argument(
+        "--domain",
+        type=str,
+        help="Domain name of your organisation to create a uniq identifier.",
+        default="dkrz",
+    )
+    ap.add_argument(
         "--wipe",
         action="store_true",
         default=False,
@@ -79,6 +85,7 @@ def cli(argv: list[str] | None = None) -> None:
         config_file=args.config,
         ask_pass=args.ask_pass,
         wipe=args.wipe,
+        domain=args.domain,
     ) as DF:
         DF.play()
 

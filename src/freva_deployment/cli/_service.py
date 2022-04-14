@@ -8,7 +8,12 @@ from subprocess import run
 import sys
 from tempfile import TemporaryDirectory
 
-from ..utils import download_data_from_nextcloud, logger
+from ..utils import (
+    download_data_from_nextcloud,
+    logger,
+    ServiceInfo,
+    get_setup_for_service,
+)
 
 
 def parse_args(args: list[str]) -> argparse.Namespace:
@@ -25,6 +30,12 @@ def parse_args(args: list[str]) -> argparse.Namespace:
         help="The start|stop|restart command for the service",
     )
     app.add_argument("project_name", type=str, help="Name of the project")
+    app.add_argument(
+        "--domain",
+        type=str,
+        help="Domain name of your organisation to create a uniq identifier.",
+        default="dkrz",
+    )
     app.add_argument(
         "--services",
         type=str,
@@ -62,14 +73,13 @@ def _create_playbook(
     project_name: str,
     command: str,
     services: list[str],
-    config: dict[str, dict[str, str]],
+    config: list[ServiceInfo],
 ) -> tuple[str, str]:
     """Create a ansible playbook for given services."""
     playbooks: list[str] = []
     inventory: list[str] = []
     for service in services:
-        python_env = config[service]["ansible_python_interpreter"]
-        hosts = config[service]["hosts"]
+        python_env, hosts = get_setup_for_service(service, config)
         group = project_name.replace("-", "_") + "_" + service
         playbooks.append(
             YAML_TASK.format(
@@ -96,7 +106,7 @@ def _get_playbook_for_project(
     project_name: str,
     command: str,
     services: list[str],
-    config: dict[str, dict[str, str]],
+    config: list[ServiceInfo],
 ) -> tuple[str, str]:
     return _create_playbook(project_name, command, services, config)
 
@@ -106,7 +116,7 @@ def cli(argv: list[str] | None = None) -> None:
     argv = argv or sys.argv[1:]
     argp = parse_args(argv)
     user = argp.user or getuser()
-    cfg = download_data_from_nextcloud()
+    cfg = download_data_from_nextcloud(argp.domain)
     if argp.project_name.lower() == "all":
         project_names = list(cfg.keys())
     else:
@@ -124,7 +134,7 @@ def cli(argv: list[str] | None = None) -> None:
             )
             playbooks.append(p_book)
             inventory.append(i_nventory)
-        except KeyError as error:
+        except (KeyError, AttributeError) as error:
             logger.error(error.__str__())
             continue
     if not playbooks:
