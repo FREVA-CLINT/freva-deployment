@@ -1,0 +1,3 @@
+[freva-ces]
+solr = [ "/foo/baz", "www-regiklim.dkrz.de",]
+db = [ "/foo/bar", "www-regiklim.dkrz.de",]
