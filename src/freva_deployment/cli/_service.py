@@ -5,11 +5,12 @@ from getpass import getuser
 from pathlib import Path
 import shlex
 from subprocess import run, PIPE
-import requests
 import sys
 from tempfile import TemporaryDirectory
 
+import requests
 from rich.console import Console
+import yaml
 
 from ..utils import (
     download_server_map,
@@ -109,7 +110,7 @@ def _get_playbook_for_project(
     command: str,
     services: list[str],
     config: list[ServiceInfo],
-) -> tuple[str, str]:
+) -> tuple[list[str], list[str]]:
     """Create a ansible playbook for given services."""
     playbooks: list[str] = []
     inventory: list[str] = []
@@ -122,7 +123,7 @@ def _get_playbook_for_project(
         else:
             cmd = command
             tmpl = YAML_TASK
-        playbooks.append(
+        playbooks += yaml.safe_load(
             tmpl.format(
                 python_env=python_env,
                 project_name=project_name,
@@ -141,7 +142,7 @@ def _get_playbook_for_project(
                 group=group,
             )
         )
-    return "\n".join(playbooks), "\n".join(inventory)
+    return playbooks, inventory
 
 
 def cli(argv: list[str] | None = None) -> None:
@@ -167,8 +168,8 @@ def cli(argv: list[str] | None = None) -> None:
             p_book, i_nventory = _get_playbook_for_project(
                 map_server, project_name, argp.command, argp.services, config
             )
-            playbooks.append(p_book)
-            inventory.append(i_nventory)
+            playbooks += p_book
+            inventory += i_nventory
         except (KeyError, AttributeError) as error:
             logger.error(error.__str__())
             continue
@@ -181,8 +182,8 @@ def cli(argv: list[str] | None = None) -> None:
         with open(inventory_file, "w") as f_obj:
             f_obj.write("\n".join(inventory))
         with open(task_file, "w") as f_obj:
-            f_obj.write("\n".join(playbooks))
-        logger.debug("\n".join(playbooks))
+            yaml.dump(playbooks, f_obj)
+        logger.debug(yaml.dump(playbooks))
         cmd = shlex.split(
             f"ansible-playbook {verbosity} -u {user} --ask-pass --ask-become -i "
             f"{inventory_file} {task_file}"
@@ -204,9 +205,12 @@ def cli(argv: list[str] | None = None) -> None:
                 status_line = [f"{project}-{service}"]
                 n_server_char = max(len(status_line[0]), n_server_char)
                 for key in ("mem", "cpu", "status"):
-                    status_line.append(status.get(key))
+                    status_line.append(status.get(key, "NaN"))
                 std_out.append(status_line)
         format_row = "{:>12}" * (len(header) + 1)
         con.print(format_row.format("", *header), style="bold", markup=True)
         for line in std_out:
-            con.print(format_row.format("", *line), markup=True)
+            try:
+                con.print(format_row.format("", *line), markup=True)
+            except TypeError:
+                pass

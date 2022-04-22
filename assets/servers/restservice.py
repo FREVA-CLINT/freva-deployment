@@ -110,7 +110,7 @@ class ServerStaus(Resource):
             dict: operation status information
         """
         keys = ("mem", "status", "cpu")
-        args = {k: v.lower() for (k, v) in request.form.items() if k in keys}
+        args = {k: v.lower() for (k, v) in request.form.items() if k in keys and v}
         if not service_status:
             service_status[project] = {service: args}
         else:
