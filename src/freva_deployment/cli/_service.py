@@ -36,11 +36,7 @@ def parse_args(args: list[str]) -> argparse.Namespace:
         help="The start|stop|restart|status command for the service",
     )
     app.add_argument(
-        "project_name",
-        type=str,
-        help="Name of the project",
-        default="all",
-        nargs="?",
+        "project_name", type=str, help="Name of the project", default="all", nargs="?",
     )
     app.add_argument(
         "--server-map",
@@ -58,7 +54,7 @@ def parse_args(args: list[str]) -> argparse.Namespace:
         nargs="+",
         default=["solr", "db", "web"],
         choices=["web", "db", "solr"],
-        help="The services to be started|stopped|restarted",
+        help="The services to be started|stopped|restarted|checked",
     )
     app.add_argument(
         "--user", "-u", type=str, help="connect as this user", default=None
@@ -136,10 +132,7 @@ def _get_playbook_for_project(
         )
         inventory.append(
             YAML_INVENTORY.format(
-                hosts=hosts,
-                project_name=project_name,
-                service=service,
-                group=group,
+                hosts=hosts, project_name=project_name, service=service, group=group,
             )
         )
     return playbooks, inventory
@@ -194,10 +187,7 @@ def cli(argv: list[str] | None = None) -> None:
             run(cmd, check=True, stdout=PIPE)
     if argp.command == "status":
         con = Console()
-        (
-            header,
-            std_out,
-        ) = ["SERVICE", "MEM", "CPU", "STATUS"], []
+        (header, std_out,) = ["SERVICE", "MEM", "CPU", "STATUS"], []
         n_server_char = 0
         for project in project_names:
             for service in argp.services:
@@ -207,7 +197,7 @@ def cli(argv: list[str] | None = None) -> None:
                 for key in ("mem", "cpu", "status"):
                     status_line.append(status.get(key, "NaN"))
                 std_out.append(status_line)
-        format_row = "{:>12}" * (len(header) + 1)
+        format_row = "{:<1} {:<20} {:^10} {:^10} {:>10}"
         con.print(format_row.format("", *header), style="bold", markup=True)
         for line in std_out:
             try:
