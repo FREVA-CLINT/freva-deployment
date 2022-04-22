@@ -21,7 +21,7 @@ from .utils import (
     create_self_signed_cert,
     get_passwd,
     logger,
-    upload_data_to_nextcloud,
+    upload_server_map,
 )
 
 
@@ -41,8 +41,6 @@ class DeployFactory:
     ask_pass: bool, default: False
         Instruct ansible to ask for a ssh password instead of using a public
         certificate file.
-    domain: str, default: dkrz
-        Domain name of your organisation to create a uniq identifier.
     wipe: bool, default: False
         Delete any existing deployment resources, such as docker volumes.
 
@@ -64,7 +62,6 @@ class DeployFactory:
         cert_file: str | None = None,
         config_file: Path | str | None = None,
         ask_pass: bool = False,
-        domain: str = "dkrz",
         wipe: bool = False,
     ) -> None:
 
@@ -82,7 +79,6 @@ class DeployFactory:
         self._cert_file = cert_file or ""
         self._inv_tmpl = Path(config_file or config_dir / "inventory.toml")
         self._cfg_tmpl = self.aux_dir / "evaluation_system.conf.tmpl"
-        self.domain = domain
         self.cfg = self._read_cfg()
 
     @property
@@ -475,7 +471,7 @@ USE {db};
             with dump_file.open("w") as f_obj:
                 f_obj.write("".join(lines))
 
-    def play(self) -> None:
+    def play(self, server_map: str | None, verbosity: str = "") -> None:
         """Play the ansible playbook."""
         self.create_playbooks()
         inventory = self.parse_config()
@@ -490,20 +486,23 @@ USE {db};
             inventory_str = inventory
         Console().print(inventory_str, style="bold", markup=True)
         logger.info("Playing the playbooks with ansible")
-        cmd = f"ansible-playbook -i {self.inventory_file} {self._playbook_file}"
+        cmd = (
+            f"ansible-playbook {verbosity} -i {self.inventory_file} "
+            f"{self._playbook_file}"
+        )
         if self.ask_pass:
             cmd += " --ask-pass"
         cmd += " --ask-become-pass"
         try:
             res = run(
-                shlex.split(cmd), env=os.environ.copy(), cwd=str(asset_dir), check=False
+                shlex.split(cmd), env=os.environ.copy(), cwd=str(asset_dir), check=True
             )
         except KeyboardInterrupt:
             pass
-        if res.returncode == 0:
-            self.upload_server_info(inventory)
+        if server_map:
+            self.upload_server_info(server_map, inventory)
 
-    def upload_server_info(self, inventory: str) -> None:
+    def upload_server_info(self, server_map: str, inventory: str) -> None:
         """Upload information on server information to shared nextcloud."""
         deployment_setup: dict[str, dict[str, str]] = {}
         for step, info in yaml.safe_load(inventory).items():
@@ -512,6 +511,4 @@ USE {db};
             )
             ansible_step["hosts"] = info["hosts"]
             deployment_setup[step] = ansible_step
-        upload_data_to_nextcloud(
-            self.project_name, deployment_setup, domain=self.domain
-        )
+        upload_server_map(server_map, self.project_name, deployment_setup)

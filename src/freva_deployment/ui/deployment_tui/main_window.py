@@ -36,9 +36,9 @@ class MainApp(npyscreen.NPSAppManaged):
         for step in self._steps_lookup.keys():
             self.config.setdefault(step, {"hosts": "", "config": {}})
         self._add_froms()
-        self._thread_stop = threading.Event()
+        self.thread_stop = threading.Event()
         self._save_thread = threading.Thread(target=self._auto_save)
-        self._save_thread.start()
+        # self._save_thread.start()
 
     def _add_froms(self) -> None:
         """Add forms to edit the deploy steps to the main window."""
@@ -57,8 +57,9 @@ class MainApp(npyscreen.NPSAppManaged):
             kwargs.get("msg", "Exit Application?"), title=""
         )
         if value is True:
-            self._thread_stop.set()
+            self.thread_stop.set()
             self.setNextForm(None)
+            self.save_config_to_file()
             self.editing = False
             self.switchFormNow()
 
@@ -85,13 +86,13 @@ class MainApp(npyscreen.NPSAppManaged):
 
     def _auto_save(self) -> None:
         """Auto save the current configuration."""
-        while not self._thread_stop.is_set():
+        while not self.thread_stop.is_set():
             time.sleep(0.5)
-            if self._thread_stop.is_set():
+            if self.thread_stop.is_set():
                 break
             try:
                 self.check_missing_config(stop_at_missing=False)
-                self.save_config_to_file()
+                self.save_config_to_file(exclude=["steps"])
             except Exception:
                 pass
 
@@ -131,34 +132,34 @@ class MainApp(npyscreen.NPSAppManaged):
             self._update_config(the_selected_file)
             self.save_config_to_file()
 
-    def save_config_to_file(self, write_toml_file: bool = False) -> Path | None:
+    def save_config_to_file(
+        self, write_toml_file: bool = False, exclude: list[str] | None = None
+    ) -> Path | None:
         """Save the status of the tui to file."""
         cache_file = self.cache_dir / ".temp_file.toml"
-        save_file = self._setup_form.inventory_file.value
-        cert_file = self._setup_form.cert_file.value
+        save_file = Path(self._setup_form.inventory_file.value)
+        cert_file = Path(self._setup_form.cert_file.value)
         project_name = self._setup_form.project_name.value
         wipe = self._setup_form.wipe.value
-        domain = self._setup_form.domain.value
+        server_map = self._setup_form.server_map.value
         ssh_pw = self._setup_form.use_ssh_pw.value
         if isinstance(wipe, list):
             wipe = bool(wipe[0])
         if isinstance(ssh_pw, list):
             ssh_pw = bool(ssh_pw[0])
+        exclude = exclude or []
+        config = {
+            "save_file": str(save_file.expanduser().absolute()),
+            "steps": list(set(self.steps)),
+            "cert_file": str(cert_file.expanduser().absolute()),
+            "project_name": project_name,
+            "wipe": wipe,
+            "ssh_pw": ssh_pw,
+            "server_map": server_map,
+            "config": self.config,
+        }
         with open(self.cache_dir / "freva_deployment.json", "w") as f:
-            json.dump(
-                {
-                    "save_file": str(save_file),
-                    "steps": list(set(self.steps)),
-                    "cert_file": str(cert_file),
-                    "project_name": project_name,
-                    "wipe": wipe,
-                    "ssh_pw": ssh_pw,
-                    "domain": domain,
-                    "config": self.config,
-                },
-                f,
-                indent=3,
-            )
+            json.dump({k: v for (k, v) in config.items()}, f, indent=3)
         if write_toml_file is False:
             return None
         save_file = save_file or cache_file

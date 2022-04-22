@@ -1,20 +1,16 @@
 #!/bin/bash
-content='[Install]\n
-WantedBy=multi-user.target\n\n[Service]\n
-Type=simple\n
-RemainAfterExit=true\n
-ExecStart=sh -c "echo starting docker services"\n[Unit]\n
-Description=Start/Stop freva services docker containers\n
-After=network-online.target
-'
-suffix=$(echo $1|rev|cut -d - -f1|rev)
-project_name=$(echo $1|sed "s/-${suffix}//g")
-#if [ ! -f "/etc/systemd/system/${project_name}.service" ];then
-#    echo -e $content > /etc/systemd/system/${project_name}.service
-#fi
-#if [ -z "$(cat etc/systemd/system/${project_name}.service |grep ${1})" ];then
-#    echo " Requires=${1}.service" >> /etc/systemd/system/${project_name}.service
-#fi
+
+daemon_content=/etc/systemd/system/$1.service
+podman=$(which podman)
+docker=$(which docker)
+docker_fragment=$(systemctl show docker 2> /dev/null|grep -i FragmentPath=)
+podman_fragment=$(systemctl show podman 2> /dev/null|grep -i FragmentPath=)
+if [ "$docker_fragment" ];then
+	sed -i "s#/usr/bin/docker#$docker#g" $daemon_content
+else
+	sed -i "s#/usr/bin/docker#$podman#g" $daemon_content
+ 	sed -i "s/docker.service/podman.service/g" $daemon_content
+fi
 systemctl daemon-reload
-systemctl enable $1 #$project_name
-systemctl restart $1 #$project_name
+systemctl enable $1
+systemctl restart $1

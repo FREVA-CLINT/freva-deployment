@@ -551,6 +551,9 @@ class RunForm(npyscreen.FormMultiPageAction):
         if not self.project_name.value:
             npyscreen.notify_confirm("You have to set a project name", title="ERROR")
             return
+        if not self.server_map.value:
+            npyscreen.notify_confirm("You must set server_map value", title="ERROR")
+            return
         missing_form: None | str = self.parentApp.check_missing_config()
         if missing_form:
             self.parentApp.change_form(missing_form)
@@ -561,10 +564,11 @@ class RunForm(npyscreen.FormMultiPageAction):
                 msg = f"Public certificate file `{cert_file}` must exist or empty."
                 npyscreen.notify_confirm(msg, title="ERROR")
                 return
-        self.parentApp._thread_stop.set()
+        self.parentApp.thread_stop.set()
         save_file = self.parentApp.save_config_to_file(write_toml_file=True)
         self.parentApp.setup = {
             "project_name": self.project_name.value,
+            "server_map": self.server_map.value,
             "steps": list(set(self.parentApp.steps)),
             "config_file": str(save_file) or None,
             "cert_file": str(cert_file) or None,
@@ -595,7 +599,6 @@ class RunForm(npyscreen.FormMultiPageAction):
 
         wipe = self.parentApp._read_cache("wipe", False)
         ssh_pw = self.parentApp._read_cache("ssh_pw", True)
-        domain = self.parentApp._read_cache("domain", "dkrz")
         self.project_name = self.add_widget_intelligent(
             npyscreen.TitleText,
             name="Set the name of the project",
@@ -606,11 +609,10 @@ class RunForm(npyscreen.FormMultiPageAction):
             name="Save config as",
             value=str(self.parentApp.save_file),
         )
-        self.domain = self.add_widget_intelligent(
+        self.server_map = self.add_widget_intelligent(
             npyscreen.TitleText,
-            name="Set your institution id as a domain for unique identification "
-            "of your project across domains",
-            value=domain,
+            name=("Hostname of the service mapping the freva server arch."),
+            value=self.parentApp._read_cache("server_map", ""),
         )
         self.cert_file = self.add_widget_intelligent(
             npyscreen.TitleFilename,

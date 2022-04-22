@@ -22,12 +22,12 @@
     file:
       path: "{{ item }}"
       state: directory
-      mode: "u=srwtX,g=srX,o=rX"
+      mode: "2775"
+      group: freva
       recurse: yes
     with_items:
       - "{{ core_root_dir }}"
       - "{{ core_root_dir }}/freva/"
-      - "{{ core_root_dir }}/data/"
       - "{{ core_root_dir }}/plugins/"
     become: "{{'yes' if core_ansible_become_user is defined else 'no' }}"
 
@@ -35,12 +35,13 @@
     file:
       path: "{{ item }}"
       state: directory
-      mode: "u=srwtX,g=srwtX,o=rX"
+      mode: "3775"
       recurse: yes
     with_items:
       - "{{ core_base_dir_location }}"
-      - "{{ core_root_dir}}/share/"
-      - "{{ core_root_dir}}/share/preview/"
+      - "{{ core_base_dir_location }}/share/"
+      - "{{ core_base_dir_location }}/data/"
+      - "{{ core_base_dir_location }}/share/preview/"
     become: "{{'yes' if core_ansible_become_user is defined else 'no' }}"
   - name: Inserting evaluation_sytem.conf file
     copy:

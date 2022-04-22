@@ -7,15 +7,14 @@ import logging
 import json
 from pathlib import Path
 import re
-import os
 import shlex
 from subprocess import run, PIPE
-from tempfile import NamedTemporaryFile, TemporaryDirectory
+from tempfile import NamedTemporaryFile
 from typing import cast, NamedTuple
 
 import appdirs
-import nextcloud_client
 import requests
+import toml
 
 logging.basicConfig(format="%(name)s - %(levelname)s - %(message)s", level=logging.INFO)
 logger = logging.getLogger("freva-deployment")
@@ -31,6 +30,59 @@ password_prompt = (
 ServiceInfo = NamedTuple(
     "ServiceInfo", [("name", str), ("python_path", str), ("hosts", str)]
 )
+
+
+def guess_map_server(
+    inp_server: str | None, default_port: int = 6111, mandatory: bool = True
+) -> str:
+    """Try to get the server name mapping the freva infrastructure.
+
+    Parameters
+    ----------
+    inp_server: str | None
+        Input server name, if None given, the code tries to read the
+        the server name from a previous deployment setup.
+    default_port: int, default: 6111
+        The port to connect to
+    mandatory: bool, default: True
+        If mandatory is set and no server could be found an error is risen.
+
+    Returns
+    -------
+    str: hostname of the server that runs the server map service
+
+    Raises
+    ------
+    ValueError: If no server could be found a ValueError is raised.
+    """
+    inp_server = inp_server or ""
+    if inp_server:
+        host_name, _, port = inp_server.partition(":")
+        port = port or str(default_port)
+        return f"{host_name}:{port}"
+    cache_dir = Path(appdirs.user_cache_dir()) / "freva-deployment"
+    try:
+        with (cache_dir / "freva_deployment.json").open() as f_obj:
+            inp_server = cast(str, json.load(f_obj)["server_map"])
+            host_name, _, port = inp_server.partition(":")
+            port = port or str(default_port)
+            return f"{host_name}:{port}"
+    except (FileNotFoundError, IOError, ValueError, KeyError, json.JSONDecodeError):
+        pass
+    if mandatory:
+        raise ValueError(
+            "You have to set the hostname to the services mapping "
+            "the freva infrastructure using the --server-map flag."
+        )
+    return ""
+
+
+def set_log_level(verbosity: int) -> str:
+    """Set the log level of the logger."""
+    logger.setLevel(max(logging.INFO - 10 * verbosity, logging.DEBUG))
+    if verbosity > 0:
+        return "-" + verbosity * "v"
+    return ""
 
 
 def get_setup_for_service(service: str, setups: list[ServiceInfo]) -> tuple[str, str]:
@@ -52,88 +104,58 @@ def read_db_credentials(
     return requests.get(url).json()
 
 
-def download_data_from_nextcloud(
-    domain: str = "dkrz",
-    public_url: str = "https://nextcloud.dkrz.de/s",
+def download_server_map(
+    server_map,
 ) -> dict[str, list[ServiceInfo]]:
-    """Download server information from public next cloud share.
+    """Download server information from the service that stores the server arch.
 
     Parameters
     ----------
-    domain: str, default: dkrz
-        Organization domain name where server information is stored.
-    public_url:
-        Url to the cloud storage object where the information is stored.
-
+    server_map: str,
+        The hostname holding the server archtiecture information.
     Returns
     -------
     dict[str, list[NamedTuple("service", [("name", str), ("python_path", str),
                                      ("hosts", str)])]]
     """
-    token = "yas2RZHRDyiMaPj"
-    public_link = public_url + "/" + token
-    with NamedTemporaryFile(suffix=".json") as temp_f:
-        next_c = nextcloud_client.Client.from_public_link(public_link)
-        try:
-            next_c.get_file(f"/servers.{domain}", temp_f.name)
-        except nextcloud_client.HTTPResponseError:
-            return {}
-        with open(temp_f.name, "rb") as f_obj:
-            config = json.loads(base64.b64decode(f_obj.read()).decode())
     info: dict[str, list[ServiceInfo]] = {}
+    host, _, port = server_map.partition(":")
+    port = port or "6111"
+    config = requests.get(f"http://{host}:{port}").json()
     for proj, _conf in config.items():
         info[cast(str, proj)] = [ServiceInfo(name=s, **c) for (s, c) in _conf.items()]
     return info
 
 
-def upload_data_to_nextcloud(
+def upload_server_map(
+    server_map: str,
     project_name: str,
     deployment_setup: dict[str, dict[str, str]],
-    domain: str = "dkrz",
-    public_url: str = "https://nextcloud.dkrz.de/s",
 ) -> None:
-    """Upload server information to public nextcloud share.
+    """Upload server information to service that stores server archtiecture.
 
     Parameters
     ----------
+    server_map: str
+        The hostname holding the server archtiecture information.
     project_name: str
         Name of the freva project
     deployment_setup: dict[str, str]
         Server names for each deployed service
-    domain: str, deault: drkz
-        Organization domain name where server information is stored.
-    public_url: str
-        The public nextcloud url where the information is upladed to.
     """
-    token = "yas2RZHRDyiMaPj"
-    public_link = public_url + "/" + token
-    server_data = download_data_from_nextcloud(domain)
-    _upload_data: dict[str, dict[str, dict[str, str]]] = {}
-    for project, services in server_data.items():
-        _upload_data[project] = {}
-        for serv in services:
-            _upload_data[project][serv.name] = dict(
-                hosts=serv.hosts, python_path=serv.python_path
-            )
+    _upload_data: dict[str, dict[str, str]] = {}
     for service, config in deployment_setup.items():
-        try:
-            _upload_data[project_name][service] = config
-        except KeyError:
-            _upload_data[project_name] = {service: config}
-    cwd = os.getcwd()
-    with TemporaryDirectory() as temp_dir:
-        next_c = nextcloud_client.Client.from_public_link(public_link)
-        os.chdir(temp_dir)
-        with open(f"servers.{domain}", "wb") as f_obj:
-            f_obj.write(base64.b64encode(json.dumps(_upload_data).encode()))
-        try:
-            success = next_c.drop_file(f"servers.{domain}")
-        except nextcloud_client.HTTPResponseError:
-            logger.error("Could not upload server data to %s", public_link)
-        finally:
-            os.chdir(cwd)
-        if success:
-            logger.info("Server information updated at %s", public_url)
+        _upload_data[service] = config
+    host, _, port = server_map.partition(":")
+    port = port or "6111"
+    req_data = dict(config=toml.dumps(_upload_data))
+    logger.debug("Uploading %s", req_data)
+    req = requests.put(f"http://{host}:{port}/{project_name}", data=req_data)
+    status = req.json()
+    if status["status"] == "success":
+        logger.info("Server information updated at %s", host)
+    else:
+        logger.error("Could not update server information %s", status["status"])
 
 
 def get_passwd(min_characters: int = 8) -> str:

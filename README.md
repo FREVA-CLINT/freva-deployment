@@ -38,7 +38,7 @@ After installing the above listed packages via cygwin you can clone and install 
 ```bash
 pip install (--user) git+https://gitlab.dkrz.de/freva/deployment.git
 ```
-### Installation on \*nix systems or wsl.
+## Installation on \*nix systems or wsl.
 If you're using Linux, OsX or a Windows subsystem for Linux (WSL) it should be sufficient to issues the following commands:
 
 ```bash
@@ -53,15 +53,55 @@ This command installs ansible and all required python packages.
 python3 -m pip install (--user) libselinux-python3
 ```
 
+## Commands after installation:
+The `pip` install command will create *four* different commands:
+- `deploy-freva-map`: To setup a service that keeps track of all deployed freva instances and their services.
+- `deploy-freva`: Text user interface to configure and run the deployment.
+- `deploy-freva-cmd`: Run already configured deployment.
+- `freva-service`: Start|Stop|Restart|Check services of freva instances.
+- `freva-migrate`: Command line interface to manage project migration from old freva systems to new ones.
 
-## Installing docker and sudo access to the service servers
-Since the services of MariaDB and Apache Solr will be deployed on docker container images, docker needs to be available on the target servers. Usually installing and running docker requires *root* privileges.
-Hence, on the servers that will be running docker you will need root access. There exist an option to install and run docker without root, information on a root-less docker option
+
+## Installing docker/podman and sudo access to the service servers
+Since the services of MariaDB, Apache Solr and Apache web will be deployed on docker container images, docker needs to be available on the target servers. Usually installing and running docker requires *root* privileges.
+Hence, on the servers that will be running docker you will need root access.
+There exist an option to install and run docker without root,
+information on a root-less docker option
 can be found [on the docker docs](https://docs.docker.com/engine/security/rootless/)
+> **_Note:_** Some systems use `podman` instead of `docker`. The deployment
+routine is able to distinguish and use the right service.
+
+## Setting up a service that maps the server structure
+Since the services might be scattered across different servers it might be hard
+to keep track of the host names of the servers where all services are running.
+We have created a service that keeps track of the locations of all services for
+a certain freva instance. Although not strictly needed we recommend you to setup
+this special server mapping service. To do so use the following command:
+
+```bash
+deploy-freva-map --help
+usage: deploy-freva-map [-h] [--port PORT] [--wipe] [--user USER] [--python-path PYTHON_PATH] [-v]
+                        servername
+
+Create service that maps the freva server architecture.
+
+positional arguments:
+  servername            The server name where the infrastructure mapping service is deployed.
+
+options:
+  -h, --help            show this help message and exit
+  --port PORT           The port the service is listing to (default: 6111)
+  --wipe                Delete any existing data. (default: False)
+  --user USER           Username to log on to the target server. (default: None)
+  --python-path PYTHON_PATH
+                        Path to the default python3 interpreter on the target machine. (default:
+                        /usr/bin/python)
+  -v, --verbose         Verbosity level (default: 0)
+```
+> **_Note_:** As the service keeps track of all freva instances within your institution, this has to be deployed only *once*. Please make sure that other admins who might need to install freva are aware of the host name for this service.
 
 # Configuring the deployment
-Once everything is setup the deployment can be configured via the main config file.  A template of a typical deployment configuration can be found in `config/inventory.tmpl`.
-**Please copy this file first to** `config/inventory`. After the file has been copied you have to edit it. You will need to set at least one `hostname` in the following sections:
+A complete freva instance will need the following services:
 
 - solrservers (hostname of the apache solr server)
 - dbservers (hostname of the MariaDB server)
@@ -91,7 +131,7 @@ git_path=/sw/spack-levante/git-2.31.1-25ve7r/bin/git
 
 # Running the deployment
 After successful configuration you can run the deployment.
-The command `deploy-freva-tui` opens a text user interface (tui) that will walk
+The command `deploy-freva` opens a text user interface (tui) that will walk
 you through the setup of the deployment.
 > **_Note:_** Navigation is similar to the one of the *nano* text editor. The shortcuts start with a `^` which indicates `CTRL+`.
 
@@ -109,11 +149,11 @@ Please remember to set the correct domain flag for `deployment`, `servicing` and
 
 ## Deployment with existing configuration.
 If you already have a configuration saved in a toml base inventory file you can
-issue the `deploy-freva` command:
+issue the `deploy-freva-cmd` command:
 
 ```bash
-deploy-freva --help
-usage: deploy-freva [-h] [--config CONFIG]
+deploy-freva-cmd --help
+usage: deploy-freva-cmd [-h] [--config CONFIG]
                     [--steps {services,web,core,db,solr,backup} [{services,web,core,db,solr,backup} ...]]
                     [--cert CERT] [--domain DOMAIN] [--wipe] [--ask-pass]
                     project_name

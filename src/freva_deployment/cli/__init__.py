@@ -2,7 +2,7 @@
 from __future__ import annotations
 import importlib
 
-__all__ = ["deploy", "service", "migrate"]
+__all__ = ["deploy", "service", "migrate", "server_map"]
 
 
 def __getattr__(name):

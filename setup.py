@@ -53,10 +53,11 @@ setup(
     package_dir={"": "src"},
     entry_points={
         "console_scripts": [
-            "deploy-freva = freva_deployment.cli:deploy",
+            "deploy-freva-cmd = freva_deployment.cli:deploy",
+            "deploy-freva-map = freva_deployment.cli:server_map",
             "freva-service = freva_deployment.cli:service",
             "freva-migrate = freva_deployment.cli:migrate",
-            "deploy-freva-tui = freva_deployment.ui.deployment_tui:tui",
+            "deploy-freva = freva_deployment.ui.deployment_tui:tui",
         ]
     },
     setup_requires=["appdirs"],

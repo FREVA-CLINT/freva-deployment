@@ -1,7 +1,6 @@
 """CLI to assist with migrating the system."""
 from __future__ import annotations
 import argparse
-import logging
 import json
 from pathlib import Path
 import os
@@ -18,8 +17,10 @@ import toml
 from ..utils import (
     logger,
     read_db_credentials,
-    download_data_from_nextcloud,
+    download_server_map,
     get_setup_for_service,
+    set_log_level,
+    guess_map_server,
 )
 
 DUMP_SCRIPT = """#!{python_bin}
@@ -90,10 +91,6 @@ def _get_python_path_from_env() -> Path:
     return Path(python_path)
 
 
-def _set_log_level(verbosity) -> None:
-    logger.setLevel(max(logging.INFO - 10 * verbosity, logging.DEBUG))
-
-
 def _add_new_db(db_config: dict[str, str], dump_file: str) -> None:
     dump_cmd = (
         f"mysql -h {db_config['db.host']} -u {db_config['db.user']} "
@@ -124,6 +121,7 @@ def _add_new_db(db_config: dict[str, str], dump_file: str) -> None:
 
 
 def _migrate_db(parser: argparse.Namespace) -> None:
+    server_map = guess_map_server(parser.server_map)
     python_path = parser.python_path or _get_python_path_from_env()
     mysqldump = shutil.which("mysqldump")
     if mysqldump is None:
@@ -131,7 +129,7 @@ def _migrate_db(parser: argparse.Namespace) -> None:
         return
     config = json.loads(execute_script_and_get_config(python_path, DB_SCRIPT))
     try:
-        deploy_config = download_data_from_nextcloud()[parser.project_name]
+        deploy_config = download_server_map(server_map)[parser.project_name]
     except KeyError as error:
         logger.error("Config Error for project %s", parser.project_name)
         raise error
@@ -210,10 +208,14 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         "if you load the old freva module / source file.",
     )
     db_parser.add_argument(
-        "--domain",
+        "--server-map",
         type=str,
-        help="Domain name of your organisation to create a uniq identifier.",
-        default="dkrz",
+        default=None,
+        help=(
+            "Hostname of the service mapping the freva server "
+            "archtiecture, Note: you can create a server map by "
+            "running the deploy-freva-map command"
+        ),
     )
     db_parser.set_defaults(apply_func=_migrate_db)
     drs_parser = subparsers.add_parser(
@@ -237,5 +239,5 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
 def cli() -> None:
     """Run the command line interface."""
     arg = parse_args(sys.argv[1:])
-    _set_log_level(arg.verbose)
+    set_log_level(arg.verbose)
     arg.apply_func(arg)
