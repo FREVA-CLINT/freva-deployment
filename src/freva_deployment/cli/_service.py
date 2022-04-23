@@ -36,7 +36,11 @@ def parse_args(args: list[str]) -> argparse.Namespace:
         help="The start|stop|restart|status command for the service",
     )
     app.add_argument(
-        "project_name", type=str, help="Name of the project", default="all", nargs="?",
+        "project_name",
+        type=str,
+        help="Name of the project",
+        default="all",
+        nargs="?",
     )
     app.add_argument(
         "--server-map",
@@ -132,7 +136,10 @@ def _get_playbook_for_project(
         )
         inventory.append(
             YAML_INVENTORY.format(
-                hosts=hosts, project_name=project_name, service=service, group=group,
+                hosts=hosts,
+                project_name=project_name,
+                service=service,
+                group=group,
             )
         )
     return playbooks, inventory
@@ -187,20 +194,13 @@ def cli(argv: list[str] | None = None) -> None:
             run(cmd, check=True, stdout=PIPE)
     if argp.command == "status":
         con = Console()
-        (header, std_out,) = ["SERVICE", "MEM", "CPU", "STATUS"], []
-        n_server_char = 0
+        header = ["SERVICE", "MEM", "CPU", "STATUS"]
+        format_row = "{:<1} {:<20} {:^10} {:^10} {:>10}"
+        con.print(format_row.format("", *header), style="bold", markup=True)
         for project in project_names:
             for service in argp.services:
                 status = requests.get(f"http://{map_server}/{project}/{service}").json()
                 status_line = [f"{project}-{service}"]
-                n_server_char = max(len(status_line[0]), n_server_char)
                 for key in ("mem", "cpu", "status"):
                     status_line.append(status.get(key, "NaN"))
-                std_out.append(status_line)
-        format_row = "{:<1} {:<20} {:^10} {:^10} {:>10}"
-        con.print(format_row.format("", *header), style="bold", markup=True)
-        for line in std_out:
-            try:
-                con.print(format_row.format("", *line), markup=True)
-            except TypeError:
-                pass
+                con.print(format_row.format("", *status_line), markup=True)
