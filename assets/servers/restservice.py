@@ -111,14 +111,17 @@ class ServerStaus(Resource):
         """
         keys = ("mem", "status", "cpu")
         args = {k: v.lower() for (k, v) in request.form.items() if k in keys and v}
+        print(service_status)
         if not service_status:
+            service_status[project] = {service: args}
+        elif project not in service_status:
             service_status[project] = {service: args}
         else:
             for key, value in args.items():
                 try:
                     service_status[project][service][key] = value
                 except KeyError:
-                    service_status[project] = {service: args}
+                    service_status[project][service] = {key: value}
         return jsonify(dict(status="success"))
 
 
