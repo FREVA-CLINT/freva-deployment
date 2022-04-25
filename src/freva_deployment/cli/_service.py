@@ -91,9 +91,9 @@ YAML_STATUS_TASK = """---
   - name: {command} {service} service on {hosts}
     shell: curl -d "{{{{ item }}}}" {map_server}/{project_name}/{service} -X PUT
     with_items:
-        - mem=$(docker stats --no-stream {{{{ container }}}} --no-trunc --format '{{% raw %}}{{{{.MemPerc}}}}{{% endraw %}}')
-        - cpu=$(docker stats --no-stream {{{{ container }}}} --no-trunc --format '{{% raw %}}{{{{.CPUPerc}}}}{{% endraw %}}')
-        - status=$(docker ps  -a --filter name={{{{ container }}}} --format '{{% raw %}}{{{{.Status}}}}{{% endraw %}}')
+        - mem=$(docker stats --no-stream {project_name}-{service} --format '{{% raw %}}{{{{.MemPerc}}}}{{% endraw %}}'|tail)
+        - cpu=$(docker stats --no-stream {project_name}-{service} --format '{{% raw %}}{{{{.CPUPerc}}}}{{% endraw %}}'|tail)
+        - status=$(docker ps  -a --filter name={project_name}-{service} --format '{{% raw %}}{{{{.Status}}}}{{% endraw %}}')
     become: yes
 
 """
@@ -115,7 +115,10 @@ def _get_playbook_for_project(
     playbooks: list[str] = []
     inventory: list[str] = []
     for service in services:
-        python_env, hosts = get_setup_for_service(service, config)
+        try:
+            python_env, hosts = get_setup_for_service(service, config)
+        except KeyError:
+            continue
         group = project_name.replace("-", "_") + "_" + service
         if command == "status":
             cmd = "checking"
