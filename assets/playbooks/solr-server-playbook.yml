@@ -10,6 +10,12 @@
       stat:
         path: /usr/bin/systemctl
       register: systemctl
+    - name: Creating /etc/containers/nodocker
+      file:
+        state: touch
+        path: /etc/containers/nodocker
+      ignore_errors: yes
+      become: yes
     - name: Stopping services
       shell: systemctl stop {{ project_name }}; systemctl stop {{project_name}}-solr; echo 0
     - pause: seconds=5
