@@ -108,6 +108,14 @@ class CoreScreen(BaseForm):
                 ),
                 False,
             ),
+            admin_group=(
+                self.add_widget_intelligent(
+                    npyscreen.TitleText,
+                    name=("Set the freva admin group, " "leave blank if not needed."),
+                    value=cfg.get("admin_group", ""),
+                ),
+                False,
+            ),
             ansible_become_user=(
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
@@ -366,8 +374,7 @@ class WebScreen(BaseForm):
                     npyscreen.TitleText,
                     name="Ldap search keys for group base",
                     value=cfg.get(
-                        "ldap_group_base",
-                        "cn=groups,cn=accounts,dc=dkrz,dc=de",
+                        "ldap_group_base", "cn=groups,cn=accounts,dc=dkrz,dc=de",
                     ),
                 ),
                 True,
@@ -552,8 +559,13 @@ class RunForm(npyscreen.FormMultiPageAction):
             npyscreen.notify_confirm("You have to set a project name", title="ERROR")
             return
         if not self.server_map.value:
-            npyscreen.notify_confirm("You must set server_map value", title="ERROR")
-            return
+            value = npyscreen.notify_yes_no(
+                "If you don't set a map server value you wont be able "
+                "to start|stop the services. Continue anyway?",
+                title="WARNING",
+            )
+            if not value:
+                return
         missing_form: None | str = self.parentApp.check_missing_config()
         if missing_form:
             self.parentApp.change_form(missing_form)
