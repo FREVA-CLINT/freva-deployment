@@ -374,7 +374,8 @@ class WebScreen(BaseForm):
                     npyscreen.TitleText,
                     name="Ldap search keys for group base",
                     value=cfg.get(
-                        "ldap_group_base", "cn=groups,cn=accounts,dc=dkrz,dc=de",
+                        "ldap_group_base",
+                        "cn=groups,cn=accounts,dc=dkrz,dc=de",
                     ),
                 ),
                 True,

@@ -493,6 +493,7 @@ USE {db};
         if self.ask_pass:
             cmd += " --ask-pass"
         cmd += " --ask-become-pass"
+        cmd = "echo Hello"
         try:
             res = run(
                 shlex.split(cmd), env=os.environ.copy(), cwd=str(asset_dir), check=True

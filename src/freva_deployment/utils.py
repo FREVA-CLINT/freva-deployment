@@ -123,7 +123,10 @@ def download_server_map(
     port = port or "6111"
     config = requests.get(f"http://{host}:{port}").json()
     for proj, _conf in config.items():
-        info[cast(str, proj)] = [ServiceInfo(name=s, **c) for (s, c) in _conf.items()]
+        info[cast(str, proj)] = [
+            ServiceInfo(name=s, python_path=c[0], hosts=c[-1])
+            for (s, c) in _conf.items()
+        ]
     return info
 
 
@@ -151,11 +154,14 @@ def upload_server_map(
     req_data = dict(config=toml.dumps(_upload_data))
     logger.debug("Uploading %s", req_data)
     req = requests.put(f"http://{host}:{port}/{project_name}", data=req_data)
-    status = req.json()
-    if status["status"] == "success":
+    try:
+        status = req.json()["status"]
+    except KeyError:
+        status = "Unknown Server Status"
+    if status == "success":
         logger.info("Server information updated at %s", host)
     else:
-        logger.error("Could not update server information %s", status["status"])
+        logger.error("Could not update server information %s", status)
 
 
 def get_passwd(min_characters: int = 8) -> str:
