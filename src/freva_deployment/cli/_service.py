@@ -202,8 +202,12 @@ def cli(argv: list[str] | None = None) -> None:
         con.print(format_row.format("", *header), style="bold", markup=True)
         for project in project_names:
             for service in argp.services:
-                status = requests.get(f"http://{map_server}/{project}/{service}").json()
+                req = requests.get(f"http://{map_server}/{project}/{service}")
+                status = req.json()
                 status_line = [f"{project}-{service}"]
+                if req.status_code != 200:
+                    logger.warning("Service not found: %s", f"{project}-{service}")
+                    continue
                 for key in ("mem", "cpu", "status"):
                     status_line.append(status.get(key, "NaN"))
                 con.print(format_row.format("", *status_line), markup=True)

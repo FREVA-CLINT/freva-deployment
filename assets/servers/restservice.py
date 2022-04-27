@@ -2,10 +2,9 @@
 from __future__ import annotations
 from pathlib import Path
 import os
-import json
-from typing import Optional, NamedTuple
+from typing import NamedTuple
 
-from flask import Flask, jsonify, request
+from flask import Flask, request
 from flask_restful import reqparse, Resource, Api
 import toml
 
@@ -17,11 +16,12 @@ ServiceInfo = NamedTuple(
 class ServerLookup(Resource):
     """Lookup server information."""
 
-    _server_information: Optional[dict[str, list[ServiceInfo]]] = None
+    def __init__(self):
+        self.server_information: dict[str, list[ServiceInfo]] = {}
+        self.update_server_information()
 
-    def read_server_information(self):
+    def update_server_information(self) -> None:
         """Read the server information."""
-        self._server_information = {}
         try:
             with Path(os.environ["SERVER_FILE"]).open() as f_obj:
                 server_dict = toml.load(f_obj)
@@ -30,26 +30,27 @@ class ServerLookup(Resource):
         for project, settings in server_dict.items():
             for service, (python_path, hosts) in settings.items():
                 try:
-                    self._server_information[project].append(
+                    self.server_information[project].append(
                         ServiceInfo(name=service, python_path=python_path, hosts=hosts)
                     )
                 except KeyError:
-                    self._server_information[project] = [
+                    self.server_information[project] = [
                         ServiceInfo(name=service, python_path=python_path, hosts=hosts)
                     ]
 
-    def _update(self):
+    def _update(self) -> tuple[int, str]:
         try:
             with Path(os.environ["SERVER_FILE"]).open("w") as f_obj:
                 toml.dump(self._server_info_tuple_to_dict(), f_obj)
+            self.update_server_information()
         except Exception as error:
-            return error.__str__()
-        return "success"
+            return 500, error.__str__()
+        return 201, "updated"
 
-    def _server_info_tuple_to_dict(self):
+    def _server_info_tuple_to_dict(self) -> dict[str, dict[str, tuple[str, str]]]:
         """Convert ServiceInfo namedtuple to dictionary."""
-        dump_dict = {}
-        for project, settings in (self._server_information or {}).items():
+        dump_dict: dict[str, dict[str, tuple[str, str]]] = {}
+        for project, settings in self.server_information.items():
             dump_dict[project] = {}
             for settings_tuple in settings:
                 dump_dict[project][settings_tuple.name] = (
@@ -65,14 +66,15 @@ class ServerLookup(Resource):
         --------
             dict[str dict[str, tuple[str, str]]]:  sever information
         """
-
-        if self._server_information is None:
-            self.read_server_information()
-        return jsonify(self._server_info_tuple_to_dict())
+        dump_dict = self._server_info_tuple_to_dict()
+        return dump_dict, 200
 
 
 class ServerEntry(ServerLookup):
     """Add entries to the server map."""
+
+    def __init__(self):
+        super().__init__()
 
     def put(self, project):
         """Post method, for setting a server entry.
@@ -89,20 +91,18 @@ class ServerEntry(ServerLookup):
         try:
             config = toml.loads(request.form["config"])
         except toml.TomlDecodeError as error:
-            return jsonify(dict(status=error.__str__()))
-        if self._server_information is None:
-            self.read_server_information()
+            return 500, dict(status=error.__str__())
         for service, settings in config.items():
             try:
                 settings_tuple = ServiceInfo(name=service, **settings)
             except TypeError:
-                return jsonify(dict(status="TypeError: Wrong settings"))
+                return 500, dict(message="TypeError: Wrong settings")
             try:
-                self._server_information[project].append(settings_tuple)
+                self.server_information[project].append(settings_tuple)
             except KeyError:
-                self._server_information[project] = [settings_tuple]
-        status = self._update()
-        return jsonify(dict(status=status))
+                self.server_information[project] = [settings_tuple]
+        code, msg = self._update()
+        return {}, code, {"message": msg}
 
     def get(self, project):
         """Get method, for getting server information.
@@ -117,9 +117,11 @@ class ServerEntry(ServerLookup):
             dict[str, tuple[str, str]]:  sever information
         """
 
-        if self._server_information is None:
-            self.read_server_information()
-        return jsonify(self._server_info_tuple_to_dict().get(project, {}))
+        dump_dict = self._server_info_tuple_to_dict()
+        try:
+            return self._server_info_tuple_to_dict()[project], 200
+        except KeyError:
+            return {}, 404, {"message": f"No such project: {project}"}
 
 
 service_status: dict[str, dict[str, dict[str, str]]] = {}
@@ -139,10 +141,9 @@ class ServerStaus(Resource):
             Name of the service which status is retreived
         """
         try:
-            status = service_status[project][service]
-        except (TypeError, KeyError):
-            status = {}
-        return jsonify(status)
+            return service_status[project][service], 200
+        except KeyError:
+            return {}, 404, {"message": "No such project/service"}
 
     def put(self, project: str, service: str):
         """Post method, for setting the service status.
@@ -168,7 +169,7 @@ class ServerStaus(Resource):
                     service_status[project][service][key] = value
                 except KeyError:
                     service_status[project][service] = {key: value}
-        return jsonify(dict(status="success"))
+        return {}, 201
 
 
 if __name__ == "__main__":
