@@ -104,9 +104,7 @@ def read_db_credentials(
     return requests.get(url).json()
 
 
-def download_server_map(
-    server_map,
-) -> dict[str, list[ServiceInfo]]:
+def download_server_map(server_map,) -> dict[str, list[ServiceInfo]]:
     """Download server information from the service that stores the server arch.
 
     Parameters
@@ -123,7 +121,7 @@ def download_server_map(
     port = port or "6111"
     req = requests.get(f"http://{host}:{port}")
     if req.status_code != 200:
-        logger.error(req.headers["message"])
+        logger.error(req.json())
         return {}
     for proj, conf in req.json().items():
         info[cast(str, proj)] = [
@@ -134,9 +132,7 @@ def download_server_map(
 
 
 def upload_server_map(
-    server_map: str,
-    project_name: str,
-    deployment_setup: dict[str, dict[str, str]],
+    server_map: str, project_name: str, deployment_setup: dict[str, dict[str, str]],
 ) -> None:
     """Upload server information to service that stores server archtiecture.
 
@@ -160,7 +156,7 @@ def upload_server_map(
     if req.status_code == 201:
         logger.info("Server information updated at %s", host)
     else:
-        logger.error("Could not update server information %s", req.headers["message"])
+        logger.error("Could not update server information %s", req.json())
 
 
 def get_passwd(min_characters: int = 8) -> str:
