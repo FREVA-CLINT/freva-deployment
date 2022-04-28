@@ -181,4 +181,4 @@ if __name__ == "__main__":
     api.add_resource(ServerLookup, "/")
     api.add_resource(ServerEntry, "/<string:project>")
     api.add_resource(ServerStaus, "/<string:project>/<string:service>")
-    app.run(host="0.0.0.0", port=6111)
+    app.run(host="0.0.0.0", port=5008)
