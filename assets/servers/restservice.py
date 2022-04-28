@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from __future__ import annotations
+from collections import defaultdict
 from pathlib import Path
 import os
 from typing import NamedTuple
@@ -17,7 +18,9 @@ class ServerLookup(Resource):
     """Lookup server information."""
 
     def __init__(self):
-        self.server_information: dict[str, list[ServiceInfo]] = {}
+        self.server_information: dict[str, list[ServiceInfo]] = defaultdict(
+            list[ServiceInfo]
+        )
         self.update_server_information()
 
     def update_server_information(self) -> None:
@@ -29,14 +32,9 @@ class ServerLookup(Resource):
             return
         for project, settings in server_dict.items():
             for service, (python_path, hosts) in settings.items():
-                try:
-                    self.server_information[project].append(
-                        ServiceInfo(name=service, python_path=python_path, hosts=hosts)
-                    )
-                except KeyError:
-                    self.server_information[project] = [
-                        ServiceInfo(name=service, python_path=python_path, hosts=hosts)
-                    ]
+                self.server_information[project].append(
+                    ServiceInfo(name=service, python_path=python_path, hosts=hosts)
+                )
 
     def _update(self) -> tuple[int, str]:
         try:
@@ -97,10 +95,7 @@ class ServerEntry(ServerLookup):
                 settings_tuple = ServiceInfo(name=service, **settings)
             except TypeError:
                 return 500, dict(message="TypeError: Wrong settings")
-            try:
-                self.server_information[project].append(settings_tuple)
-            except KeyError:
-                self.server_information[project] = [settings_tuple]
+            self.server_information[project].append(settings_tuple)
         code, msg = self._update()
         return {}, code, {"message": msg}
 
@@ -117,7 +112,6 @@ class ServerEntry(ServerLookup):
             dict[str, tuple[str, str]]:  sever information
         """
 
-        dump_dict = self._server_info_tuple_to_dict()
         try:
             return self._server_info_tuple_to_dict()[project], 200
         except KeyError:
@@ -143,7 +137,7 @@ class ServerStaus(Resource):
         try:
             return service_status[project][service], 200
         except KeyError:
-            return {}, 404, {"message": "No such project/service"}
+            return {}, 404, {"message": "No such service"}
 
     def put(self, project: str, service: str):
         """Post method, for setting the service status.
@@ -178,4 +172,4 @@ if __name__ == "__main__":
     api.add_resource(ServerLookup, "/")
     api.add_resource(ServerEntry, "/<string:project>")
     api.add_resource(ServerStaus, "/<string:project>/<string:service>")
-    app.run(host="0.0.0.0", port="5008")
+    app.run(host="0.0.0.0", port="6111")
