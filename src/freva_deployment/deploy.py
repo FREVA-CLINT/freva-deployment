@@ -21,7 +21,7 @@ from .utils import (
     create_self_signed_cert,
     get_passwd,
     logger,
-    upload_data_to_nextcloud,
+    upload_server_map,
 )
 
 
@@ -471,7 +471,7 @@ USE {db};
             with dump_file.open("w") as f_obj:
                 f_obj.write("".join(lines))
 
-    def play(self) -> None:
+    def play(self, server_map: str | None, verbosity: str = "") -> None:
         """Play the ansible playbook."""
         self.create_playbooks()
         inventory = self.parse_config()
@@ -486,29 +486,29 @@ USE {db};
             inventory_str = inventory
         Console().print(inventory_str, style="bold", markup=True)
         logger.info("Playing the playbooks with ansible")
-        cmd = f"ansible-playbook -i {self.inventory_file} {self._playbook_file}"
+        cmd = (
+            f"ansible-playbook {verbosity} -i {self.inventory_file} "
+            f"{self._playbook_file}"
+        )
         if self.ask_pass:
             cmd += " --ask-pass"
         cmd += " --ask-become-pass"
-        cmd = "echo hallo"
         try:
             res = run(
-                shlex.split(cmd), env=os.environ.copy(), cwd=str(asset_dir), check=False
+                shlex.split(cmd), env=os.environ.copy(), cwd=str(asset_dir), check=True
             )
         except KeyboardInterrupt:
             pass
-        if res.returncode == 0:
-            self.upload_server_info(inventory)
+        if server_map:
+            self.upload_server_info(server_map, inventory)
 
-    def upload_server_info(self, inventory: str) -> None:
+    def upload_server_info(self, server_map: str, inventory: str) -> None:
         """Upload information on server information to shared nextcloud."""
-        server_info = {}
+        deployment_setup: dict[str, dict[str, str]] = {}
         for step, info in yaml.safe_load(inventory).items():
             ansible_step = dict(
-                ansible_python_interpreter=info["vars"][
-                    f"{step}_ansible_python_interpreter"
-                ]
+                python_path=info["vars"][f"{step}_ansible_python_interpreter"]
             )
             ansible_step["hosts"] = info["hosts"]
-            server_info[step] = ansible_step
-        upload_data_to_nextcloud(self.project_name, server_info)
+            deployment_setup[step] = ansible_step
+        upload_server_map(server_map, self.project_name, deployment_setup)

@@ -29,6 +29,12 @@
     - docker_cmd: "-p 8000:8000 -p 80:80 -p 443:443 -v /mnt/{{project_name}}/web_service:/srv/http:z -v {{ core_root_dir }}:{{ core_root_dir }}:z -v {{ core_root_dir }}/share/preview:/srv/http/static/preview:z --name"
     - container_name: "{{ project_name }}-web"
   tasks:
+  - name: Creating /etc/containers/nodocker
+    file:
+      state: touch
+      path: /etc/containers/nodocker
+    ignore_errors: yes
+    become: yes
   - name: Getting register to core dir
     stat:
       path: "{{ core_root_dir }}/freva/evaluation_system.conf"

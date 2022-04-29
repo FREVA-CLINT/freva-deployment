@@ -21,15 +21,15 @@ base_dir_location=
 #: when empty, the configuration will be read from User-object
 
 scheduler_input_dir=/tmp/slurm
-scheduler_output_dir=${root_dir}/share/slurm
+scheduler_output_dir=${base_dir_location}/share/slurm
 scheduler_command=sbatch
 
 #: path to copy the preview to, this directory holds data, like images,
 #: for the web frontend
-preview_path=${root_dir}/share/preview
+preview_path=${base_dir_location}/share/preview
 
 #: root path of project data
-project_data=${root_dir}/data/crawl_my_data
+project_data=${base_dir_location}/data/crawl_my_data
 
 #: make scratch dir browseable for website, note escape '$' with '$$'
 scratch_dir=${base_dir_location}/$$USER
@@ -90,4 +90,3 @@ chmod_output=True
 #[plugin:animator]
 #python_path=${evaluation_system:root_dir}/plugins4freva/animator
 #module=animator
-

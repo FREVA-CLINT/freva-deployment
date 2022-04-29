@@ -108,6 +108,14 @@ class CoreScreen(BaseForm):
                 ),
                 False,
             ),
+            admin_group=(
+                self.add_widget_intelligent(
+                    npyscreen.TitleText,
+                    name=("Set the freva admin group, " "leave blank if not needed."),
+                    value=cfg.get("admin_group", ""),
+                ),
+                False,
+            ),
             ansible_become_user=(
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
@@ -551,6 +559,14 @@ class RunForm(npyscreen.FormMultiPageAction):
         if not self.project_name.value:
             npyscreen.notify_confirm("You have to set a project name", title="ERROR")
             return
+        if not self.server_map.value:
+            value = npyscreen.notify_yes_no(
+                "If you don't set a map server value you wont be able "
+                "to start|stop the services. Continue anyway?",
+                title="WARNING",
+            )
+            if not value:
+                return
         missing_form: None | str = self.parentApp.check_missing_config()
         if missing_form:
             self.parentApp.change_form(missing_form)
@@ -561,10 +577,11 @@ class RunForm(npyscreen.FormMultiPageAction):
                 msg = f"Public certificate file `{cert_file}` must exist or empty."
                 npyscreen.notify_confirm(msg, title="ERROR")
                 return
-        self.parentApp._thread_stop.set()
+        self.parentApp.thread_stop.set()
         save_file = self.parentApp.save_config_to_file(write_toml_file=True)
         self.parentApp.setup = {
             "project_name": self.project_name.value,
+            "server_map": self.server_map.value,
             "steps": list(set(self.parentApp.steps)),
             "config_file": str(save_file) or None,
             "cert_file": str(cert_file) or None,
@@ -604,6 +621,11 @@ class RunForm(npyscreen.FormMultiPageAction):
             npyscreen.TitleFilename,
             name="Save config as",
             value=str(self.parentApp.save_file),
+        )
+        self.server_map = self.add_widget_intelligent(
+            npyscreen.TitleText,
+            name=("Hostname of the service mapping the freva server arch."),
+            value=self.parentApp._read_cache("server_map", ""),
         )
         self.cert_file = self.add_widget_intelligent(
             npyscreen.TitleFilename,

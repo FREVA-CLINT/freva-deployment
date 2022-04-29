@@ -53,21 +53,24 @@ setup(
     package_dir={"": "src"},
     entry_points={
         "console_scripts": [
-            "deploy-freva = freva_deployment.cli:deploy",
+            "deploy-freva-cmd = freva_deployment.cli:deploy",
+            "deploy-freva-map = freva_deployment.cli:server_map",
             "freva-service = freva_deployment.cli:service",
             "freva-migrate = freva_deployment.cli:migrate",
-            "deploy-freva-tui = freva_deployment.ui.deployment_tui:tui",
+            "deploy-freva = freva_deployment.ui.deployment_tui:tui",
         ]
     },
     setup_requires=["appdirs"],
     install_requires=[
         "appdirs",
         "npyscreen",
+        "PyMySQL",
         "pyncclient",
         "pyyml",
         "rich",
         "toml",
         "tomlkit",
+        "requests",
     ],
     extras_require={
         "docs": [
@@ -78,7 +81,7 @@ setup(
             "ipython",  # For nbsphinx syntax highlighting
             "sphinxcontrib_github_alt",
         ],
-        "test": ["mypy", "black", "types-toml"],
+        "test": ["mypy", "black", "types-toml", "types-PyMySQL"],
     },
     python_requires=">=3.8",
     classifiers=[
