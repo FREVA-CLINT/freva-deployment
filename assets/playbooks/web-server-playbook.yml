@@ -10,17 +10,36 @@
     stat:
       path: "{{ core_institution_logo }}"
     register: logo
-  - name: Creating share directory
-    shell:
-      cmd: mkdir -p "{{core_root_dir}}/freva/web"
-      warn: false
+  - name: Creating share directory with admin group
+    file:
+      path: "{{core_root_dir}}/freva/web"
+      state: directory
+      mode: "2775"
+      recurse: yes
+      group: "{{core_admin_group}}"
+    become: "{{'yes' if core_ansible_become_user is defined else 'no' }}"
+    when: core_admin_group is defined
+  - name: Creating share directory without admin group
+    file:
+      path: "{{core_root_dir}}/freva/web"
+      state: directory
+      mode: "2775"
+      recurse: yes
+    become: "{{'yes' if core_ansible_become_user is defined else 'no' }}"
+    when: core_admin_group is not defined
   - name: Copy the logo if exists
     copy:
       src: "{{ core_institution_logo }}"
       dest: "{{core_root_dir}}/freva/web/logo.{{web_institution_logo_suffix}}"
+      mode: "2775"
+    become: "{{'yes' if core_ansible_become_user is defined else 'no' }}"
     when: logo.stat.exists == true
   - name: Adding freva web config to the core structure
-    copy: src={{ core_config_toml_file }} dest={{ core_root_dir }}/freva/web/freva_web_conf.toml
+    copy:
+      src: "{{ core_config_toml_file }}"
+      dest: "{{ core_root_dir }}/freva/web/freva_web_conf.toml"
+      mode: "2775"
+    become: "{{'yes' if core_ansible_become_user is defined else 'no' }}"
 
 - hosts: web
 
@@ -73,7 +92,8 @@
       - "entrypoint.sh"
       - "docker_cmd.sh"
       - "freva_web.conf"
-      - "create_web_conf.py"
+      - "create_web_c:0
+        onf.py"
       - "add-aur.sh"
       - "setup_web.sh"
   - name: Adjusting freva_web.conf
@@ -81,6 +101,14 @@
       chdir: "/tmp/{{project_name}}_web"
       cmd: "{{ansible_python_interpreter}} create_web_conf.py freva_web.conf freva_web.conf --website={{web_project_website}} --root-dir={{core_root_dir}} --project-name={{project_name}} --alias={{web_server_alias}} --server-name={{web_host}}"
       warn: false
+  - name: Creating redis container
+    become: true
+    shell:
+      cmd: |
+        docker stop {{project_name}}-redis; echo 0
+        docker rm {{project_name}}-redis; echo 0
+        docker pull redis:latest
+        docker run -d --name {{project_name}}-redis -p 6379:6379 redis:latest
   - name: Build freva_web image
     become: yes
     shell:
@@ -103,8 +131,11 @@
       - "systemd.service"
       - "create_systemd.sh"
   - name: Creating systemd service
-    become: yes
-    shell: "cat /tmp/systemd.service|sed 's#%CONTAINER#{{ container_name }}#g'|sed 's#%PROJECT#{{ project_name }}#g' > /tmp/tmp_db && mv /tmp/tmp_db /etc/systemd/system/{{ project_name }}-web.service && /tmp/create_systemd.sh {{project_name}}-web"
+    become: true
+    shell: "cat /tmp/systemd.service|sed 's#%CONTAINER#{{ project_name }}-{{ item }}#g'|sed 's#%PROJECT#{{ project_name }}#g' > /tmp/tmp_db && mv /tmp/tmp_db /etc/systemd/system/{{ project_name }}-{{item}}.service && /tmp/create_systemd.sh {{project_name}}-{{item}}"
+    with_items:
+      - "web"
+      - "redis"
     when: systemctl.stat.exists == true
   - pause: seconds=5
   - name: Building django page

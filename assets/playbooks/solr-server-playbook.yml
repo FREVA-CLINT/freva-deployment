@@ -4,7 +4,7 @@
   vars:
     - ansible_python_interpreter: "{{ solr_ansible_python_interpreter }}"
     - continer_name: "{{ solr_name }}"
-    - docker_cmd: "-e SOLR_HEAP={{solr_mem}} -v /mnt/{{project_name}}/solr_service:/var/solr/data:z --name {{ solr_name }} -p {{ solr_port }}:8983 -t {{ solr_name }}:latest"
+    - docker_cmd: "-e CORE={{solr_core}} -e NUM_BACKUPS=7 -e SOLR_HEAP={{solr_mem}} -v /mnt/{{project_name}}/solr_service:/var/solr/data:z --name {{ solr_name }} -p {{ solr_port }}:8983 -t {{ solr_name }}:latest"
   tasks:
     - name: Registering systemctl path
       stat:
@@ -57,6 +57,8 @@
       become: yes
     - name: Copy auxillary files to target machine
       copy: src="{{ asset_dir }}/solr_service" dest=/tmp
+    - name: Copy cron create script to target machine
+      copy: src="{{ asset_dir }}/scripts/create_cron.sh" dest=/tmp/solr_service/
     - name: Building solr images
       shell:
         chdir: /tmp/solr_service
@@ -86,6 +88,9 @@
       with_items:
         - /tmp/create_systemd.sh
         - /tmp/systemd.service
+    - name: Creating cron jobs
+      become: true
+      shell: sh /tmp/solr_service/create_cron.sh "{{ project_name }}-solr"
     - name: Delete temporary files
       shell:
         cmd: rm -rf /tmp/solr_service

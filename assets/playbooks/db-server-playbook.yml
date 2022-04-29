@@ -3,7 +3,7 @@
 
   vars:
     - ansible_python_interpreter: "{{ db_ansible_python_interpreter }}"
-    - docker_cmd: "--net {{ project_name }} -v /mnt/{{project_name}}/db_service:/var/lib/mysql:z  --name {{ db_name }} -e MYSQL_ROOT_PASSWORD='{{ root_passwd }}' -p {{ db_port }}:3306 mariadb:latest"
+    - docker_cmd: "--net {{ project_name }} -v /mnt/{{project_name}}/db_service:/var/lib/mysql:z  --name {{ db_name }} -e HOST={{ db_host }} -e PROJECT={{ project_name }} -e DB_USER={{ db_user }} -e MYSQL_ROOT_PASSWORD='{{ root_passwd }}' -p {{ db_port }}:3306 {{ db_name }}:latest"
     - continer_name: "{{ db_name }}"
   tasks:
   - name: Registering systemctl path
@@ -33,12 +33,21 @@
     become: yes
     when: wipe == true
   - name: Creating directory structure
-    shell:
-      cmd: mkdir -p /mnt/{{ project_name }}/db_service
-      warn: false
+    file:
+      path: /mnt/{{ project_name }}/db_service
+      state: directory
+      recurse: true
+      group: 999
+      owner: 999
     become: yes
-  - name: Installing mariadb docker image
-    shell: docker pull mariadb
+  - name: Copy auxillary files to target machine
+    copy: src="{{ asset_dir }}/db_service" dest=/tmp
+  - name: Copy cron create script to target machine
+    copy: src="{{ asset_dir }}/scripts/create_cron.sh" dest=/tmp/db_service/
+  - name: Building mariadb docker image
+    shell:
+      chdir: /tmp/db_service
+      cmd: docker build -t {{ db_name }}:latest .
     become: yes
   - name: Copy systemd files
     copy:
@@ -87,6 +96,9 @@
   - name: Inserting sample data into database
     shell: docker exec -it {{db_name}} /bin/bash -c "mysql -u root -p'{{ root_passwd }}'< /tmp/dump.sql"
     become: yes
+  - name: Creating cron jobs
+    become: true
+    shell: sh /tmp/db_service/create_cron.sh "{{ project_name }}-db"
   - name: Deleting sql dump file
     file:
       state: absent
@@ -95,3 +107,8 @@
       - /tmp/dump.sql
       - /tmp/systemd.service
       - /tmp/create_systemd.sh
+      - /tmp/db_service
+  - name: Restarting docker container
+    become: yes
+    shell: systemctl restart "{{ project_name }}-db"
+    when: systemctl.stat.exists == true
