@@ -23,8 +23,8 @@ def parse_args() -> int:
 
 def tui() -> None:
     """Create and run text user interface (tui) for deployment."""
-
-    verbosity = set_log_level(parse_args())
+    verbosity = parse_args()
+    set_log_level(verbosity)
     try:
         main_app = MainApp()
         main_app.run()
@@ -39,5 +39,6 @@ def tui() -> None:
     if setup:
         project_name = setup.pop("project_name")
         server_map = setup.pop("server_map")
+        ask_pass = setup.pop("ask_pass")
         with DeployFactory(project_name, **setup) as DF:
-            DF.play(server_map, verbosity)
+            DF.play(server_map, ask_pass, verbosity)

@@ -12,6 +12,7 @@ from tempfile import TemporaryDirectory, mkdtemp
 from typing import Any
 
 from rich.console import Console
+from numpy import sign
 import toml
 import yaml
 
@@ -38,9 +39,6 @@ class DeployFactory:
         The path to the public cert file that is injected to the web container.
     config_file: os.PathLike, default: None
         Path to any existing deployment configuration file.
-    ask_pass: bool, default: False
-        Instruct ansible to ask for a ssh password instead of using a public
-        certificate file.
     wipe: bool, default: False
         Delete any existing deployment resources, such as docker volumes.
 
@@ -52,7 +50,7 @@ class DeployFactory:
     >>> deploy.play()
     """
 
-    step_order: tuple[str, ...] = ("db", "vault", "solr", "core", "web", "backup")
+    step_order: tuple[str, ...] = ("db", "vault", "solr", "core", "web")
     _steps_with_cert: tuple[str, ...] = ("db", "vault", "core", "web")
 
     def __init__(
@@ -61,7 +59,6 @@ class DeployFactory:
         steps: list[str] | None = None,
         cert_file: str | None = None,
         config_file: Path | str | None = None,
-        ask_pass: bool = False,
         wipe: bool = False,
     ) -> None:
 
@@ -73,7 +70,6 @@ class DeployFactory:
         self.web_conf_file: Path = Path(self._td.name) / "freva_web.toml"
         self._db_pass: str = ""
         self.project_name = project_name
-        self.ask_pass = ask_pass
         self._steps = steps or ["services", "core", "web"]
         self.wipe = wipe
         self._cert_file = cert_file or ""
@@ -207,17 +203,6 @@ class DeployFactory:
         if not self.master_pass:
             self.master_pass = get_passwd()
         self.cfg["web"]["config"]["root_passwd"] = self.master_pass
-
-    def _prep_backup(self) -> None:
-        """Prepare the config for the backup step."""
-        self._config_keys.append("backup")
-        self.cfg["backup"] = self.cfg["db"].copy()
-        if not self.master_pass:
-            self.master_pass = get_passwd()
-        self.cfg["backup"]["config"]["root_passwd"] = self.master_pass
-        self.cfg["backup"]["config"]["passwd"] = self.db_pass
-        self.cfg["backup"]["config"]["keyfile"] = self.public_key_file
-        self.cfg["backup"]["config"]["private_keyfile"] = self.private_key_file
 
     def __enter__(self):
         return self
@@ -471,8 +456,23 @@ USE {db};
             with dump_file.open("w") as f_obj:
                 f_obj.write("".join(lines))
 
-    def play(self, server_map: str | None, verbosity: str = "") -> None:
-        """Play the ansible playbook."""
+    def play(
+        self, server_map: str | None = None, ask_pass: bool = True, verbosity: int = 0
+    ) -> None:
+        """Play the ansible playbook.
+
+        Parameters
+        ----------
+        server_map: str, default: None
+            Hostname running the service that keeps track of the server
+            infrastructure, if None given (default) no new deployed services
+            are added.
+        ask_pass: bool, default: True
+            Instruct Ansible to ask for the ssh passord instead of using a
+            ssh key
+        verbosity: int, default: 0
+            Verbosity level, default 0
+        """
         self.create_playbooks()
         inventory = self.parse_config()
         self.create_eval_config()
@@ -486,15 +486,15 @@ USE {db};
             inventory_str = inventory
         Console().print(inventory_str, style="bold", markup=True)
         logger.info("Playing the playbooks with ansible")
+        v_string = sign(verbosity) * "-" + verbosity * "v"
         cmd = (
-            f"ansible-playbook {verbosity} -i {self.inventory_file} "
-            f"{self._playbook_file}"
+            f"ansible-playbook {v_string} -i {self.inventory_file} "
+            f"{self._playbook_file} --ask-become-pass"
         )
-        if self.ask_pass:
+        if ask_pass:
             cmd += " --ask-pass"
-        cmd += " --ask-become-pass"
         try:
-            res = run(
+            _ = run(
                 shlex.split(cmd), env=os.environ.copy(), cwd=str(asset_dir), check=True
             )
         except KeyboardInterrupt:

@@ -8,6 +8,7 @@ from subprocess import run, PIPE
 import sys
 from tempfile import TemporaryDirectory
 
+from numpy import sign
 import requests
 from rich.console import Console
 import yaml
@@ -36,11 +37,7 @@ def parse_args(args: list[str]) -> argparse.Namespace:
         help="The start|stop|restart|status command for the service",
     )
     app.add_argument(
-        "project_name",
-        type=str,
-        help="Name of the project",
-        default="all",
-        nargs="?",
+        "project_name", type=str, help="Name of the project", default="all", nargs="?",
     )
     app.add_argument(
         "--server-map",
@@ -139,10 +136,7 @@ def _get_playbook_for_project(
         )
         inventory.append(
             YAML_INVENTORY.format(
-                hosts=hosts,
-                project_name=project_name,
-                service=service,
-                group=group,
+                hosts=hosts, project_name=project_name, service=service, group=group,
             )
         )
     return playbooks, inventory
@@ -153,7 +147,7 @@ def cli(argv: list[str] | None = None) -> None:
     argv = argv or sys.argv[1:]
     argp = parse_args(argv)
     map_server = guess_map_server(argp.server_map)
-    verbosity = set_log_level(argp.verbose)
+    set_log_level(argp.verbose)
     user = argp.user or getuser()
     cfg = download_server_map(map_server)
     if argp.project_name.lower() == "all":
@@ -187,6 +181,7 @@ def cli(argv: list[str] | None = None) -> None:
         with open(task_file, "w") as f_obj:
             yaml.dump(playbooks, f_obj)
         logger.debug(yaml.dump(playbooks))
+        verbosity = sign(argp.verbose) * "-" + argp.verbose * "v"
         cmd = shlex.split(
             f"ansible-playbook {verbosity} -u {user} --ask-pass --ask-become -i "
             f"{inventory_file} {task_file}"

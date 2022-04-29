@@ -92,16 +92,15 @@ def cli(argv: list[str] | None = None) -> None:
     """Run the command line interface."""
     args = parse_args(argv)
     server_map = guess_map_server(args.server_map, mandatory=False)
-    verebosity = set_log_level(args.verbose)
+    set_log_level(args.verbose)
     with DeployFactory(
         args.project_name,
         steps=args.steps,
         cert_file=args.cert,
         config_file=args.config,
-        ask_pass=args.ask_pass,
         wipe=args.wipe,
     ) as DF:
-        DF.play(server_map, verebosity)
+        DF.play(server_map, args.ask_pass, args.verbose)
 
 
 if __name__ == "__main__":

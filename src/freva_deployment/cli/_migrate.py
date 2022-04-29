@@ -11,7 +11,6 @@ import sys
 from tempfile import NamedTemporaryFile, TemporaryDirectory
 from typing import cast, TextIO
 
-import pymysql
 import toml
 
 from ..utils import (
