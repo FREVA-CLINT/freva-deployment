@@ -101,7 +101,9 @@ def read_db_credentials(
     return requests.get(url).json()
 
 
-def download_server_map(server_map,) -> dict[str, list[ServiceInfo]]:
+def download_server_map(
+    server_map,
+) -> dict[str, list[ServiceInfo]]:
     """Download server information from the service that stores the server arch.
 
     Parameters
@@ -129,7 +131,9 @@ def download_server_map(server_map,) -> dict[str, list[ServiceInfo]]:
 
 
 def upload_server_map(
-    server_map: str, project_name: str, deployment_setup: dict[str, dict[str, str]],
+    server_map: str,
+    project_name: str,
+    deployment_setup: dict[str, dict[str, str]],
 ) -> None:
     """Upload server information to service that stores server archtiecture.
 

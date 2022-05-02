@@ -37,7 +37,11 @@ def parse_args(args: list[str]) -> argparse.Namespace:
         help="The start|stop|restart|status command for the service",
     )
     app.add_argument(
-        "project_name", type=str, help="Name of the project", default="all", nargs="?",
+        "project_name",
+        type=str,
+        help="Name of the project",
+        default="all",
+        nargs="?",
     )
     app.add_argument(
         "--server-map",
@@ -136,7 +140,10 @@ def _get_playbook_for_project(
         )
         inventory.append(
             YAML_INVENTORY.format(
-                hosts=hosts, project_name=project_name, service=service, group=group,
+                hosts=hosts,
+                project_name=project_name,
+                service=service,
+                group=group,
             )
         )
     return playbooks, inventory
