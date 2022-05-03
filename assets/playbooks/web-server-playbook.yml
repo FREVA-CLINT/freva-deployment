@@ -92,8 +92,7 @@
       - "entrypoint.sh"
       - "docker_cmd.sh"
       - "freva_web.conf"
-      - "create_web_c:0
-        onf.py"
+      - "create_web_conf.py"
       - "add-aur.sh"
       - "setup_web.sh"
   - name: Adjusting freva_web.conf

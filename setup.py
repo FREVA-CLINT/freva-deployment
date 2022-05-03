@@ -64,6 +64,7 @@ setup(
     install_requires=[
         "appdirs",
         "npyscreen",
+        "numpy",
         "PyMySQL",
         "pyncclient",
         "pyyml",

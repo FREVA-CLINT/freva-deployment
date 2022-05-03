@@ -12,6 +12,7 @@ from tempfile import NamedTemporaryFile, TemporaryDirectory
 from typing import cast, TextIO
 
 import toml
+import pymysql
 
 from ..utils import (
     logger,

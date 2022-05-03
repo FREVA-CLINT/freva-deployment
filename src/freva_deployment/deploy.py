@@ -50,7 +50,7 @@ class DeployFactory:
     >>> deploy.play()
     """
 
-    step_order: tuple[str, ...] = ("db", "vault", "solr", "core", "web")
+    step_order: tuple[str, ...] = ("vault", "db", "solr", "core", "web")
     _steps_with_cert: tuple[str, ...] = ("db", "vault", "core", "web")
 
     def __init__(
@@ -405,17 +405,17 @@ USE {db};
     def steps(self) -> list[str]:
         """Set all the deploment steps."""
         steps = []
-        for step in self.step_order:
-            if step in self._steps and step not in steps:
-                steps.append(step)
-            if step == "db" and step in self._steps:
+        for step in self._steps:
+            steps.append(step)
+            if step == "db":
                 steps.append("vault")
-        return steps
+        return [s for s in self.step_order if s in steps]
 
     def create_playbooks(self):
         """Create the ansible playbook form all steps."""
         logger.info("Creating Ansible playbooks")
         playbook = []
+        print(self.steps)
         for step in self.steps:
             getattr(self, f"_prep_{step}")()
             playbook_file = self.playbook_dir / f"{step}-server-playbook.yml"

@@ -4,57 +4,58 @@
   vars:
     - ansible_python_interpreter: "{{ solr_ansible_python_interpreter }}"
     - continer_name: "{{ solr_name }}"
-    - docker_cmd: "-e CORE={{solr_core}} -e NUM_BACKUPS=7 -e SOLR_HEAP={{solr_mem}} -v /mnt/{{project_name}}/solr_service:/var/solr/data:z --name {{ solr_name }} -p {{ solr_port }}:8983 -t {{ solr_name }}:latest"
+    - docker_cmd: >
+        "-e CORE={{solr_core}}"
+        "-e NUM_BACKUPS=7"
+        "-e SOLR_HEAP={{solr_mem}}"
+        "-v /mnt/{{project_name}}/solr_service:/var/solr/data:z"
+        "--name {{ solr_name }}"
+        "-p {{ solr_port }}:8983 -t {{ solr_name }}:latest"
   tasks:
+    - name: Copying docker/podman wrapper script
+      copy:
+        src: "{{ asset_dir }}/scripts/docker-or-podman"
+        dest: /usr/local/bin/docker-or-podman
+        mode: "0775"
+      become: true
     - name: Registering systemctl path
       stat:
         path: /usr/bin/systemctl
       register: systemctl
-    - name: Creating /etc/containers/nodocker
-      file:
-        state: touch
-        path: /etc/containers/nodocker
-      ignore_errors: yes
-      become: yes
-    - name: Stopping services
-      shell: systemctl stop {{ project_name }}; systemctl stop {{project_name}}-solr; echo 0
+    - name: Stopping services and deleting existing containers
+      shell: >
+        systemctl stop {{solr_name}};
+        /usr/local/bin/docker-or-podman rm {{solr_name}};
+        /usr/local/bin/docker-or-podman rmi -f {{solr_name}};
+        exit 0
+      ignore_errors: true
+      become: true
     - pause: seconds=5
     - name: Creating docker network
-      shell: docker network create "{{ project_name }}"; echo 0
-      become: yes
-    - name: Deleting existing contianer
-      shell: docker stop "{{ solr_name }}"; docker rm "{{ solr_name }}"; docker rmi -f "{{solr_name}}"; echo 0
-      become: yes
+      shell: >
+        /usr/local/bin/docker-or-podman network create "{{ project_name }}";
+        exit 0
+      ignore_errors: true
+      become: true
     - name: Cleaning existing directory structure
-      shell:
-        cmd: rm -rf /mnt/{{ project_name }}/solr_service
-        warn: false
-      become: yes
+      file:
+        path: /mnt/{{ project_name }}/solr_service
+        state: absent
+      become: true
       when: wipe == true
     - name: Creating directory structure
-      shell:
-        cmd: mkdir -p /mnt/{{ project_name }}/solr_service
-        warn: false
-      become: yes
+      file:
+        path: /mnt/{{ project_name }}/solr_service
+        state: directory
+        owner: 8983
+        group: 8983
+        recurse: true
+      become: true
     - name: Copy systemd files
       copy:
-        src: "{{ asset_dir }}/scripts/{{ item }}"
-        dest: /tmp/{{ item }}
-        mode: '0755'
-      with_items:
-        - "systemd.service"
-        - "create_systemd.sh"
-    - name: Copy docker kill script
-      copy:
-        src: "{{ asset_dir }}/scripts/kill_container"
-        dest: /usr/local/bin/kill_container
-        mode: '0755'
-      become: yes
-    - name: Change directory permissions
-      shell:
-        cmd: chown -R 8983:8983 /mnt/{{ project_name }}/solr_service
-        warn: false
-      become: yes
+        src: "{{ asset_dir }}/scripts/create_systemd.py"
+        dest: /tmp/create_systemd.py
+        mode: "0755"
     - name: Copy auxillary files to target machine
       copy: src="{{ asset_dir }}/solr_service" dest=/tmp
     - name: Copy cron create script to target machine
@@ -62,36 +63,35 @@
     - name: Building solr images
       shell:
         chdir: /tmp/solr_service
-        cmd: docker build -t {{ solr_name }}:latest .
-      become: yes
+        cmd: /usr/local/bin/docker-or-podman build -t {{ solr_name }}:latest .
+      become: true
     - name: Creating the solr docker container
-      become: yes
-      shell: docker run -d {{docker_cmd }}
+      become: true
+      shell: /usr/local/bin/docker-or-podman run -d {{docker_cmd}}
     - name: Starting solr service
-      become: yes
-      shell:  cat /tmp/systemd.service|sed 's#%CONTAINER#{{ continer_name }}#g'|sed 's#%PROJECT#{{ project_name }}#g' > /tmp/tmp_solr && mv /tmp/tmp_solr /etc/systemd/system/{{ project_name }}-solr.service && /tmp/create_systemd.sh {{project_name}}-solr
+      become: true
+      shell: "/tmp/create_systemd.py {{solr_name}}"
       when: systemctl.stat.exists == true
     - pause: seconds=3
     - name: Creating the solr cores
-      become: yes
-      shell: |
-        docker exec -it --user=solr "{{ solr_name }}" /bin/bash create_core.sh latest
-        docker exec -it --user=solr "{{ solr_name }}" /bin/bash create_core.sh "{{ solr_core }}"
+      become: true
+      shell: >
+        /usr/local/bin/docker-or-podman exec -it --user=solr "{{solr_name}}"
+        /bin/bash create_core.sh "{{item}}"
+      with_items:
+        - "latest"
+        - "{{solr_core}}"
     - name: Restarting docker container
-      become: yes
-      shell: systemctl restart "{{ project_name }}-solr"
+      become: true
+      shell: systemctl restart "{{ solr_name }}"
       when: systemctl.stat.exists == true
-    - name: Deleting other files
+    - name: Creating cron jobs
+      become: true
+      shell: sh /tmp/solr_service/create_cron.sh "{{ solr_name }}"
+    - name: Deleting auxillary files
       file:
         state: absent
         path: "{{ item }}"
       with_items:
-        - /tmp/create_systemd.sh
-        - /tmp/systemd.service
-    - name: Creating cron jobs
-      become: true
-      shell: sh /tmp/solr_service/create_cron.sh "{{ project_name }}-solr"
-    - name: Delete temporary files
-      shell:
-        cmd: rm -rf /tmp/solr_service
-        warn: false
+        - /tmp/create_systemd.py
+        - /tmp/solr_service

@@ -92,9 +92,9 @@ YAML_STATUS_TASK = """---
   - name: {command} {service} service on {hosts}
     shell: curl -d "{{{{ item }}}}" {map_server}/{project_name}/{service} -X PUT
     with_items:
-        - mem=$(docker stats --no-stream {project_name}-{service} --format '{{% raw %}}{{{{.MemPerc}}}}{{% endraw %}}'|tail)
-        - cpu=$(docker stats --no-stream {project_name}-{service} --format '{{% raw %}}{{{{.CPUPerc}}}}{{% endraw %}}'|tail)
-        - status=$(docker ps  -a --filter name={project_name}-{service} --format '{{% raw %}}{{{{.Status}}}}{{% endraw %}}')
+        - mem=$(/usr/local/bin/docker-or-podman stats --no-stream {project_name}-{service} --format '{{% raw %}}{{{{.MemPerc}}}}{{% endraw %}}'|tail)
+        - cpu=$(/usr/local/bin/docker-or-podman stats --no-stream {project_name}-{service} --format '{{% raw %}}{{{{.CPUPerc}}}}{{% endraw %}}'|tail)
+        - status=$(/usr/local/bin/docker-or-podman ps  -a --filter name={project_name}-{service} --format '{{% raw %}}{{{{.Status}}}}{{% endraw %}}')
     become: yes
 
 """

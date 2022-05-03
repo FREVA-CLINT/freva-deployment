@@ -3,112 +3,130 @@
 
   vars:
     - ansible_python_interpreter: "{{ db_ansible_python_interpreter }}"
-    - docker_cmd: "--net {{ project_name }} -v /mnt/{{project_name}}/db_service:/var/lib/mysql:z  --name {{ db_name }} -e HOST={{ db_host }} -e PROJECT={{ project_name }} -e DB_USER={{ db_user }} -e MYSQL_ROOT_PASSWORD='{{ root_passwd }}' -p {{ db_port }}:3306 {{ db_name }}:latest"
+    - docker_cmd: >
+        "--net {{ project_name }} -v "
+        "/mnt/{{project_name}}/db_service:/var/lib/mysql:z "
+        "--name {{ db_name }} -e HOST={{ db_host }} "
+        "-e PROJECT={{ project_name }} -e DB_USER={{ db_user }} "
+        "-e MYSQL_ROOT_PASSWORD={{ root_passwd }} "
+        "-p {{ db_port }}:3306 {{ db_name }}:latest"
     - continer_name: "{{ db_name }}"
   tasks:
-  - name: Registering systemctl path
-    stat:
-      path: /usr/bin/systemctl
-    register: systemctl
-  - name: Creating /etc/containers/nodocker
-    file:
-      state: touch
-      path: /etc/containers/nodocker
-    ignore_errors: yes
-    become: yes
-  - name: Stopping services
-    shell: docker stop {{db_name}}; docker rm {{db_name}}; systemctl stop {{ project_name }}; systemctl stop {{project_name}}-db; echo 0
-    become: yes
-    ignore_errors: yes
-  - name: Creating docker network
-    shell: docker network create "{{ project_name }}"; echo 0
-    become: yes
-  - name: Deleting existing contianer
-    shell: docker stop "{{ db_name }}"; docker rm "{{ db_name }}"; echo 0
-    become: yes
-  - name: Cleaning existing directory structure
-    shell:
-      cmd: rm -rf /mnt/{{ project_name }}/db_service
-      warn: false
-    become: yes
-    when: wipe == true
-  - name: Creating directory structure
-    file:
-      path: /mnt/{{ project_name }}/db_service
-      state: directory
-      recurse: true
-      group: 999
-      owner: 999
-    become: yes
-  - name: Copy auxillary files to target machine
-    copy: src="{{ asset_dir }}/db_service" dest=/tmp
-  - name: Copy cron create script to target machine
-    copy: src="{{ asset_dir }}/scripts/create_cron.sh" dest=/tmp/db_service/
-  - name: Building mariadb docker image
-    shell:
-      chdir: /tmp/db_service
-      cmd: docker build -t {{ db_name }}:latest .
-    become: yes
-  - name: Copy systemd files
-    copy:
-      src: "{{ asset_dir }}/scripts/{{ item }}"
-      dest: /tmp/{{ item }}
-      mode: '0755'
-    with_items:
-      - "systemd.service"
-      - "create_systemd.sh"
-  - name: Copy docker kill script
-    copy:
-      src: "{{ asset_dir }}/scripts/kill_container"
-      dest: /usr/local/bin/kill_container
-      mode: '0755'
-    become: yes
-  - name: Running docker container
-    become: yes
-    shell: docker run -d {{docker_cmd}}
-  - name: Preparing root password reset
-    shell: echo "USE mysql; FLUSH PRIVILEGES; ALTER USER 'root'@'localhost' IDENTIFIED BY '{{root_passwd}}'; ALTER USER 'root'@'%' IDENTIFIED BY '{{root_passwd}}'; FLUSH PRIVILEGES;" > /tmp/dump.sql
-  - name: Copy sql script into docker container
-    shell: docker cp /tmp/dump.sql {{db_name}}:/tmp/dump.sql
-    become: yes
-  - pause: seconds=5
-  - name: Resetting the password
-    shell: docker exec -it {{db_name}} /bin/bash -c "mysql -u root -p'{{ root_passwd }}' < /tmp/dump.sql"
-    become: yes
-    ignore_errors: yes
-  - name: Deleting existing contianer
-    shell: docker stop "{{ db_name }}"; docker rm "{{ db_name }}"; echo 0
-    become: yes
-  - name: Creating the mariadb docker container
-    become: yes
-    shell: docker run -d {{docker_cmd}}
-  - name: Creating systemd service
-    become: yes
-    shell: "cat /tmp/systemd.service|sed 's#%STARTCMD#{{docker_cmd}}#g' |sed 's#%CONTAINER#{{ continer_name }}#g'|sed 's#%PROJECT#{{ project_name }}#g' > /tmp/tmp_db && mv /tmp/tmp_db /etc/systemd/system/{{ project_name }}-db.service && /tmp/create_systemd.sh {{project_name}}-db"
-    when: systemctl.stat.exists == true
-  - pause: seconds=5
-  - name: Copying sample data to target machine
-    # libselinux-python3 needs to be installed for this
-    copy: src={{ db_dump }} dest=/tmp/dump.sql
-  - name: Adding sql data to docker container
-    shell: docker cp /tmp/dump.sql {{db_name}}:/tmp/dump.sql
-    become: yes
-  - name: Inserting sample data into database
-    shell: docker exec -it {{db_name}} /bin/bash -c "mysql -u root -p'{{ root_passwd }}'< /tmp/dump.sql"
-    become: yes
-  - name: Creating cron jobs
-    become: true
-    shell: sh /tmp/db_service/create_cron.sh "{{ project_name }}-db"
-  - name: Deleting sql dump file
-    file:
-      state: absent
-      path: "{{ item }}"
-    with_items:
-      - /tmp/dump.sql
-      - /tmp/systemd.service
-      - /tmp/create_systemd.sh
-      - /tmp/db_service
-  - name: Restarting docker container
-    become: yes
-    shell: systemctl restart "{{ project_name }}-db"
-    when: systemctl.stat.exists == true
+    - name: Copying docker/podman wrapper script
+      copy:
+        src: "{{ asset_dir }}/scripts/docker-or-podman"
+        dest: /usr/local/bin/docker-or-podman
+        mode: "0775"
+      become: true
+    - name: Registering systemctl path
+      stat:
+        path: /usr/bin/systemctl
+      register: systemctl
+    - name: Stopping services and deleting existing containers
+      shell: >
+        systemctl stop {{db_name}};
+        /usr/local/bin/docker-or-podman rm {{db_name}};
+        /usr/local/bin/docker-or-podman rmi -f {{db_name}};
+        echo 0
+      become: true
+      ignore_errors: true
+    - name: Creating docker network
+      shell: >
+        /usr/local/bin/docker-or-podman network create "{{ project_name }}";
+        echo 0
+      become: true
+    - name: Cleaning existing directory structure
+      file:
+        path: /mnt/{{ project_name }}/db_service
+        state: absent
+      become: true
+      when: wipe == true
+    - name: Creating directory structure
+      file:
+        path: /mnt/{{ project_name }}/db_service
+        state: directory
+        recurse: true
+        group: 999
+        owner: 999
+      become: true
+    - name: Copying auxillary files to target machine
+      copy: src="{{ asset_dir }}/db_service" dest=/tmp
+    - name: Copying cron create script to target machine
+      copy: src="{{ asset_dir }}/scripts/create_cron.sh" dest=/tmp/db_service/
+    - name: Building mariadb docker image
+      shell:
+        chdir: /tmp/db_service
+        cmd: /usr/local/bin/docker-or-podman build -t {{ db_name }}:latest .
+      become: true
+    - name: Copying systemd files
+      copy:
+        src: "{{ asset_dir }}/scripts/{{ item }}"
+        dest: /tmp/{{ item }}
+        mode: '0755'
+      with_items:
+        - "create_systemd.py"
+        - "dump_sql"
+    - name: Running docker container
+      become: true
+      shell: /usr/local/bin/docker-or-podman run -d {{docker_cmd}}
+    - name: Preparing root password reset
+      shell: >
+        echo "USE mysql; FLUSH PRIVILEGES; ALTER USER "
+        "'root'@'localhost' IDENTIFIED BY '{{root_passwd}}'; "
+        "ALTER USER 'root'@'%' IDENTIFIED BY '{{root_passwd}}'; "
+        "FLUSH PRIVILEGES;" > /tmp/dump.sql
+    - name: Copying sql script into docker container
+      shell: >
+        /usr/local/bin/docker-or-podman cp "{{item}}" {{db_name}}:"{{item}}"
+      with_items:
+        - "/tmp/dump.sql"
+        - "/tmp/dump_sql"
+      become: true
+    - pause: seconds=5
+    - name: Resetting the password
+      shell: /usr/local/bin/docker-or-podman exec -it {{db_name}} /tmp/dump_sql
+      become: true
+      ignore_errors: true
+    - name: Deleting existing contianer
+      shell: >
+        /usr/local/bin/docker-or-podman stop "{{ db_name }}";
+        /usr/local/bin/docker-or-podman rm "{{ db_name }}";
+        echo 0
+      become: true
+    - name: Creating the mariadb docker container
+      become: true
+      shell: /usr/local/bin/docker-or-podman run -d {{docker_cmd}}
+    - name: Creating systemd service
+      become: true
+      shell: "/tmp/create_systemd.py {{db_name}}"
+      when: systemctl.stat.exists == true
+    - pause: seconds=5
+    - name: Copying sample data to target machine
+      # libselinux-python3 needs to be installed for this
+      copy: src={{ db_dump }} dest=/tmp/dump.sql
+    - name: Adding sql data to docker container
+      shell: >
+        /usr/local/bin/docker-or-podman cp "{{item}}" {{db_name}}:"{{item}}"
+      with_items:
+        - "/tmp/dump.sql"
+        - "/tmp/dump_sql"
+      become: true
+    - name: Inserting sample data into database
+      shell: /usr/local/bin/docker-or-podman exec -it {{db_name}} /tmp/dump_sql
+      become: true
+    - name: Creating cron jobs
+      become: true
+      shell: sh /tmp/db_service/create_cron.sh "{{ db_name }}"
+    - name: Deleting auxillary files
+      file:
+        state: absent
+        path: "{{ item }}"
+      with_items:
+        - /tmp/dump.sql
+        - /tmp/dump_sql
+        - /tmp/create_systemd.py
+        - /tmp/db_service
+    - name: Restarting docker container
+      become: true
+      shell: systemctl restart "{{ db_name }}"
+      when: systemctl.stat.exists == true
