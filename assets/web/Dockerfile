@@ -50,9 +50,10 @@ RUN aur-install mod_wsgi a2enmod-git npm && \
     django-ipware \
     django-nose \
     django-datatable-view-compat \
-    django-webpack-loader && \
-    a2enmod ssl && a2enmod headers
-RUN echo "IncludeOptional /srv/http/freva_web.conf" >> /etc/httpd/conf/httpd.conf
+    django-webpack-loader
+
+RUN a2enmod ssl && a2enmod headers &&\
+    echo "IncludeOptional /srv/http/freva_web.conf" >> /etc/httpd/conf/httpd.conf
 ENV EVALUATION_SYSTEM_CONFIG_FILE=${root_dir}/freva/evaluation_system.conf
 COPY ./entrypoint.sh /usr/local/bin
 CMD ["bash", "/usr/local/bin/docker_cmd.sh"]

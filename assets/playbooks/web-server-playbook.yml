@@ -3,11 +3,7 @@
 
   vars:
     - ansible_python_interpreter: "{{ core_ansible_python_interpreter }}"
-    - ansible_become_user: >
-        "{{ core_ansible_become_user
-        if core_ansible_become_user is defined else 'root' }}"
-    - ansible_become: >
-        "{{'true' if core_ansible_become_user is defined else 'no' }}"
+    - ansible_become_user: "{{ core_ansible_become_user if core_ansible_become_user is defined else 'root' }}"
   tasks:
     - name: Getting register to the freva logo
       stat:
@@ -20,7 +16,7 @@
         mode: "2775"
         recurse: true
         group: "{{core_admin_group}}"
-      become: "{{'true' if core_ansible_become_user is defined else 'no' }}"
+      become: "{{'yes' if core_ansible_become_user is defined else 'no' }}"
       when: core_admin_group is defined
     - name: Creating share directory without admin group
       file:
@@ -28,21 +24,21 @@
         state: directory
         mode: "2775"
         recurse: true
-      become: "{{'true' if core_ansible_become_user is defined else 'no' }}"
+      become: "{{'yes' if core_ansible_become_user is defined else 'no' }}"
       when: core_admin_group is not defined
     - name: Copy the logo if exists
       copy:
         src: "{{ core_institution_logo }}"
         dest: "{{core_root_dir}}/freva/web/logo.{{web_institution_logo_suffix}}"
         mode: "2775"
-      become: "{{'true' if core_ansible_become_user is defined else 'no' }}"
+      become: "{{'yes' if core_ansible_become_user is defined else 'no' }}"
       when: logo.stat.exists == true
     - name: Adding freva web config to the core structure
       copy:
         src: "{{ core_config_toml_file }}"
         dest: "{{ core_root_dir }}/freva/web/freva_web_conf.toml"
         mode: "2775"
-      become: "{{'true' if core_ansible_become_user is defined else 'no' }}"
+      become: "{{'yes' if core_ansible_become_user is defined else 'no' }}"
 
 - hosts: web
 
@@ -96,15 +92,15 @@
         state: absent
         path: /mnt/{{ project_name }}/web_service
       become: true
+      when: wipe == true
     - name: Copy auxillary files
       copy:
         src: "{{ asset_dir }}/web"
         dest: "/tmp/{{project_name}}_web"
         mode: "0755"
-        state: directory
     - name: Adjusting freva_web.conf
       shell:
-        chdir: "/tmp/{{project_name}}_web"
+        chdir: "/tmp/{{project_name}}_web/web"
         cmd: >
           {{ansible_python_interpreter}} create_web_conf.py
           freva_web.conf freva_web.conf --website={{web_project_website}}
@@ -114,15 +110,17 @@
     - name: Creating redis container
       become: true
       shell:
-        cmd: |
-          docker pull redis:latest
-          docker run -d --name {{redis_name}} -p 6379:6379 redis:latest
+        cmd: >
+          /usr/local/bin/docker-or-podman  pull redis:latest &&
+          /usr/local/bin/docker-or-podman  run -d --name {{redis_name}}
+          -p 6379:6379 redis:latest
     - name: Building freva_web image
       become: true
       shell:
-        chdir: "/tmp/{{project_name}}_web"
+        chdir: "/tmp/{{project_name}}_web/web"
         cmd: >
-          docker build --build-arg=core_url={{core_git_url}}
+          /usr/local/bin/docker-or-podman  build
+          --build-arg=core_url={{core_git_url}}
           --build-arg=core_branch={{core_branch}}
           --build-arg=build_root=/mnt/{{project_name}}/web_service
           --build-arg=git_url={{web_git_url}}
@@ -137,13 +135,16 @@
         state: directory
     - name: Running freva_web image
       become: true
-      shell: docker run -d {{docker_cmd}} {{web_name}} {{web_name}}
+      shell:
+        cmd: >
+          /usr/local/bin/docker-or-podman  run -d {{docker_cmd}}
+          {{web_name}} {{web_name}}
     - name: Copying systemd files
       copy:
         src: "{{ asset_dir }}/scripts/create_systemd.py"
         dest: /tmp/create_systemd.py
         mode: "0755"
-    - name: Creating system service
+    - name: Creating system services
       become: true
       shell: >
           /tmp/create_systemd.py "{{item}}"
@@ -151,7 +152,6 @@
         - "{{redis_name}} --wanted-by {{web_name}}"
         - "{{web_name}}"
       when: systemctl.stat.exists == true
-      ignore_errors: true
     - pause: seconds=5
     - name: Building django page
       become: true

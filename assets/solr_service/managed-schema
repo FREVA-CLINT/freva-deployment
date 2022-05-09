@@ -94,7 +94,7 @@
 
   <!-- everything else will get indexed but not stored -->
   <field name="_root_" type="string" indexed="false" stored="false" docValues="false"/>
-  <dynamicField name="*" type="string" stored="true" indexed="true" multiValued="true"/>
+  <dynamicField name="*" type="text_general" stored="true" indexed="true" multiValued="true"/>
   <!--
   <copyField source="content" dest="text_shingles"/>
   <copyField source="*" dest="_text_"/> -->

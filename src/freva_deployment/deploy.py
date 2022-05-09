@@ -105,6 +105,9 @@ class DeployFactory:
         self.cfg["vault"]["config"]["passwd"] = self.db_pass
         self.cfg["vault"]["config"]["keyfile"] = self.public_key_file
         self.cfg["vault"]["config"]["private_keyfile"] = self.private_key_file
+        self.cfg["vault"]["config"]["email"] = ",".join(
+            self.cfg["web"]["config"].get("contacts", [])
+        )
 
     def _prep_db(self) -> None:
         """prepare the mariadb service."""
@@ -122,6 +125,9 @@ class DeployFactory:
         if not db_host:
             self.cfg["db"]["config"]["host"] = host
         self.cfg["db"]["config"].setdefault("port", "3306")
+        self.cfg["db"]["config"]["email"] = ",".join(
+            self.cfg["web"]["config"].get("contacts", [])
+        )
         self._prep_vault()
         self._create_sql_dump()
 
@@ -130,6 +136,9 @@ class DeployFactory:
         self._config_keys.append("solr")
         for key, default in dict(core="files", mem="4g", port=8983).items():
             self.cfg["solr"]["config"].setdefault(key, default)
+        self.cfg["solr"]["config"]["email"] = ",".join(
+            self.cfg["web"]["config"].get("contacts", [])
+        )
 
     def _prep_core(self) -> None:
         """prepare the core deployment."""
@@ -415,7 +424,6 @@ USE {db};
         """Create the ansible playbook form all steps."""
         logger.info("Creating Ansible playbooks")
         playbook = []
-        print(self.steps)
         for step in self.steps:
             getattr(self, f"_prep_{step}")()
             playbook_file = self.playbook_dir / f"{step}-server-playbook.yml"
@@ -511,4 +519,6 @@ USE {db};
             )
             ansible_step["hosts"] = info["hosts"]
             deployment_setup[step] = ansible_step
+            if step == "web":
+                deployment_setup["redis"] = ansible_step
         upload_server_map(server_map, self.project_name, deployment_setup)
