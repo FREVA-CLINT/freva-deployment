@@ -116,7 +116,7 @@
       become: true
     - name: Creating cron jobs
       become: true
-      shell: sh /tmp/db_service/create_cron.sh "{{ db_name }}"
+      shell: sh /tmp/db_service/create_cron.sh "{{ db_name }}" "{{db_email}}"
     - name: Deleting auxillary files
       file:
         state: absent

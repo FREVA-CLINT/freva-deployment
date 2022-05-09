@@ -1,7 +1,10 @@
 #!/bin/bash
-cmd="/usr/local/bin/docker-or-podman exec $1 /usr/local/bin/daily_backup"
-cron_job="0 4 * * * $cmd"
-already=$(crontab -l | grep "${cmd}")
-if [ -z "${already}" ];then
-    (crontab -l 2>/dev/null; echo "${cron_job}") | crontab -
+cmd="/usr/local/bin/docker-or-podman exec $1 /usr/local/bin/daily_backup 1> /dev/null"
+mkdir -p /etc/cron.daily
+echo "#!/bin/sh" > /etc/cron.daily/backup_$1
+echo "# Run daily backup for $1" >> /etc/cron.daily/backup_$1
+if [ "$2" ];then
+    echo "MAILTO=$2"
 fi
+echo $cmd >> /etc/cron.daily/backup_$1
+chmod +x /etc/cron.daily/backup_$1
