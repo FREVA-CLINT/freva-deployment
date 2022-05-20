@@ -45,10 +45,12 @@
   vars:
     - ansible_python_interpreter: "{{ web_ansible_python_interpreter }}"
     - docker_cmd: >
-        "-p 8000:8000 -p 80:80 -p 443:443 "
-        "-v /mnt/{{project_name}}/web_service:/srv/http:z"
-        "-v {{ core_root_dir }}:{{ core_root_dir }}:z"
-        "-v {{ core_root_dir }}/share/preview:/srv/http/static/preview:z --name"
+        -p 8000:8000 -p 80:80 -p 443:443
+        -v /mnt/{{project_name}}/web_service:/srv/http:z
+        -v {{ core_root_dir }}:{{ core_root_dir }}:z
+        -v {{ core_base_dir_location }}:{{ core_base_dir_location }}:z
+        -v {{ core_base_dir_location }}/share/preview:/srv/http/static/preview:z
+        --name {{ web_name}} -t {{ web_name}}:latest
     - redis_name: "{{ project_name }}-redis"
   tasks:
     - name: Copying docker/podman wrapper script
@@ -79,14 +81,16 @@
         /usr/local/bin/docker-or-podman stop {{web_name}};
         /usr/local/bin/docker-or-podman rm {{web_name}};
         /usr/local/bin/docker-or-podman rmi -f {{web_name}};
+        /usr/local/bin/docker-or-podman stop {{redis_name}};
+        /usr/local/bin/docker-or-podman rm {{redis_name}};
         echo 0
       ignore_errors: true
       become: true
-    - name: Creating docker network
-      shell: >
-        /usr/local/bin/docker-or-podman network create "{{ project_name }}";
-        echo 0
-      become: true
+#    - name: Creating docker network
+#      shell: >
+#        /usr/local/bin/docker-or-podman network create "{{ project_name }}";
+#        echo 0
+#      become: true
     - name: Deleting existing web-directory
       file:
         state: absent
@@ -106,7 +110,7 @@
           freva_web.conf freva_web.conf --website={{web_project_website}}
           --root-dir={{core_root_dir}} --project-name={{project_name}}
           --alias={{web_server_alias}} --server-name={{web_host}}
-        warn: false
+          --work-dir={{core_base_dir_location}}
     - name: Creating redis container
       become: true
       shell:
@@ -135,10 +139,7 @@
         state: directory
     - name: Running freva_web image
       become: true
-      shell:
-        cmd: >
-          /usr/local/bin/docker-or-podman  run -d {{docker_cmd}}
-          {{web_name}} {{web_name}}
+      shell: /usr/local/bin/docker-or-podman  run -d {{docker_cmd}}
     - name: Copying systemd files
       copy:
         src: "{{ asset_dir }}/scripts/create_systemd.py"
@@ -146,18 +147,20 @@
         mode: "0755"
     - name: Creating system services
       become: true
-      shell: >
-          /tmp/create_systemd.py "{{item}}"
-      with_items:
-        - "{{redis_name}} --wanted-by {{web_name}}"
-        - "{{web_name}}"
+      shell: |
+          /tmp/create_systemd.py {{redis_name}} --wanted-by {{web_name}}
+          /tmp/create_systemd.py {{web_name}}
       when: systemctl.stat.exists == true
     - pause: seconds=5
     - name: Building django page
       become: true
       shell: >
         /usr/local/bin/docker-or-podman exec -it {{web_name}}
-        /bin/bash /tmp/setup_web.sh {{root_passwd}} {{web_admin}}
+        /bin/bash /tmp/setup_web.sh {{root_passwd}}
+    - name: Restarting web service
+      become: true
+      shell: systemctl restart {{web_name}}
+      when: systemctl.stat.exists == true
     - name: Deleting tmporary files
       file:
         path: "{{item}}"

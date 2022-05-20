@@ -185,7 +185,7 @@ class WebScreen(BaseForm):
 
     def _add_widgets(self) -> None:
         """Add widgets to the screen."""
-        self.list_keys = "contacts", "address", "auth_ldap_server_uri", "scheduler_host"
+        self.list_keys = "contacts", "address", "scheduler_host"
         cfg = self.get_config(self.step)
         for key in self.list_keys:
             if key in cfg and isinstance(cfg[key], str):
@@ -319,12 +319,12 @@ class WebScreen(BaseForm):
                 ),
                 True,
             ),
-            schduler_host=(
+            scheduler_host=(
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
                     name="Slurm scheduler hostname",
                     value=",".join(
-                        cast(list[str], cfg.get("scheduler_host", ["mistral.dkrz.de"]))
+                        cast(list[str], cfg.get("scheduler_host", ["levante.dkrz.de"]))
                     ),
                 ),
                 True,
@@ -336,26 +336,32 @@ class WebScreen(BaseForm):
                         "Ldap server name(s) used for authentication - comma "
                         "separated"
                     ),
-                    value=",".join(
-                        cast(
-                            list[str],
-                            cfg.get(
-                                "auth_ldap_server_uri",
-                                [
-                                    "ldap://mldap0.hpc.dkrz.de",
-                                    "ldap://mldap1.hpc.dkrz.de",
-                                ],
-                            ),
-                        ),
+                    value=cfg.get(
+                        "auth_ldap_server_uri",
+                        "ldap://mldap0.hpc.dkrz.de, ldap://mldap1.hpc.dkrz.de",
                     ),
                 ),
                 True,
             ),
-            auth_allowed_group=(
+            auth_ldap_start_tls=(
+                self.add_widget_intelligent(
+                    npyscreen.CheckBox,
+                    max_height=2,
+                    value=cfg.get("auth_ldap_start_tls", False),
+                    editable=True,
+                    name=(
+                        "Enable TLS encryption when communicating with the"
+                        "ldap server. Needs to be configured."
+                    ),
+                    scroll_exit=True,
+                ),
+                True,
+            ),
+            allowed_group=(
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
                     name="Unix groups allowed to log on to the web:",
-                    value=cfg.get("auth_allowed_group", "my_freva"),
+                    value=cfg.get("allowed_group", "my_freva"),
                 ),
                 True,
             ),

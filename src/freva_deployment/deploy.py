@@ -175,6 +175,8 @@ class DeployFactory:
             raise KeyError(
                 "No web config section given, please configure the web.config"
             ) from error
+        _webserver_items["ALLOWED_HOSTS"].append(self.cfg["web"]["hosts"])
+        _webserver_items["REDIS_HOST"] = self.cfg["web"]["hosts"]
         try:
             with Path(_webserver_items["homepage_text"]).open("r") as f_obj:
                 _webserver_items["homepage_text"] = f_obj.read()
@@ -193,6 +195,9 @@ class DeployFactory:
             web_host = "localhost"
         self.cfg["web"]["config"]["host"] = web_host
         _webserver_items["INSTITUTION_LOGO"] = f"logo{logo.suffix}"
+        _webserver_items["FREVA_BIN"] = os.path.join(
+            self.cfg["core"]["config"]["install_dir"], "bin"
+        )
         try:
             with Path(_webserver_items["ABOUT_US_TEXT"]).open() as f_obj:
                 _webserver_items["ABOUT_US_TEXT"] = f_obj.read()
@@ -320,7 +325,7 @@ class DeployFactory:
     ) -> None:
         """Set additional values to the configuration."""
         if step in self._needs_core:
-            for key in ("git_url", "branch", "root_dir"):
+            for key in ("git_url", "branch", "root_dir", "base_dir_location"):
                 value = self.cfg["core"]["config"][key]
                 config[step]["vars"][f"core_{key}"] = value
         config[step]["vars"][f"{step}_hostname"] = self.cfg[step]["hosts"]

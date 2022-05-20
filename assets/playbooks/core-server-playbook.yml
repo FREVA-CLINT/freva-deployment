@@ -29,7 +29,6 @@
         state: directory
         mode: "2775"
         group: "{{core_admin_group}}"
-        recurse: true
       with_items:
         - "{{ core_root_dir }}"
         - "{{ core_root_dir }}/freva/"
@@ -41,7 +40,6 @@
         path: "{{ item }}"
         state: directory
         mode: "2775"
-        recurse: true
       with_items:
         - "{{ core_root_dir }}"
         - "{{ core_root_dir }}/freva/"
@@ -53,7 +51,6 @@
         path: "{{ item }}"
         state: directory
         mode: "3775"
-        recurse: true
       with_items:
         - "{{ core_base_dir_location }}"
         - "{{ core_base_dir_location }}/share/"
@@ -61,14 +58,6 @@
         - "{{ core_base_dir_location }}/share/preview/"
       become: "{{'yes' if core_ansible_become_user is defined else 'no' }}"
       ignore_errors: true
-    - name: Create umask 002
-      shell:
-        cmd: umask 002
-        chdir: "{{ item }}"
-      with_items:
-        - "{{ core_base_dir_location }}"
-        - "{{ core_root_dir }}"
-      become: "{{'yes' if core_ansible_become_user is defined else 'no' }}"
     - name: Inserting evaluation_sytem.conf file
       copy:
         src: "{{ core_dump }}"
@@ -83,6 +72,16 @@
         CONDA_EXEC_PATH: "{{ conda_exec_path }}"
         PYTHON3: "{{ ansible_python_interpreter }}"
         EVALUATION_SYSTEM_CONFIG_FILE: "{{ core_root_dir }}/{{eval_path}}"
+      when: (core_install is true)
+      become: "{{'yes' if core_ansible_become_user is defined else 'no' }}"
+    - name: Installing additional python packages
+      shell:
+        cmd: $PYTHON3 -m pip install "{{item}}"
+      environment:
+        PYTHON3: "{{core_install_dir}}/bin/python"
+      with_items:
+        - "git+https://gitlab.dkrz.de/freva/metadata-inspektor.git"
+        - "git+https://gitlab.dkrz.de/k204230/install-kernelspec.git"
       when: (core_install is true)
       become: "{{'yes' if core_ansible_become_user is defined else 'no' }}"
     - name: Inserting drs_config.toml file

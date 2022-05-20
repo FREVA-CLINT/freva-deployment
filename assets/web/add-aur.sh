@@ -7,7 +7,6 @@ set -o verbose
 set -o xtrace
 
 AUR_USER="${1:-ab}"
-HELPER="yay"
 
 # update mirrorlist
 #curl --silent --location https://raw.githubusercontent.com/greyltc/docker-archlinux/master/get-new-mirrors.sh > /tmp/get-new-mirrors
@@ -54,18 +53,17 @@ mkdir -p "${FPP}"
 install -o "${AUR_USER}" -d "${FOREIGN_PKG}"
 
 # get helper pkgbuild
-#sudo -u "${AUR_USER}" -D~ bash -c "curl --silent --location https://aur.archlinux.org/cgit/aur.git/snapshot/${HELPER}.tar.gz | bsdtar -xvf -"
+sudo -u "${AUR_USER}" -D~ bash -c 'git config --global url."https://".insteadOf git://'
 sudo -u "${AUR_USER}" -D~ bash -c "git clone https://aur.archlinux.org/yay.git"
 sudo -u "${AUR_USER}" -D~ bash -c "cd yay && makepkg -s --noprogressbar --noconfirm --needed"
 # make helper
-#sudo -u "${AUR_USER}" -D~//${HELPER} bash -c "makepkg -s --noprogressbar --noconfirm --needed"
 
 # install helper
 pacman --upgrade --needed --noconfirm --noprogressbar "${NEW_PKGDEST}"/*.pkg.*
 
 # cleanup
 sudo rm -rf "${NEW_PKGDEST}"/*
-rm -rf "${AUR_USER_HOME}/${HELPER}"
+rm -rf "${AUR_USER_HOME}/yay"
 rm -rf "${AUR_USER_HOME}/.cache/go-build"
 rm -rf "${AUR_USER_HOME}/.cargo"
 
@@ -74,37 +72,19 @@ pacman -Rns --noconfirm $(pacman -Qtdq) || echo "Nothing to remove"
 
 tee /bin/aur-install <<EOF
 #!/bin/sh
-if test "$#" -ne 0
-then
-  if test "${HELPER}" = paru
-  then
-    sudo -u ${AUR_USER} -D~ bash -c 'paru --sync --skipreview --removemake --needed --noconfirm --noprogressbar "\$@"' true "\$@"
-  else
-    sudo -u ${AUR_USER} -D~ bash -c '${HELPER} --sync --needed --noconfirm --noprogressbar "\$@"' true "\$@"
-  fi
-  for foreign in \$(pacman -Qmq)
-  do
+sudo -u ${AUR_USER} -D~ bash -c 'yay --sync --needed --noconfirm --noprogressbar "\$@"' true "\$@"
+for foreign in \$(pacman -Qmq)
+do
     sudo find "${NEW_PKGDEST}" -name "\${foreign}*" -exec mv -fv "{}" "${FOREIGN_PKG}" \;
-  done
-fi
+done
 
 # clean
-if test "${HELPER}" = paru
-then
-  DELETE_OPT=" --delete"
-  sudo -u "${AUR_USER}" -D~ bash -c "yes | paru --clean >/dev/null 2>&1" || :
-else
-  DELETE_OPT=""
-fi
-sudo -u "${AUR_USER}" -D~ bash -c "yes | ${HELPER} --sync -cc\${DELETE_OPT} >/dev/null 2>&1"
+sudo -u "${AUR_USER}" -D~ bash -c "yes | yay --sync -cc >/dev/null 2>&1"
 sudo rm -rf "${NEW_PKGDEST}"/*
 EOF
 chmod +x /bin/aur-install
 
-if test "${HELPER}" = yay || test "${HELPER}" = paru
-then
-  /bin/aur-install ${HELPER}
+/bin/aur-install yay
 
-  echo "Packages from the AUR can now be installed like this:"
-  echo "aur-install package-number-one package-number-two" 
-fi
+echo "Packages from the AUR can now be installed like this:"
+echo "aur-install package-number-one package-number-two"

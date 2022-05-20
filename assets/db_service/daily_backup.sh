@@ -13,4 +13,3 @@ for file in $(ls ${BACKUP_DIR}/backup-*.sql.gz);do
     fi
 done
 chown mysql:mysql ${backup_f}.gz
-/usr/local/bin/pwassword_rotate

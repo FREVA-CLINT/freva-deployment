@@ -161,14 +161,14 @@ ldap_user_pw = "dkrzprox"
 ## Set the hosts that are allowed to execute wsgi code
 allowed_hosts = ["www.freva.dkrz.de", "localhost"]
 ## Turn on/off debug mode on the website
-debug=true
+debug=false
 ## Which plugin id should be used for the web tour
 guest_tour_result = 105
 ## Set the menu entries
 # Menu entries consist of three entries these are:
 # [Label, url, html_id] -> e.g Plugins, plugins:home, plugin_menu
-menu_entries = [["Plugins","plugins:home", "plugin_menu"],
-                ["Data-Browser", "solr:data_browser","browser_menu"],
-                ["Result-Browser", "history:result_browser","result_browser_menu"],
+menu_entries = [["Data-Browser", "solr:data_browser","browser_menu"],
+                ["Plugins","plugins:home", "plugin_menu"],
                 ["History","history:history","history_menu"],
+                ["Result-Browser", "history:result_browser","result_browser_menu"],
                 ["Help", "plugins:about","doc_menu"]]
