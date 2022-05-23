@@ -2,6 +2,7 @@
 from __future__ import annotations
 import argparse
 
+from freva_deployment import __version__
 from freva_deployment.deploy import DeployFactory
 from freva_deployment.utils import set_log_level
 from .main_window import MainApp
@@ -16,6 +17,12 @@ def parse_args() -> int:
     )
     app.add_argument(
         "-v", "--verbose", action="count", help="Verbosity level", default=0
+    )
+    app.add_argument(
+        "-V",
+        "--version",
+        action="version",
+        version="%(prog)s {version}".format(version=__version__),
     )
     parser = app.parse_args()
     return parser.verbose

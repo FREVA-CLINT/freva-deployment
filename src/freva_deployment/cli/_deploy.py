@@ -4,6 +4,7 @@ import argparse
 from pathlib import Path
 import sys
 
+from freva_deployment import __version__
 from ..deploy import DeployFactory
 from ..utils import config_dir, set_log_level, guess_map_server
 
@@ -74,6 +75,12 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
     )
     ap.add_argument(
         "-v", "--verbose", action="count", help="Verbosity level", default=0
+    )
+    ap.add_argument(
+        "-V",
+        "--version",
+        action="version",
+        version="%(prog)s {version}".format(version=__version__),
     )
     args = ap.parse_args()
     services = {"services": ["db", "vault", "solr", "backup"]}

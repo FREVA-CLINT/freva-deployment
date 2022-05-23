@@ -14,6 +14,7 @@ from typing import cast, TextIO
 import toml
 import pymysql
 
+from freva_deployment import __version__
 from ..utils import (
     logger,
     read_db_credentials,
@@ -179,6 +180,12 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     )
     parser.add_argument(
         "-v", "--verbose", action="count", help="Verbosity level", default=0
+    )
+    parser.add_argument(
+        "-V",
+        "--version",
+        action="version",
+        version="%(prog)s {version}".format(version=__version__),
     )
     subparsers = parser.add_subparsers(help="Migration commands:", required=True)
     db_parser = subparsers.add_parser(

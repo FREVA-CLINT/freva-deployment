@@ -13,6 +13,7 @@ import requests
 from rich.console import Console
 import yaml
 
+from freva_deployment import __version__
 from ..utils import (
     download_server_map,
     logger,
@@ -66,6 +67,12 @@ def parse_args(args: list[str]) -> argparse.Namespace:
     )
     app.add_argument(
         "-v", "--verbose", action="count", help="Verbosity level", default=0
+    )
+    app.add_argument(
+        "-V",
+        "--version",
+        action="version",
+        version="%(prog)s {version}".format(version=__version__),
     )
     argsp = app.parse_args(args)
     if "db" in argsp.services:

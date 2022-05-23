@@ -13,6 +13,7 @@ from tempfile import NamedTemporaryFile
 import appdirs
 from numpy import sign
 
+from freva_deployment import __version__
 from ..utils import asset_dir, logger
 
 
@@ -51,6 +52,12 @@ def parse_args(args: list[str]) -> argparse.Namespace:
     )
     app.add_argument(
         "-v", "--verbose", action="count", help="Verbosity level", default=0
+    )
+    app.add_argument(
+        "-V",
+        "--version",
+        action="version",
+        version="%(prog)s {version}".format(version=__version__),
     )
     argsp = app.parse_args(args)
     return argsp

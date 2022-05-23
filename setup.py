@@ -2,35 +2,72 @@
 """Setup script for packaging freva deployment."""
 
 from pathlib import Path
+import re
 from setuptools import setup, find_packages
+from setuptools.command.develop import develop
+from setuptools.command.install import install
+
 
 THIS_DIR = Path(__file__).parent
 CONFIG_DIR = Path("freva") / "deployment"
 ASSET_DIR = THIS_DIR / "assets"
 
 
-def prepare_config() -> None:
+def find_version(*parts):
+    vers_file = read(*parts)
+    match = re.search(r'^__version__ = "(\d+.\d+.\d+)"', vers_file, re.M)
+    if match is not None:
+        return match.group(1)
+    raise RuntimeError("Unable to find version string.")
+
+
+def prepare_config(develop_cmd: bool = False) -> None:
     """Create the freva config dir in loacal user directory."""
     import appdirs
 
-    paths = {}
-    for attr in ("user_config_dir", "user_data_dir"):
-        usr_path = Path(getattr(appdirs, attr)()) / CONFIG_DIR
-        usr_path.mkdir(exist_ok=True, parents=True)
-        paths[attr] = usr_path
-    inventory_file = paths["user_config_dir"] / "inventory.toml"
-    with (ASSET_DIR / "config" / "inventory.toml").open() as f:
-        if not inventory_file.exists():
-            with (paths["user_config_dir"] / "inventory.toml").open("w") as w:
+    user_config_dir = Path(appdirs.user_config_dir()) / CONFIG_DIR
+    user_data_dir = Path(appdirs.user_data_dir()) / CONFIG_DIR
+    for cfg_path in (user_config_dir, user_data_dir):
+        cfg_path.mkdir(exist_ok=True, parents=True)
+    inventory_file = user_config_dir / "inventory.toml"
+    inventory_asset = ASSET_DIR / "config" / "inventory.toml"
+    with inventory_asset.open() as f:
+        if inventory_file.is_symlink():
+            inventory_file.unlink()
+        if not inventory_file.exists() and develop_cmd is False:
+            with inventory_file.open("w") as w:
                 w.write(f.read())
+        elif develop_cmd is True:
+            inventory_file.unlink(missing_ok=True)
+            inventory_file.symlink_to(inventory_asset)
     for datafile in ASSET_DIR.rglob("*"):
-        new_path = paths["user_data_dir"] / datafile.relative_to(ASSET_DIR)
+        new_path = user_data_dir / datafile.relative_to(ASSET_DIR)
         if datafile.is_dir():
             continue
         new_path.parent.mkdir(exist_ok=True, parents=True)
         with datafile.open() as f:
-            with new_path.open("w") as w:
-                w.write(f.read())
+            new_path.unlink(missing_ok=True)
+            if develop_cmd is False:
+                with new_path.open("w") as w:
+                    w.write(f.read())
+            else:
+                new_path.symlink_to(datafile)
+
+
+class InstallCommand(install):
+    """Customized setuptools install command."""
+
+    def run(self):
+        install.run(self)
+        prepare_config(develop_cmd=False)
+
+
+class DevelopCommand(develop):
+    """Customized setuptools install command."""
+
+    def run(self):
+        develop.run(self)
+        prepare_config(develop_cmd=True)
 
 
 def read(*parts: str) -> str:
@@ -41,7 +78,7 @@ def read(*parts: str) -> str:
 
 setup(
     name="freva_deployment",
-    version="2022.02",
+    version=find_version("src", "freva_deployment", "__init__.py"),
     author="Martin Bergemann",
     author_email="martin.bergemann@dkrz.de",
     maintainer="Martin Bergemann",
@@ -51,6 +88,10 @@ setup(
     license="GPLv3",
     packages=find_packages("src"),
     package_dir={"": "src"},
+    cmdclass={
+        "develop": DevelopCommand,
+        "install": InstallCommand,
+    },
     entry_points={
         "console_scripts": [
             "deploy-freva-cmd = freva_deployment.cli:deploy",
@@ -95,4 +136,3 @@ setup(
         "Programming Language :: Python :: 3",
     ],
 )
-prepare_config()
