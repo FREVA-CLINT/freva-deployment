@@ -70,7 +70,7 @@
       shell: /usr/local/bin/docker-or-podman run -d {{docker_cmd}}
     - name: Starting solr service
       become: true
-      shell: "/tmp/create_systemd.py {{solr_name}}"
+      shell: /tmp/create_systemd.py {{solr_name}} --enable
       when: systemctl.stat.exists == true
     - pause: seconds=3
     - name: Creating the solr cores

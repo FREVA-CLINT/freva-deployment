@@ -5,8 +5,8 @@
     - ansible_python_interpreter: "{{ db_ansible_python_interpreter }}"
     - continer_name: "{{ vault_name }}"
     - docker_cmd: >
-        "--net {{ project_name }} --cap-add=IPC_LOCK "
-        "-p 5002:5002 --name={{ vault_name }} {{ vault_name }}:latest"
+        --net {{ project_name }} --cap-add=IPC_LOCK
+        -p 5002:5002 --name={{ vault_name }} {{ vault_name }}:latest
   tasks:
     - name: Copying docker/podman wrapper script
       copy:
@@ -67,12 +67,12 @@
           --build-arg=rootpw={{ root_passwd }} -t {{ vault_name }}:latest .
       become: true
     - name: Starting vault container
-      become: true
       shell: /usr/local/bin/docker-or-podman run -d {{docker_cmd}}
+      become: true
     - name: Creating system service
       become: true
       shell: >
-          /tmp/create_systemd.py {{vault_name}} --wanted-by {{db_name}}
+          /tmp/create_systemd.py {{vault_name}}
       when: systemctl.stat.exists == true
       ignore_errors: true
     - pause: seconds=3

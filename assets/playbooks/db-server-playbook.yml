@@ -4,13 +4,14 @@
   vars:
     - ansible_python_interpreter: "{{ db_ansible_python_interpreter }}"
     - docker_cmd: >
-        "--net {{ project_name }} -v "
-        "/mnt/{{project_name}}/db_service:/var/lib/mysql:z "
-        "--name {{ db_name }} -e HOST={{ db_host }} "
-        "-e PROJECT={{ project_name }} -e DB_USER={{ db_user }} "
-        "-e MYSQL_ROOT_PASSWORD={{ root_passwd }} "
-        "-p {{ db_port }}:3306 {{ db_name }}:latest"
+        --net {{ project_name }} -v
+        /mnt/{{project_name}}/db_service:/var/lib/mysql:z
+        --name {{ db_name }} -e HOST={{ db_host }}
+        -e PROJECT={{ project_name }} -e DB_USER={{ db_user }}
+        -e MYSQL_ROOT_PASSWORD={{ root_passwd }}
+        -p {{ db_port }}:3306 {{ db_name }}:latest
     - continer_name: "{{ db_name }}"
+    - vault_name: "{{project_name}}-vault"
   tasks:
     - name: Copying docker/podman wrapper script
       copy:
@@ -98,7 +99,8 @@
       shell: /usr/local/bin/docker-or-podman run -d {{docker_cmd}}
     - name: Creating systemd service
       become: true
-      shell: "/tmp/create_systemd.py {{db_name}}"
+      shell: >
+        /tmp/create_systemd.py {{db_name}} --requires {{vault_name}} --enable
       when: systemctl.stat.exists == true
     - pause: seconds=5
     - name: Copying sample data to target machine

@@ -148,8 +148,8 @@
     - name: Creating system services
       become: true
       shell: |
-          /tmp/create_systemd.py {{redis_name}} --wanted-by {{web_name}}
-          /tmp/create_systemd.py {{web_name}}
+          /tmp/create_systemd.py {{redis_name}}
+          /tmp/create_systemd.py {{web_name}} --requires {{redis_name}} --enable
       when: systemctl.stat.exists == true
     - pause: seconds=5
     - name: Building django page
