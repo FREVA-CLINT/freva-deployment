@@ -11,7 +11,6 @@ import sys
 from tempfile import TemporaryDirectory, mkdtemp
 from typing import Any
 
-from rich.console import Console
 from numpy import sign
 import toml
 import yaml
@@ -23,6 +22,7 @@ from .utils import (
     get_passwd,
     logger,
     upload_server_map,
+    RichConsole,
 )
 
 
@@ -497,7 +497,7 @@ USE {db};
             )
         else:
             inventory_str = inventory
-        Console().print(inventory_str, style="bold", markup=True)
+        RichConsole.print(inventory_str, style="bold", markup=True)
         logger.info("Playing the playbooks with ansible")
         v_string = sign(verbosity) * "-" + verbosity * "v"
         cmd = (
