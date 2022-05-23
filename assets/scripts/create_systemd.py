@@ -21,7 +21,7 @@ SYSTEMD_TMPL = dict(
 )
 
 
-def parse_args() -> Tuple[str, List[str]]:
+def parse_args() -> Tuple[str, List[str], bool]:
     """Parse the commandline arguments."""
 
     app = argparse.ArgumentParser(
@@ -30,9 +30,12 @@ def parse_args() -> Tuple[str, List[str]]:
     app.add_argument(
         "unit_name", type=str, help="Name of the systemd unit that is created."
     )
-    app.add_argument("--wanted-by", type=str, nargs="+", default=[])
+    app.add_argument(
+        "--enable", action="store_true", default=False, help="Enable this unit."
+    )
+    app.add_argument("--requires", type=str, nargs="+", default=[])
     args = app.parse_args()
-    return args.unit_name, args.wanted_by
+    return args.unit_name, args.requires, args.enable
 
 
 def _parse_dict(tmp_dict: Dict[str, Dict[str, str]]) -> str:
@@ -54,7 +57,7 @@ def load_unit(unit: str, content: str, enable: bool = True) -> None:
     subprocess.run(["systemctl", "restart", unit], check=True)
 
 
-def create_unit(unit_name: str, wanted_by: List[str]) -> None:
+def create_unit(unit_name: str, requires: List[str], enable: bool) -> None:
     """Create the systemd unit."""
     container_cmd = shutil.which("podman") or shutil.which("docker")
     if container_cmd is None:
@@ -66,9 +69,13 @@ def create_unit(unit_name: str, wanted_by: List[str]) -> None:
         SYSTEMD_TMPL["Service"][key] = SYSTEMD_TMPL["Service"][key].format(
             container_cmd=container_cmd, container_name=unit_name
         )
-    for service in wanted_by:
-        SYSTEMD_TMPL["Install"]["WantedBy"] += " {}".format(service)
-    load_unit(unit_name, _parse_dict(SYSTEMD_TMPL), wanted_by == [])
+    for service in requires:
+        for key in ("After", "Requires"):
+            try:
+                SYSTEMD_TMPL["Unit"][key] += " {}.service".format(service)
+            except KeyError:
+                SYSTEMD_TMPL["Unit"][key] = " {}.service".format(service)
+    load_unit(unit_name, _parse_dict(SYSTEMD_TMPL), enable)
 
 
 if __name__ == "__main__":
