@@ -1,9 +1,66 @@
-#!/bin/sh
-# Simple warpper to call docker or podman depending on what is available
+#!/usr/bin/env python3
 
-container_cmd=$(which podman 2> /dev/null || which docker 2> /dev/null)
-if [ -z "$container_cmd" ];then
-    echo Docker or Podman must be installed on the system
-    exit 1
-fi
-${container_cmd} $@
+from datetime import datetime
+from pathlib import Path
+import subprocess
+import shutil
+import sys
+from typing import List, Optional
+
+
+def get_container_cmd() -> List[str]:
+    """Get the command of the container."""
+    for cmd in ("podman", "docker"):
+        cont_cmd = shutil.which(cmd)
+        if cont_cmd:
+            return [cont_cmd]
+    raise ValueError("Docker or Podman must be installed on the system")
+
+
+def get_container_name(argv: List[str], cmd: str) -> Optional[str]:
+    """Get the container name of a container."""
+    key_commands = {"build": "-t", "run": "--name"}
+    for i, arg in enumerate(argv):
+        if arg == key_commands.get(cmd):
+            try:
+                return argv[i + 1]
+            except IndexError:
+                return None
+    return None
+
+
+def write_command_to_disk(
+    argv: List[str], to_capture: List[str] = ["run", "build"]
+) -> None:
+    """Write the current docker/podman command to disk.
+
+    Parameters
+    ==========
+
+    argv: list[str]
+        command line arguments
+    to_capture: list[str]
+        docker/podman sub commands that should be captured
+    """
+    container_dir = (Path("~") / ".freva_container_commands").expanduser()
+    for cmd in to_capture:
+        if cmd in argv:
+            container_name = get_container_name(argv, cmd)
+            container_dir.mkdir(exist_ok=True, parents=True)
+            now = str(datetime.today())
+            with open(container_dir / f"{container_name}.{cmd}", "w") as f_obj:
+                f_obj.write(
+                    f"container {container_name} created at {now} using command:\n\n"
+                )
+                f_obj.write(" ".join(command))
+
+
+if __name__ == "__main__":
+
+    container_cmd = get_container_cmd()
+    command = container_cmd + sys.argv[1:]
+    write_command_to_disk(command)
+    try:
+        subprocess.run(command, check=True)
+    except subprocess.CalledProcessError:
+        sys.exit(1)
