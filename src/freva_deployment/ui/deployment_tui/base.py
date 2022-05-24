@@ -28,6 +28,7 @@ class FileSelector(npyscreen.FileSelector):
         else:
             self.file_extentions = file_extentions
         super().__init__(*args, **kwargs)
+        self.how_exited_handers[npyscreen.wgwidget.EXITED_ESCAPE] = self.exit_editing
 
     def update_grid(self) -> None:
         if self.value:
@@ -85,7 +86,6 @@ def selectFile(starting_value: str = "", *args, **keywords):
     else:
         F.value = os.getcwd()
     F.update_grid()
-    F.display()
     F.edit()
     return F.wCommand.value
 
@@ -146,7 +146,9 @@ class BaseForm(npyscreen.FormMultiPageWithMenus, npyscreen.FormWithMenus):
         menus = [
             " " + self.__class__.MENU_KEY + ":Main Menu ",
             "^T:Next Tab ",
-            "^R:Run Deployment ",
+            "^R:Run ",
+            "^S:Save ",
+            "^L:Load ",
             "^E:Exit ",
         ]
         y, x = self.display_menu_advert_at()

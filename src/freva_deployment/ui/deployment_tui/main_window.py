@@ -103,7 +103,8 @@ class MainApp(npyscreen.NPSAppManaged):
             select_dir=False, must_exist=False, file_extentions=[".toml"]
         )
         if the_selected_file:
-            the_selected_file = str(Path(the_selected_file).expanduser().absolute())
+            the_selected_file = Path(the_selected_file).with_suffix(".toml")
+            the_selected_file = str(the_selected_file.expanduser().absolute())
             self.check_missing_config(stop_at_missing=False)
             self._setup_form.inventory_file.value = the_selected_file
             self.save_config_to_file(write_toml_file=True)
