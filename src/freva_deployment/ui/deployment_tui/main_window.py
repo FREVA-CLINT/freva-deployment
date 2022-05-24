@@ -36,9 +36,13 @@ class MainApp(npyscreen.NPSAppManaged):
         for step in self._steps_lookup.keys():
             self.config.setdefault(step, {"hosts": "", "config": {}})
         self._add_froms()
+        self.start_auto_save()
+
+    def start_auto_save(self) -> None:
+        """(Re)-Start the auto save thread."""
         self.thread_stop = threading.Event()
         self._save_thread = threading.Thread(target=self._auto_save)
-        # self._save_thread.start()
+        self._save_thread.start()
 
     def _add_froms(self) -> None:
         """Add forms to edit the deploy steps to the main window."""

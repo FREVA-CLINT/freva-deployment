@@ -562,6 +562,8 @@ class RunForm(npyscreen.FormMultiPageAction):
 
     def on_ok(self) -> None:
         """Define what happens once the `ok` for applying the deployment is hit."""
+
+        self.parentApp.thread_stop.set()
         if not self.project_name.value:
             npyscreen.notify_confirm("You have to set a project name", title="ERROR")
             return
@@ -580,10 +582,10 @@ class RunForm(npyscreen.FormMultiPageAction):
         cert_file: str = self.cert_file.value or ""
         if cert_file:
             if not Path(cert_file).exists() or not Path(cert_file).is_file():
-                msg = f"Public certificate file `{cert_file}` must exist or empty."
+                is_file = Path(cert_file).exists()
+                msg = f"Public certificate file `{cert_file}` {is_file} must exist or empty."
                 npyscreen.notify_confirm(msg, title="ERROR")
                 return
-        self.parentApp.thread_stop.set()
         save_file = self.parentApp.save_config_to_file(write_toml_file=True)
         self.parentApp.setup = {
             "project_name": self.project_name.value,
