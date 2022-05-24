@@ -120,7 +120,7 @@ class DeployFactory:
         self.cfg["db"]["config"]["keyfile"] = self.public_key_file
         self.cfg["db"]["config"]["private_keyfile"] = self.private_key_file
         for key in ("name", "user", "db"):
-            self.cfg["db"]["config"].setdefault(key, "freva")
+            self.cfg["db"]["config"][key] = self.cfg["db"]["config"].get(key) or "freva"
         db_host = self.cfg["db"]["config"].get("host", "")
         if not db_host:
             self.cfg["db"]["config"]["host"] = host
@@ -135,7 +135,9 @@ class DeployFactory:
         """prepare the apache solr service."""
         self._config_keys.append("solr")
         for key, default in dict(core="files", mem="4g", port=8983).items():
-            self.cfg["solr"]["config"].setdefault(key, default)
+            self.cfg["solr"]["config"][key] = (
+                self.cfg["solr"]["config"].get(key) or default
+            )
         self.cfg["solr"]["config"]["email"] = ",".join(
             self.cfg["web"]["config"].get("contacts", [])
         )
@@ -143,22 +145,29 @@ class DeployFactory:
     def _prep_core(self) -> None:
         """prepare the core deployment."""
         self._config_keys.append("core")
-        self.cfg["core"]["config"].setdefault("admins", getuser())
+        self.cfg["core"]["config"]["admins"] = (
+            self.cfg["core"]["config"].get("admins") or getuser()
+        )
         if not self.cfg["core"]["config"]["admins"]:
             self.cfg["core"]["config"]["admins"] = getuser()
-        self.cfg["core"]["config"].setdefault("branch", "freva-dev")
+        self.cfg["core"]["config"]["branch"] = (
+            self.cfg["core"]["config"].get("branch") or "freva-dev"
+        )
         install_dir = self.cfg["core"]["config"]["install_dir"]
         root_dir = self.cfg["core"]["config"].get("root_dir", "")
         if not root_dir:
             self.cfg["core"]["config"]["root_dir"] = install_dir
         self.cfg["core"]["config"]["keyfile"] = self.public_key_file
         self.cfg["core"]["config"]["private_keyfile"] = self.private_key_file
-        self.cfg["core"]["config"].setdefault("git_path", "git")
+        git_exe = self.cfg["core"]["config"].get("git_path")
+        self.cfg["core"]["config"]["git_path"] = git_exe or "git"
 
     def _prep_web(self) -> None:
         """prepare the web deployment."""
         self._config_keys.append("web")
-        self.cfg["web"]["config"].setdefault("branch", "master")
+        self.cfg["web"]["config"]["branch"] = (
+            self.cfg["web"]["config"].get("branch") or "main"
+        )
         self._prep_core()
         admin = self.cfg["core"]["config"]["admins"]
         if not isinstance(admin, str):
@@ -331,13 +340,14 @@ class DeployFactory:
         config[step]["vars"][f"{step}_hostname"] = self.cfg[step]["hosts"]
         config[step]["vars"][f"{step}_name"] = f"{self.project_name}-{step}"
         config[step]["vars"]["asset_dir"] = str(asset_dir)
-        config[step]["vars"]["ansible_user"] = self.cfg[step]["config"].get(
-            "ansible_user", getuser()
+        config[step]["vars"]["ansible_user"] = (
+            self.cfg[step]["config"].get("ansible_user") or getuser()
         )
         config[step]["vars"]["wipe"] = self.wipe
-        config[step]["vars"][f"{step}_ansible_python_interpreter"] = self.cfg[step][
-            "config"
-        ].get("ansible_python_interpreter", "/usr/bin/python3")
+        config[step]["vars"][f"{step}_ansible_python_interpreter"] = (
+            self.cfg[step]["config"].get("ansible_python_interpreter")
+            or "/usr/bin/python3"
+        )
         dump_file = self._get_files_copy(step)
         if dump_file:
             config[step]["vars"][f"{step}_dump"] = str(dump_file)

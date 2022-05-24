@@ -28,7 +28,13 @@ class FileSelector(npyscreen.FileSelector):
         else:
             self.file_extentions = file_extentions
         super().__init__(*args, **kwargs)
-        self.how_exited_handers[npyscreen.wgwidget.EXITED_ESCAPE] = self.exit_editing
+        self.how_exited_handers[npyscreen.wgwidget.EXITED_ESCAPE] = self.exit
+
+    def exit(self) -> None:
+        """Exit the dialogue."""
+        self.wCommand.value = ""
+        self.value = ""
+        self.exit_editing()
 
     def update_grid(self) -> None:
         if self.value:
@@ -36,40 +42,34 @@ class FileSelector(npyscreen.FileSelector):
         if not os.path.exists(self.value):
             self.value = os.getcwd()
         if os.path.isdir(self.value):
-            working_dir = self.value
+            working_dir = Path(self.value)
         else:
-            working_dir = os.path.dirname(self.value)
+            working_dir = Path(self.value).parent
         self.wStatus1.value = working_dir
-        file_list = []
-        if os.path.abspath(os.path.join(working_dir, "..")) != os.path.abspath(
-            working_dir
-        ):
-            file_list.append("..")
+        file_list, dir_list = [], []
+        if working_dir.parent != working_dir:
+            dir_list.append("..")
         try:
-            file_list.extend(
-                [os.path.join(working_dir, fn) for fn in os.listdir(working_dir)]
-            )
+            for fn in working_dir.glob("*"):
+                rel_path = str(fn.relative_to(working_dir))
+                if not rel_path.startswith("."):
+                    if fn.is_dir():
+                        dir_list.append(str(fn) + os.sep)
+                    elif fn.suffix in self.file_extentions:
+                        file_list.append(str(fn))
         except OSError:
             npyscreen.notify_wait(
                 title="Error", message="Could not read specified directory."
             )
         # DOES NOT CURRENTLY WORK - EXCEPT FOR THE WORKING DIRECTORY.  REFACTOR.
-        new_file_list = []
-        for f in file_list:
-            f = os.path.normpath(f)
-            if os.path.isdir(f):
-                new_file_list.append(f + os.sep)
-            else:
-                if Path(f).suffix in self.file_extentions:
-                    new_file_list.append(f)
-        file_list = new_file_list
-        del new_file_list
         # sort Filelist
-        file_list.sort()
+        file_list.sort(key=str.casefold)
+        dir_list.sort(key=str.casefold)
         if self.sort_by_extension:
             file_list.sort(key=self.get_extension)
-        file_list.sort(key=os.path.isdir, reverse=True)
-        self.wMain.set_grid_values_from_flat_list(file_list, reset_cursor=False)
+        self.wMain.set_grid_values_from_flat_list(
+            dir_list + file_list, reset_cursor=False
+        )
         self.display()
 
 
@@ -93,6 +93,8 @@ def selectFile(starting_value: str = "", *args, **keywords):
 class BaseForm(npyscreen.FormMultiPageWithMenus, npyscreen.FormWithMenus):
     """Base class for forms."""
 
+    _num: int = 0
+
     def get_config(self, key) -> dict[str, str | bool | list[str]]:
         """Read the configuration for a step."""
         try:
@@ -102,6 +104,9 @@ class BaseForm(npyscreen.FormMultiPageWithMenus, npyscreen.FormWithMenus):
         except (KeyError, AttributeError, TypeError):
             cfg = {"config": {}}
         cfg.setdefault("config", {})
+        for k, values in cfg["config"].items():
+            if values is None:
+                cfg["config"][k] = ""
         return cfg["config"]
 
     def get_host(self, key) -> str:
@@ -113,6 +118,12 @@ class BaseForm(npyscreen.FormMultiPageWithMenus, npyscreen.FormWithMenus):
         if isinstance(host, str):
             host = [v.strip() for v in host.split(",") if v.strip()]
         return ",".join(host)
+
+    @property
+    def num(self) -> str:
+        """Calculate the number for enumerations of any input field."""
+        self._num += 1
+        return f"{self._num}. "
 
     def check_config(
         self,

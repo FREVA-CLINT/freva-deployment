@@ -19,10 +19,18 @@ from .deploy_forms import WebScreen, DBScreen, SolrScreen, CoreScreen, RunForm
 class MainApp(npyscreen.NPSAppManaged):
     config: dict[str, Any] = dict()
 
+    @property
+    def steps(self) -> list[str]:
+        """Get the deploy steps."""
+        steps = []
+        for step, form_obj in self._forms.items():
+            if form_obj.use.value and step not in steps:
+                steps.append(step)
+        return steps
+
     def onStart(self) -> None:
         """When Application starts, set up the Forms that will be used."""
         self.cache_dir.mkdir(exist_ok=True, parents=True)
-        self.steps: list[str] = []
         self.setup: dict[str, Any] = {}
         self._steps_lookup = {
             "core": "MAIN",
@@ -83,8 +91,6 @@ class MainApp(npyscreen.NPSAppManaged):
             cfg = form_obj.check_config(notify=stop_at_missing)
             if cfg is None and stop_at_missing:
                 return self._steps_lookup[step]
-            if form_obj.use.value:
-                self.steps.append(step)
             self.config[step] = cfg
         return None
 
@@ -96,7 +102,7 @@ class MainApp(npyscreen.NPSAppManaged):
                 break
             try:
                 self.check_missing_config(stop_at_missing=False)
-                self.save_config_to_file(exclude=["steps"])
+                self.save_config_to_file()
             except Exception:
                 pass
 
@@ -137,13 +143,29 @@ class MainApp(npyscreen.NPSAppManaged):
             self._update_config(the_selected_file)
             self.save_config_to_file()
 
-    def save_config_to_file(
-        self, write_toml_file: bool = False, exclude: list[str] | None = None
-    ) -> Path | None:
+    def save_config_to_file(self, **kwargs) -> Path | None:
         """Save the status of the tui to file."""
+        try:
+            return self._save_config_to_file(**kwargs)
+        except Exception as error:
+            npyscreen.notify_confirm(
+                title="Error",
+                message=f"Couldn't save config:\n{error.__str__()}",
+            )
+        return None
+
+    def _save_config_to_file(self, write_toml_file: bool = False) -> Path | None:
         cache_file = self.cache_dir / ".temp_file.toml"
-        save_file = Path(self._setup_form.inventory_file.value)
-        cert_file = Path(self._setup_form.cert_file.value)
+        save_file = self._setup_form.inventory_file.value
+        if save_file:
+            save_file = str(Path(save_file).expanduser().absolute())
+        else:
+            save_file = None
+        cert_file = self._setup_form.cert_file.value
+        if cert_file:
+            cert_file = str(Path(cert_file).expanduser().absolute())
+        else:
+            cert_file = None
         project_name = self._setup_form.project_name.value
         wipe = self._setup_form.wipe.value
         server_map = self._setup_form.server_map.value
@@ -152,11 +174,10 @@ class MainApp(npyscreen.NPSAppManaged):
             wipe = bool(wipe[0])
         if isinstance(ssh_pw, list):
             ssh_pw = bool(ssh_pw[0])
-        exclude = exclude or []
         config = {
-            "save_file": str(save_file.expanduser().absolute()),
-            "steps": list(set(self.steps)),
-            "cert_file": str(cert_file.expanduser().absolute()),
+            "save_file": save_file,
+            "steps": self.steps,
+            "cert_file": cert_file,
             "project_name": project_name,
             "wipe": wipe,
             "ssh_pw": ssh_pw,
@@ -167,8 +188,7 @@ class MainApp(npyscreen.NPSAppManaged):
             json.dump({k: v for (k, v) in config.items()}, f, indent=3)
         if write_toml_file is False:
             return None
-        save_file = save_file or cache_file
-        save_file = Path(save_file).expanduser().absolute()
+        save_file = Path(save_file or cache_file)
         try:
             with open(asset_dir / "config" / "inventory.toml") as f:
                 config_tmpl = cast(Dict[str, Any], tomlkit.load(f))
