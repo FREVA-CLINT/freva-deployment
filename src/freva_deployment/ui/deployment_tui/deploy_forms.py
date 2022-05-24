@@ -2,7 +2,7 @@ from __future__ import annotations
 from getpass import getuser
 import npyscreen
 from pathlib import Path
-from typing import cast
+from typing import cast, List, Dict
 
 from .base import BaseForm, logger
 from freva_deployment import AVAILABLE_PYTHON_VERSIONS, AVAILABLE_CONDA_ARCHS
@@ -262,7 +262,7 @@ class WebScreen(BaseForm):
                     npyscreen.TitleText,
                     name="Email address for admin(s) - comma seperated",
                     value=",".join(
-                        cast(list[str], cfg.get("contatcs", ["admin@freva.dkrz.de"]))
+                        cast(List[str], cfg.get("contatcs", ["admin@freva.dkrz.de"]))
                     ),
                 ),
                 True,
@@ -273,7 +273,7 @@ class WebScreen(BaseForm):
                     name="Institution address, comma separated",
                     value=",".join(
                         cast(
-                            list[str],
+                            List[str],
                             cfg.get(
                                 "address",
                                 [
@@ -324,7 +324,7 @@ class WebScreen(BaseForm):
                     npyscreen.TitleText,
                     name="Slurm scheduler hostname",
                     value=",".join(
-                        cast(list[str], cfg.get("scheduler_host", ["levante.dkrz.de"]))
+                        cast(List[str], cfg.get("scheduler_host", ["levante.dkrz.de"]))
                     ),
                 ),
                 True,
@@ -380,8 +380,7 @@ class WebScreen(BaseForm):
                     npyscreen.TitleText,
                     name="Ldap search keys for group base",
                     value=cfg.get(
-                        "ldap_group_base",
-                        "cn=groups,cn=accounts,dc=dkrz,dc=de",
+                        "ldap_group_base", "cn=groups,cn=accounts,dc=dkrz,dc=de",
                     ),
                 ),
                 True,
@@ -435,7 +434,7 @@ class DBScreen(BaseForm):
         cfg = self.get_config(self.step)
         db_ports: list[int] = list(range(3300, 3320))
         port_idx = get_index(
-            cast(list[str], list(map(str, db_ports))), str(cfg.get("port", 3306)), 6
+            cast(List[str], list(map(str, db_ports))), str(cfg.get("port", 3306)), 6
         )
         self.input_fields: dict[str, tuple[npyscreen.TitleText, bool]] = dict(
             hosts=(

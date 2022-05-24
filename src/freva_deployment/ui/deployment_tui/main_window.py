@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 import time
 import threading
-from typing import Any, cast
+from typing import Any, Dict, List, cast
 
 import appdirs
 import npyscreen
@@ -32,7 +32,7 @@ class MainApp(npyscreen.NPSAppManaged):
         }
         self._forms: dict[str, BaseForm] = {}
         self.current_form = "core"
-        self.config = cast(dict[str, Any], self._read_cache("config", {}))
+        self.config = cast(Dict[str, Any], self._read_cache("config", {}))
         for step in self._steps_lookup.keys():
             self.config.setdefault(step, {"hosts": "", "config": {}})
         self._add_froms()
@@ -166,7 +166,7 @@ class MainApp(npyscreen.NPSAppManaged):
         save_file = Path(save_file).expanduser().absolute()
         try:
             with open(asset_dir / "config" / "inventory.toml") as f:
-                config_tmpl = cast(dict[str, Any], tomlkit.load(f))
+                config_tmpl = cast(Dict[str, Any], tomlkit.load(f))
         except Exception:
             config_tmpl = self.config
         for step, settings in self.config.items():
@@ -196,7 +196,7 @@ class MainApp(npyscreen.NPSAppManaged):
     @property
     def _steps(self) -> list[str]:
         """Read the deployment-steps from the cache."""
-        return cast(list[str], self._read_cache("steps", ["core", "web", "db", "solr"]))
+        return cast(List[str], self._read_cache("steps", ["core", "web", "db", "solr"]))
 
     @property
     def cert_file(self) -> str:

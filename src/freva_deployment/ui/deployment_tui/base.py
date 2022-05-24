@@ -1,11 +1,10 @@
 from __future__ import annotations
 import os
 from pathlib import Path
+import logging
 
 import curses
 import npyscreen
-import logging
-from typing import cast
 
 
 logging.basicConfig(level=logging.DEBUG)
@@ -116,8 +115,7 @@ class BaseForm(npyscreen.FormMultiPageWithMenus, npyscreen.FormWithMenus):
         return ",".join(host)
 
     def check_config(
-        self,
-        notify: bool = True,
+        self, notify: bool = True,
     ) -> dict[str, str | dict[str, str | list | int | bool | None]] | None:
         """Check if the from entries are valid."""
         config = {}
