@@ -133,7 +133,13 @@ git_path=/sw/spack-levante/git-2.31.1-25ve7r/bin/git
 After successful configuration you can run the deployment.
 The command `deploy-freva` opens a text user interface (tui) that will walk
 you through the setup of the deployment.
+The tui allows to edit, save, load and run a configuration file
+
 > **_Note:_** Navigation is similar to the one of the *nano* text editor. The shortcuts start with a `^` which indicates `CTRL+`.
+> * the pop up menus (e.g. `Exit`) must be navigated pressing `tab` to select the options and then `Enter`.
+> * the configuration files must be saved as a `.toml` as the the tui only recognises this extension.
+> * to paste with the mouse (\*nix style), double middle click.
+
 
 ## Unique identifiers via a domain flag
 Different freva instances are installed across different institutions. Usually
