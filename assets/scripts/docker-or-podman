@@ -1,11 +1,44 @@
 #!/usr/bin/env python3
 
+import argparse
 from datetime import datetime
 from pathlib import Path
+import pwd
 import subprocess
 import shutil
 import sys
-from typing import List, Optional
+from typing import Dict, List, Optional
+
+
+def get_ids(username: Optional[str]) -> Dict[str, int]:
+    """The uid and gid of given username."""
+    try:
+        user = pwd.getpwnam(username or "")
+    except (KeyError, TypeError):
+        return dict(uid=0, gid=0)
+    return dict(uid=user.pw_uid, gid=user.pw_gid)
+
+
+def parse_args() -> List[str]:
+    """Parse the commandline arguments."""
+
+    app = argparse.ArgumentParser(prog=sys.argv[0], description="Docker/Podman wrapper")
+    app.add_argument("command", type=str, help="The sub command that should be run")
+    app.add_argument(
+        "--username",
+        type=str,
+        help="Name of the systemd unit that is created.",
+        default=None,
+    )
+    args, container_args = app.parse_known_args()
+    arguments = [args.command]
+    for key, value in get_ids(args.username).items():
+        if args.command == "build" and value:
+            arguments.append(f"--build-arg={key.upper()}={value}")
+        elif args.command == "run" and value:
+            arguments.append("-e")
+            arguments.append(f"{key.upper()}={value}")
+    return arguments + container_args
 
 
 def get_container_cmd() -> List[str]:
@@ -58,7 +91,7 @@ def write_command_to_disk(
 if __name__ == "__main__":
 
     container_cmd = get_container_cmd()
-    command = container_cmd + sys.argv[1:]
+    command = container_cmd + parse_args()
     write_command_to_disk(command)
     try:
         subprocess.run(command, check=True)

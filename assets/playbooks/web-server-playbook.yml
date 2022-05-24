@@ -47,9 +47,9 @@
     - docker_cmd: >
         -p 8000:8000 -p 80:80 -p 443:443
         -v /mnt/{{project_name}}/web_service:/srv/http:z
-        -v {{ core_root_dir }}:{{ core_root_dir }}:z
-        -v {{ core_base_dir_location }}:{{ core_base_dir_location }}:z
-        -v {{ core_base_dir_location }}/share/preview:/srv/http/static/preview:z
+        -v {{ core_root_dir }}:{{ core_root_dir }}:ro
+        -v {{ core_base_dir_location }}:{{ core_base_dir_location }}:ro
+        -v {{ core_base_dir_location }}/share/preview:/srv/http/static/preview:ro
         --name {{ web_name}} -t {{ web_name}}:latest
     - redis_name: "{{ project_name }}-redis"
   tasks:
@@ -123,7 +123,7 @@
       shell:
         chdir: "/tmp/{{project_name}}_web/web"
         cmd: >
-          /usr/local/bin/docker-or-podman  build
+          /usr/local/bin/docker-or-podman build --username {{ansible_user}}
           --build-arg=core_url={{core_git_url}}
           --build-arg=core_branch={{core_branch}}
           --build-arg=build_root=/mnt/{{project_name}}/web_service
