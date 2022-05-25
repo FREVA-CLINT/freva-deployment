@@ -76,9 +76,9 @@
       become: "{{'yes' if core_ansible_become_user is defined else 'no' }}"
     - name: Installing additional python packages
       shell:
-        cmd: $PYTHON3 -m pip install "{{item}}"
+        cmd: python -m pip install "{{item}}"
       environment:
-        PYTHON3: "{{core_install_dir}}/bin/python"
+        PATH: "{{core_install_dir}}/bin"
       with_items:
         - "git+https://gitlab.dkrz.de/freva/metadata-inspektor.git"
         - "git+https://gitlab.dkrz.de/k204230/install-kernelspec.git"
