@@ -116,19 +116,19 @@ def _migrate_db(parser: argparse.Namespace) -> None:
         logger.error("myslqdump not found, to continue isntall mysqldump")
         return
     new_db_cfg = read_db_credentials(parser.cert_file, db_host)
-    temp_file = NamedTemporaryFile(suffix=".sql")
-    with open(temp_file.name, "w") as f_obj:
-        f_obj.write(f"USE `{new_db_cfg['db.db']}`;\n")
-        f_obj.flush()
-        dump_command = (
-            f"{mysqldump} -u {parser.old_user} "
-            f"-h {parser.old_hostname} -p'{parser.old_pw}' "
-            f"-P{parser.old_port} "
-            "--tz-utc --no-create-db "
-            f"{parser.old_db}"
-        )
-        exec_command(dump_command, stdout=f_obj)
-        _add_new_db(new_db_cfg, temp_file.name)
+    with NamedTemporaryFile(suffix=".sql") as temp_file:
+        with open(temp_file.name, "w") as f_obj:
+            f_obj.write(f"USE `{new_db_cfg['db.db']}`;\n")
+            f_obj.flush()
+            dump_command = (
+                f"{mysqldump} -u {parser.old_user} "
+                f"-h {parser.old_hostname} -p'{parser.old_pw}' "
+                f"-P{parser.old_port} "
+                "--tz-utc --no-create-db "
+                f"{parser.old_db}"
+            )
+            exec_command(dump_command, stdout=f_obj)
+            _add_new_db(new_db_cfg, temp_file.name)
 
 
 def _migrate_drs(parser: argparse.Namespace) -> None:
