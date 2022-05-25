@@ -43,70 +43,32 @@ issue the `deploy-freva-cmd` command:
 
 ```bash
 deploy-freva-cmd --help
-usage: deploy-freva-cmd [-h] [--config CONFIG]
-                    [--steps {services,web,core,db,solr,backup} [{services,web,core,db,solr,backup} ...]]
-                    [--cert CERT] [--domain DOMAIN] [--wipe] [--ask-pass]
-                    project_name
+usage: deploy-freva-cmd [-h] [--server-map SERVER_MAP] [--config CONFIG]
+                        [--steps {services,web,core,db,solr,backup} [{services,web,core,db,solr,backup} ...]] [--ask-pass] [-v] [-V]
 
 Deploy freva and its services on different machines.
-
-positional arguments:
-  project_name          Name of the project
-
-options:
-  -h, --help            show this help message and exit
-  --config CONFIG, -c CONFIG
-                        Path to ansible inventory file. (default:
-                        /home/wilfred/.config/freva/deployment/inventory.toml)
-  --steps {services,web,core,db,solr,backup} [{services,web,core,db,solr,backup} ...]
-                        The services/code stack to be deployed (default: ['services', 'web', 'core'])
-  --cert CERT, --cert_file CERT, --cert-file CERT
-                        Path to public certificate file. If none is given, default, a file will be
-                        created. (default: None)
-  --domain DOMAIN       Domain name of your organisation to create a uniq identifier. (default: dkrz)
-  --wipe                This option will empty any pre-existing folders/docker volumes. (Useful for a
-                        truely fresh start) (default: False)
-  --ask-pass            Connect to server via ssh passwd instead of public key. (default: False)
-```
-
-You will need to give a project name, for example `xces-ces` or `regiklim-ces`.
-The `--steps` flags can be used if not all services should be deployed.
-> **_Note:_** The database name of the MariaDB database will be set to the project name.
-
-## Accessing the services after deployment:
-If the target machine where the services (solr, mariadb, web) were deployed
-is a Linux machine you will have a `systemd` unit service was created.
-You can control the service via the `freva-service` command:
-
-```bash
-freva-service --help                                                                      (freva-dev)
-usage: freva-service [-h] [--domain DOMAIN] [--services {web,db,solr} [{web,db,solr} ...]]
-                     [--user USER]
-                     {start,stop,restart} project_name
-
-Interact with installed freva services.
-
-positional arguments:
-  {start,stop,restart}  The start|stop|restart command for the service
-  project_name          Name of the project
 
 options:
   -h, --help            show this help message and exit
   --server-map SERVER_MAP
-                        Hostname of the service mapping the freva server archtiecture, Note: you can
-                        create a server map by running the deploy-freva-map command (default: None)
-  --services {web,db,solr} [{web,db,solr} ...]
-                        The services to be started|stopped|restarted (default: ['solr', 'db', 'web'])
-  --user USER, -u USER  connect as this user (default: None)
-```
-The following command restarts `web` server for the `xces` project at dkrz:
-```bash
-freva-service restart xces --services web --user k12345 --domain dkrz
-```
-All services (`db`, `web` and `solr`) will be selected if the `--services` option
-is omitted.
+                        Hostname of the service mapping the freva server archtiecture, Note: you can create a server map by running
+                        the deploy-freva-map command (default: None)
+  --config CONFIG, -c CONFIG
+                        Path to ansible inventory file. (default: /home/wilfred/.config/freva/deployment/inventory.toml)
+  --steps {services,web,core,db,solr,backup} [{services,web,core,db,solr,backup} ...]
+                        The services/code stack to be deployed (default: ['services', 'web', 'core'])
+  --ask-pass            Connect to server via ssh passwd instead of public key. (default: False)
+  -v, --verbose         Verbosity level (default: 0)
+  -V, --version         show program's version number and exit
 
-## Kown Issues:
+```
+
+The `--steps` flags can be used if not all services should be deployed.
+
+If the target machine where the services (solr, mariadb, web) were deployed
+is a Linux machine you will have a `systemd` unit service was created.
+
+## Known Issues:
 Below are possible solutions to some known issues:
 
 #### SSH connection fails:

@@ -71,7 +71,7 @@ can be found [on the docker docs](https://docs.docker.com/engine/security/rootle
 > **_Note:_** Some systems use `podman` instead of `docker`. The deployment
 routine is able to distinguish and use the right service.
 
-## Setting up a service that maps the server structure
+## Setting up a service that maps the server structure (Optional)
 Since the services might be scattered across different servers it might be hard
 to keep track of the host names of the servers where all services are running.
 We have created a service that keeps track of the locations of all services for
@@ -80,13 +80,12 @@ this special server mapping service. To do so use the following command:
 
 ```bash
 deploy-freva-map --help
-usage: deploy-freva-map [-h] [--port PORT] [--wipe] [--user USER] [--python-path PYTHON_PATH] [-v]
-                        servername
+usage: deploy-freva-map [-h] [--port PORT] [--wipe] [--user USER] [--python-path PYTHON_PATH] [-v] [-V] servername
 
 Create service that maps the freva server architecture.
 
 positional arguments:
-  servername            The server name where the infrastructure mapping service is deployed.
+  servername            The server name where the infrastructure mapping service is deployed
 
 options:
   -h, --help            show this help message and exit
@@ -94,11 +93,11 @@ options:
   --wipe                Delete any existing data. (default: False)
   --user USER           Username to log on to the target server. (default: None)
   --python-path PYTHON_PATH
-                        Path to the default python3 interpreter on the target machine. (default:
-                        /usr/bin/python)
+                        Path to the default python3 interpreter on the target machine. (default: /usr/bin/python)
   -v, --verbose         Verbosity level (default: 0)
+  -V, --version         show program's version number and exit
 ```
-> **_Note_:** As the service keeps track of all freva instances within your institution, this has to be deployed only *once*. Please make sure that other admins who might need to install freva are aware of the host name for this service.
+> **_Note_:** As the service keeps track of all freva instances within your institution, this has to be deployed only *once*. Please make sure that other admins who might need to install freva are aware of the host name for this service. *This step is optional*
 
 # Configuring the deployment
 A complete freva instance will need the following services:
@@ -159,35 +158,26 @@ issue the `deploy-freva-cmd` command:
 
 ```bash
 deploy-freva-cmd --help
-usage: deploy-freva-cmd [-h] [--config CONFIG]
-                    [--steps {services,web,core,db,solr,backup} [{services,web,core,db,solr,backup} ...]]
-                    [--cert CERT] [--domain DOMAIN] [--wipe] [--ask-pass]
-                    project_name
+usage: deploy-freva-cmd [-h] [--server-map SERVER_MAP] [--config CONFIG]
+                        [--steps {services,web,core,db,solr,backup} [{services,web,core,db,solr,backup} ...]] [--ask-pass] [-v] [-V]
 
 Deploy freva and its services on different machines.
 
-positional arguments:
-  project_name          Name of the project
-
 options:
   -h, --help            show this help message and exit
+  --server-map SERVER_MAP
+                        Hostname of the service mapping the freva server archtiecture, Note: you can create a server map by running
+                        the deploy-freva-map command (default: None)
   --config CONFIG, -c CONFIG
-                        Path to ansible inventory file. (default:
-                        /home/wilfred/.config/freva/deployment/inventory.toml)
+                        Path to ansible inventory file. (default: /home/wilfred/.config/freva/deployment/inventory.toml)
   --steps {services,web,core,db,solr,backup} [{services,web,core,db,solr,backup} ...]
                         The services/code stack to be deployed (default: ['services', 'web', 'core'])
-  --cert CERT, --cert_file CERT, --cert-file CERT
-                        Path to public certificate file. If none is given, default, a file will be
-                        created. (default: None)
-  --domain DOMAIN       Domain name of your organisation to create a uniq identifier. (default: dkrz)
-  --wipe                This option will empty any pre-existing folders/docker volumes. (Useful for a
-                        truely fresh start) (default: False)
   --ask-pass            Connect to server via ssh passwd instead of public key. (default: False)
+  -v, --verbose         Verbosity level (default: 0)
+  -V, --version         show program's version number and exit
 ```
 
-You will need to give a project name, for example `xces-ces` or `regiklim-ces`.
 The `--steps` flags can be used if not all services should be deployed.
-> **_Note:_** The database name of the MariaDB database will be set to the project name.
 
 # Accessing the services after deployment:
 If the target machine where the services (solr, mariadb, web) were deployed
@@ -195,23 +185,27 @@ is a Linux machine you will have a `systemd` unit service was created.
 You can control the service via the `freva-service` command:
 
 ```bash
-freva-service --help                                                                      (freva-dev)
-usage: freva-service [-h] [--domain DOMAIN] [--services {web,db,solr} [{web,db,solr} ...]]
-                     [--user USER]
-                     {start,stop,restart} project_name
+freva-service --help
+usage: freva-service [-h] [--server-map SERVER_MAP] [--services {web,db,solr} [{web,db,solr} ...]] [--user USER] [-v] [-V]
+                     {start,stop,restart,status} [project_name]
 
 Interact with installed freva services.
 
 positional arguments:
-  {start,stop,restart}  The start|stop|restart command for the service
-  project_name          Name of the project
+  {start,stop,restart,status}
+                        The start|stop|restart|status command for the service
+  project_name          Name of the project (default: all)
 
 options:
   -h, --help            show this help message and exit
-  --domain DOMAIN       Domain name of your organisation to create a uniq identifier. (default: dkrz)
+  --server-map SERVER_MAP
+                        Hostname of the service mapping the freva server archtiecture, Note: you can create a server map by running
+                        the deploy-freva-map command (default: None)
   --services {web,db,solr} [{web,db,solr} ...]
-                        The services to be started|stopped|restarted (default: ['solr', 'db', 'web'])
+                        The services to be started|stopped|restarted|checked (default: ['solr', 'db', 'web'])
   --user USER, -u USER  connect as this user (default: None)
+  -v, --verbose         Verbosity level (default: 0)
+  -V, --version         show program's version number and exit
 ```
 The following command restarts `web` server for the `xces` project at dkrz:
 ```bash

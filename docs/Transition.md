@@ -8,22 +8,20 @@ helps migrating content of an existing freva framework to the new one.
 The `freva-migrate` command has two sub commands:
 
 ```bash
-freva-migrate --help
-usage: freva-migrate [-h] [-v] {database,drs-config} ...
+usage: freva-migrate [-h] [-v] [-V] {database,drs-config} ...
 
 Utilities to handle migrations from old freva systems.
 
 positional arguments:
   {database,drs-config}
                         Migration commands:
-    database            Use this command to migrate an existing freva database to a recently set up
-                        system.
+    database            Use this command to migrate an existing freva database to a recently set up system.
     drs-config          Migrate old drs structure definitions to new toml style.
 
 options:
   -h, --help            show this help message and exit
   -v, --verbose         Verbosity level (default: 0)
-
+  -V, --version         show program's version number and exit
 ```
 
 ## Transition to new DRS Config
@@ -64,26 +62,27 @@ database structure. To migrate a database of a old installation of the freva
 system to a freshly deployed freva instance used the following command:
 
 ```
-freva-migrate database --help
-usage: freva-migrate database [-h] [--python-path PYTHON_PATH] [--domain DOMAIN] project-name cert-file
+usage: freva-migrate database [-h] [--old-port OLD_PORT] [--old-db OLD_DB] [--old-pw OLD_PW] [--old-user OLD_USER]
+                              new_hostname old_hostname cert-file
 
 Freva database migration
 
 positional arguments:
-  project-name          The project name for the recently deployed freva system
-  cert-file             Path to the public certificate file.
+  new_hostname         The hostname where the new database is deployed.
+  old_hostname         Hostname of the old database.
+  cert-file            Path to the public certificate file.
 
 options:
-  -h, --help            show this help message and exit
-  --python-path PYTHON_PATH
-                        Python path of the old freva instance, leave blank if you load the old freva
-                        module / source file. (default: None)
-  --domain DOMAIN       Domain name of your organisation to create a uniq identifier. (default: dkrz)
+  -h, --help           show this help message and exit
+  --old-port OLD_PORT  The port where the old database server is running on. (default: 3306)
+  --old-db OLD_DB      The name of the old database (default: evaluationsystem)
+  --old-pw OLD_PW      The passowrd to the old database (default: None)
+  --old-user OLD_USER  The old database user (default: evaluationsystem)
 ```
 
 The `cert-file` positional argument refers the public certificate file that was
 created during the deployment process and is needed to establish a connection to
-the new database. You can either use the one that has been
+the new database (via the vault). You can either use the one that has been
 saved by the deployment or use it from the freva config directory. By default
 the certificate file resides within `freva` path of the deployment `root_dir`
 for example `/mnt/project/freva/project.crt`. Also don't forget to set the domain

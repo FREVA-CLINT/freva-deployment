@@ -70,13 +70,12 @@ this special server mapping service. To do so use the following command:
 
 ```bash
 deploy-freva-map --help
-usage: deploy-freva-map [-h] [--port PORT] [--wipe] [--user USER] [--python-path PYTHON_PATH] [-v]
-                        servername
+usage: deploy-freva-map [-h] [--port PORT] [--wipe] [--user USER] [--python-path PYTHON_PATH] [-v] [-V] servername
 
 Create service that maps the freva server architecture.
 
 positional arguments:
-  servername            The server name where the infrastructure mapping service is deployed.
+  servername            The server name where the infrastructure mapping service is deployed
 
 options:
   -h, --help            show this help message and exit
@@ -84,8 +83,8 @@ options:
   --wipe                Delete any existing data. (default: False)
   --user USER           Username to log on to the target server. (default: None)
   --python-path PYTHON_PATH
-                        Path to the default python3 interpreter on the target machine. (default:
-                        /usr/bin/python)
+                        Path to the default python3 interpreter on the target machine. (default: /usr/bin/python)
   -v, --verbose         Verbosity level (default: 0)
+  -V, --version         show program's version number and exit
 ```
-> **_Note_:** As the service keeps track of all freva instances within your institution, this has to be deployed only *once*. Please make sure that other admins who might need to install freva are aware of the host name for this service.
+> **_Note_:** As the service keeps track of all freva instances within your institution, this has to be deployed only *once*. Please make sure that other admins who might need to install freva are aware of the host name for this service. *This step is optional*
