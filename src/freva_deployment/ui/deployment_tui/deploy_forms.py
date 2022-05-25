@@ -73,10 +73,7 @@ class CoreScreen(BaseForm):
                     max_height=2,
                     value=cfg.get("install", True),
                     editable=True,
-                    name=(
-                        f"{self.num}Install a new instance of the core, or "
-                        "add a new configuration."
-                    ),
+                    name=(f"{self.num}Install a new freva anaconda environment?"),
                     scroll_exit=True,
                 ),
                 True,
@@ -85,8 +82,8 @@ class CoreScreen(BaseForm):
                 self.add_widget_intelligent(
                     npyscreen.TitleFilename,
                     name=(
-                        f"{self.num}Project configuration file directory "
-                        "defaults to `intallation directory`:"
+                        f"{self.num}Directory where project configuration is stored "
+                        "defaults to `anaconda installation dir.` (#3):"
                     ),
                     value=cfg.get("root_dir", ""),
                 ),
@@ -95,7 +92,7 @@ class CoreScreen(BaseForm):
             base_dir_location=(
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
-                    name=f"{self.num}Plugin data directory (user work dir.):",
+                    name=f"{self.num}User data directory:",
                     value=cfg.get("base_dir_location", ""),
                 ),
                 True,
@@ -123,8 +120,8 @@ class CoreScreen(BaseForm):
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
                     name=(
-                        f"{self.num}Set a (additional) username that has privileges "
-                        "to install the core"
+                        f"{self.num}Optional username to change to from the"
+                        "on the remote machine."
                     ),
                     value=cfg.get("ansible_become_user", ""),
                 ),
@@ -134,7 +131,7 @@ class CoreScreen(BaseForm):
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
                     name=(
-                        f"{self.num}Path any existing conda installation. "
+                        f"{self.num}Path to any existing conda installation. "
                         "Leave blank to "
                         "install a temporary conda distribution"
                     ),
@@ -274,10 +271,8 @@ class WebScreen(BaseForm):
             contacts=(
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
-                    name=f"{self.num}Email address for admin(s) - comma seperated",
-                    value=",".join(
-                        cast(List[str], cfg.get("contatcs", ["admin@freva.dkrz.de"]))
-                    ),
+                    name=f"{self.num}Contact email address ",
+                    value=cfg.get("contatcs", "admin@freva.dkrz.de"),
                 ),
                 True,
             ),
@@ -336,7 +331,7 @@ class WebScreen(BaseForm):
             scheduler_host=(
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
-                    name=f"{self.num}Scheduler hostname",
+                    name=f"{self.num}Scheduler hostname(s), comma seperated",
                     value=",".join(
                         cast(List[str], cfg.get("scheduler_host", ["levante.dkrz.de"]))
                     ),
@@ -347,8 +342,8 @@ class WebScreen(BaseForm):
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
                     name=(
-                        f"{self.num}Ldap server name(s) used for authentication - comma "
-                        "separated"
+                        f"{self.num}Ldap server name(s) used for authentication"
+                        " - comma separated"
                     ),
                     value=cfg.get(
                         "auth_ldap_server_uri",
@@ -374,7 +369,7 @@ class WebScreen(BaseForm):
             allowed_group=(
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
-                    name=f"{self.num}Unix groups allowed to log on to the web:",
+                    name=f"{self.num}Unix group allowed to log on to the web:",
                     value=cfg.get("allowed_group", "my_freva"),
                 ),
                 True,
@@ -563,14 +558,6 @@ class SolrScreen(BaseForm):
                     name=f"{self.num}Solr port:",
                     value=port_idx,
                     values=solr_ports,
-                ),
-                True,
-            ),
-            core=(
-                self.add_widget_intelligent(
-                    npyscreen.TitleText,
-                    name=f"{self.num}Name of the standard solr core:",
-                    value=cfg.get("core", "files"),
                 ),
                 True,
             ),

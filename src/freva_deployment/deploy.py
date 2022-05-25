@@ -130,7 +130,8 @@ class DeployFactory:
     def _prep_solr(self) -> None:
         """prepare the apache solr service."""
         self._config_keys.append("solr")
-        for key, default in dict(core="files", mem="4g", port=8983).items():
+        self.cfg["solr"]["config"].pop("core", None)
+        for key, default in dict(mem="4g", port=8983).items():
             self.cfg["solr"]["config"][key] = (
                 self.cfg["solr"]["config"].get(key) or default
             )
@@ -451,7 +452,6 @@ USE {db};
             ("core", "root_dir"),
             ("core", "base_dir_location"),
         )
-        server_keys = ("core", "port")
         cfg_file = asset_dir / "config" / "evaluation_system.conf.tmpl"
         with cfg_file.open() as f_obj:
             lines = f_obj.readlines()
@@ -463,10 +463,9 @@ USE {db};
                         cfg = self.cfg[key]["config"].get(value, "")
                         lines[num] = f"{value}={cfg}\n"
                 for step in ("solr", "db"):
-                    for key in server_keys:
-                        cfg = self.cfg[step]["config"].get(key, "")
-                        if line.startswith(f"{step}.{key}"):
-                            lines[num] = f"{step}.{key}={cfg}\n"
+                    cfg = self.cfg[step]["config"].get("port", "")
+                    if line.startswith(f"{step}.port"):
+                        lines[num] = f"{step}.port={cfg}\n"
                     if line.startswith(f"{step}.host"):
                         lines[num] = f"{step}.host={self.cfg[step]['hosts']}\n"
         dump_file = self._get_files_copy("core")

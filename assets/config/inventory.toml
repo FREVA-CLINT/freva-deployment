@@ -76,7 +76,6 @@ wipe = false
 [solr.config]
 ## Config variables for the solr service
 port = 8983
-core = "files"
 # Set the memory for the solr server
 mem = "4g"
 ## Ansible needs a python3 interpreter, which can be set for custom python3 instances

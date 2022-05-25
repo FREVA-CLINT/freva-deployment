@@ -22,7 +22,7 @@ RichConsole = Console(style="bold", markup=True, force_terminal=True)
 config_dir = Path(appdirs.user_config_dir()) / "freva" / "deployment"
 asset_dir = Path(appdirs.user_data_dir()) / "freva" / "deployment"
 password_prompt = (
-    "Set a [b]master password[/], this password will be used to:\n"
+    "Choose a [b]master password[/], this password will be used to:\n"
     "- create a self signed [magenta]certificate[/] for accessing the freva credentials\n"
     "- create the [magenta]mysql root[/] password\n"
     "- set the [magenta]django admin[/] web password\n[b]enter master password[/]"

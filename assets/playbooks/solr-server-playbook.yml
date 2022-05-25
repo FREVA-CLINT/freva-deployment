@@ -5,7 +5,7 @@
     - ansible_python_interpreter: "{{ solr_ansible_python_interpreter }}"
     - continer_name: "{{ solr_name }}"
     - docker_cmd: >
-        -e CORE={{solr_core}}
+        -e CORE=files
         -e NUM_BACKUPS=7
         -e SOLR_HEAP={{solr_mem}}
         -v /mnt/{{project_name}}/solr_service:/var/solr/data:z
@@ -80,7 +80,7 @@
         /bin/bash create_core.sh "{{item}}"
       with_items:
         - "latest"
-        - "{{solr_core}}"
+        - "files"
     - name: Restarting docker container
       become: true
       shell: systemctl restart "{{ solr_name }}"

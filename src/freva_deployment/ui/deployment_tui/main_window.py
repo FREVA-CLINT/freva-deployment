@@ -161,7 +161,7 @@ class MainApp(npyscreen.NPSAppManaged):
             save_file = str(Path(save_file).expanduser().absolute())
         else:
             save_file = None
-        cert_file = self.cert_file
+        cert_file = self._setup_form.cert_file.value
         if cert_file:
             cert_file = str(Path(cert_file).expanduser().absolute())
         else:
