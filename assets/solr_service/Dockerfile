@@ -1,4 +1,4 @@
-FROM solr:latest
+FROM solr:8.11
 
 USER root
 LABEL maintainer="DRKZ-CLINT"
