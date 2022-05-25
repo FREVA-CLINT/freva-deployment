@@ -34,19 +34,6 @@ with open("{json_file}", "w") as f_obj:
     json.dump(DRSFile.DRS_STRUCTURE, f_obj)
 """
 
-DB_SCRIPT = """#!{python_bin}
-import json
-import sys
-sys.path.insert(0, "{python_path}")
-from evaluation_system.misc import config
-config.reloadConfiguration()
-dump_cfg = {{"db.port": config.get("db.port", 3306)}}
-for key in ("db.db", "db.passwd", "db.user", "db.host"):
-    dump_cfg[key] = config.get(key)
-with open("{json_file}", "w") as f_obj:
-    json.dump(dump_cfg, f_obj)
-"""
-
 
 def exec_command(
     command: str, stdout: TextIO | None = None, shell: bool = False
@@ -108,6 +95,7 @@ def _add_new_db(db_config: dict[str, str], dump_file: str) -> None:
         user=db_config["db.user"],
         password=db_config["db.passwd"],
         port=int(db_config["db.port"]),
+        db=db_config["db.db"],
     ) as con:
         with con.cursor() as cursor:
             cursor.execute(
@@ -117,41 +105,30 @@ def _add_new_db(db_config: dict[str, str], dump_file: str) -> None:
             )
             results_found = cursor.fetchall()[0][0]
             if results_found == 0:
-                logger.info("Adding new column `host` to table..")
+                logger.info("Adding new column `host` to table.")
                 cursor.execute("ALTER TABLE history_history ADD host longtext")
 
 
 def _migrate_db(parser: argparse.Namespace) -> None:
-    server_map = guess_map_server(parser.server_map)
-    python_path = parser.python_path or _get_python_path_from_env()
+    db_host = parser.new_hostname
     mysqldump = shutil.which("mysqldump")
     if mysqldump is None:
         logger.error("myslqdump not found, to continue isntall mysqldump")
         return
-    config = json.loads(execute_script_and_get_config(python_path, DB_SCRIPT))
-    try:
-        deploy_config = download_server_map(server_map)[parser.project_name]
-    except KeyError as error:
-        logger.error("Config Error for project %s", parser.project_name)
-        raise error
-    try:
-        _, db_host = get_setup_for_service("db", deploy_config)
-    except (KeyError, AttributeError) as error:
-        raise KeyError("Could not find db host in config") from error
     new_db_cfg = read_db_credentials(parser.cert_file, db_host)
-    with NamedTemporaryFile(suffix=".sql") as temp_file:
-        with open(temp_file.name, "w") as f_obj:
-            f_obj.write(f"USE `{new_db_cfg['db.db']}`;\n")
-            f_obj.flush()
-            dump_command = (
-                f"{mysqldump} -u {config['db.user']} "
-                f"-h {config['db.host']} -p'{config['db.passwd']}' "
-                f"-P{config['db.port']} "
-                "--tz-utc --no-create-db "
-                f"{config['db.db']}"
-            )
-            exec_command(dump_command, stdout=f_obj)
-            _add_new_db(new_db_cfg, temp_file.name)
+    temp_file = NamedTemporaryFile(suffix=".sql")
+    with open(temp_file.name, "w") as f_obj:
+        f_obj.write(f"USE `{new_db_cfg['db.db']}`;\n")
+        f_obj.flush()
+        dump_command = (
+            f"{mysqldump} -u {parser.old_user} "
+            f"-h {parser.old_hostname} -p'{parser.old_pw}' "
+            f"-P{parser.old_port} "
+            "--tz-utc --no-create-db "
+            f"{parser.old_db}"
+        )
+        exec_command(dump_command, stdout=f_obj)
+        _add_new_db(new_db_cfg, temp_file.name)
 
 
 def _migrate_drs(parser: argparse.Namespace) -> None:
@@ -196,10 +173,16 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     db_parser.add_argument(
-        "project_name",
-        metavar="project-name",
+        "new_hostname",
+        metavar="new_hostname",
         type=str,
-        help="The project name for the recently deployed freva system",
+        help="The hostname where the new database is deployed.",
+    )
+    db_parser.add_argument(
+        "old_hostname",
+        metavar="old_hostname",
+        type=str,
+        help="Hostname of the old database.",
     )
     db_parser.add_argument(
         "cert_file",
@@ -208,21 +191,25 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         help="Path to the public certificate file.",
     )
     db_parser.add_argument(
-        "--python-path",
-        type=Path,
-        default=None,
-        help="Python path of the old freva instance, leave blank "
-        "if you load the old freva module / source file.",
+        "--old-port",
+        type=int,
+        default=3306,
+        help="The port where the old database server is running on.",
     )
     db_parser.add_argument(
-        "--server-map",
+        "--old-db",
         type=str,
-        default=None,
-        help=(
-            "Hostname of the service mapping the freva server "
-            "archtiecture, Note: you can create a server map by "
-            "running the deploy-freva-map command"
-        ),
+        default="evaluationsystem",
+        help="The name of the old database",
+    )
+    db_parser.add_argument(
+        "--old-pw", type=str, default=None, help="The passowrd to the old database"
+    )
+    db_parser.add_argument(
+        "--old-user",
+        type=str,
+        default="evaluationsystem",
+        help="The old database user",
     )
     db_parser.set_defaults(apply_func=_migrate_db)
     drs_parser = subparsers.add_parser(
