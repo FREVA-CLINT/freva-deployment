@@ -5,12 +5,12 @@
     - ansible_python_interpreter: "{{ solr_ansible_python_interpreter }}"
     - continer_name: "{{ solr_name }}"
     - docker_cmd: >
-        "-e CORE={{solr_core}}"
-        "-e NUM_BACKUPS=7"
-        "-e SOLR_HEAP={{solr_mem}}"
-        "-v /mnt/{{project_name}}/solr_service:/var/solr/data:z"
-        "--name {{ solr_name }}"
-        "-p {{ solr_port }}:8983 -t {{ solr_name }}:latest"
+        -e CORE={{solr_core}}
+        -e NUM_BACKUPS=7
+        -e SOLR_HEAP={{solr_mem}}
+        -v /mnt/{{project_name}}/solr_service:/var/solr/data:z
+        --name {{ solr_name }}
+        -p {{ solr_port }}:8983 -t {{ solr_name }}:latest
   tasks:
     - name: Copying docker/podman wrapper script
       copy:

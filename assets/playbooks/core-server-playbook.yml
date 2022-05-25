@@ -82,7 +82,6 @@
       with_items:
         - "git+https://gitlab.dkrz.de/freva/metadata-inspektor.git"
         - "git+https://gitlab.dkrz.de/k204230/install-kernelspec.git"
-      # when: (core_install is true)
       become: "{{'yes' if core_ansible_become_user is defined else 'no' }}"
     - name: Inserting drs_config.toml file
       copy:
