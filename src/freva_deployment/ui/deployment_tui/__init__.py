@@ -44,9 +44,7 @@ def tui() -> None:
         return
     setup = main_app.setup
     if setup:
-        project_name = setup.pop("project_name")
         server_map = setup.pop("server_map")
         ask_pass = setup.pop("ask_pass")
-        print(setup)
-        with DeployFactory(project_name, **setup) as DF:
+        with DeployFactory(**setup) as DF:
             DF.play(server_map, ask_pass, verbosity)

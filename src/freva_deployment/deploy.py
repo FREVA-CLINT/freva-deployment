@@ -39,15 +39,13 @@ class DeployFactory:
         The path to the public cert file that is injected to the web container.
     config_file: os.PathLike, default: None
         Path to any existing deployment configuration file.
-    wipe: bool, default: False
-        Delete any existing deployment resources, such as docker volumes.
 
     Examples
     --------
 
     >>> from freva_deployment import DeployFactory as DF
-    >>> deploy = DF("xces", steps=["solr"], ask_pass=True)
-    >>> deploy.play()
+    >>> deploy = DF(steps=["solr"])
+    >>> deploy.play(ask_pass=True)
     """
 
     step_order: tuple[str, ...] = ("vault", "db", "solr", "core", "web")
@@ -55,11 +53,8 @@ class DeployFactory:
 
     def __init__(
         self,
-        project_name: str,
         steps: list[str] | None = None,
-        cert_file: str | None = None,
         config_file: Path | str | None = None,
-        wipe: bool = False,
     ) -> None:
 
         self._config_keys: list[str] = []
@@ -69,13 +64,14 @@ class DeployFactory:
         self.eval_conf_file: Path = Path(self._td.name) / "evaluation_system.conf"
         self.web_conf_file: Path = Path(self._td.name) / "freva_web.toml"
         self._db_pass: str = ""
-        self.project_name = project_name
         self._steps = steps or ["services", "core", "web"]
-        self.wipe = wipe
-        self._cert_file = cert_file or ""
         self._inv_tmpl = Path(config_file or config_dir / "inventory.toml")
         self._cfg_tmpl = self.aux_dir / "evaluation_system.conf.tmpl"
         self.cfg = self._read_cfg()
+        self._cert_file = self.cfg.pop("cert_file", "")
+        self.project_name = self.cfg.pop("project_name", None)
+        if not self.project_name:
+            raise ValueError("You must set a project name")
 
     @property
     def private_key_file(self) -> str:
@@ -343,7 +339,6 @@ class DeployFactory:
         config[step]["vars"]["ansible_user"] = (
             self.cfg[step]["config"].get("ansible_user") or getuser()
         )
-        config[step]["vars"]["wipe"] = self.wipe
         config[step]["vars"][f"{step}_ansible_python_interpreter"] = (
             self.cfg[step]["config"].get("ansible_python_interpreter")
             or "/usr/bin/python3"
@@ -362,7 +357,7 @@ class DeployFactory:
             config[step]["hosts"] = self.cfg[step]["hosts"]
             config[step]["vars"] = {}
             for key, value in self.cfg[step]["config"].items():
-                if key not in ("root_passwd",):
+                if key not in ("root_passwd", "wipe"):
                     new_key = f"{step}_{key}"
                 else:
                     new_key = key

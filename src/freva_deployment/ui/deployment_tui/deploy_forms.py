@@ -204,6 +204,17 @@ class WebScreen(BaseForm):
                 ),
                 True,
             ),
+            wipe=(
+                self.add_widget_intelligent(
+                    npyscreen.CheckBox,
+                    max_height=2,
+                    value=cfg.get("wipe", False),
+                    editable=True,
+                    name=(f"{self.num}Delete existing data?"),
+                    scroll_exit=True,
+                ),
+                True,
+            ),
             branch=(
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
@@ -449,6 +460,17 @@ class DBScreen(BaseForm):
                 ),
                 True,
             ),
+            wipe=(
+                self.add_widget_intelligent(
+                    npyscreen.CheckBox,
+                    max_height=2,
+                    value=cfg.get("wipe", False),
+                    editable=True,
+                    name=(f"{self.num}Delete existing data?"),
+                    scroll_exit=True,
+                ),
+                True,
+            ),
             user=(
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
@@ -512,6 +534,17 @@ class SolrScreen(BaseForm):
                     npyscreen.TitleText,
                     name=f"{self.num}Server Name(s) where the solr service is deployed:",
                     value=self.get_host("solr"),
+                ),
+                True,
+            ),
+            wipe=(
+                self.add_widget_intelligent(
+                    npyscreen.CheckBox,
+                    max_height=2,
+                    value=cfg.get("wipe", False),
+                    editable=True,
+                    name=(f"{self.num}Delete existing data?"),
+                    scroll_exit=True,
                 ),
                 True,
             ),
@@ -597,18 +630,16 @@ class RunForm(npyscreen.FormMultiPageAction):
                 msg = f"Public certificate file `{cert_file}` {is_file} must exist or empty."
                 npyscreen.notify_confirm(msg, title="ERROR")
                 return
+        if cert_file:
+            cert_file = str(Path(cert_file).expanduser().absolute())
+        self.cert_file.value = cert_file
         save_file = self.parentApp.save_config_to_file(write_toml_file=True)
         if isinstance(save_file, Path):
             save_file = str(save_file)
-        if cert_file:
-            cert_file = str(Path(cert_file).expanduser().absolute())
         self.parentApp.setup = {
-            "project_name": self.project_name.value,
             "server_map": self.server_map.value,
             "steps": list(set(self.parentApp.steps)),
             "config_file": save_file or None,
-            "cert_file": cert_file or None,
-            "wipe": bool(self.wipe.value),
             "ask_pass": bool(self.use_ssh_pw.value),
         }
         self.parentApp.exit_application(msg="Do you want to continue?")
@@ -633,7 +664,6 @@ class RunForm(npyscreen.FormMultiPageAction):
     def _add_widgets(self) -> None:
         """Add the widgets to the form."""
 
-        wipe = self.parentApp._read_cache("wipe", False)
         ssh_pw = self.parentApp._read_cache("ssh_pw", True)
         self.project_name = self.add_widget_intelligent(
             npyscreen.TitleText,
@@ -654,14 +684,6 @@ class RunForm(npyscreen.FormMultiPageAction):
             npyscreen.TitleFilename,
             name=f"{self.num}Select a public certificate file, defaults to `<project_name>.crt`",
             value=str(self.parentApp.cert_file or ""),
-        )
-        self.wipe = self.add_widget_intelligent(
-            npyscreen.CheckBox,
-            max_height=2,
-            value=wipe,
-            editable=True,
-            name=f"{self.num}Delete all existing data on docker volumes (wipe)",
-            scroll_exit=True,
         )
         self.use_ssh_pw = self.add_widget_intelligent(
             npyscreen.CheckBox,

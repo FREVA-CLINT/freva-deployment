@@ -17,7 +17,6 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
         description="Deploy freva and its services on different machines.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-    ap.add_argument("project_name", type=str, help="Name of the project")
     ap.add_argument(
         "--server-map",
         type=str,
@@ -42,30 +41,6 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
         default=["services", "web", "core"],
         choices=["services", "web", "core", "db", "solr", "backup"],
         help="The services/code stack to be deployed",
-    )
-    ap.add_argument(
-        "--cert",
-        "--cert_file",
-        "--cert-file",
-        type=Path,
-        default=None,
-        help="Path to public certificate file. If none is given, "
-        "default, a file will be created.",
-    )
-    ap.add_argument(
-        "--domain",
-        type=str,
-        help="Domain name of your organisation to create a uniq identifier.",
-        default="dkrz",
-    )
-    ap.add_argument(
-        "--wipe",
-        action="store_true",
-        default=False,
-        help=(
-            "This option will empty any pre-existing folders/docker volumes. "
-            "(Useful for a truely fresh start)"
-        ),
     )
     ap.add_argument(
         "--ask-pass",
@@ -101,11 +76,8 @@ def cli(argv: list[str] | None = None) -> None:
     server_map = guess_map_server(args.server_map, mandatory=False)
     set_log_level(args.verbose)
     with DeployFactory(
-        args.project_name,
         steps=args.steps,
-        cert_file=args.cert,
         config_file=args.config,
-        wipe=args.wipe,
     ) as DF:
         DF.play(server_map, args.ask_pass, args.verbose)
 

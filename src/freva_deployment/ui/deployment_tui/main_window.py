@@ -161,27 +161,23 @@ class MainApp(npyscreen.NPSAppManaged):
             save_file = str(Path(save_file).expanduser().absolute())
         else:
             save_file = None
-        cert_file = self._setup_form.cert_file.value
+        cert_file = self.cert_file
         if cert_file:
             cert_file = str(Path(cert_file).expanduser().absolute())
         else:
-            cert_file = None
+            cert_file = ""
         project_name = self._setup_form.project_name.value
-        wipe = self._setup_form.wipe.value
         server_map = self._setup_form.server_map.value
         ssh_pw = self._setup_form.use_ssh_pw.value
-        if isinstance(wipe, list):
-            wipe = bool(wipe[0])
         if isinstance(ssh_pw, list):
             ssh_pw = bool(ssh_pw[0])
         config = {
             "save_file": save_file,
             "steps": self.steps,
-            "cert_file": cert_file,
             "project_name": project_name,
-            "wipe": wipe,
             "ssh_pw": ssh_pw,
             "server_map": server_map,
+            "cert_file": cert_file,
             "config": self.config,
         }
         with open(self.cache_dir / "freva_deployment.json", "w") as f:
@@ -199,6 +195,8 @@ class MainApp(npyscreen.NPSAppManaged):
             for key, config in settings["config"].items():
                 config_tmpl[step]["config"][key] = config
         save_file.parent.mkdir(exist_ok=True, parents=True)
+        config_tmpl["cert_file"] = cert_file
+        config_tmpl["project_name"] = project_name
         with open(save_file, "w") as f:
             toml_string = tomlkit.dumps(config_tmpl)
             f.write(toml_string)
