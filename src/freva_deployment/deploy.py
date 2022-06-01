@@ -294,7 +294,7 @@ class DeployFactory:
     def _get_files_copy(self, key) -> Path | None:
         return dict(
             db=self._dump_file,
-            solr=(self.aux_dir / "managed-schema").absolute(),
+            solr=(self.aux_dir / "managed-schema.xml").absolute(),
             core=self.eval_conf_file.absolute(),
             web=self.eval_conf_file.absolute(),
         ).get(key, None)
