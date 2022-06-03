@@ -171,7 +171,7 @@ class ServerStaus(Resource):
                 try:
                     self.service_status[project][service][key] = value
                 except KeyError:
-                    self.ervice_status[project][service] = {key: value}
+                    self.service_status[project][service] = {key: value}
         return "updated", 201
 
 
