@@ -15,7 +15,7 @@ SYSTEMD_TMPL = dict(
         TimeoutStopSec="35s",
         ExecStart="{container_cmd} start -a {container_name}",
         ExecStop="{container_cmd} stop {container_name}",
-        Restart="always",
+        Restart="no",
     ),
     Install=dict(WantedBy="default.target"),
 )
