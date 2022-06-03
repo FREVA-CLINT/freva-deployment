@@ -2,7 +2,7 @@ FROM mariadb:latest
 
 LABEL maintainer="DRKZ-CLINT"
 LABEL repository="https://gitlab.dkrz.de/freva/deployment.git"
-ENV NUM_BACKUPS=7
+ENV NUM_BACKUPS=6
 ENV BACKUP_DIR=/var/lib/mysql/backup
 RUN apt -y update && apt -y install python3 pip
 COPY daily_backup.sh /usr/local/bin/daily_backup
