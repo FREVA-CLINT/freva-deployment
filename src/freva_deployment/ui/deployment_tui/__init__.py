@@ -9,10 +9,10 @@ from .main_window import MainApp
 
 
 def parse_args() -> int:
-    """Consturct command line argument parser."""
+    """Construct command line argument parser."""
     app = argparse.ArgumentParser(
         prog="deploy-freva",
-        description="Text User Interfave for freva deployment",
+        description="Text User Interface for Freva deployment",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     app.add_argument(
@@ -29,7 +29,7 @@ def parse_args() -> int:
 
 
 def tui() -> None:
-    """Create and run text user interface (tui) for deployment."""
+    """Create and run Text User Interface (TUI) for deployment."""
     verbosity = parse_args()
     set_log_level(verbosity)
     try:
