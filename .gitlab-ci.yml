@@ -4,7 +4,7 @@ stages:
 lint:
   stage: doc
   tags:
-    - sphinx
+    - docker, specific
   before_script:
     - python3 -m pip install .[test]
   script:
@@ -14,7 +14,7 @@ lint:
 pages:
   stage: doc
   tags:
-    - sphinx
+    - docker, specific
   script:
     - cd docs && make html
   before_script:
