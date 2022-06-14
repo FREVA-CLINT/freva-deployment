@@ -3,6 +3,7 @@ stages:
 
 lint:
     stage: doc
+    needs: []
     tags:
         - conda
     before_script:
@@ -13,6 +14,7 @@ lint:
 
 pages:
     stage: doc
+    needs: []
     tags:
         - conda
     script:
