@@ -2,10 +2,11 @@ stages:
     - doc
 
 lint:
+    image: python
     stage: doc
     needs: []
     tags:
-        - conda
+        - docker, specific
     before_script:
         - python3 -m pip install .[test]
     script:
@@ -13,16 +14,15 @@ lint:
         - black --check src
 
 pages:
+    image: python
     stage: doc
     needs: []
     tags:
-        - conda
+        - docker, specific
     script:
         - cd docs && make html
     before_script:
         - python3 -m pip install .[docs]
-        - apt -y update
-        - apt -y install make
     after_script:
         - mv docs/_build/html public
     artifacts:
