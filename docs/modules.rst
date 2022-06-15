@@ -4,7 +4,7 @@ Deployment API Reference
 .. toctree::
    :maxdepth: 3
 
-The Freva daployment Class
+The Freva deployment Class
 ==========================
 
 .. automodule:: freva_deployment.deploy

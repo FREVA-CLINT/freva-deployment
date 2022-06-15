@@ -3,102 +3,124 @@
 
   vars:
     - ansible_python_interpreter: "{{ core_ansible_python_interpreter }}"
-    - ansible_become_user: "{{ core_ansible_become_user if core_ansible_become_user is defined else 'root' }}"
-    - allow_world_readable_tmpfiles: yes
-    - conda_exec_path: "{{ core_conda_exec_path if core_conda_exec_path is defined else '' }}"
+    - ansible_become_user: >
+        "{{ core_ansible_become_user
+        if core_ansible_become_user is defined else 'root' }}"
+    - allow_world_readable_tmpfiles: true
+    - conda_exec_path: >
+        "{{ core_conda_exec_path
+        if core_conda_exec_path is defined else '' }}"
+    - eval_path: "freva/evaluation_system.conf"
   tasks:
-  - name: Cleaning up temporary files
-    file:
-      state: absent
-      path: /tmp/evaluation_system
-  - name: Cloning the evluation_system reposiotry
-    git:
-      repo: "{{ core_git_url }}"
-      dest: /tmp/evaluation_system
-      version: "{{ core_branch }}"
-      executable: "{{core_git_path}}"
-    become: "{{'yes' if core_ansible_become_user is defined else 'no' }}"
-  - name: Creating directory structure with admin group
-    file:
-      path: "{{ item }}"
-      state: directory
-      mode: "2775"
-      group: "{{core_admin_group}}"
-      recurse: yes
-    with_items:
-      - "{{ core_root_dir }}"
-      - "{{ core_root_dir }}/freva/"
-      - "{{ core_root_dir }}/plugins/"
-    become: "{{'yes' if core_ansible_become_user is defined else 'no' }}"
-    when: core_admin_group is defined
-  - name: Creating directory structure without admin group
-    file:
-      path: "{{ item }}"
-      state: directory
-      mode: "2775"
-      recurse: yes
-    with_items:
-      - "{{ core_root_dir }}"
-      - "{{ core_root_dir }}/freva/"
-      - "{{ core_root_dir }}/plugins/"
-    become: "{{'yes' if core_ansible_become_user is defined else 'no' }}"
-    when: core_admin_group is not defined
-  - name: Creating user work directory
-    file:
-      path: "{{ item }}"
-      state: directory
-      mode: "3775"
-      recurse: yes
-    with_items:
-      - "{{ core_base_dir_location }}"
-      - "{{ core_base_dir_location }}/share/"
-      - "{{ core_base_dir_location }}/data/"
-      - "{{ core_base_dir_location }}/share/preview/"
-    become: "{{'yes' if core_ansible_become_user is defined else 'no' }}"
-  - name: Create umask 002
-    shell:
-      cmd: cd "{{ item }}" ; umask 002
-      chdir: "{{ item }}"
-    with_items:
-      - "{{ core_base_dir_location }}"
-      - "{{ core_root_dir }}"
-    become: "{{'yes' if core_ansible_become_user is defined else 'no' }}"
-  - name: Inserting evaluation_sytem.conf file
-    copy:
-      src: "{{ core_dump }}"
-      dest: "{{ core_root_dir }}/freva/evaluation_system.conf"
-    become: "{{'yes' if core_ansible_become_user is defined else 'no' }}"
-  - name: Deploying evaluation_system
-    shell:
-      cmd: $PYTHON3 deploy.py {{ core_install_dir }} -s --arch {{core_arch}}
-      chdir: /tmp/evaluation_system
-    environment:
-      CONDA_EXEC_PATH: "{{ conda_exec_path }}"
-      PYTHON3: "{{ ansible_python_interpreter }}"
-      EVALUATION_SYSTEM_CONFIG_FILE: "{{ core_root_dir }}/freva/evaluation_system.conf"
-    when: (core_install is true)
-    become: "{{'yes' if core_ansible_become_user is defined else 'no' }}"
-  - name: Inserting drs_config.toml file
-    copy:
-      src: "/tmp/evaluation_system/assets/drs_config.toml"
-      dest: "{{ core_root_dir }}/freva/drs_config.toml"
-      remote_src: yes
-    become: "{{'yes' if core_ansible_become_user is defined else 'no' }}"
-  - name: Configuring evaluation_system
-    shell:
-      cmd: $PYTHON3 deploy.py {{ core_install_dir }} -s --no-conda
-      chdir: /tmp/evaluation_system
-    environment:
+    - name: Cleaning up temporary files
+      file:
+        state: absent
+        path: /tmp/evaluation_system
+    - name: Cloning the evluation_system reposiotry
+      git:
+        repo: "{{ core_git_url }}"
+        dest: /tmp/evaluation_system
+        version: "{{ core_branch }}"
+        executable: "{{core_git_path}}"
+      become: "{{'true' if core_ansible_become_user is defined else 'no' }}"
+    - name: Preparing creation of directory structure
+      file:
+        path: "{{ core_root_dir }}"
+        state: directory
+    - name: Creating directory structure with admin group
+      file:
+        path: "{{ item }}"
+        state: directory
+        mode: "2775"
+        group: "{{core_admin_group}}"
+      with_items:
+        - "{{ core_root_dir }}/freva/"
+        - "{{ core_root_dir }}/plugins/"
+      become: "{{'yes' if core_ansible_become_user is defined else 'no' }}"
+      when: core_admin_group is defined
+    - name: Creating directory structure without admin group
+      file:
+        path: "{{ item }}"
+        state: directory
+        mode: "2775"
+      with_items:
+        - "{{ core_root_dir }}/freva/"
+        - "{{ core_root_dir }}/plugins/"
+      become: "{{'yes' if core_ansible_become_user is defined else 'no' }}"
+      when: core_admin_group is not defined
+    - name: Creating user work directory
+      file:
+        path: "{{ item }}"
+        state: directory
+        mode: "3775"
+      with_items:
+        - "{{ core_base_dir_location }}"
+        - "{{ core_base_dir_location }}/share/"
+        - "{{ core_base_dir_location }}/data/"
+        - "{{ core_base_dir_location }}/share/preview/"
+      become: "{{'yes' if core_ansible_become_user is defined else 'no' }}"
+      ignore_errors: true
+    - name: Inserting evaluation_sytem.conf file without admin group
+      copy:
+        src: "{{ core_dump }}"
+        dest: "{{ core_root_dir }}/freva/evaluation_system.conf"
+        mode: "1644"
+      become: "{{'true' if core_ansible_become_user is defined else 'no' }}"
+      when: core_admin_group is not defined
+    - name: Inserting evaluation_sytem.conf file with admin group
+      copy:
+        src: "{{ core_dump }}"
+        dest: "{{ core_root_dir }}/freva/evaluation_system.conf"
+        mode: "1664"
+        group: "{{core_admin_group}}"
+      become: "{{'true' if core_ansible_become_user is defined else 'no' }}"
+      when: core_admin_group is defined
+    - name: Deploying evaluation_system
+      shell:
+        cmd: $PYTHON3 deploy.py {{ core_install_dir }} -s --arch {{core_arch}}
+        chdir: /tmp/evaluation_system
+      environment:
+        CONDA_EXEC_PATH: "{{ conda_exec_path }}"
         PYTHON3: "{{ ansible_python_interpreter }}"
-        EVALUATION_SYSTEM_CONFIG_FILE: "{{ core_root_dir }}/freva/evaluation_system.conf"
-    become: "{{'yes' if core_ansible_become_user is defined else 'no' }}"
-  - name: Copying Private key files
-    copy: src={{core_private_keyfile}} dest={{ core_root_dir }}/freva/{{ project_name }}.key
-    become: "{{'yes' if core_ansible_become_user is defined else 'no' }}"
-  - name: Copying Public key file
-    copy: src={{ core_keyfile }} dest={{ core_root_dir }}/freva/{{ project_name }}.crt
-    become: "{{'yes' if core_ansible_become_user is defined else 'no' }}"
-  - name: Deleting temporary files
-    file:
-      state: absent
-      path: /tmp/evaluation_system
+        EVALUATION_SYSTEM_CONFIG_FILE: "{{ core_root_dir }}/{{eval_path}}"
+      when: (core_install is true)
+      become: "{{'yes' if core_ansible_become_user is defined else 'no' }}"
+    - name: Installing additional python packages
+      shell:
+        cmd: python -m pip install "{{item}}"
+      environment:
+        PATH: "{{core_install_dir}}/bin"
+      with_items:
+        - "git+https://gitlab.dkrz.de/freva/metadata-inspektor.git"
+        - "git+https://gitlab.dkrz.de/k204230/install-kernelspec.git"
+      become: "{{'yes' if core_ansible_become_user is defined else 'no' }}"
+    - name: Inserting drs_config.toml file
+      copy:
+        src: "/tmp/evaluation_system/assets/drs_config.toml"
+        dest: "{{ core_root_dir }}/freva/drs_config.toml"
+        remote_src: true
+      become: "{{'yes' if core_ansible_become_user is defined else 'no' }}"
+    - name: Configuring evaluation_system
+      shell:
+        cmd: $PYTHON3 deploy.py {{ core_install_dir }} -s --no-conda
+        chdir: /tmp/evaluation_system
+      environment:
+        PYTHON3: "{{ ansible_python_interpreter }}"
+        EVALUATION_SYSTEM_CONFIG_FILE: "{{ core_root_dir }}/{{eval_path}}"
+      become: "{{'yes' if core_ansible_become_user is defined else 'no' }}"
+    - name: Copying Private key files
+      copy:
+        src: "{{core_private_keyfile}}"
+        dest: "{{ core_root_dir }}/freva/{{ project_name }}.key"
+        mode: "2644"
+      become: "{{'yes' if core_ansible_become_user is defined else 'no' }}"
+    - name: Copying Public key file
+      copy:
+        src: "{{ core_keyfile }}"
+        dest: "{{ core_root_dir }}/freva/{{ project_name }}.crt"
+        mode: "2644"
+      become: "{{'yes' if core_ansible_become_user is defined else 'no' }}"
+    - name: Deleting temporary files
+      file:
+        state: absent
+        path: /tmp/evaluation_system

@@ -20,6 +20,7 @@ def parse_args(argv=None):
         "--website", type=str, default="www.freva.org", help="Set the website"
     )
     app.add_argument("--root-dir", type=Path, help="Set the project root path"),
+    app.add_argument("--work-dir", type=Path, help="Set the project root path"),
     app.add_argument("--project-name", type=str, help="Set the name of the project")
     app.add_argument("--alias", type=str, help="Set the server alias")
     app.add_argument("--python", type=str, help="Set the python version")
@@ -34,6 +35,7 @@ def edit_config(
     variables=(
         "website",
         "root_dir",
+        "work_dir",
         "project_name",
         "server_name",
         "python_vers",

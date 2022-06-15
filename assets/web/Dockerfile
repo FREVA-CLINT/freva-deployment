@@ -10,6 +10,8 @@ ARG git_branch=''
 ARG build_root=''
 ARG core_branch=''
 ARG core_url=''
+ARG UID=33
+ARG GID=33
 ENV GIT_BRANCH=${git_branch}
 ENV GIT_URL=${git_url}
 ENV PROJECT_ROOT=/srv/http
@@ -30,6 +32,7 @@ RUN pacman -Syu --noconfirm --noprogressbar && \
     python-distributed python-coverage python-bleach \
     python-markdown python-swiftclient python-pytest-html  \
     python-pytest-env python-django-compressor  \
+    python-redis python-hiredis \
     python-django-debug-toolbar python-testpath &&\
     git clone -b $core_branch $core_url /tmp/backend && bash /root/add-aur.sh aur
 RUN aur-install mod_wsgi a2enmod-git npm && \
@@ -50,12 +53,16 @@ RUN aur-install mod_wsgi a2enmod-git npm && \
     django-ipware \
     django-nose \
     django-datatable-view-compat \
-    django-webpack-loader && \
-    a2enmod ssl && a2enmod headers
-RUN echo "IncludeOptional /srv/http/freva_web.conf" >> /etc/httpd/conf/httpd.conf
+    django-webpack-loader
+
+RUN a2enmod ssl && a2enmod headers &&\
+    usermod -u $UID http &&\
+    groupmod -g $GID http &&\
+    echo "IncludeOptional /srv/http/freva_web.conf" >> /etc/httpd/conf/httpd.conf
 ENV EVALUATION_SYSTEM_CONFIG_FILE=${root_dir}/freva/evaluation_system.conf
 COPY ./entrypoint.sh /usr/local/bin
+
 CMD ["bash", "/usr/local/bin/docker_cmd.sh"]
-EXPOSE 80 443 8000
+EXPOSE 80 443 8000 6379
 ENTRYPOINT ["bash","/usr/local/bin/entrypoint.sh"]
 WORKDIR ${PROJECT_ROOT}

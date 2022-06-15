@@ -11,7 +11,9 @@ import sys
 from tempfile import NamedTemporaryFile
 
 import appdirs
+from numpy import sign
 
+from freva_deployment import __version__
 from ..utils import asset_dir, logger
 
 
@@ -51,6 +53,12 @@ def parse_args(args: list[str]) -> argparse.Namespace:
     app.add_argument(
         "-v", "--verbose", action="count", help="Verbosity level", default=0
     )
+    app.add_argument(
+        "-V",
+        "--version",
+        action="version",
+        version="%(prog)s {version}".format(version=__version__),
+    )
     argsp = app.parse_args(args)
     return argsp
 
@@ -81,10 +89,7 @@ def cli(argv: list[str] | None = None) -> None:
     logger.critical(INPT_MSG)
     logger.setLevel(max(logging.INFO - 10 * argp.verbose, logging.DEBUG))
     answer = input("Continue? [y|N]: ")
-    if argp.verbose > 0:
-        verbosity = "-" + argp.verbose * "v"
-    else:
-        verbosity = ""
+    verbosity = sign(argp.verbose) * "-" + argp.verbose * "v"
     if answer.lower() not in ("yes", "y"):
         logger.debug("Exiting routine.")
         return

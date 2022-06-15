@@ -2,26 +2,30 @@ stages:
     - doc
 
 lint:
-  stage: doc
-  tags:
-    - sphinx
-  before_script:
-    - python3 -m pip install .[test]
-  script:
-    - mypy --install-types --non-interactive
-    - black --check src
+    image: python
+    stage: doc
+    needs: []
+    tags:
+        - docker, specific
+    before_script:
+        - python3 -m pip install .[test]
+    script:
+        - mypy --install-types --non-interactive
+        - black --check src
 
 pages:
-  stage: doc
-  tags:
-    - sphinx
-  script:
-    - cd docs && make html
-  before_script:
-    - python3 -m pip install .[docs]
-  after_script:
-    - mv docs/_build/html public
-  artifacts:
-    when: always
-    paths:
-      - public
+    image: python
+    stage: doc
+    needs: []
+    tags:
+        - docker, specific
+    script:
+        - cd docs && make html
+    before_script:
+        - python3 -m pip install .[docs]
+    after_script:
+        - mv docs/_build/html public
+    artifacts:
+        when: always
+        paths:
+            - public

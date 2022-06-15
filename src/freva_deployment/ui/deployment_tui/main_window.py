@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 import time
 import threading
-from typing import Any, cast
+from typing import Any, Dict, List, cast
 
 import appdirs
 import npyscreen
@@ -19,10 +19,18 @@ from .deploy_forms import WebScreen, DBScreen, SolrScreen, CoreScreen, RunForm
 class MainApp(npyscreen.NPSAppManaged):
     config: dict[str, Any] = dict()
 
+    @property
+    def steps(self) -> list[str]:
+        """Get the deploy steps."""
+        steps = []
+        for step, form_obj in self._forms.items():
+            if form_obj.use.value and step not in steps:
+                steps.append(step)
+        return steps
+
     def onStart(self) -> None:
         """When Application starts, set up the Forms that will be used."""
         self.cache_dir.mkdir(exist_ok=True, parents=True)
-        self.steps: list[str] = []
         self.setup: dict[str, Any] = {}
         self._steps_lookup = {
             "core": "MAIN",
@@ -32,13 +40,17 @@ class MainApp(npyscreen.NPSAppManaged):
         }
         self._forms: dict[str, BaseForm] = {}
         self.current_form = "core"
-        self.config = cast(dict[str, Any], self._read_cache("config", {}))
+        self.config = cast(Dict[str, Any], self._read_cache("config", {}))
         for step in self._steps_lookup.keys():
             self.config.setdefault(step, {"hosts": "", "config": {}})
         self._add_froms()
+        self.start_auto_save()
+
+    def start_auto_save(self) -> None:
+        """(Re)-Start the auto save thread."""
         self.thread_stop = threading.Event()
         self._save_thread = threading.Thread(target=self._auto_save)
-        # self._save_thread.start()
+        self._save_thread.start()
 
     def _add_froms(self) -> None:
         """Add forms to edit the deploy steps to the main window."""
@@ -79,8 +91,6 @@ class MainApp(npyscreen.NPSAppManaged):
             cfg = form_obj.check_config(notify=stop_at_missing)
             if cfg is None and stop_at_missing:
                 return self._steps_lookup[step]
-            if form_obj.use.value:
-                self.steps.append(step)
             self.config[step] = cfg
         return None
 
@@ -92,24 +102,25 @@ class MainApp(npyscreen.NPSAppManaged):
                 break
             try:
                 self.check_missing_config(stop_at_missing=False)
-                self.save_config_to_file(exclude=["steps"])
+                self.save_config_to_file()
             except Exception:
                 pass
 
     def save_dialog(self, *args, **kwargs) -> None:
-        """Careate a dialoge that allows for saving the config file."""
+        """Create a dialoge that allows for saving the config file."""
 
         the_selected_file = selectFile(
             select_dir=False, must_exist=False, file_extentions=[".toml"]
         )
         if the_selected_file:
-            the_selected_file = str(Path(the_selected_file).expanduser().absolute())
+            the_selected_file = Path(the_selected_file).with_suffix(".toml")
+            the_selected_file = str(the_selected_file.expanduser().absolute())
             self.check_missing_config(stop_at_missing=False)
             self._setup_form.inventory_file.value = the_selected_file
             self.save_config_to_file(write_toml_file=True)
 
     def _update_config(self, config_file: Path | str) -> None:
-        """Update the maindow after a new configuration has been loaded."""
+        """Update the main window after a new configuration has been loaded."""
 
         try:
             with open(config_file) as f:
@@ -123,7 +134,7 @@ class MainApp(npyscreen.NPSAppManaged):
         self._setup_form.inventory_file.value = config_file
 
     def load_dialog(self, *args, **kwargs) -> None:
-        """Careate a dialoge that allows for loading a config file."""
+        """Create a dialoge that allows for loading a config file."""
 
         the_selected_file = selectFile(
             select_dir=False, must_exist=True, file_extentions=[".toml"]
@@ -132,41 +143,51 @@ class MainApp(npyscreen.NPSAppManaged):
             self._update_config(the_selected_file)
             self.save_config_to_file()
 
-    def save_config_to_file(
-        self, write_toml_file: bool = False, exclude: list[str] | None = None
-    ) -> Path | None:
+    def save_config_to_file(self, **kwargs) -> Path | None:
         """Save the status of the tui to file."""
+        try:
+            return self._save_config_to_file(**kwargs)
+        except Exception as error:
+            npyscreen.notify_confirm(
+                title="Error",
+                message=f"Couldn't save config:\n{error.__str__()}",
+            )
+        return None
+
+    def _save_config_to_file(self, write_toml_file: bool = False) -> Path | None:
         cache_file = self.cache_dir / ".temp_file.toml"
-        save_file = Path(self._setup_form.inventory_file.value)
-        cert_file = Path(self._setup_form.cert_file.value)
+        save_file = self._setup_form.inventory_file.value
+        if save_file:
+            save_file = str(Path(save_file).expanduser().absolute())
+        else:
+            save_file = None
+        cert_file = self._setup_form.cert_file.value
+        if cert_file:
+            cert_file = str(Path(cert_file).expanduser().absolute())
+        else:
+            cert_file = ""
         project_name = self._setup_form.project_name.value
-        wipe = self._setup_form.wipe.value
         server_map = self._setup_form.server_map.value
         ssh_pw = self._setup_form.use_ssh_pw.value
-        if isinstance(wipe, list):
-            wipe = bool(wipe[0])
         if isinstance(ssh_pw, list):
             ssh_pw = bool(ssh_pw[0])
-        exclude = exclude or []
         config = {
-            "save_file": str(save_file.expanduser().absolute()),
-            "steps": list(set(self.steps)),
-            "cert_file": str(cert_file.expanduser().absolute()),
+            "save_file": save_file,
+            "steps": self.steps,
             "project_name": project_name,
-            "wipe": wipe,
             "ssh_pw": ssh_pw,
             "server_map": server_map,
+            "cert_file": cert_file,
             "config": self.config,
         }
         with open(self.cache_dir / "freva_deployment.json", "w") as f:
             json.dump({k: v for (k, v) in config.items()}, f, indent=3)
         if write_toml_file is False:
             return None
-        save_file = save_file or cache_file
-        save_file = Path(save_file).expanduser().absolute()
+        save_file = Path(save_file or cache_file)
         try:
             with open(asset_dir / "config" / "inventory.toml") as f:
-                config_tmpl = cast(dict[str, Any], tomlkit.load(f))
+                config_tmpl = cast(Dict[str, Any], tomlkit.load(f))
         except Exception:
             config_tmpl = self.config
         for step, settings in self.config.items():
@@ -174,6 +195,8 @@ class MainApp(npyscreen.NPSAppManaged):
             for key, config in settings["config"].items():
                 config_tmpl[step]["config"][key] = config
         save_file.parent.mkdir(exist_ok=True, parents=True)
+        config_tmpl["cert_file"] = cert_file
+        config_tmpl["project_name"] = project_name
         with open(save_file, "w") as f:
             toml_string = tomlkit.dumps(config_tmpl)
             f.write(toml_string)
@@ -196,7 +219,7 @@ class MainApp(npyscreen.NPSAppManaged):
     @property
     def _steps(self) -> list[str]:
         """Read the deployment-steps from the cache."""
-        return cast(list[str], self._read_cache("steps", ["core", "web", "db", "solr"]))
+        return cast(List[str], self._read_cache("steps", ["core", "web", "db", "solr"]))
 
     @property
     def cert_file(self) -> str:

@@ -2,7 +2,7 @@ from __future__ import annotations
 from getpass import getuser
 import npyscreen
 from pathlib import Path
-from typing import cast
+from typing import cast, List, Dict
 
 from .base import BaseForm, logger
 from freva_deployment import AVAILABLE_PYTHON_VERSIONS, AVAILABLE_CONDA_ARCHS
@@ -46,7 +46,7 @@ class CoreScreen(BaseForm):
             hosts=(
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
-                    name="Server Name(s) where core is deployed:",
+                    name=f"{self.num}Server Name(s) where core is deployed:",
                     value=self.get_host("core"),
                 ),
                 True,
@@ -54,7 +54,7 @@ class CoreScreen(BaseForm):
             branch=(
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
-                    name="Deploy branch:",
+                    name=f"{self.num}Deploy branch:",
                     value=cfg.get("branch", "freva-dev"),
                 ),
                 True,
@@ -62,21 +62,18 @@ class CoreScreen(BaseForm):
             install_dir=(
                 self.add_widget_intelligent(
                     npyscreen.TitleFilename,
-                    name="Anaconda installation dir. for core:",
+                    name=f"{self.num}Anaconda installation dir. for core:",
                     value=cfg.get("install_dir", ""),
                 ),
                 True,
             ),
             install=(
                 self.add_widget_intelligent(
-                    npyscreen.CheckBox,
+                    npyscreen.RoundCheckBox,
                     max_height=2,
                     value=cfg.get("install", True),
                     editable=True,
-                    name=(
-                        "Install a new instance of the core, or just add a new "
-                        "configuration."
-                    ),
+                    name=(f"{self.num}Install a new Freva anaconda environment?"),
                     scroll_exit=True,
                 ),
                 True,
@@ -85,8 +82,8 @@ class CoreScreen(BaseForm):
                 self.add_widget_intelligent(
                     npyscreen.TitleFilename,
                     name=(
-                        "Project configuration file directory "
-                        "defaults to `intallation directory`:"
+                        f"{self.num}Directory where project configuration is stored "
+                        "(defaults to `anaconda installation dir.` in #3):"
                     ),
                     value=cfg.get("root_dir", ""),
                 ),
@@ -95,7 +92,7 @@ class CoreScreen(BaseForm):
             base_dir_location=(
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
-                    name="Plugin data directory (user work dir.):",
+                    name=f"{self.num}User data directory:",
                     value=cfg.get("base_dir_location", ""),
                 ),
                 True,
@@ -103,7 +100,7 @@ class CoreScreen(BaseForm):
             admins=(
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
-                    name="Set the admin user(s) - comma separated",
+                    name=f"{self.num}Set the admin user(s) - comma separated:",
                     value=cfg.get("admins", getuser()),
                 ),
                 False,
@@ -111,7 +108,10 @@ class CoreScreen(BaseForm):
             admin_group=(
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
-                    name=("Set the freva admin group, " "leave blank if not needed."),
+                    name=(
+                        f"{self.num}Set the Freva admin group - "
+                        "leave blank if not needed:"
+                    ),
                     value=cfg.get("admin_group", ""),
                 ),
                 False,
@@ -120,8 +120,8 @@ class CoreScreen(BaseForm):
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
                     name=(
-                        "Set a (additional) username that has privileges "
-                        "to install the core"
+                        f"{self.num}Optional username to change to on the"
+                        "remote machine:"
                     ),
                     value=cfg.get("ansible_become_user", ""),
                 ),
@@ -131,9 +131,9 @@ class CoreScreen(BaseForm):
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
                     name=(
-                        "Path any existing conda installation. "
-                        "Leave blank to "
-                        "install a temporary conda distribution"
+                        f"{self.num}Path to any existing conda installation - "
+                        "leave blank to "
+                        "install a temporary conda distribution:"
                     ),
                     value=cfg.get("conda_exec_path", ""),
                 ),
@@ -143,8 +143,8 @@ class CoreScreen(BaseForm):
                 self.add_widget_intelligent(
                     npyscreen.TitleCombo,
                     name=(
-                        "Set the target architecutre of the system where "
-                        "the backend will be installed"
+                        f"{self.num}Set the target architecture of the system where "
+                        "the backend will be installed:"
                     ),
                     value=arch_idx,
                     values=AVAILABLE_CONDA_ARCHS,
@@ -154,15 +154,15 @@ class CoreScreen(BaseForm):
             ansible_python_interpreter=(
                 self.add_widget_intelligent(
                     npyscreen.TitleFilename,
-                    name="Pythonpath on remote machine (leave blank for current path):",
-                    value=cfg.get("ansible_python_interpreter", ""),
+                    name=f"{self.num}Python path on remote machine:",
+                    value=cfg.get("ansible_python_interpreter", "/usr/bin/python3"),
                 ),
                 False,
             ),
             ansible_user=(
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
-                    name="Remote login user (leave blank for current user):",
+                    name=f"{self.num}Remote login user (leave blank for current user):",
                     value=cfg.get("ansible_user", ""),
                 ),
                 False,
@@ -170,8 +170,8 @@ class CoreScreen(BaseForm):
             git_path=(
                 self.add_widget_intelligent(
                     npyscreen.TitleFilename,
-                    name="Path to the git executable (leave blank for default):",
-                    value=cfg.get("git_path", "git"),
+                    name=f"{self.num}Path to the git executable (leave blank for default):",
+                    value=cfg.get("git_path", ""),
                 ),
                 False,
             ),
@@ -185,7 +185,7 @@ class WebScreen(BaseForm):
 
     def _add_widgets(self) -> None:
         """Add widgets to the screen."""
-        self.list_keys = "contacts", "address", "auth_ldap_server_uri", "scheduler_host"
+        self.list_keys = "contacts", "address", "scheduler_host"
         cfg = self.get_config(self.step)
         for key in self.list_keys:
             if key in cfg and isinstance(cfg[key], str):
@@ -196,23 +196,34 @@ class WebScreen(BaseForm):
             hosts=(
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
-                    name="Server Name(s) the web service is deployed on:",
+                    name=f"{self.num}Server Name(s) the web service is deployed on:",
                     value=self.get_host("web"),
+                ),
+                True,
+            ),
+            wipe=(
+                self.add_widget_intelligent(
+                    npyscreen.RoundCheckBox,
+                    max_height=2,
+                    value=cfg.get("wipe", False),
+                    editable=True,
+                    name=(f"{self.num}Delete existing data?"),
+                    scroll_exit=True,
                 ),
                 True,
             ),
             branch=(
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
-                    name="Deploy branch:",
-                    value=cfg.get("branch", "master"),
+                    name=f"{self.num}Deploy branch:",
+                    value=cfg.get("branch", "main"),
                 ),
                 True,
             ),
             project_website=(
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
-                    name="Url of the freva home page:",
+                    name=f"{self.num}Url of the Freva home page:",
                     value=cfg.get("project_website", ""),
                 ),
                 True,
@@ -220,7 +231,7 @@ class WebScreen(BaseForm):
             institution_logo=(
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
-                    name="Path to the logo, leave blank for default logo",
+                    name=f"{self.num}Path to the logo - leave blank for default logo:",
                     value=cfg.get("institution_logo", ""),
                 ),
                 False,
@@ -228,7 +239,7 @@ class WebScreen(BaseForm):
             main_color=(
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
-                    name="Html color of the main color theme",
+                    name=f"{self.num}Html color of the main color theme:",
                     value=cfg.get("main_color", "Tomato"),
                 ),
                 True,
@@ -236,7 +247,7 @@ class WebScreen(BaseForm):
             border_color=(
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
-                    name="Html color for the borders",
+                    name=f"{self.num}Html color for the borders:",
                     value=cfg.get("border_color", "#6c2e1f"),
                 ),
                 True,
@@ -244,7 +255,7 @@ class WebScreen(BaseForm):
             hover_color=(
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
-                    name="Html color for hover modes",
+                    name=f"{self.num}Html color for hover modes:",
                     value=cfg.get("hover_color", "#d0513a"),
                 ),
                 True,
@@ -252,7 +263,7 @@ class WebScreen(BaseForm):
             about_us_text=(
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
-                    name="About us text: Short blurb about freva.",
+                    name=f"{self.num}About us text - short blurb about Freva:",
                     value=cfg.get("about_us_test", "Testing"),
                 ),
                 True,
@@ -260,20 +271,18 @@ class WebScreen(BaseForm):
             contacts=(
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
-                    name="Email address for admin(s) - comma seperated",
-                    value=",".join(
-                        cast(list[str], cfg.get("contatcs", ["admin@freva.dkrz.de"]))
-                    ),
+                    name=f"{self.num}Contact email address:",
+                    value=cfg.get("contatcs", "admin@freva.dkrz.de"),
                 ),
                 True,
             ),
             address=(
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
-                    name="Institution address, comma separated",
+                    name=f"{self.num}Institution address - comma separated:",
                     value=",".join(
                         cast(
-                            list[str],
+                            List[str],
                             cfg.get(
                                 "address",
                                 [
@@ -292,7 +301,7 @@ class WebScreen(BaseForm):
             homepage_text=(
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
-                    name="More in detail project describtion.",
+                    name=f"{self.num}More in detail project description:",
                     value=cfg.get(
                         "homepage_text",
                         (
@@ -314,17 +323,17 @@ class WebScreen(BaseForm):
             home_page_heading=(
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
-                    name="A brief describtion of the project",
+                    name=f"{self.num}A brief describtion of the project:",
                     value=cfg.get("home_page_heading", "Lorem ipsum dolor sit amet"),
                 ),
                 True,
             ),
-            schduler_host=(
+            scheduler_host=(
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
-                    name="Slurm scheduler hostname",
+                    name=f"{self.num}Scheduler hostname(s) - comma separated:",
                     value=",".join(
-                        cast(list[str], cfg.get("scheduler_host", ["mistral.dkrz.de"]))
+                        cast(List[str], cfg.get("scheduler_host", ["levante.dkrz.de"]))
                     ),
                 ),
                 True,
@@ -333,36 +342,42 @@ class WebScreen(BaseForm):
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
                     name=(
-                        "Ldap server name(s) used for authentication - comma "
-                        "separated"
+                        f"{self.num}Ldap server name(s) used for authentication"
+                        " - comma separated:"
                     ),
-                    value=",".join(
-                        cast(
-                            list[str],
-                            cfg.get(
-                                "auth_ldap_server_uri",
-                                [
-                                    "ldap://mldap0.hpc.dkrz.de",
-                                    "ldap://mldap1.hpc.dkrz.de",
-                                ],
-                            ),
-                        ),
+                    value=cfg.get(
+                        "auth_ldap_server_uri",
+                        "ldap://mldap0.hpc.dkrz.de, ldap://mldap1.hpc.dkrz.de",
                     ),
                 ),
                 True,
             ),
-            auth_allowed_group=(
+            auth_ldap_start_tls=(
+                self.add_widget_intelligent(
+                    npyscreen.RoundCheckBox,
+                    max_height=2,
+                    value=cfg.get("auth_ldap_start_tls", False),
+                    editable=True,
+                    name=(
+                        f"{self.num}Enable TLS encryption when communicating with the"
+                        "ldap server. Needs to be configured:"
+                    ),
+                    scroll_exit=True,
+                ),
+                True,
+            ),
+            allowed_group=(
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
-                    name="Unix groups allowed to log on to the web:",
-                    value=cfg.get("auth_allowed_group", "my_freva"),
+                    name=f"{self.num}Unix group(s) allowed to log on to the web:",
+                    value=cfg.get("allowed_group", "my_freva"),
                 ),
                 True,
             ),
             ldap_user_base=(
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
-                    name="Ldap search keys for user base",
+                    name=f"{self.num}Ldap search keys for user base:",
                     value=cfg.get(
                         "ldap_user_base", "cn=users,cn=accounts,dc=dkrz,dc=de"
                     ),
@@ -372,7 +387,7 @@ class WebScreen(BaseForm):
             ldap_group_base=(
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
-                    name="Ldap search keys for group base",
+                    name=f"{self.num}Ldap search keys for group base:",
                     value=cfg.get(
                         "ldap_group_base",
                         "cn=groups,cn=accounts,dc=dkrz,dc=de",
@@ -383,7 +398,7 @@ class WebScreen(BaseForm):
             ldap_user_dn=(
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
-                    name="Distinguished name (dn) for the ldap user",
+                    name=f"{self.num}Distinguished name (dn) for the ldap user:",
                     value=cfg.get(
                         "ldap_user_dn",
                         "uid=dkrzagent,cn=sysaccounts,cn=etc,dc=dkrz,dc=de",
@@ -394,7 +409,7 @@ class WebScreen(BaseForm):
             ldap_user_pw=(
                 self.add_widget_intelligent(
                     npyscreen.TitlePassword,
-                    name="Password for ldap user",
+                    name=f"{self.num}Password for ldap user:",
                     value=cfg.get("ldap_user_pw", "dkrzprox"),
                 ),
                 True,
@@ -402,15 +417,15 @@ class WebScreen(BaseForm):
             ansible_python_interpreter=(
                 self.add_widget_intelligent(
                     npyscreen.TitleFilename,
-                    name="Pythonpath on remote machine (leave blank for current path):",
-                    value=cfg.get("ansible_python_interpreter", ""),
+                    name=f"{self.num}Pythonpath on remote machine:",
+                    value=cfg.get("ansible_python_interpreter", "/usr/bin/python3"),
                 ),
                 False,
             ),
             ansible_user=(
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
-                    name="Remote login user (leave blank for current user):",
+                    name=f"{self.num}Remote login user (leave blank for current user):",
                     value=cfg.get("ansible_user", ""),
                 ),
                 False,
@@ -429,21 +444,32 @@ class DBScreen(BaseForm):
         cfg = self.get_config(self.step)
         db_ports: list[int] = list(range(3300, 3320))
         port_idx = get_index(
-            cast(list[str], list(map(str, db_ports))), str(cfg.get("port", 3306)), 6
+            cast(List[str], list(map(str, db_ports))), str(cfg.get("port", 3306)), 6
         )
         self.input_fields: dict[str, tuple[npyscreen.TitleText, bool]] = dict(
             hosts=(
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
-                    name="Server Name(s) where the database service is deployed:",
+                    name=f"{self.num}Server Name(s) where the database service is deployed:",
                     value=self.get_host("db"),
+                ),
+                True,
+            ),
+            wipe=(
+                self.add_widget_intelligent(
+                    npyscreen.RoundCheckBox,
+                    max_height=2,
+                    value=cfg.get("wipe", False),
+                    editable=True,
+                    name=(f"{self.num}Delete existing data?"),
+                    scroll_exit=True,
                 ),
                 True,
             ),
             user=(
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
-                    name="Database user:",
+                    name=f"{self.num}Database user:",
                     value=cfg.get("user", "evaluation_system"),
                 ),
                 True,
@@ -451,7 +477,7 @@ class DBScreen(BaseForm):
             db=(
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
-                    name="Database name:",
+                    name=f"{self.num}Database name:",
                     value=cfg.get("db", "evaluation_system"),
                 ),
                 True,
@@ -459,7 +485,7 @@ class DBScreen(BaseForm):
             port=(
                 self.add_widget_intelligent(
                     npyscreen.TitleCombo,
-                    name="Database Port",
+                    name=f"{self.num}Database Port:",
                     value=port_idx,
                     values=db_ports,
                 ),
@@ -468,15 +494,15 @@ class DBScreen(BaseForm):
             ansible_python_interpreter=(
                 self.add_widget_intelligent(
                     npyscreen.TitleFilename,
-                    name="Pythonpath on remote machine (leave blank for current path):",
-                    value=cfg.get("ansible_python_interpreter", ""),
+                    name=f"{self.num}Pythonpath on remote machine:",
+                    value=cfg.get("ansible_python_interpreter", "/usr/bin/python3"),
                 ),
                 False,
             ),
             ansible_user=(
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
-                    name="Remote login user (leave blank for current user):",
+                    name=f"{self.num}Remote login user (leave blank for current user):",
                     value=cfg.get("ansible_user", ""),
                 ),
                 False,
@@ -501,15 +527,26 @@ class SolrScreen(BaseForm):
             hosts=(
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
-                    name="Server Name(s) where the solr service is deployed:",
+                    name=f"{self.num}Server Name(s) where the solr service is deployed:",
                     value=self.get_host("solr"),
+                ),
+                True,
+            ),
+            wipe=(
+                self.add_widget_intelligent(
+                    npyscreen.RoundCheckBox,
+                    max_height=2,
+                    value=cfg.get("wipe", False),
+                    editable=True,
+                    name=(f"{self.num}Delete existing data?"),
+                    scroll_exit=True,
                 ),
                 True,
             ),
             mem=(
                 self.add_widget_intelligent(
                     npyscreen.TitleCombo,
-                    name="Virtual memory (in GB) for the solr server:",
+                    name=f"{self.num}Virtual memory (in GB) for the solr server:",
                     value=3,
                     values=[f"{i}g" for i in range(1, 10)],
                 ),
@@ -518,32 +555,24 @@ class SolrScreen(BaseForm):
             port=(
                 self.add_widget_intelligent(
                     npyscreen.TitleCombo,
-                    name="Solr port:",
+                    name=f"{self.num}Solr port:",
                     value=port_idx,
                     values=solr_ports,
-                ),
-                True,
-            ),
-            core=(
-                self.add_widget_intelligent(
-                    npyscreen.TitleText,
-                    name="Name of the standard solr core:",
-                    value=cfg.get("core", "files"),
                 ),
                 True,
             ),
             ansible_python_interpreter=(
                 self.add_widget_intelligent(
                     npyscreen.TitleFilename,
-                    name="Pythonpath on remote machine (leave blank for current path):",
-                    value=cfg.get("ansible_python_interpreter", ""),
+                    name=f"{self.num}Pythonpath on remote machine:",
+                    value=cfg.get("ansible_python_interpreter", "/usr/bin/python3"),
                 ),
                 False,
             ),
             ansible_user=(
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
-                    name="Remote login user (leave blank for current user):",
+                    name=f"{self.num}Remote login user (leave blank for current user):",
                     value=cfg.get("ansible_user", ""),
                 ),
                 False,
@@ -554,8 +583,18 @@ class SolrScreen(BaseForm):
 class RunForm(npyscreen.FormMultiPageAction):
     """Definition of the form that applies the actual deployment."""
 
+    _num: int = 0
+
+    @property
+    def num(self) -> str:
+        """Calculate the number for enumerations of any input field."""
+        self._num += 1
+        return f"{self._num}. "
+
     def on_ok(self) -> None:
         """Define what happens once the `ok` for applying the deployment is hit."""
+
+        self.parentApp.thread_stop.set()
         if not self.project_name.value:
             npyscreen.notify_confirm("You have to set a project name", title="ERROR")
             return
@@ -574,18 +613,20 @@ class RunForm(npyscreen.FormMultiPageAction):
         cert_file: str = self.cert_file.value or ""
         if cert_file:
             if not Path(cert_file).exists() or not Path(cert_file).is_file():
-                msg = f"Public certificate file `{cert_file}` must exist or empty."
+                is_file = Path(cert_file).exists()
+                msg = f"Public certificate file `{cert_file}` {is_file} must exist or empty."
                 npyscreen.notify_confirm(msg, title="ERROR")
                 return
-        self.parentApp.thread_stop.set()
+        if cert_file:
+            cert_file = str(Path(cert_file).expanduser().absolute())
+        self.cert_file.value = cert_file
         save_file = self.parentApp.save_config_to_file(write_toml_file=True)
+        if isinstance(save_file, Path):
+            save_file = str(save_file)
         self.parentApp.setup = {
-            "project_name": self.project_name.value,
             "server_map": self.server_map.value,
             "steps": list(set(self.parentApp.steps)),
-            "config_file": str(save_file) or None,
-            "cert_file": str(cert_file) or None,
-            "wipe": bool(self.wipe.value),
+            "config_file": save_file or None,
             "ask_pass": bool(self.use_ssh_pw.value),
         }
         self.parentApp.exit_application(msg="Do you want to continue?")
@@ -610,41 +651,32 @@ class RunForm(npyscreen.FormMultiPageAction):
     def _add_widgets(self) -> None:
         """Add the widgets to the form."""
 
-        wipe = self.parentApp._read_cache("wipe", False)
         ssh_pw = self.parentApp._read_cache("ssh_pw", True)
         self.project_name = self.add_widget_intelligent(
             npyscreen.TitleText,
-            name="Set the name of the project",
+            name=f"{self.num}Set the name of the project",
             value=self.parentApp._read_cache("project_name", ""),
         )
         self.inventory_file = self.add_widget_intelligent(
             npyscreen.TitleFilename,
-            name="Save config as",
-            value=str(self.parentApp.save_file),
+            name=f"{self.num}Save config as",
+            value=str(self.parentApp.save_file or ""),
         )
         self.server_map = self.add_widget_intelligent(
             npyscreen.TitleText,
-            name=("Hostname of the service mapping the freva server arch."),
+            name=(f"{self.num}Hostname of the service mapping the freva server arch."),
             value=self.parentApp._read_cache("server_map", ""),
         )
         self.cert_file = self.add_widget_intelligent(
             npyscreen.TitleFilename,
-            name="Select a public certificate file, defaults to `<project_name>.crt`",
-            value=str(self.parentApp.cert_file),
-        )
-        self.wipe = self.add_widget_intelligent(
-            npyscreen.CheckBox,
-            max_height=2,
-            value=wipe,
-            editable=True,
-            name="Delete all existing data on docker volumes (wipe)",
-            scroll_exit=True,
+            name=f"{self.num}Select a public certificate file, defaults to `<project_name>.crt`",
+            value=str(self.parentApp.cert_file or ""),
         )
         self.use_ssh_pw = self.add_widget_intelligent(
-            npyscreen.CheckBox,
+            npyscreen.RoundCheckBox,
             max_height=2,
             value=ssh_pw,
             editable=True,
-            name="Use password for ssh connection",
+            name=f"{self.num}Use password for ssh connection",
             scroll_exit=True,
         )

@@ -4,89 +4,92 @@
   vars:
     - ansible_python_interpreter: "{{ db_ansible_python_interpreter }}"
     - continer_name: "{{ vault_name }}"
-    - docker_cmd: "--net {{ project_name }} --cap-add=IPC_LOCK -p 5002:5002 --name={{ vault_name }} {{ vault_name }}:latest"
+    - docker_cmd: >
+        --net {{ project_name }} --cap-add=IPC_LOCK
+        -p 5002:5002 --name={{ vault_name }} {{ vault_name }}:latest
   tasks:
+    - name: Copying docker/podman wrapper script
+      copy:
+        src: "{{ asset_dir }}/scripts/docker-or-podman"
+        dest: /usr/local/bin/docker-or-podman
+        mode: "0775"
+      become: true
     - name: Registering systemctl path
       stat:
         path: /usr/bin/systemctl
       register: systemctl
-    - name: Creating /etc/containers/nodocker
-      file:
-        state: touch
-        path: /etc/containers/nodocker
-      ignore_errors: yes
-      become: yes
-    - name: Stopping services
-      shell: docker stop {{vault_name}}; docker rm {{vault_name}}; systemctl stop {{ project_name }}; systemctl stop {{project_name}}-vault; echo 0
-      ignore_errors: yes
-      become: yes
+    - name: Stopping services and deleting existing containers
+      shell: >
+        systemctl stop {{vault_name}};
+        /usr/local/bin/docker-or-podman rm {{vault_name}};
+        /usr/local/bin/docker-or-podman rmi -f {{vault_name}};
+        exit 0
+      ignore_errors: true
+      become: true
     - name: Creating docker network
-      shell: docker network create "{{ project_name }}"; echo 0
-      become: yes
-    - name: Deleting any existing container
-      shell: docker stop "{{ vault_name }}"; docker rm "{{ vault_name }}"; docker rmi -f "{{ vault_name }}" ;echo 0
-      become: yes
-    - name: Copy auxillary files to target machine
+      shell: >
+        /usr/local/bin/docker-or-podman network create "{{ project_name }}";
+        exit 0
+      ignore_errors: true
+      become: true
+    - name: Copying auxillary files to target machine
       copy: src="{{ asset_dir }}/vault" dest=/tmp
-    - name: Copy public key file to target machine
+    - name: Copying public key file to target machine
       copy:
         src: "{{ vault_keyfile }}"
         dest: "/tmp/vault/{{ project_name }}.crt"
-    - name: Copy private key file to target machine
+    - name: Copying private key file to target machine
       copy:
         src: "{{ vault_private_keyfile }}"
         dest: "/tmp/vault/{{ project_name }}.key"
-    - name: Copy systemd files
+    - name: Copying systemd files
       copy:
-        src: "{{ asset_dir }}/scripts/{{ item }}"
-        dest: /tmp/{{ item }}
-        mode: '0755'
-      with_items:
-        - "systemd.service"
-        - "create_systemd.sh"
-    - name: Copy docker kill script
-      copy:
-        src: "{{ asset_dir }}/scripts/kill_container"
-        dest: /usr/local/bin/kill_container
-        mode: '0755'
-      become: yes
+        src: "{{ asset_dir }}/scripts/create_systemd.py"
+        dest: /tmp/create_systemd.py
+        mode: "0755"
     - name: Cleaning existing directory structure
-      shell:
-        cmd: rm -rf /mnt/{{ project_name }}/vault_service
-        warn: false
-      become: yes
+      file:
+        path: /mnt/{{ project_name }}/vault_service
+        state: absent
+      become: true
       when: wipe == true
     - name: Creating directory structure
-      shell:
-        cmd: mkdir -p /mnt/{{ project_name }}/vault_service
-        warn: false
-      become: yes
-    - name: Build vault images
+      file:
+        path: /mnt/{{ project_name }}/vault_service
+        state: directory
+      become: true
+    - name: Building vault images
       shell:
         chdir: /tmp/vault
-        cmd: docker build --build-arg=project={{ project_name }} --build-arg=rootpw={{ root_passwd }} -t {{ vault_name }}:latest .
-      become: yes
-    - name: Create vault container
-      become: yes
-      shell: docker run -d {{docker_cmd}}
+        cmd: >
+          /usr/local/bin/docker-or-podman build
+          --build-arg=project={{ project_name }}
+          --build-arg=rootpw={{ root_passwd }} -t {{ vault_name }}:latest .
+      become: true
+    - name: Starting vault container
+      shell: /usr/local/bin/docker-or-podman run -d {{docker_cmd}}
+      become: true
     - name: Creating system service
-      become: yes
-      shell: "cat /tmp/systemd.service|sed 's#%STARTCMD#{{docker_cmd}}#g'|sed 's#%CONTAINER#{{ continer_name }}#g'|sed 's#%PROJECT#{{ project_name }}#g' > /tmp/tmp_vault && mv /tmp/tmp_vault /etc/systemd/system/{{ project_name }}-vault.service && /tmp/create_systemd.sh {{project_name}}-vault"
+      become: true
+      shell: >
+          /tmp/create_systemd.py {{vault_name}}
       when: systemctl.stat.exists == true
-      ignore_errors: yes
+      ignore_errors: true
     - pause: seconds=3
-    - name: Insert secrets
-      command: docker exec -it {{ vault_name }} vault kv put kv/read-eval db.container={{ vault_name }} db.passwd='{{ vault_passwd }}' db.host='{{ vault_host }}' db.user='{{ db_user }}' db.db='{{ db_db }}' db.port='{{ db_port }}'
-      become: yes
-    - name: Delete temporary files
-      shell:
-        cmd: rm -rf /tmp/vault
-        warn: false
-      become: yes
-    - name: Deleting other files
+    - name: Inserting secrets
+      shell: >
+        /usr/local/bin/docker-or-podman exec -it {{ vault_name }}
+        vault kv put kv/read-eval db.container={{ vault_name }}
+        db.passwd='{{ vault_passwd }}'
+        db.host={{ vault_host }}
+        db.user={{ db_user }}
+        db.db={{ db_db }}
+        db.port={{ db_port }}
+      become: true
+    - name: Deleting auxillary files
       file:
         state: absent
         path: "{{ item }}"
       with_items:
-        - /tmp/create_systemd.sh
-        - /tmp/systemd.service
+        - "/tmp/vault"
+        - "/tmp/create_systemd.py"

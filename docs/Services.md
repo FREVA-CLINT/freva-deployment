@@ -5,22 +5,27 @@ stopped or started via the `freva-service` command.
 
 ```bash
 freva-service --help
-usage: freva-service [-h] [--domain DOMAIN] [--services {web,db,solr} [{web,db,solr} ...]]
-                     [--user USER]
-                     {start,stop,restart} project_name
+usage: freva-service [-h] [--server-map SERVER_MAP] [--services {web,db,solr} [{web,db,solr} ...]] [--user USER] [-v] [-V]
+                     {start,stop,restart,status} [project_name]
 
 Interact with installed freva services.
 
 positional arguments:
-  {start,stop,restart}  The start|stop|restart command for the service
-  project_name          Name of the project
+  {start,stop,restart,status}
+                        The start|stop|restart|status command for the service
+  project_name          Name of the project (default: all)
 
 options:
   -h, --help            show this help message and exit
-  --domain DOMAIN       Domain name of your organisation to create a uniq identifier. (default: dkrz)
+  --server-map SERVER_MAP
+                        Hostname of the service mapping the freva server archtiecture, Note: you can create a server map by running
+                        the deploy-freva-map command (default: None)
   --services {web,db,solr} [{web,db,solr} ...]
-                        The services to be started|stopped|restarted (default: ['solr', 'db', 'web'])
+                        The services to be started|stopped|restarted|checked (default: ['solr', 'db', 'web'])
   --user USER, -u USER  connect as this user (default: None)
+  -v, --verbose         Verbosity level (default: 0)
+  -V, --version         show program's version number and exit
+
 ```
 
 The command takes two positional arguments. The first one instructs the

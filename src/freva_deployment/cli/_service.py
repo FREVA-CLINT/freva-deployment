@@ -8,10 +8,12 @@ from subprocess import run, PIPE
 import sys
 from tempfile import TemporaryDirectory
 
+from numpy import sign
 import requests
 from rich.console import Console
 import yaml
 
+from freva_deployment import __version__
 from ..utils import (
     download_server_map,
     logger,
@@ -66,6 +68,12 @@ def parse_args(args: list[str]) -> argparse.Namespace:
     app.add_argument(
         "-v", "--verbose", action="count", help="Verbosity level", default=0
     )
+    app.add_argument(
+        "-V",
+        "--version",
+        action="version",
+        version="%(prog)s {version}".format(version=__version__),
+    )
     argsp = app.parse_args(args)
     if "db" in argsp.services:
         argsp.services.append("vault")
@@ -91,9 +99,9 @@ YAML_STATUS_TASK = """---
   - name: {command} {service} service on {hosts}
     shell: curl -d "{{{{ item }}}}" {map_server}/{project_name}/{service} -X PUT
     with_items:
-        - mem=$(docker stats --no-stream {project_name}-{service} --format '{{% raw %}}{{{{.MemPerc}}}}{{% endraw %}}'|tail)
-        - cpu=$(docker stats --no-stream {project_name}-{service} --format '{{% raw %}}{{{{.CPUPerc}}}}{{% endraw %}}'|tail)
-        - status=$(docker ps  -a --filter name={project_name}-{service} --format '{{% raw %}}{{{{.Status}}}}{{% endraw %}}')
+        - mem=$(/usr/local/bin/docker-or-podman stats --no-stream {project_name}-{service} --format '{{% raw %}}{{{{.MemPerc}}}}{{% endraw %}}'|tail)
+        - cpu=$(/usr/local/bin/docker-or-podman stats --no-stream {project_name}-{service} --format '{{% raw %}}{{{{.CPUPerc}}}}{{% endraw %}}'|tail)
+        - status=$(/usr/local/bin/docker-or-podman ps  -a --filter name={project_name}-{service} --format '{{% raw %}}{{{{.Status}}}}{{% endraw %}}')
     become: yes
 
 """
@@ -153,7 +161,7 @@ def cli(argv: list[str] | None = None) -> None:
     argv = argv or sys.argv[1:]
     argp = parse_args(argv)
     map_server = guess_map_server(argp.server_map)
-    verbosity = set_log_level(argp.verbose)
+    set_log_level(argp.verbose)
     user = argp.user or getuser()
     cfg = download_server_map(map_server)
     if argp.project_name.lower() == "all":
@@ -187,6 +195,7 @@ def cli(argv: list[str] | None = None) -> None:
         with open(task_file, "w") as f_obj:
             yaml.dump(playbooks, f_obj)
         logger.debug(yaml.dump(playbooks))
+        verbosity = sign(argp.verbose) * "-" + argp.verbose * "v"
         cmd = shlex.split(
             f"ansible-playbook {verbosity} -u {user} --ask-pass --ask-become -i "
             f"{inventory_file} {task_file}"

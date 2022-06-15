@@ -1,7 +1,5 @@
 """Collection of utils for deployment."""
 from __future__ import annotations
-import base64
-from getpass import getpass
 import hashlib
 import logging
 import json
@@ -9,22 +7,25 @@ from pathlib import Path
 import re
 import shlex
 from subprocess import run, PIPE
-from tempfile import NamedTemporaryFile
 from typing import cast, NamedTuple
 
 import appdirs
 import requests
+from rich.console import Console
+from rich.prompt import Prompt
 import toml
 
 logging.basicConfig(format="%(name)s - %(levelname)s - %(message)s", level=logging.INFO)
 logger = logging.getLogger("freva-deployment")
 
+RichConsole = Console(style="bold", markup=True, force_terminal=True)
 config_dir = Path(appdirs.user_config_dir()) / "freva" / "deployment"
 asset_dir = Path(appdirs.user_data_dir()) / "freva" / "deployment"
 password_prompt = (
-    "Set a master password, this password will be used to create\n"
-    "a self signed certificate for accessing the freva credentials "
-    "as mysql root password.\n: "
+    "Choose a [b]master password[/], this password will be used to:\n"
+    "- create a self signed [magenta]certificate[/] for accessing the freva credentials\n"
+    "- create the [magenta]mysql root[/] password\n"
+    "- set the [magenta]django admin[/] web password\n[b]enter master password[/]"
 )
 
 ServiceInfo = NamedTuple(
@@ -77,12 +78,9 @@ def guess_map_server(
     return ""
 
 
-def set_log_level(verbosity: int) -> str:
+def set_log_level(verbosity: int) -> None:
     """Set the log level of the logger."""
     logger.setLevel(max(logging.INFO - 10 * verbosity, logging.DEBUG))
-    if verbosity > 0:
-        return "-" + verbosity * "v"
-    return ""
 
 
 def get_setup_for_service(service: str, setups: list[ServiceInfo]) -> tuple[str, str]:
@@ -166,42 +164,45 @@ def upload_server_map(
 def get_passwd(min_characters: int = 8) -> str:
     """Create a secure pasword.
 
-    Parameters:
-    ===========
+    Parameters
+    ==========
     min_characters:
         The minimum lenght of the password (default 8)
 
-    Returns:
-    ========
+    Returns
+    =======
     str: The password
     """
     logger.info("Creating Password")
     msg = ""
+    RichConsole
     while True:
         try:
             return _create_passwd(min_characters, msg)
         except ValueError as e:
-            msg = e.__str__() + " Re-enter password\n:"
+            RichConsole.print(f"[red]{e.__str__()}[/]")
+            msg = "[b]re-enter[/] master password"
 
 
 def _create_passwd(min_characters: int, msg: str = "") -> str:
     """Create passwords."""
-    master_pass = getpass(msg or password_prompt)
+    master_pass = Prompt.ask(msg or password_prompt, password=True)
     is_ok: bool = len(master_pass) > min_characters
     for check in ("[a-z]", "[A-Z]", "[0-9]"):
         if not re.search(check, master_pass):
             is_ok = False
             break
     is_safe: bool = len([True for c in "[_@$#$%^&*-!]" if c in master_pass]) > 0
-    if (is_ok * is_safe) is False:
+    if is_ok is False or is_safe is False:
         raise ValueError(
             (
-                f"Password must be at least {min_characters} characters long, "
-                "have alphanumeric characters, both, lower and upper case "
-                "characters, as well as special characters."
+                "Password confirm the following constraints:\n"
+                f"- {min_characters} alphanumeric characters long,\n"
+                "- have both lower and upper case characters,\n"
+                "- have at least one special special characters."
             )
         )
-    master_pass_2 = getpass("Re enter master password\n: ")
+    master_pass_2 = Prompt.ask("[bold green]re-enter[/] master password", password=True)
     if master_pass != master_pass_2:
         raise ValueError("Passwords do not match")
     return master_pass

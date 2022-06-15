@@ -1,3 +1,0 @@
-#!/bin/sh
-crontab -l
-crond -f -l 8
