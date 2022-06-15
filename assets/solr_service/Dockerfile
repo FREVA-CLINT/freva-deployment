@@ -1,4 +1,4 @@
-FROM solr:8.11
+FROM solr:latest
 
 USER root
 LABEL maintainer="DRKZ-CLINT"
@@ -11,4 +11,4 @@ RUN echo "nameserver 8.8.8.8" >> /etc/resolv.conf &&\
     chmod +x /usr/local/bin/daily_backup
 VOLUME /var/solr/data
 USER solr
-COPY create_core.sh managed-schema ./
+COPY create_core.sh managed-schema.xml ./
