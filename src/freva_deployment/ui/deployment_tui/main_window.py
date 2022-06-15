@@ -107,7 +107,7 @@ class MainApp(npyscreen.NPSAppManaged):
                 pass
 
     def save_dialog(self, *args, **kwargs) -> None:
-        """Careate a dialoge that allows for saving the config file."""
+        """Create a dialoge that allows for saving the config file."""
 
         the_selected_file = selectFile(
             select_dir=False, must_exist=False, file_extentions=[".toml"]
@@ -120,7 +120,7 @@ class MainApp(npyscreen.NPSAppManaged):
             self.save_config_to_file(write_toml_file=True)
 
     def _update_config(self, config_file: Path | str) -> None:
-        """Update the maindow after a new configuration has been loaded."""
+        """Update the main window after a new configuration has been loaded."""
 
         try:
             with open(config_file) as f:
@@ -134,7 +134,7 @@ class MainApp(npyscreen.NPSAppManaged):
         self._setup_form.inventory_file.value = config_file
 
     def load_dialog(self, *args, **kwargs) -> None:
-        """Careate a dialoge that allows for loading a config file."""
+        """Create a dialoge that allows for loading a config file."""
 
         the_selected_file = selectFile(
             select_dir=False, must_exist=True, file_extentions=[".toml"]

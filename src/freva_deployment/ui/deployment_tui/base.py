@@ -233,7 +233,7 @@ class BaseForm(npyscreen.FormMultiPageWithMenus, npyscreen.FormWithMenus):
             max_height=2,
             value=self.step in self.parentApp._steps,
             editable=True,
-            name="Use this step",
+            name="Check to set up the {}".format(self.step),
             scroll_exit=True,
         )
         self._add_widgets()
