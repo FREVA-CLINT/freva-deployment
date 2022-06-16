@@ -6,6 +6,7 @@
     - continer_name: "{{ vault_name }}"
     - docker_cmd: >
         --net {{ project_name }} --cap-add=IPC_LOCK
+        -v /opt/freva/{{project_name}}/vault_service:/data:z
         -p 5002:5002 --name={{ vault_name }} {{ vault_name }}:latest
   tasks:
     - name: Copying docker/podman wrapper script
@@ -34,14 +35,6 @@
       become: true
     - name: Copying auxillary files to target machine
       copy: src="{{ asset_dir }}/vault" dest=/tmp
-    - name: Copying public key file to target machine
-      copy:
-        src: "{{ vault_keyfile }}"
-        dest: "/tmp/vault/{{ project_name }}.crt"
-    - name: Copying private key file to target machine
-      copy:
-        src: "{{ vault_private_keyfile }}"
-        dest: "/tmp/vault/{{ project_name }}.key"
     - name: Copying systemd files
       copy:
         src: "{{ asset_dir }}/scripts/create_systemd.py"
@@ -49,14 +42,19 @@
         mode: "0755"
     - name: Cleaning existing directory structure
       file:
-        path: /mnt/{{ project_name }}/vault_service
+        path: /opt/freva/{{ project_name }}/vault_service
         state: absent
       become: true
       when: wipe == true
     - name: Creating directory structure
       file:
-        path: /mnt/{{ project_name }}/vault_service
+        path: /opt/freva/{{ project_name }}/vault_service
         state: directory
+      become: true
+    - name: Copying public key file to target machine
+      copy:
+        src: "{{ vault_keyfile }}"
+        dest: "/opt/freva/{{project_name}}/vault_service/freva.crt"
       become: true
     - name: Building vault images
       shell:

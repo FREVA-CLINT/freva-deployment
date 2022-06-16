@@ -6,21 +6,9 @@ if [ -z $1 ];then
     exit 1
 fi
 
-web_dir=$(mktemp -u)
-git clone -b $GIT_BRANCH $GIT_URL  $web_dir
-cd $PROJECT_ROOT
-rm -fr .git
-cp -rT ${web_dir} $PROJECT_ROOT
-rm -r ${web_dir}
-mkdir -p ${PROJECT_ROOT}/static/preview
-cp /etc/freva_web.conf .
-python manage.py migrate --fake contenttypes
-python manage.py migrate --fake-initial --noinput
-python manage.py createsuperuser \
+/opt/condaenvs/bin/python manage.py migrate --fake contenttypes
+/opt/condaenvs/bin/python manage.py migrate --fake-initial --noinput
+/opt/condaenvs/bin/python manage.py createsuperuser \
     --noinput \
     --username freva-admin \
-    --email $DJANGO_SUPERUSER_EMAIL
-python manage.py collectstatic --noinput
-npm install
-npm run build-production
-python manage.py collectstatic --noinput
+    --email $DJANGO_SUPERUSER_EMAIL || echo 0

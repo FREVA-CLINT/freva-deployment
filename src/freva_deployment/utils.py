@@ -22,10 +22,10 @@ RichConsole = Console(style="bold", markup=True, force_terminal=True)
 config_dir = Path(appdirs.user_config_dir()) / "freva" / "deployment"
 asset_dir = Path(appdirs.user_data_dir()) / "freva" / "deployment"
 password_prompt = (
-    "Choose a [b]master password[/], this password will be used to:\n"
+    "[green]Choose[/] a [b]master password[/], this password will be used to:\n"
     "- create a self signed [magenta]certificate[/] for accessing the freva credentials\n"
     "- create the [magenta]mysql root[/] password\n"
-    "- set the [magenta]django admin[/] web password\n[b]enter master password[/]"
+    "- set the [magenta]django admin[/] web password\n[b][green]choose[/] master password[/]"
 )
 
 ServiceInfo = NamedTuple(
@@ -181,7 +181,7 @@ def get_passwd(min_characters: int = 8) -> str:
             return _create_passwd(min_characters, msg)
         except ValueError as e:
             RichConsole.print(f"[red]{e.__str__()}[/]")
-            msg = "[b]re-enter[/] master password"
+            msg = "[b red]re-enter[/] master password"
 
 
 def _create_passwd(min_characters: int, msg: str = "") -> str:
@@ -196,81 +196,13 @@ def _create_passwd(min_characters: int, msg: str = "") -> str:
     if is_ok is False or is_safe is False:
         raise ValueError(
             (
-                "Password confirm the following constraints:\n"
+                "Password must confirm the following constraints:\n"
                 f"- {min_characters} alphanumeric characters long,\n"
-                "- have both lower and upper case characters,\n"
-                "- have at least one special special characters."
+                "- have both, lower and upper case characters,\n"
+                "- have at least one special special character."
             )
         )
     master_pass_2 = Prompt.ask("[bold green]re-enter[/] master password", password=True)
     if master_pass != master_pass_2:
         raise ValueError("Passwords do not match")
     return master_pass
-
-
-def create_self_signed_cert(certfile: Path | str) -> Path:
-    """Create a public and private key file.
-
-    Parameters:
-    ===========
-    certfile:
-        path of the certificate file.
-
-    Returns:
-    ========
-    pathlib.Path : path to the public certificate file.
-
-    """
-    public_cert = Path(certfile).with_suffix(".crt")
-    private_cert = public_cert.with_suffix(".key")
-    public_cert.parent.mkdir(exist_ok=True, parents=True)
-    logger.info(f"Creating Self Signed Certificate file: {public_cert}")
-    msg = """You are about to be asked to enter information that will be incorporated
-into your certificate request.
-What you are about to enter is what is called a Distinguished Name or a DN.
-There are quite a few fields but you can leave some blank
-For some fields there will be a default value,
-If you enter '.', the field will be left blank."""
-    print(msg)
-    for file in private_cert, public_cert:
-        try:
-            file.unlink()
-        except FileNotFoundError:
-            pass
-    defaults = dict(
-        C="DE",
-        ST="Hamburg",
-        L="Hamburg",
-        O="Deutsches Klimarechenzentrum GmbH",
-        OU="DM",
-        CN="freva.dkrz.de",
-        emailAddress="freva@dkrz.de",
-    )
-    steps = dict(
-        C=input(f'Country Name (2 letter code) [{defaults["C"]}]: '),
-        ST=input(f'State or Province Name (full name) [{defaults["ST"]}]: '),
-        L=input(f'Locality Name (eg, city) [{defaults["L"]}]: '),
-        O=input(f'Organization Name (eg, company) [{defaults["O"]}]: '),
-        OU=input(f'Organization Unit Name (eg, section) [{defaults["OU"]}]: '),
-        CN=input(
-            f'Common Name (eg, e.g. server FQDN or YOUR name) [{defaults["CN"]}]: '
-        ),
-        emailAddress=input(
-            (
-                "Email Address (eg, e.g. server FQDN or YOUR name) "
-                f'[{defaults["emailAddress"]}]: '
-            )
-        ),
-    )
-    sub_j = "/".join(f"{k}={v.strip() or defaults[k]}" for (k, v) in steps.items())
-    cmd = (
-        f"openssl req -newkey rsa:4096 -x509 -sha256 -nodes -out {public_cert}"
-        f' -keyout {private_cert} -subj "/{sub_j} "'
-    )
-    run(shlex.split(cmd), stdout=PIPE, stderr=PIPE, check=False)
-    for file in private_cert, public_cert:
-        if not file.is_file():
-            raise FileNotFoundError(
-                f"Certificate creation failed, check the command:\n {cmd}"
-            )
-    return public_cert.absolute()

@@ -161,11 +161,14 @@ class MainApp(npyscreen.NPSAppManaged):
             save_file = str(Path(save_file).expanduser().absolute())
         else:
             save_file = None
-        cert_file = self._setup_form.cert_file.value
-        if cert_file:
-            cert_file = str(Path(cert_file).expanduser().absolute())
-        else:
-            cert_file = ""
+        cert_files = dict(
+            public_keyfile=self._setup_form.public_keyfile.value or "",
+            private_keyfile=self._setup_form.private_keyfile.value or "",
+            chain_keyfile=self._setup_form.chain_keyfile.value or "",
+        )
+        for key, value in cert_files.items():
+            if value:
+                cert_files[key] = str(Path(value).expanduser().absolute())
         project_name = self._setup_form.project_name.value
         server_map = self._setup_form.server_map.value
         ssh_pw = self._setup_form.use_ssh_pw.value
@@ -177,9 +180,9 @@ class MainApp(npyscreen.NPSAppManaged):
             "project_name": project_name,
             "ssh_pw": ssh_pw,
             "server_map": server_map,
-            "cert_file": cert_file,
             "config": self.config,
         }
+        config.update(cert_files)
         with open(self.cache_dir / "freva_deployment.json", "w") as f:
             json.dump({k: v for (k, v) in config.items()}, f, indent=3)
         if write_toml_file is False:
@@ -195,7 +198,7 @@ class MainApp(npyscreen.NPSAppManaged):
             for key, config in settings["config"].items():
                 config_tmpl[step]["config"][key] = config
         save_file.parent.mkdir(exist_ok=True, parents=True)
-        config_tmpl["cert_file"] = cert_file
+        config_tmpl["certificates"] = cert_files
         config_tmpl["project_name"] = project_name
         with open(save_file, "w") as f:
             toml_string = tomlkit.dumps(config_tmpl)
@@ -221,10 +224,9 @@ class MainApp(npyscreen.NPSAppManaged):
         """Read the deployment-steps from the cache."""
         return cast(List[str], self._read_cache("steps", ["core", "web", "db", "solr"]))
 
-    @property
-    def cert_file(self) -> str:
+    def read_cert_file(self, key: str) -> str:
         """Read the certificate file from the cache."""
-        return cast(str, self._read_cache("cert_file", ""))
+        return cast(str, self._read_cache(key, ""))
 
     @property
     def save_file(self) -> str:

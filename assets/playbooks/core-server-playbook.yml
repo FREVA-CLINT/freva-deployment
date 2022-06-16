@@ -20,7 +20,6 @@
       git:
         repo: "{{ core_git_url }}"
         dest: /tmp/evaluation_system
-        version: "{{ core_branch }}"
         executable: "{{core_git_path}}"
       become: "{{'true' if core_ansible_become_user is defined else 'no' }}"
     - name: Preparing creation of directory structure
@@ -107,12 +106,6 @@
       environment:
         PYTHON3: "{{ ansible_python_interpreter }}"
         EVALUATION_SYSTEM_CONFIG_FILE: "{{ core_root_dir }}/{{eval_path}}"
-      become: "{{'yes' if core_ansible_become_user is defined else 'no' }}"
-    - name: Copying Private key files
-      copy:
-        src: "{{core_private_keyfile}}"
-        dest: "{{ core_root_dir }}/freva/{{ project_name }}.key"
-        mode: "2644"
       become: "{{'yes' if core_ansible_become_user is defined else 'no' }}"
     - name: Copying Public key file
       copy:

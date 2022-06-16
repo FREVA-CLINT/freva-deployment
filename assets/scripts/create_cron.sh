@@ -1,5 +1,5 @@
 #!/bin/bash
-cmd="/usr/local/bin/docker-or-podman exec $1 /usr/local/bin/daily_backup 1> /dev/null"
+cmd="/usr/local/bin/docker-or-podman exec $1 bash /usr/local/bin/daily_backup 1> /dev/null"
 mkdir -p /etc/cron.daily
 echo "#!/bin/sh" > /etc/cron.daily/backup_$1
 echo "# Run daily backup for $1" >> /etc/cron.daily/backup_$1

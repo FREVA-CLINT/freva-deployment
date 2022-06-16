@@ -8,6 +8,7 @@ import shlex
 import string
 from subprocess import run
 import sys
+from urllib.parse import urlparse
 from tempfile import TemporaryDirectory, mkdtemp
 from typing import Any
 
@@ -18,7 +19,6 @@ import yaml
 from .utils import (
     asset_dir,
     config_dir,
-    create_self_signed_cert,
     get_passwd,
     logger,
     upload_server_map,
@@ -35,8 +35,6 @@ class DeployFactory:
         The name of the project to distinguish this instance from others.
     steps: list[str], default: ["services", "core", "web"]
         The components that are going to be deployed.
-    cert_file: os.PathLike, default: None
-        The path to the public cert file that is injected to the web container.
     config_file: os.PathLike, default: None
         Path to any existing deployment configuration file.
 
@@ -52,9 +50,7 @@ class DeployFactory:
     _steps_with_cert: tuple[str, ...] = ("db", "vault", "core", "web")
 
     def __init__(
-        self,
-        steps: list[str] | None = None,
-        config_file: Path | str | None = None,
+        self, steps: list[str] | None = None, config_file: Path | str | None = None,
     ) -> None:
 
         self._config_keys: list[str] = []
@@ -68,28 +64,33 @@ class DeployFactory:
         self._inv_tmpl = Path(config_file or config_dir / "inventory.toml")
         self._cfg_tmpl = self.aux_dir / "evaluation_system.conf.tmpl"
         self.cfg = self._read_cfg()
-        self._cert_file = self.cfg.pop("cert_file", "")
         self.project_name = self.cfg.pop("project_name", None)
         if not self.project_name:
             raise ValueError("You must set a project name")
 
     @property
-    def private_key_file(self) -> str:
-        """Path to the private certifcate file."""
-        return str(Path(self.public_key_file).with_suffix(".key"))
-
-    @property
     def public_key_file(self) -> str:
         """Path to the public certificate file."""
-        if not any((step in self._steps_with_cert for step in self.steps)):
-            return str(Path(mkdtemp(suffix=".crt")))
-        if not self._cert_file:
-            _cert_file = config_dir / "keys" / f"{self.project_name}.crt"
-        _cert_file = Path(self._cert_file or _cert_file)
-        if not _cert_file.is_file():
-            logger.warning("Certificate file does not exist, creating new one")
-            _cert_file = create_self_signed_cert(_cert_file)
-        return str(_cert_file.absolute())
+        public_keyfile = self.cfg["certificates"].get("public_keyfile")
+        if public_keyfile:
+            return str(Path(public_keyfile).expanduser().absolute())
+        raise ValueError("You must give a valid path to a public key file.")
+
+    @property
+    def private_key_file(self) -> str:
+        """Path to the private key file."""
+        keyfile = self.cfg["certificates"].get("private_keyfile")
+        if keyfile:
+            return str(Path(keyfile).expanduser().absolute())
+        raise ValueError("You must give a valid path to a private key file.")
+
+    @property
+    def chain_key_file(self) -> str:
+        """Path to the private key file."""
+        keyfile = self.cfg["certificates"].get("chain_keyfile")
+        if keyfile:
+            return str(Path(keyfile).expanduser().absolute())
+        raise ValueError("You must give a valid path to a chain key file.")
 
     def _prep_vault(self) -> None:
         """Prepare the vault."""
@@ -100,7 +101,6 @@ class DeployFactory:
         self.cfg["vault"]["config"]["root_passwd"] = self.master_pass
         self.cfg["vault"]["config"]["passwd"] = self.db_pass
         self.cfg["vault"]["config"]["keyfile"] = self.public_key_file
-        self.cfg["vault"]["config"]["private_keyfile"] = self.private_key_file
         self.cfg["vault"]["config"]["email"] = ",".join(
             self.cfg["web"]["config"].get("contacts", [])
         )
@@ -114,7 +114,6 @@ class DeployFactory:
         self.cfg["db"]["config"]["root_passwd"] = self.master_pass
         self.cfg["db"]["config"]["passwd"] = self.db_pass
         self.cfg["db"]["config"]["keyfile"] = self.public_key_file
-        self.cfg["db"]["config"]["private_keyfile"] = self.private_key_file
         for key in ("name", "user", "db"):
             self.cfg["db"]["config"][key] = self.cfg["db"]["config"].get(key) or "freva"
         db_host = self.cfg["db"]["config"].get("host", "")
@@ -125,7 +124,6 @@ class DeployFactory:
             self.cfg["web"]["config"].get("contacts", [])
         )
         self._prep_vault()
-        self._create_sql_dump()
 
     def _prep_solr(self) -> None:
         """prepare the apache solr service."""
@@ -147,24 +145,20 @@ class DeployFactory:
         )
         if not self.cfg["core"]["config"]["admins"]:
             self.cfg["core"]["config"]["admins"] = getuser()
-        self.cfg["core"]["config"]["branch"] = (
-            self.cfg["core"]["config"].get("branch") or "freva-dev"
-        )
         install_dir = self.cfg["core"]["config"]["install_dir"]
         root_dir = self.cfg["core"]["config"].get("root_dir", "")
         if not root_dir:
             self.cfg["core"]["config"]["root_dir"] = install_dir
         self.cfg["core"]["config"]["keyfile"] = self.public_key_file
-        self.cfg["core"]["config"]["private_keyfile"] = self.private_key_file
         git_exe = self.cfg["core"]["config"].get("git_path")
         self.cfg["core"]["config"]["git_path"] = git_exe or "git"
+        self.cfg["core"]["config"][
+            "git_url"
+        ] = "https://gitlab.dkrz.de/freva/evaluation_system.git"
 
     def _prep_web(self) -> None:
         """prepare the web deployment."""
         self._config_keys.append("web")
-        self.cfg["web"]["config"]["branch"] = (
-            self.cfg["web"]["config"].get("branch") or "main"
-        )
         self._prep_core()
         admin = self.cfg["core"]["config"]["admins"]
         if not isinstance(admin, str):
@@ -189,18 +183,27 @@ class DeployFactory:
         except (FileNotFoundError, IOError, KeyError):
             pass
         logo = Path(self.cfg["web"]["config"].get("institution_logo", ""))
-        alias = self.cfg["web"]["config"].pop("server_alias", [])
-        if isinstance(alias, str):
-            alias = alias.split(",")
-        alias = ",".join([a for a in alias if a.strip()])
-        if not alias:
-            alias = self.cfg["web"]["hosts"]
-        self.cfg["web"]["config"]["server_alias"] = alias
+        server_name = self.cfg["web"]["config"].pop("server_name", [])
+        if isinstance(server_name, str):
+            server_name = server_name.split(",")
+        server_name = ",".join([a for a in server_name if a.strip()])
+        if not server_name:
+            server_name = self.cfg["web"]["hosts"]
+        self.cfg["web"]["config"]["server_name"] = server_name
         web_host = self.cfg["web"]["hosts"]
         if web_host == "127.0.0.1":
             web_host = "localhost"
         self.cfg["web"]["config"]["host"] = web_host
         _webserver_items["INSTITUTION_LOGO"] = f"logo{logo.suffix}"
+        trusted_origin = urlparse(server_name)
+        if trusted_origin.scheme:
+            _webserver_items["CSRF_TRUSTED_ORIGINS"] = [
+                f"https://{urlparse(server_name).netloc}"
+            ]
+        else:
+            _webserver_items["CSRF_TRUSTED_ORIGINS"] = [
+                f"https://{urlparse(server_name).path}"
+            ]
         _webserver_items["FREVA_BIN"] = os.path.join(
             self.cfg["core"]["config"]["install_dir"], "bin"
         )
@@ -223,6 +226,9 @@ class DeployFactory:
         if not self.master_pass:
             self.master_pass = get_passwd()
         self.cfg["web"]["config"]["root_passwd"] = self.master_pass
+        self.cfg["web"]["config"]["private_keyfile"] = self.private_key_file
+        self.cfg["web"]["config"]["public_keyfile"] = self.public_key_file
+        self.cfg["web"]["config"]["chain_keyfile"] = self.chain_key_file
 
     def __enter__(self):
         return self
@@ -236,46 +242,6 @@ class DeployFactory:
                 return dict(toml.load(f_obj))
         except FileNotFoundError as error:
             raise FileNotFoundError(f"No such file {self._inv_tmpl}") from error
-
-    @property
-    def git_url(self) -> str:
-        """Get the url of the git repository."""
-        try:
-            return self.cfg["coreservers:vars"]["git_url"]
-        except KeyError as error:
-            raise KeyError(
-                (
-                    "You must set git_url and branch keys in coreservers:vars in "
-                    "the inventory file"
-                )
-            ) from error
-
-    @property
-    def git_branch(self) -> str:
-        """Get the branch that is installed."""
-        try:
-            return self.cfg["coreservers:vars"]["branch"]
-        except KeyError:
-            return "main"
-
-    def _add_local_config(self, config):
-        if "db" not in self.steps:
-            return {}
-        cfg = dict(
-            local=dict(
-                hosts="127.0.0.1",
-                vars=dict(
-                    db_db=config["db_db"],
-                    db_passwd=self.db_pass,
-                    db_host=config["db_host"],
-                    db_dump=str(self._dump_file),
-                    db_port=config.get("db_port", 3306),
-                    user=getuser(),
-                    local_ansible_python_interpreter=str(self.python_prefix),
-                ),
-            )
-        )
-        return cfg
 
     def _check_config(self) -> None:
         sections = []
@@ -298,10 +264,7 @@ class DeployFactory:
 
     def _get_files_copy(self, key) -> Path | None:
         return dict(
-            db=self._dump_file,
-            solr=(self.aux_dir / "managed-schema.xml").absolute(),
-            core=self.eval_conf_file.absolute(),
-            web=self.eval_conf_file.absolute(),
+            core=self.eval_conf_file.absolute(), web=self.eval_conf_file.absolute(),
         ).get(key, None)
 
     @property
@@ -318,7 +281,11 @@ class DeployFactory:
             "".join([random.choice(punctuations) for i in range(num_punctuations)]),
         ]
         str_characters = "".join(characters)
-        self._db_pass = "".join(random.sample(str_characters, len(str_characters)))
+        _db_pass = "".join(random.sample(str_characters, len(str_characters)))
+        while _db_pass.startswith("@"):
+            # Vault treats values starting with "@" as file names.
+            _db_pass = "".join(random.sample(str_characters, len(str_characters)))
+        self._db_pass = _db_pass
         return self._db_pass
 
     @property
@@ -331,7 +298,7 @@ class DeployFactory:
     ) -> None:
         """Set additional values to the configuration."""
         if step in self._needs_core:
-            for key in ("git_url", "branch", "root_dir", "base_dir_location"):
+            for key in ("root_dir", "base_dir_location"):
                 value = self.cfg["core"]["config"][key]
                 config[step]["vars"][f"core_{key}"] = value
         config[step]["vars"][f"{step}_hostname"] = self.cfg[step]["hosts"]
@@ -366,40 +333,7 @@ class DeployFactory:
             config[step]["vars"]["project_name"] = self.project_name
             # Add additional keys
             self._set_additional_config_values(step, config)
-        if "db" in self._config_keys:
-            config.update(self._add_local_config(config["db"]["vars"]))
         return yaml.dump(config)
-
-    def _create_sql_dump(self):
-        """Create a sql dump file to create tables."""
-
-        logger.info("Creating database dump file.")
-        head = """
-FLUSH PRIVILEGES;
-USE mysql;
-CREATE USER IF NOT EXISTS '{user}'@'localhost' IDENTIFIED BY '{passwd}';
-CREATE USER IF NOT EXISTS '{user}'@'%' IDENTIFIED BY '{passwd}';
-CREATE DATABASE IF NOT EXISTS {db};
-ALTER USER '{user}'@'localhost' IDENTIFIED BY '{passwd}';
-ALTER USER '{user}'@'%' IDENTIFIED BY '{passwd}';
-FLUSH PRIVILEGES;
-GRANT ALL PRIVILEGES ON {db}.* TO '{user}'@'%' WITH GRANT OPTION;
-GRANT ALL PRIVILEGES ON {db}.* TO '{user}'@'localhost' WITH GRANT OPTION;
-FLUSH PRIVILEGES;
-USE {db};
-
-""".format(
-            user=self.cfg["db"]["config"]["user"],
-            db=self.cfg["db"]["config"]["db"],
-            passwd=self.db_pass,
-        )
-        with self._dump_file.open("w") as f_obj:
-            tail = (self.aux_dir / "create_tables.sql").open("r").read()
-            f_obj.write(head + tail)
-
-    @property
-    def _dump_file(self) -> Path:
-        return Path(self._td.name) / "sql_dump.sql"
 
     @property
     def _playbook_file(self) -> Path:
