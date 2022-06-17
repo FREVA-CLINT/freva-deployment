@@ -54,7 +54,11 @@ class MainApp(npyscreen.NPSAppManaged):
 
     def _add_froms(self) -> None:
         """Add forms to edit the deploy steps to the main window."""
-        self._forms["core"] = self.addForm("MAIN", CoreScreen, name="Core deployment",)
+        self._forms["core"] = self.addForm(
+            "MAIN",
+            CoreScreen,
+            name="Core deployment",
+        )
         self._forms["web"] = self.addForm("SECOND", WebScreen, name="Web deployment")
         self._forms["db"] = self.addForm("THIRD", DBScreen, name="Database deployment")
         self._forms["solr"] = self.addForm("FOURTH", SolrScreen, name="Solr deployment")
@@ -145,7 +149,8 @@ class MainApp(npyscreen.NPSAppManaged):
             return self._save_config_to_file(**kwargs)
         except Exception as error:
             npyscreen.notify_confirm(
-                title="Error", message=f"Couldn't save config:\n{error}",
+                title="Error",
+                message=f"Couldn't save config:\n{error}",
             )
         return None
 
