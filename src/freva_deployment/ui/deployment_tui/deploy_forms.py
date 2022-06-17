@@ -219,7 +219,7 @@ class WebScreen(BaseForm):
             ),
             institution_logo=(
                 self.add_widget_intelligent(
-                    npyscreen.TitleText,
+                    npyscreen.TitleFilename,
                     name=f"{self.num}Path to the logo - leave blank for default logo:",
                     value=cfg.get("institution_logo", ""),
                 ),
@@ -309,11 +309,11 @@ class WebScreen(BaseForm):
                 ),
                 True,
             ),
-            home_page_heading=(
+            homepage_heading=(
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
                     name=f"{self.num}A brief describtion of the project:",
-                    value=cfg.get("home_page_heading", "Lorem ipsum dolor sit amet"),
+                    value=cfg.get("homepage_heading", "Lorem ipsum dolor sit amet"),
                 ),
                 True,
             ),
@@ -336,7 +336,7 @@ class WebScreen(BaseForm):
                     ),
                     value=cfg.get(
                         "auth_ldap_server_uri",
-                        "ldap://mldap0.hpc.dkrz.de, ldap://mldap1.hpc.dkrz.de",
+                        "ldap://idm-dmz.dkrz.de",
                     ),
                 ),
                 True,

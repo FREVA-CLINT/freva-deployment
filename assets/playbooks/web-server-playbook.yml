@@ -14,7 +14,6 @@
         path: "{{core_root_dir}}/freva/web"
         state: directory
         mode: "2775"
-        recurse: true
         group: "{{core_admin_group}}"
       become: "{{'yes' if core_ansible_become_user is defined else 'no' }}"
       when: core_admin_group is defined

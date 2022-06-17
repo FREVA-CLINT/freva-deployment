@@ -54,11 +54,7 @@ class MainApp(npyscreen.NPSAppManaged):
 
     def _add_froms(self) -> None:
         """Add forms to edit the deploy steps to the main window."""
-        self._forms["core"] = self.addForm(
-            "MAIN",
-            CoreScreen,
-            name="Core deployment",
-        )
+        self._forms["core"] = self.addForm("MAIN", CoreScreen, name="Core deployment",)
         self._forms["web"] = self.addForm("SECOND", WebScreen, name="Web deployment")
         self._forms["db"] = self.addForm("THIRD", DBScreen, name="Database deployment")
         self._forms["solr"] = self.addForm("FOURTH", SolrScreen, name="Solr deployment")
@@ -149,8 +145,7 @@ class MainApp(npyscreen.NPSAppManaged):
             return self._save_config_to_file(**kwargs)
         except Exception as error:
             npyscreen.notify_confirm(
-                title="Error",
-                message=f"Couldn't save config:\n{error.__str__()}",
+                title="Error", message=f"Couldn't save config:\n{error}",
             )
         return None
 
@@ -193,13 +188,15 @@ class MainApp(npyscreen.NPSAppManaged):
                 config_tmpl = cast(Dict[str, Any], tomlkit.load(f))
         except Exception:
             config_tmpl = self.config
+        config_tmpl["certificates"] = cert_files
+        config_tmpl["project_name"] = project_name
         for step, settings in self.config.items():
+            if step in ("certificates", "project_name"):
+                continue
             config_tmpl[step]["hosts"] = settings["hosts"]
             for key, config in settings["config"].items():
                 config_tmpl[step]["config"][key] = config
         save_file.parent.mkdir(exist_ok=True, parents=True)
-        config_tmpl["certificates"] = cert_files
-        config_tmpl["project_name"] = project_name
         with open(save_file, "w") as f:
             toml_string = tomlkit.dumps(config_tmpl)
             f.write(toml_string)

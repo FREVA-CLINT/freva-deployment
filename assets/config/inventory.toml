@@ -159,14 +159,14 @@ wipe = false
 ## Instead of text you can set a path to a file containing the text, like a html file.
 homepage_text = "Bal bla bla."
 ## Set a one line blurb of the project
-hompage_heading = "Short description of the project."
+homepage_heading = "Short description of the project."
 ## Set the name of the project/institution
 institution_name = "Freva"
 ## Set the slurm scheduler host
 scheduler_host = ["levante.dkrz.de"]
 ## Settings for ldap
 ## Ldap server name(s)
-auth_ldap_server_uri = "ldap://mldap0.hpc.dkrz.de,ldap://mldap1.hpc.dkrz.de"
+auth_ldap_server_uri = "ldap://idm-dmz.dkrz.de"
 ## Set the group that will be allowed to log on
 allowed_group = "test_group"
 ## Set the ldap search user base

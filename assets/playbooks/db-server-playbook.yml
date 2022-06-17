@@ -15,7 +15,6 @@
         -p {{ db_port }}:3306
         -e MYSQL_ROOT_PASSWORD={{ root_passwd }}
         -v /root/freva-service-config/mysql/create_tables.sql:/docker-entrypoint-initdb.d/002_create_tables.sql:z
-        -v /root/root_password_reset.sql:/docker-entrypoint-initdb.d/001_set_rootpw.sql:z
         -v /root/freva-service-config/mysql/daily_backup.sh:/usr/local/bin/daily_backup:z
         -t mariadb:latest
     - continer_name: "{{ db_name }}"
@@ -49,7 +48,6 @@
         path: /opt/freva/{{ project_name }}/db_service
         state: absent
       become: true
-      when: wipe == true
     - name: Creating directory structure
       file:
         path: /opt/freva/{{ project_name }}/db_service
@@ -69,13 +67,6 @@
         mode: '0755'
       with_items:
         - "create_systemd.py"
-    - name: Preparing root password reset
-      become: true
-      shell: >
-        echo "USE mysql; FLUSH PRIVILEGES; ALTER USER "
-        "'root'@'localhost' IDENTIFIED BY '{{root_passwd}}'; "
-        "ALTER USER 'root'@'%' IDENTIFIED BY '{{root_passwd}}'; "
-        "FLUSH PRIVILEGES;" > /root/root_password_reset.sql
     - name: Getting additional configurations
       become: true
       git:

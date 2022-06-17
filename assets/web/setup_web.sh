@@ -6,9 +6,9 @@ if [ -z $1 ];then
     exit 1
 fi
 
-/opt/condaenvs/bin/python manage.py migrate --fake contenttypes
-/opt/condaenvs/bin/python manage.py migrate --fake-initial --noinput
-/opt/condaenvs/bin/python manage.py createsuperuser \
+python manage.py migrate --fake contenttypes
+python manage.py migrate --fake-initial --noinput
+python manage.py createsuperuser \
     --noinput \
     --username freva-admin \
     --email $DJANGO_SUPERUSER_EMAIL || echo 0

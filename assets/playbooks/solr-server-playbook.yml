@@ -67,8 +67,6 @@
         src: "{{ asset_dir }}/scripts/create_systemd.py"
         dest: /tmp/create_systemd.py
         mode: "0755"
-    - name: Copy auxillary files to target machine
-      copy: src="{{ asset_dir }}/solr_service" dest=/tmp
     - name: Copy cron create script to target machine
       copy: src="{{ asset_dir }}/scripts/create_cron.sh" dest=/tmp/solr_service/
     - name: Creating the solr docker container
@@ -86,7 +84,4 @@
     - name: Deleting auxillary files
       file:
         state: absent
-        path: "{{ item }}"
-      with_items:
-        - /tmp/create_systemd.py
-        - /tmp/solr_service
+        path: /tmp/create_systemd.py
