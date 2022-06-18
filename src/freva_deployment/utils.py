@@ -5,7 +5,6 @@ import logging
 import json
 from pathlib import Path
 import re
-import shlex
 from subprocess import run, PIPE
 from typing import cast, NamedTuple
 
@@ -18,7 +17,7 @@ import toml
 logging.basicConfig(format="%(name)s - %(levelname)s - %(message)s", level=logging.INFO)
 logger = logging.getLogger("freva-deployment")
 
-RichConsole = Console(style="bold", markup=True, force_terminal=True)
+RichConsole = Console(markup=True, force_terminal=True)
 config_dir = Path(appdirs.user_config_dir()) / "freva" / "deployment"
 asset_dir = Path(appdirs.user_data_dir()) / "freva" / "deployment"
 password_prompt = (

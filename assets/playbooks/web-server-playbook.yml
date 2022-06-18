@@ -5,10 +5,6 @@
     - ansible_python_interpreter: "{{ core_ansible_python_interpreter }}"
     - ansible_become_user: "{{ core_ansible_become_user if core_ansible_become_user is defined else 'root' }}"
   tasks:
-    - name: Getting register to the freva logo
-      stat:
-        path: "{{ core_institution_logo }}"
-      register: logo
     - name: Creating share directory with admin group
       file:
         path: "{{core_root_dir}}/freva/web"
@@ -25,13 +21,6 @@
         recurse: true
       become: "{{'yes' if core_ansible_become_user is defined else 'no' }}"
       when: core_admin_group is not defined
-    - name: Copy the logo if exists
-      copy:
-        src: "{{ core_institution_logo }}"
-        dest: "{{core_root_dir}}/freva/web/logo.{{web_institution_logo_suffix}}"
-        mode: "2775"
-      become: "{{'yes' if core_ansible_become_user is defined else 'no' }}"
-      when: logo.stat.exists == true
     - name: Adding freva web config to the core structure
       copy:
         src: "{{ core_config_toml_file }}"
@@ -100,7 +89,6 @@
         state: absent
         path: "{{service_dir}}"
       become: true
-      when: wipe == true
     - name: Creating volume dir for web
       become: true
       file:

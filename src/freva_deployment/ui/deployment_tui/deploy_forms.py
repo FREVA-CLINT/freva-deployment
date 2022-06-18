@@ -198,17 +198,6 @@ class WebScreen(BaseForm):
                 ),
                 True,
             ),
-            wipe=(
-                self.add_widget_intelligent(
-                    npyscreen.RoundCheckBox,
-                    max_height=2,
-                    value=cfg.get("wipe", False),
-                    editable=True,
-                    name=(f"{self.num}Delete existing data?"),
-                    scroll_exit=True,
-                ),
-                True,
-            ),
             project_website=(
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
@@ -216,14 +205,6 @@ class WebScreen(BaseForm):
                     value=cfg.get("project_website", ""),
                 ),
                 True,
-            ),
-            institution_logo=(
-                self.add_widget_intelligent(
-                    npyscreen.TitleFilename,
-                    name=f"{self.num}Path to the logo - leave blank for default logo:",
-                    value=cfg.get("institution_logo", ""),
-                ),
-                False,
             ),
             main_color=(
                 self.add_widget_intelligent(

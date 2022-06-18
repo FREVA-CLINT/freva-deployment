@@ -26,6 +26,10 @@
       stat:
         path: /usr/bin/systemctl
       register: systemctl
+    - name: Registering anacron path
+      stat:
+        path: /etc/cron.daily
+      register: cron
     - name: Stopping services and deleting existing containers
       shell: >
         systemctl stop {{solr_name}};
@@ -81,6 +85,7 @@
       become: true
       shell: >
         sh /tmp/solr_service/create_cron.sh "{{ solr_name }}" "{{solr_email}}"
+      when: systemctl.stat.exists == true
     - name: Deleting auxillary files
       file:
         state: absent

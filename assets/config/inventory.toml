@@ -139,8 +139,6 @@ project_website = "www.freva.dkrz.de"
 #ansible_python_interpreter = ""
 ##If you need a different user name you can set it here:
 #ansible_user = "username"
-##Set the path to the logo
-institution_logo = ""
 ##Set html colors
 main_color = "Tomato"
 border_color = "#6c2e1f"
@@ -151,9 +149,6 @@ about_us_text = ""
 contacts = ""
 ## Now set postal address
 address = "Project name, German Climate Computing Centre (DKRZ), Bundesstr. 45a, 20146 Hamburg, Germany."
-##Indicate whether or not to empty any pre-existing folders/docker volumes.
-##(Useful for a truely fresh start) (default: False)
-wipe = false
 ## Here you can set a lengthy project description.
 ## You can also set a path to a filename that contains the information.
 ## Instead of text you can set a path to a file containing the text, like a html file.

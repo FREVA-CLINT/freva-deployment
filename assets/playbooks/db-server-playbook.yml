@@ -30,6 +30,10 @@
       stat:
         path: /usr/bin/systemctl
       register: systemctl
+    - name: Registering anacron path
+      stat:
+        path: /etc/cron.daily
+      register: cron
     - name: Stopping services and deleting existing containers
       shell: >
         /usr/local/bin/docker-or-podman stop {{db_name}};
@@ -85,6 +89,7 @@
     - name: Creating cron jobs
       become: true
       shell: sh /tmp/db_service/create_cron.sh "{{ db_name }}" "{{db_email}}"
+      when: cron.stat.exists == true
     - name: Deleting auxillary files
       file:
         state: absent

@@ -184,7 +184,6 @@ class DeployFactory:
                 _webserver_items["homepage_text"] = f_obj.read()
         except (FileNotFoundError, IOError, KeyError):
             pass
-        logo = Path(self.cfg["web"]["config"].get("institution_logo", ""))
         server_name = self.cfg["web"]["config"].pop("server_name", [])
         if isinstance(server_name, str):
             server_name = server_name.split(",")
@@ -196,7 +195,7 @@ class DeployFactory:
         if web_host == "127.0.0.1":
             web_host = "localhost"
         self.cfg["web"]["config"]["host"] = web_host
-        _webserver_items["INSTITUTION_LOGO"] = f"logo{logo.suffix}"
+        _webserver_items["INSTITUTION_LOGO"] = "/path/to/your/logo"
         trusted_origin = urlparse(server_name)
         if trusted_origin.scheme:
             _webserver_items["CSRF_TRUSTED_ORIGINS"] = [
@@ -221,10 +220,7 @@ class DeployFactory:
         with self.web_conf_file.open("w") as f_obj:
             toml.dump(_webserver_items, f_obj)
         for key in ("core", "web"):
-            logo_suffix = logo.suffix or ".png"
             self.cfg[key]["config"]["config_toml_file"] = str(self.web_conf_file)
-            self.cfg[key]["config"]["institution_logo"] = str(logo.absolute())
-            self.cfg[key]["config"]["institution_logo_suffix"] = logo_suffix
         if not self.master_pass:
             self.master_pass = get_passwd()
         self.cfg["web"]["config"]["root_passwd"] = self.master_pass
@@ -440,6 +436,11 @@ class DeployFactory:
             inventory_str = inventory
         RichConsole.print(inventory_str, style="bold", markup=True)
         logger.info("Playing the playbooks with ansible")
+        RichConsole.print(
+            "[b]Note:[/] The [blue]BECOME[/] password refers to the "
+            "[blue]sudo[/] password",
+            markup=True,
+        )
         v_string = sign(verbosity) * "-" + verbosity * "v"
         cmd = (
             f"ansible-playbook {v_string} -i {self.inventory_file} "
