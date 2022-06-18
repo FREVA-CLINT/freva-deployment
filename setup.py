@@ -85,6 +85,7 @@ setup(
     url="https://gitlab.dkrz.de/freva/deployment.git",
     description="Deploy freva and its services on different machines.",
     long_description=read("README.md"),
+    long_description_content_type="text/markdown",
     license="GPLv3",
     packages=find_packages("src"),
     package_dir={"": "src"},
