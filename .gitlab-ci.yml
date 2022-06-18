@@ -1,5 +1,6 @@
 stages:
     - doc
+    - release
 
 lint:
     image: python
@@ -31,6 +32,7 @@ pages:
             - public
 
 release:
+    stage: release
     image: python:latest
 
     run:
