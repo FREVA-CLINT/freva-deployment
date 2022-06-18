@@ -5,6 +5,7 @@ config/evaluation_system.conf
 config/inventory
 __pycache__/*
 build/
+*.tmpl
 docs/_build/
 my.log
 src/freva_deployment/__pycache__
