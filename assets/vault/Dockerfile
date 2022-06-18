@@ -12,13 +12,9 @@ ARG db_name=""
 ENV VAULT_ADDR='http://127.0.0.1:8200'
 ENV ROOT_PW=${rootpw}
 COPY runserver.py /bin/runserver
-COPY vault-server-tls.hcl /vault
-COPY policy-file.hcl /vault
-COPY ${project}.key /mnt/freva.key
-COPY ${project}.crt /mnt/freva.crt
-RUN set -ex ;\
-    chown vault:vault /vault/*.hcl;\
-    chown vault:vault /mnt/freva.*;\
+COPY --chown=vault:vault vault-server-tls.hcl /vault
+COPY --chown=vault:vault policy-file.hcl /vault
+RUN set -ex &&\
     chmod +x /bin/runserver &&\
     mkdir -p /data && chown -R vault:vault /data &&\
     apk add --update --no-cache python3 mysql mysql-client &&\

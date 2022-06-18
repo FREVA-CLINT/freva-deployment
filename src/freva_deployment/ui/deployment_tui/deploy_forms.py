@@ -35,6 +35,9 @@ class CoreScreen(BaseForm):
     """Form for the core deployment configuration."""
 
     step: str = "core"
+    """Name of this step."""
+    certificates: list[str] = ["public"]
+    """The type of certificate files this step needs."""
 
     def _add_widgets(self) -> None:
         """Add widgets to the screen."""
@@ -48,14 +51,6 @@ class CoreScreen(BaseForm):
                     npyscreen.TitleText,
                     name=f"{self.num}Server Name(s) where core is deployed:",
                     value=self.get_host("core"),
-                ),
-                True,
-            ),
-            branch=(
-                self.add_widget_intelligent(
-                    npyscreen.TitleText,
-                    name=f"{self.num}Deploy branch:",
-                    value=cfg.get("branch", "freva-dev"),
                 ),
                 True,
             ),
@@ -182,6 +177,8 @@ class WebScreen(BaseForm):
     """Form for the web deployment configuration."""
 
     step: str = "web"
+    certificates: list[str] = ["public", "private", "chain"]
+    """The type of certificate files this step needs."""
 
     def _add_widgets(self) -> None:
         """Add widgets to the screen."""
@@ -201,25 +198,6 @@ class WebScreen(BaseForm):
                 ),
                 True,
             ),
-            wipe=(
-                self.add_widget_intelligent(
-                    npyscreen.RoundCheckBox,
-                    max_height=2,
-                    value=cfg.get("wipe", False),
-                    editable=True,
-                    name=(f"{self.num}Delete existing data?"),
-                    scroll_exit=True,
-                ),
-                True,
-            ),
-            branch=(
-                self.add_widget_intelligent(
-                    npyscreen.TitleText,
-                    name=f"{self.num}Deploy branch:",
-                    value=cfg.get("branch", "main"),
-                ),
-                True,
-            ),
             project_website=(
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
@@ -227,14 +205,6 @@ class WebScreen(BaseForm):
                     value=cfg.get("project_website", ""),
                 ),
                 True,
-            ),
-            institution_logo=(
-                self.add_widget_intelligent(
-                    npyscreen.TitleText,
-                    name=f"{self.num}Path to the logo - leave blank for default logo:",
-                    value=cfg.get("institution_logo", ""),
-                ),
-                False,
             ),
             main_color=(
                 self.add_widget_intelligent(
@@ -320,11 +290,11 @@ class WebScreen(BaseForm):
                 ),
                 True,
             ),
-            home_page_heading=(
+            homepage_heading=(
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
                     name=f"{self.num}A brief describtion of the project:",
-                    value=cfg.get("home_page_heading", "Lorem ipsum dolor sit amet"),
+                    value=cfg.get("homepage_heading", "Lorem ipsum dolor sit amet"),
                 ),
                 True,
             ),
@@ -347,7 +317,7 @@ class WebScreen(BaseForm):
                     ),
                     value=cfg.get(
                         "auth_ldap_server_uri",
-                        "ldap://mldap0.hpc.dkrz.de, ldap://mldap1.hpc.dkrz.de",
+                        "ldap://idm-dmz.dkrz.de",
                     ),
                 ),
                 True,
@@ -610,24 +580,32 @@ class RunForm(npyscreen.FormMultiPageAction):
         if missing_form:
             self.parentApp.change_form(missing_form)
             return
-        cert_file: str = self.cert_file.value or ""
-        if cert_file:
-            if not Path(cert_file).exists() or not Path(cert_file).is_file():
-                is_file = Path(cert_file).exists()
-                msg = f"Public certificate file `{cert_file}` {is_file} must exist or empty."
-                npyscreen.notify_confirm(msg, title="ERROR")
-                return
-        if cert_file:
-            cert_file = str(Path(cert_file).expanduser().absolute())
-        self.cert_file.value = cert_file
+        cert_files = dict(
+            public=self.public_keyfile.value or "",
+            private=self.private_keyfile.value or "",
+            chain=self.chain_keyfile.value or "",
+        )
+        for key_type, keyfile in cert_files.items():
+            for step, deploy_form in self.parentApp._forms.items():
+                if not keyfile or not Path(keyfile).is_file():
+                    if (
+                        key_type in deploy_form.certificates
+                        and step in self.parentApp.steps
+                    ):
+                        if keyfile:
+                            msg = f"{key_type} certificate file `{keyfile}` must exist."
+                        else:
+                            msg = f"You must give a {key_type} certificate file."
+                        npyscreen.notify_confirm(msg, title="ERROR")
+                        return
         save_file = self.parentApp.save_config_to_file(write_toml_file=True)
         if isinstance(save_file, Path):
             save_file = str(save_file)
         self.parentApp.setup = {
             "server_map": self.server_map.value,
             "steps": list(set(self.parentApp.steps)),
-            "config_file": save_file or None,
             "ask_pass": bool(self.use_ssh_pw.value),
+            "config_file": save_file or None,
         }
         self.parentApp.exit_application(msg="Do you want to continue?")
 
@@ -667,10 +645,20 @@ class RunForm(npyscreen.FormMultiPageAction):
             name=(f"{self.num}Hostname of the service mapping the freva server arch."),
             value=self.parentApp._read_cache("server_map", ""),
         )
-        self.cert_file = self.add_widget_intelligent(
+        self.public_keyfile = self.add_widget_intelligent(
             npyscreen.TitleFilename,
-            name=f"{self.num}Select a public certificate file, defaults to `<project_name>.crt`",
-            value=str(self.parentApp.cert_file or ""),
+            name=f"{self.num}Select a public certificate file; needed for steps web, core, db",
+            value=self.parentApp.read_cert_file("public_keyfile"),
+        )
+        self.private_keyfile = self.add_widget_intelligent(
+            npyscreen.TitleFilename,
+            name=f"{self.num}Select a private certificate file; needed for steps web",
+            value=self.parentApp.read_cert_file("private_keyfile"),
+        )
+        self.chain_keyfile = self.add_widget_intelligent(
+            npyscreen.TitleFilename,
+            name=f"{self.num}Select a chain certificate file; needed for steps web",
+            value=self.parentApp.read_cert_file("chain_keyfile"),
         )
         self.use_ssh_pw = self.add_widget_intelligent(
             npyscreen.RoundCheckBox,

@@ -5,11 +5,18 @@
     - ansible_python_interpreter: "{{ db_ansible_python_interpreter }}"
     - docker_cmd: >
         --net {{ project_name }} -v
-        /mnt/{{project_name}}/db_service:/var/lib/mysql:z
+        /opt/freva/{{project_name}}/db_service:/var/lib/mysql:z
         --name {{ db_name }} -e HOST={{ db_host }}
-        -e PROJECT={{ project_name }} -e DB_USER={{ db_user }}
+        -e NUM_BACKUPS=7
+        -e PROJECT={{ project_name }}
+        -e MYSQL_USER={{db_user}}
+        -e MYSQL_PASSWORD='{{db_passwd}}'
+        -e MYSQL_DATABASE={{db_db}}
+        -p {{ db_port }}:3306
         -e MYSQL_ROOT_PASSWORD={{ root_passwd }}
-        -p {{ db_port }}:3306 {{ db_name }}:latest
+        -v /root/freva-service-config/mysql/create_tables.sql:/docker-entrypoint-initdb.d/002_create_tables.sql:z
+        -v /root/freva-service-config/mysql/daily_backup.sh:/usr/local/bin/daily_backup:z
+        -t mariadb:latest
     - continer_name: "{{ db_name }}"
     - vault_name: "{{project_name}}-vault"
   tasks:
@@ -23,11 +30,15 @@
       stat:
         path: /usr/bin/systemctl
       register: systemctl
+    - name: Registering anacron path
+      stat:
+        path: /etc/cron.daily
+      register: cron
     - name: Stopping services and deleting existing containers
       shell: >
+        /usr/local/bin/docker-or-podman stop {{db_name}};
         systemctl stop {{db_name}};
         /usr/local/bin/docker-or-podman rm {{db_name}};
-        /usr/local/bin/docker-or-podman rmi -f {{db_name}};
         echo 0
       become: true
       ignore_errors: true
@@ -38,13 +49,12 @@
       become: true
     - name: Cleaning existing directory structure
       file:
-        path: /mnt/{{ project_name }}/db_service
+        path: /opt/freva/{{ project_name }}/db_service
         state: absent
       become: true
-      when: wipe == true
     - name: Creating directory structure
       file:
-        path: /mnt/{{ project_name }}/db_service
+        path: /opt/freva/{{ project_name }}/db_service
         state: directory
         recurse: true
         group: 999
@@ -54,11 +64,6 @@
       copy: src="{{ asset_dir }}/db_service" dest=/tmp
     - name: Copying cron create script to target machine
       copy: src="{{ asset_dir }}/scripts/create_cron.sh" dest=/tmp/db_service/
-    - name: Building mariadb docker image
-      shell:
-        chdir: /tmp/db_service
-        cmd: /usr/local/bin/docker-or-podman build -t {{ db_name }}:latest .
-      become: true
     - name: Copying systemd files
       copy:
         src: "{{ asset_dir }}/scripts/{{ item }}"
@@ -66,66 +71,30 @@
         mode: '0755'
       with_items:
         - "create_systemd.py"
-        - "dump_sql"
-    - name: Running docker container
+    - name: Getting additional configurations
       become: true
+      git:
+        repo: https://gitlab.dkrz.de/freva/freva-service-config.git
+        dest: /root/freva-service-config
+        version: init
+        update: true
+    - name: Creating the mysql docker container
       shell: /usr/local/bin/docker-or-podman run -d {{docker_cmd}}
-    - name: Preparing root password reset
-      shell: >
-        echo "USE mysql; FLUSH PRIVILEGES; ALTER USER "
-        "'root'@'localhost' IDENTIFIED BY '{{root_passwd}}'; "
-        "ALTER USER 'root'@'%' IDENTIFIED BY '{{root_passwd}}'; "
-        "FLUSH PRIVILEGES;" > /tmp/dump.sql
-    - name: Copying sql script into docker container
-      shell: >
-        /usr/local/bin/docker-or-podman cp "{{item}}" {{db_name}}:"{{item}}"
-      with_items:
-        - "/tmp/dump.sql"
-        - "/tmp/dump_sql"
       become: true
-    - pause: seconds=5
-    - name: Resetting the password
-      shell: /usr/local/bin/docker-or-podman exec -it {{db_name}} /tmp/dump_sql
-      become: true
-      ignore_errors: true
-    - name: Deleting existing contianer
-      shell: >
-        /usr/local/bin/docker-or-podman stop "{{ db_name }}";
-        /usr/local/bin/docker-or-podman rm "{{ db_name }}";
-        echo 0
-      become: true
-    - name: Creating the mariadb docker container
-      become: true
-      shell: /usr/local/bin/docker-or-podman run -d {{docker_cmd}}
     - name: Creating systemd service
       become: true
       shell: >
         /tmp/create_systemd.py {{db_name}} --requires {{vault_name}} --enable
       when: systemctl.stat.exists == true
-    - pause: seconds=5
-    - name: Copying sample data to target machine
-      # libselinux-python3 needs to be installed for this
-      copy: src={{ db_dump }} dest=/tmp/dump.sql
-    - name: Adding sql data to docker container
-      shell: >
-        /usr/local/bin/docker-or-podman cp "{{item}}" {{db_name}}:"{{item}}"
-      with_items:
-        - "/tmp/dump.sql"
-        - "/tmp/dump_sql"
-      become: true
-    - name: Inserting sample data into database
-      shell: /usr/local/bin/docker-or-podman exec -it {{db_name}} /tmp/dump_sql
-      become: true
     - name: Creating cron jobs
       become: true
       shell: sh /tmp/db_service/create_cron.sh "{{ db_name }}" "{{db_email}}"
+      when: cron.stat.exists == true
     - name: Deleting auxillary files
       file:
         state: absent
         path: "{{ item }}"
       with_items:
-        - /tmp/dump.sql
-        - /tmp/dump_sql
         - /tmp/create_systemd.py
         - /tmp/db_service
     - name: Restarting docker container

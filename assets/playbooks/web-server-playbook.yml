@@ -5,16 +5,11 @@
     - ansible_python_interpreter: "{{ core_ansible_python_interpreter }}"
     - ansible_become_user: "{{ core_ansible_become_user if core_ansible_become_user is defined else 'root' }}"
   tasks:
-    - name: Getting register to the freva logo
-      stat:
-        path: "{{ core_institution_logo }}"
-      register: logo
     - name: Creating share directory with admin group
       file:
         path: "{{core_root_dir}}/freva/web"
         state: directory
         mode: "2775"
-        recurse: true
         group: "{{core_admin_group}}"
       become: "{{'yes' if core_ansible_become_user is defined else 'no' }}"
       when: core_admin_group is defined
@@ -26,13 +21,6 @@
         recurse: true
       become: "{{'yes' if core_ansible_become_user is defined else 'no' }}"
       when: core_admin_group is not defined
-    - name: Copy the logo if exists
-      copy:
-        src: "{{ core_institution_logo }}"
-        dest: "{{core_root_dir}}/freva/web/logo.{{web_institution_logo_suffix}}"
-        mode: "2775"
-      become: "{{'yes' if core_ansible_become_user is defined else 'no' }}"
-      when: logo.stat.exists == true
     - name: Adding freva web config to the core structure
       copy:
         src: "{{ core_config_toml_file }}"
@@ -44,14 +32,22 @@
 
   vars:
     - ansible_python_interpreter: "{{ web_ansible_python_interpreter }}"
-    - docker_cmd: >
-        -p 8000:8000 -p 80:80 -p 443:443
-        -v /mnt/{{project_name}}/web_service:/srv/http:z
+    - service_dir: /opt/freva/{{project_name}}/web_service
+    - docker_web_cmd: >
+        -p 8000:8000
         -v {{ core_root_dir }}:{{ core_root_dir }}:ro
         -v {{ core_base_dir_location }}:{{ core_base_dir_location }}:ro
-        -v {{ core_base_dir_location }}/share/preview:/srv/http/static/preview:ro
-        --name {{ web_name}} -t {{ web_name}}:latest
+        -e EVALUATION_SYSTEM_CONFIG_FILE={{core_root_dir}}/freva/evaluation_system.conf
+        --name {{web_name}}
+        -t registry.gitlab.dkrz.de/freva/freva_web/freva_web:production_dockers
+    - docker_apache_cmd: >
+        -v /opt/freva/{{project_name}}/web_service/freva_web.conf:/usr/local/apache2/conf/httpd.conf:z
+        -v /opt/freva/{{project_name}}/web_service/server-cert.crt:/etc/ssl/certs/server-cert.crt:z
+        -v /opt/freva/{{project_name}}/web_service/server-key.key:/etc/ssl/private/server-key.key:z
+        -v /opt/freva/{{project_name}}/web_service/cacert.pem:/etc/ssl/certs/cacert.pem:z
+        -e FREVA_HOST={{web_server_name}} -p 80:80 -p 443:443 httpd:latest
     - redis_name: "{{ project_name }}-redis"
+    - apache_name: "{{project_name}}-apache"
   tasks:
     - name: Copying docker/podman wrapper script
       copy:
@@ -78,68 +74,61 @@
       shell: >
         systemctl stop {{ web_name }};
         systemctl stop {{ redis_name }};
+        systemctl stop {{ apache_name }};
         /usr/local/bin/docker-or-podman stop {{web_name}};
         /usr/local/bin/docker-or-podman rm {{web_name}};
-        /usr/local/bin/docker-or-podman rmi -f {{web_name}};
         /usr/local/bin/docker-or-podman stop {{redis_name}};
         /usr/local/bin/docker-or-podman rm {{redis_name}};
+        /usr/local/bin/docker-or-podman stop {{apache_name}};
+        /usr/local/bin/docker-or-podman rm {{apache_name}};
         echo 0
       ignore_errors: true
       become: true
-#    - name: Creating docker network
-#      shell: >
-#        /usr/local/bin/docker-or-podman network create "{{ project_name }}";
-#        echo 0
-#      become: true
     - name: Deleting existing web-directory
       file:
         state: absent
-        path: /mnt/{{ project_name }}/web_service
+        path: "{{service_dir}}"
       become: true
-      when: wipe == true
-    - name: Copy auxillary files
+    - name: Creating volume dir for web
+      become: true
+      file:
+        path: "{{service_dir}}"
+        state: directory
+    - name: Copying key files files
+      become: true
       copy:
-        src: "{{ asset_dir }}/web"
-        dest: "/tmp/{{project_name}}_web"
-        mode: "0755"
-    - name: Adjusting freva_web.conf
-      shell:
-        chdir: "/tmp/{{project_name}}_web/web"
-        cmd: >
-          {{ansible_python_interpreter}} create_web_conf.py
-          freva_web.conf freva_web.conf --website={{web_project_website}}
-          --root-dir={{core_root_dir}} --project-name={{project_name}}
-          --alias={{web_server_alias}} --server-name={{web_host}}
-          --work-dir={{core_base_dir_location}}
+        src: "{{item.src}}"
+        dest: "{{item.dest}}"
+      with_items:
+        - {src: "{{asset_dir}}/web/freva_web.conf",
+           dest: "{{service_dir}}/freva_web.conf"}
+        - {src: "{{web_public_keyfile}}",
+           dest: "{{service_dir}}/server-cert.crt"}
+        - {src: "{{web_private_keyfile}}",
+           dest: "{{service_dir}}/server-key.key"}
+        - {src: "{{web_chain_keyfile}}",
+           dest: "{{service_dir}}/cacert.pem"}
+        - {src: "{{asset_dir}}/web/setup_web.sh",
+           dest: "{{service_dir}}/setup_web.sh"}
     - name: Creating redis container
       become: true
       shell:
         cmd: >
-          /usr/local/bin/docker-or-podman  pull redis:latest &&
           /usr/local/bin/docker-or-podman  run -d --name {{redis_name}}
           -p 6379:6379 redis:latest
-    - name: Building freva_web image
+    - name: Creating apache reverse proxy container
       become: true
       shell:
-        chdir: "/tmp/{{project_name}}_web/web"
         cmd: >
-          /usr/local/bin/docker-or-podman build --username {{ansible_user}}
-          --build-arg=core_url={{core_git_url}}
-          --build-arg=core_branch={{core_branch}}
-          --build-arg=build_root=/mnt/{{project_name}}/web_service
-          --build-arg=git_url={{web_git_url}}
-          --build-arg=git_branch={{web_branch}}
-          --build-arg=root_dir={{core_root_dir}}
-          --build-arg=PROJECT_NAME={{project_name}}
-          -t {{ web_name }} .
-    - name: Creating volume dir for web
+          /usr/local/bin/docker-or-podman  run -d --name {{apache_name}}
+          {{docker_apache_cmd}}
+    - name: debug
+      shell:
+        cmd: >
+          echo /usr/local/bin/docker-or-podman  run -d --name {{apache_name}} {{docker_apache_cmd}} > /tmp/podman_cmd
+    - name: Getting freva_web image
       become: true
-      file:
-        path: /mnt/{{project_name}}/web_service
-        state: directory
-    - name: Running freva_web image
-      become: true
-      shell: /usr/local/bin/docker-or-podman  run -d {{docker_cmd}}
+      shell: /usr/local/bin/docker-or-podman  run -d {{docker_web_cmd}}
     - name: Copying systemd files
       copy:
         src: "{{ asset_dir }}/scripts/create_systemd.py"
@@ -149,10 +138,16 @@
       become: true
       shell: |
           /tmp/create_systemd.py {{redis_name}}
-          /tmp/create_systemd.py {{web_name}} --requires {{redis_name}} --enable
+          /tmp/create_systemd.py {{apache_name}}
+          /tmp/create_systemd.py {{web_name}} --requires {{redis_name}} {{apache_name}} --enable
       when: systemctl.stat.exists == true
     - pause: seconds=5
-    - name: Building django page
+    - name: Adding setup_web script
+      become: true
+      shell: >
+        /usr/local/bin/docker-or-podman cp {{service_dir}}/setup_web.sh
+        {{web_name}}:/tmp/setup_web.sh
+    - name: Setting django admin
       become: true
       shell: >
         /usr/local/bin/docker-or-podman exec -it {{web_name}}

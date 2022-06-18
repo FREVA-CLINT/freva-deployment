@@ -14,10 +14,16 @@
 ## The first part of this configuration defines general configuration that
 ## is common among all deployment steps.
 
-## Set the path to the public certfificate files that is used to make password
-## queries to the vault server or used as web certfificate. If you leave this
-## key empty a new certfificate will be created
-cert_file = ""
+## Set the path to the SSL certfificate files that is used to make password
+## queries to the vault server or used as web certfificates.
+[certificates]
+## Path to the public keyfile
+public_keyfile = ""
+## Path to the private keyfile
+privat_keyfile = ""
+## Path to the chain file
+chain_keyfile = ""
+
 
 # The the project name that should be used for this freva instance
 project_name = ""
@@ -104,10 +110,6 @@ root_dir = ""
 ## of freva deployed and want to setup a project specific configuration that
 ## uses this central instance
 install = true
-## The url to the git repository of the evaluation_system
-git_url = "https://gitlab.dkrz.de/freva/evaluation_system.git"
-## Which branch of the evaluation_system should be deployed
-branch = "freva-dev"
 ## The directory where the user specific output will be stored
 base_dir_location = ""
 # Set the target architecutre of the system where the backend will be installed
@@ -133,16 +135,10 @@ wipe = false
 [web.config]
 ## List of user that can alter the configuration of freva web
 project_website = "www.freva.dkrz.de"
-## The url to the git repository of freva_web
-git_url = "https://gitlab.dkrz.de/freva/freva_web.git"
-## Which branch of the evaluation_system should be deployed
-branch = "master"
 ## Ansible needs a python3 interpreter, which can be set for custom python3 instances
 #ansible_python_interpreter = ""
 ##If you need a different user name you can set it here:
 #ansible_user = "username"
-##Set the path to the logo
-institution_logo = ""
 ##Set html colors
 main_color = "Tomato"
 border_color = "#6c2e1f"
@@ -153,23 +149,19 @@ about_us_text = ""
 contacts = ""
 ## Now set postal address
 address = "Project name, German Climate Computing Centre (DKRZ), Bundesstr. 45a, 20146 Hamburg, Germany."
-##Indicate whether or not to empty any pre-existing folders/docker volumes.
-##(Useful for a truely fresh start) (default: False)
-wipe = false
 ## Here you can set a lengthy project description.
 ## You can also set a path to a filename that contains the information.
 ## Instead of text you can set a path to a file containing the text, like a html file.
 homepage_text = "Bal bla bla."
 ## Set a one line blurb of the project
-hompage_heading = "Short description of the project."
+homepage_heading = "Short description of the project."
 ## Set the name of the project/institution
 institution_name = "Freva"
 ## Set the slurm scheduler host
 scheduler_host = ["levante.dkrz.de"]
-
 ## Settings for ldap
 ## Ldap server name(s)
-auth_ldap_server_uri = "ldap://mldap0.hpc.dkrz.de,ldap://mldap1.hpc.dkrz.de"
+auth_ldap_server_uri = "ldap://idm-dmz.dkrz.de"
 ## Set the group that will be allowed to log on
 allowed_group = "test_group"
 ## Set the ldap search user base

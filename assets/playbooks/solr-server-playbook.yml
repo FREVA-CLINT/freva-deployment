@@ -8,9 +8,13 @@
         -e CORE=files
         -e NUM_BACKUPS=7
         -e SOLR_HEAP={{solr_mem}}
-        -v /mnt/{{project_name}}/solr_service:/var/solr/data:z
+        -v /opt/freva/{{project_name}}/solr_service:/var/solr/data:z
+        -v /root/freva-service-config/solr/managed-schema.xml:/opt/solr/managed-schema.xml
+        -v /root/freva-service-config/docker-entrypoint-initdb.d/create_cores.sh
+        -v /root/freva-service-config/solr/daily_backup.sh:/usr/local/bin/daily_backup
         --name {{ solr_name }}
-        -p {{ solr_port }}:8983 -t {{ solr_name }}:latest
+        -p {{ solr_port }}:8983 -t
+        -t solr:latest
   tasks:
     - name: Copying docker/podman wrapper script
       copy:
@@ -22,6 +26,10 @@
       stat:
         path: /usr/bin/systemctl
       register: systemctl
+    - name: Registering anacron path
+      stat:
+        path: /etc/cron.daily
+      register: cron
     - name: Stopping services and deleting existing containers
       shell: >
         systemctl stop {{solr_name}};
@@ -39,32 +47,32 @@
       become: true
     - name: Cleaning existing directory structure
       file:
-        path: /mnt/{{ project_name }}/solr_service
+        path: /opt/freva/{{ project_name }}/solr_service
         state: absent
       become: true
       when: wipe == true
     - name: Creating directory structure
       file:
-        path: /mnt/{{ project_name }}/solr_service
+        path: /opt/freva/{{ project_name }}/solr_service
         state: directory
         owner: 8983
         group: 8983
         recurse: true
       become: true
+    - name: Getting additional configurations
+      become: true
+      git:
+        repo: https://gitlab.dkrz.de/freva/freva-service-config.git
+        dest: /root/freva-service-config
+        version: init
+        update: true
     - name: Copy systemd files
       copy:
         src: "{{ asset_dir }}/scripts/create_systemd.py"
         dest: /tmp/create_systemd.py
         mode: "0755"
-    - name: Copy auxillary files to target machine
-      copy: src="{{ asset_dir }}/solr_service" dest=/tmp
     - name: Copy cron create script to target machine
       copy: src="{{ asset_dir }}/scripts/create_cron.sh" dest=/tmp/solr_service/
-    - name: Building solr images
-      shell:
-        chdir: /tmp/solr_service
-        cmd: /usr/local/bin/docker-or-podman build -t {{ solr_name }}:latest .
-      become: true
     - name: Creating the solr docker container
       become: true
       shell: /usr/local/bin/docker-or-podman run -d {{docker_cmd}}
@@ -73,26 +81,12 @@
       shell: /tmp/create_systemd.py {{solr_name}} --enable
       when: systemctl.stat.exists == true
     - pause: seconds=3
-    - name: Creating the solr cores
-      become: true
-      shell: >
-        /usr/local/bin/docker-or-podman exec -it --user=solr "{{solr_name}}"
-        /bin/bash create_core.sh "{{item}}"
-      with_items:
-        - "latest"
-        - "files"
-    - name: Restarting docker container
-      become: true
-      shell: systemctl restart "{{ solr_name }}"
-      when: systemctl.stat.exists == true
     - name: Creating cron jobs
       become: true
       shell: >
         sh /tmp/solr_service/create_cron.sh "{{ solr_name }}" "{{solr_email}}"
+      when: systemctl.stat.exists == true
     - name: Deleting auxillary files
       file:
         state: absent
-        path: "{{ item }}"
-      with_items:
-        - /tmp/create_systemd.py
-        - /tmp/solr_service
+        path: /tmp/create_systemd.py

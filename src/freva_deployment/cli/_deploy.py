@@ -38,8 +38,8 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
         "--steps",
         type=str,
         nargs="+",
-        default=["services", "web", "core"],
-        choices=["services", "web", "core", "db", "solr", "backup"],
+        default=["db", "solr", "web", "core"],
+        choices=["web", "core", "db", "solr"],
         help="The services/code stack to be deployed",
     )
     ap.add_argument(
@@ -57,17 +57,7 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
         action="version",
         version="%(prog)s {version}".format(version=__version__),
     )
-    args = ap.parse_args()
-    services = {"services": ["db", "vault", "solr", "backup"]}
-    steps = []
-
-    for step in args.steps:
-        try:
-            steps += services[step]
-        except KeyError:
-            steps += [step]
-    args.steps = steps
-    return args
+    return ap.parse_args()
 
 
 def cli(argv: list[str] | None = None) -> None:

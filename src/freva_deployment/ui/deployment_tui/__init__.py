@@ -46,5 +46,6 @@ def tui() -> None:
     if setup:
         server_map = setup.pop("server_map")
         ask_pass = setup.pop("ask_pass")
+        print(setup)
         with DeployFactory(**setup) as DF:
             DF.play(server_map, ask_pass, verbosity)

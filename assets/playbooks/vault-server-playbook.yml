@@ -6,6 +6,8 @@
     - continer_name: "{{ vault_name }}"
     - docker_cmd: >
         --net {{ project_name }} --cap-add=IPC_LOCK
+        -v /opt/freva/{{project_name}}/vault_service/certs:/data:z
+        -v /opt/freva/{{project_name}}/vault_service/vault:/vault/file:z
         -p 5002:5002 --name={{ vault_name }} {{ vault_name }}:latest
   tasks:
     - name: Copying docker/podman wrapper script
@@ -18,6 +20,13 @@
       stat:
         path: /usr/bin/systemctl
       register: systemctl
+    - name: Registering vault volume path
+      stat:
+        path: /usr/bin/systemctl
+      register: vault_volume
+    - name: Set vault valume path
+      set_fact:
+        exists: vault_volume.stat.exists
     - name: Stopping services and deleting existing containers
       shell: >
         systemctl stop {{vault_name}};
@@ -34,14 +43,6 @@
       become: true
     - name: Copying auxillary files to target machine
       copy: src="{{ asset_dir }}/vault" dest=/tmp
-    - name: Copying public key file to target machine
-      copy:
-        src: "{{ vault_keyfile }}"
-        dest: "/tmp/vault/{{ project_name }}.crt"
-    - name: Copying private key file to target machine
-      copy:
-        src: "{{ vault_private_keyfile }}"
-        dest: "/tmp/vault/{{ project_name }}.key"
     - name: Copying systemd files
       copy:
         src: "{{ asset_dir }}/scripts/create_systemd.py"
@@ -49,14 +50,22 @@
         mode: "0755"
     - name: Cleaning existing directory structure
       file:
-        path: /mnt/{{ project_name }}/vault_service
+        path: /opt/freva/{{ project_name }}/vault_service/
         state: absent
       become: true
       when: wipe == true
     - name: Creating directory structure
       file:
-        path: /mnt/{{ project_name }}/vault_service
         state: directory
+        path: "{{ item }}"
+      with_items:
+        - "/opt/freva/{{ project_name }}/vault_service/vault"
+        - "/opt/freva/{{ project_name }}/vault_service/certs"
+      become: true
+    - name: Copying public key file to target machine
+      copy:
+        src: "{{ vault_keyfile }}"
+        dest: "/opt/freva/{{project_name}}/vault_service/certs/freva.crt"
       become: true
     - name: Building vault images
       shell:
@@ -76,16 +85,21 @@
       when: systemctl.stat.exists == true
       ignore_errors: true
     - pause: seconds=3
-    - name: Inserting secrets
+    - name: Inserting server infrastructure
+      become: true
       shell: >
         /usr/local/bin/docker-or-podman exec -it {{ vault_name }}
         vault kv put kv/read-eval db.container={{ vault_name }}
-        db.passwd='{{ vault_passwd }}'
         db.host={{ vault_host }}
+        db.port={{ db_port }}
+    - name: Inserting secrets
+      shell: >
+        /usr/local/bin/docker-or-podman exec -it {{ vault_name }}
+        vault kv put kv/read-eval db.passwd='{{ vault_passwd }}'
         db.user={{ db_user }}
         db.db={{ db_db }}
-        db.port={{ db_port }}
       become: true
+      when: wipe == true or exists == false
     - name: Deleting auxillary files
       file:
         state: absent

@@ -16,7 +16,7 @@ import requests
 app = Flask(__name__)
 api = Api(app)
 KEY_FILE = Path("/vault/keys")
-CERT_DIR = Path("/mnt")
+CERT_DIR = Path("/data")
 
 
 def unseal():
@@ -69,10 +69,6 @@ class Vault(Resource):
         with (CERT_DIR / f"freva.{suffix}").open() as f:
             key = [k.strip() for k in f.readlines() if not k.startswith("-")]
         return ("".join(key)).encode()
-
-    @cached_property
-    def private_key(self):
-        return hashlib.sha512(self._read_key("key")).hexdigest()
 
     @cached_property
     def public_key(self):

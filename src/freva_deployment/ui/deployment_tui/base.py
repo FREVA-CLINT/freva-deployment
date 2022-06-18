@@ -94,6 +94,14 @@ class BaseForm(npyscreen.FormMultiPageWithMenus, npyscreen.FormWithMenus):
     """Base class for forms."""
 
     _num: int = 0
+    input_fields: dict[str, tuple[npyscreen.TitleText, bool]] = {}
+    """Dictionary of input fileds: the key of the dictionary represents the name
+       of the key in the in config toml input files. Values represent a tuple of
+       npysceen types that display the input information on this key to the
+       user and a boolean indicating whether or not this variable is mandatory.
+    """
+    certificates: list[str] = []
+    """The type of certificate files this step needs."""
 
     def get_config(self, key) -> dict[str, str | bool | list[str]]:
         """Read the configuration for a step."""
