@@ -47,7 +47,7 @@
         -v /opt/freva/{{project_name}}/web_service/cacert.pem:/etc/ssl/certs/cacert.pem:z
         -e FREVA_HOST={{web_server_name}} -p 80:80 -p 443:443 httpd:latest
     - redis_name: "{{ project_name }}-redis"
-    - apache_name: "{{project_name}}-apache"
+    - apache_name: "{{project_name}}-httpd"
   tasks:
     - name: Copying docker/podman wrapper script
       copy:

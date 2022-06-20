@@ -79,7 +79,6 @@
       git:
         repo: https://gitlab.dkrz.de/freva/freva-service-config.git
         dest: /root/freva-service-config
-        version: init
         update: true
     - name: Creating the mysql docker container
       shell: /usr/local/bin/docker-or-podman run -d {{docker_cmd}}

@@ -53,12 +53,14 @@
         state: directory
         mode: "3775"
       become: "{{'yes' if core_ansible_become_user is defined else 'no' }}"
+      when: core_base_dir_location | length != 0
       ignore_errors: true
     - name: Creating preview path
       file:
         path: "{{core_preview_path}}"
         state: directory
         mode: "3775"
+      when: core_preview_path | length != 0
       become: "{{'yes' if core_ansible_become_user is defined else 'no' }}"
       ignore_errors: true
     - name: Inserting evaluation_sytem.conf file without admin group

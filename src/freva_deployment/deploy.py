@@ -150,10 +150,14 @@ class DeployFactory:
         if not root_dir:
             self.cfg["core"]["config"]["root_dir"] = install_dir
         preview_path = self.cfg["core"]["config"].get("preview_path", "")
+        base_dir_location = self.cfg["core"]["config"].get("base_dir_location", "")
         if not preview_path:
-            self.cfg["core"]["config"]["preview_path"] = str(
-                Path(self.cfg["config"]["base_dir_location"]) / "share" / "preview"
-            )
+            if base_dir_location:
+                self.cfg["core"]["config"]["preview_path"] = str(
+                    Path(base_dir_location) / "share" / "preview"
+                )
+            else:
+                self.cfg["core"]["config"]["preview_path"] = ""
         self.cfg["core"]["config"]["keyfile"] = self.public_key_file
         git_exe = self.cfg["core"]["config"].get("git_path")
         self.cfg["core"]["config"]["git_path"] = git_exe or "git"
@@ -300,7 +304,7 @@ class DeployFactory:
         """Set additional values to the configuration."""
         if step in self._needs_core:
             for key in ("root_dir", "base_dir_location"):
-                value = self.cfg["core"]["config"][key]
+                value = self.cfg["core"]["config"].get(key, "")
                 config[step]["vars"][f"core_{key}"] = value
         config[step]["vars"][f"{step}_hostname"] = self.cfg[step]["hosts"]
         config[step]["vars"][f"{step}_name"] = f"{self.project_name}-{step}"

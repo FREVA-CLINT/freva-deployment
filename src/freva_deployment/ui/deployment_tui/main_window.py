@@ -50,7 +50,7 @@ class MainApp(npyscreen.NPSAppManaged):
         """(Re)-Start the auto save thread."""
         self.thread_stop = threading.Event()
         self._save_thread = threading.Thread(target=self._auto_save)
-        # self._save_thread.start()
+        self._save_thread.start()
 
     def _add_froms(self) -> None:
         """Add forms to edit the deploy steps to the main window."""
