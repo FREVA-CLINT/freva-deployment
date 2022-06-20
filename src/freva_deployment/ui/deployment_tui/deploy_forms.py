@@ -323,7 +323,10 @@ class WebScreen(BaseForm):
                         f"{self.num}Ldap server name(s) used for authentication"
                         " - comma separated:"
                     ),
-                    value=cfg.get("auth_ldap_server_uri", "ldap://idm-dmz.dkrz.de",),
+                    value=cfg.get(
+                        "auth_ldap_server_uri",
+                        "ldap://idm-dmz.dkrz.de",
+                    ),
                 ),
                 True,
             ),
@@ -364,7 +367,8 @@ class WebScreen(BaseForm):
                     npyscreen.TitleText,
                     name=f"{self.num}Ldap search keys for group base:",
                     value=cfg.get(
-                        "ldap_group_base", "cn=groups,cn=accounts,dc=dkrz,dc=de",
+                        "ldap_group_base",
+                        "cn=groups,cn=accounts,dc=dkrz,dc=de",
                     ),
                 ),
                 True,

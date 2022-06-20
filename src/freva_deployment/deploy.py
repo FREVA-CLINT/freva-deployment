@@ -50,7 +50,9 @@ class DeployFactory:
     _steps_with_cert: tuple[str, ...] = ("db", "vault", "core", "web")
 
     def __init__(
-        self, steps: list[str] | None = None, config_file: Path | str | None = None,
+        self,
+        steps: list[str] | None = None,
+        config_file: Path | str | None = None,
     ) -> None:
 
         self._config_keys: list[str] = []
@@ -269,7 +271,8 @@ class DeployFactory:
 
     def _get_files_copy(self, key) -> Path | None:
         return dict(
-            core=self.eval_conf_file.absolute(), web=self.eval_conf_file.absolute(),
+            core=self.eval_conf_file.absolute(),
+            web=self.eval_conf_file.absolute(),
         ).get(key, None)
 
     @property
