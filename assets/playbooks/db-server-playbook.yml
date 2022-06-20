@@ -15,6 +15,7 @@
         -p {{ db_port }}:3306
         -e MYSQL_ROOT_PASSWORD={{ root_passwd }}
         -v /root/freva-service-config/mysql/create_tables.sql:/docker-entrypoint-initdb.d/002_create_tables.sql:z
+        -v /root/reset_root_pw.sh:/docker-entrypoint-initdb.d/001_reset_passwords.sh:z
         -v /root/freva-service-config/mysql/daily_backup.sh:/usr/local/bin/daily_backup:z
         -t mariadb:latest
     - continer_name: "{{ db_name }}"
@@ -39,6 +40,7 @@
         /usr/local/bin/docker-or-podman stop {{db_name}};
         systemctl stop {{db_name}};
         /usr/local/bin/docker-or-podman rm {{db_name}};
+        /usr/local/bin/docker-or-podman rmi -f mariadb;
         echo 0
       become: true
       ignore_errors: true
@@ -52,6 +54,7 @@
         path: /opt/freva/{{ project_name }}/db_service
         state: absent
       become: true
+      when: wipe == true
     - name: Creating directory structure
       file:
         path: /opt/freva/{{ project_name }}/db_service
@@ -61,9 +64,8 @@
         owner: 999
       become: true
     - name: Copying auxillary files to target machine
-      copy: src="{{ asset_dir }}/db_service" dest=/tmp
-    - name: Copying cron create script to target machine
-      copy: src="{{ asset_dir }}/scripts/create_cron.sh" dest=/tmp/db_service/
+      become: true
+      copy: src="{{ asset_dir }}/db_service/reset_root_pw.sh" dest=/root/
     - name: Copying systemd files
       copy:
         src: "{{ asset_dir }}/scripts/{{ item }}"
@@ -71,6 +73,7 @@
         mode: '0755'
       with_items:
         - "create_systemd.py"
+        - "create_cron.sh"
     - name: Getting additional configurations
       become: true
       git:
@@ -88,7 +91,7 @@
       when: systemctl.stat.exists == true
     - name: Creating cron jobs
       become: true
-      shell: sh /tmp/db_service/create_cron.sh "{{ db_name }}" "{{db_email}}"
+      shell: sh /tmp/create_cron.sh "{{ db_name }}" "{{db_email}}"
       when: cron.stat.exists == true
     - name: Deleting auxillary files
       file:
@@ -96,7 +99,12 @@
         path: "{{ item }}"
       with_items:
         - /tmp/create_systemd.py
-        - /tmp/db_service
+        - /tmp/create_cron.sh
+    - name: Resetting the passwords
+      become: true
+      shell: >
+        /usr/local/bin/docker-or-podman exec -it {{db_name}}
+        /bin/bash /docker-entrypoint-initdb.d/001_reset_passwords.sh
     - name: Restarting docker container
       become: true
       shell: systemctl restart "{{ db_name }}"
