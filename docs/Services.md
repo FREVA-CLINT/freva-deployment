@@ -1,5 +1,6 @@
 # Remote control of project services
-The installation routine saves the hosts of the services for each project in
+This option only applies if you have installed a [service mapping](Installation.html#setting-up-a-service-that-maps-the-server-structure).
+The installation routine saves the host names of the services for each project in
 as central location. After deployment the project services can be restarted,
 stopped or started via the `freva-service` command.
 
@@ -31,15 +32,15 @@ options:
 The command takes two positional arguments. The first one instructs the
 command whether the service should be started, stopped or restarted.
 The second positional argument points to the project name. This is project name
-that was used during deployment for example `xces`. Individual services
+that was used during deployment for example `clex`. Individual services
 can be set by the `--services` option. By default all services (`db`, `web` and `solr`)
 will be modified. The `--user` flag can be set if the login user name to the
 target machine(s) differs from the current system user.
 
-The below example restarts the apache solr service in the `xces` project at DKRZ:
+The below example restarts the apache solr service in the `clex` project:
 
 ```bash
-freva-service restart xces --service solr --user k12345 --domain dkrz
+freva-service restart clex --service solr --user k12345
 ```
 
 > **_Note:_** All services (`db`, `web` and `solr`) will be selected if the `--services` option

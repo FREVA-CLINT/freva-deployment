@@ -3,6 +3,7 @@
 
 from pathlib import Path
 import re
+import urllib.request
 from setuptools import setup, find_packages
 from setuptools.command.develop import develop
 from setuptools.command.install import install
@@ -21,10 +22,23 @@ def find_version(*parts):
     raise RuntimeError("Unable to find version string.")
 
 
+def download_assets() -> None:
+    """Download additional assets."""
+    assets = [
+        (
+            ASSET_DIR / "config" / "evaluation_system.conf.tmpl",
+            "https://gitlab.dkrz.de/freva/evaluation_system/-/raw/freva-dev/assets/evaluation_system.conf",
+        )
+    ]
+    for path, url in assets:
+        urllib.request.urlretrieve(url, filename=str(path))
+
+
 def prepare_config(develop_cmd: bool = False) -> None:
     """Create the freva config dir in loacal user directory."""
     import appdirs
 
+    download_assets()
     user_config_dir = Path(appdirs.user_config_dir()) / CONFIG_DIR
     user_data_dir = Path(appdirs.user_data_dir()) / CONFIG_DIR
     for cfg_path in (user_config_dir, user_data_dir):

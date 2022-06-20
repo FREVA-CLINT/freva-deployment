@@ -212,22 +212,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         help="The old database user",
     )
     db_parser.set_defaults(apply_func=_migrate_db)
-    drs_parser = subparsers.add_parser(
-        "drs-config",
-        description="Freva drs structure migration",
-        help="Migrate old drs structure definitions to new toml style.",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-    )
-    drs_parser.add_argument(
-        "--python-path",
-        metavar="python-path",
-        type=Path,
-        help="Python path of the old freva instance, leave blank "
-        "if you load the old freva module / source file.",
-    )
-    drs_parser.set_defaults(apply_func=_migrate_drs)
-    arg = parser.parse_args(argv)
-    return arg
+    return parser.parse_args(argv)
 
 
 def cli() -> None:

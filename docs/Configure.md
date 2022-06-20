@@ -1,13 +1,13 @@
 # Running and configuring the deployment
 A complete freva instance will need the following services:
 
-- solrservers (hostname of the apache solr server)
-- dbservers (hostname of the MariaDB server)
-- webservers (hostname that will host the web site)
-- backendservers (hostname(s) where the command line interface will be installed)
+- solr servers (hostname of the apache solr server)
+- db servers (hostname of the MariaDB server)
+- web servers (hostname that will serve web ui)
+- core servers (hostname(s) where the command line interface will be installed)
 
 ## Setting the python and git path
-Some systems do not have access to python3.6+ (/usr/bin/python3) or git by default.
+Some systems do not have access to python3.4+ (/usr/bin/python3) or git by default.
 In such cases you can overwrite the `ansible_python_interpreter` in the inventory
 settings of the server section to point ansible to a custom `python3` bindary. For example
 
@@ -20,53 +20,97 @@ The same applies to the path to the git binary:
 ```
 git_path=/sw/spack-levante/git-2.31.1-25ve7r/bin/git
 ```
-## A map of your server infrastructure
+## A map of your server infrastructure (optional)
 Different freva instances are installed across different server hosts. Usually
 the different freva instances running at an institution are distinguished by
-a unique project name associated with each freva instance for example `xces`.
+a unique project name for example `clex`.
 To keep track of all server and services we have created a service that keeps
 track of the locations of all services for certain freva instances.
 *Before* the first deployment we recommend to setup this server map by issuing
 the `deploy-freva-map` command. Please also refer to the [installation section](Installation.html#setting-up-a-service-that-maps-the-server-structure)
-for more details.
+for more details. This step is only necessary *once* per institution, please talk
+to the admins of any other freva instances at your institution if this service
+has already been set up.
 
 
 ## Running the deployment
 After successful configuration you can run the deployment.
 The command `deploy-freva` opens a text user interface (tui) that will walk
 you through the setup of the deployment.
-> **_Note:_** Navigation is similar to the one of the *nano* text editor. The shortcuts start with a `^` which indicates `CTRL+`.
+> **_Note:_** Navigation is similar to the one of the *nano* text editor.
+The shortcuts start with a `^` which indicates `CTRL+`.
+
+Please refer to the [Appendix I](TuiHowto.html) on tui usage instructions.
 
 ### Deployment with existing configuration.
-If you already have a configuration saved in a toml base inventory file you can
+If you already have a configuration saved in a toml inventory file you can
 issue the `deploy-freva-cmd` command:
 
 ```bash
 deploy-freva-cmd --help
-usage: deploy-freva-cmd [-h] [--server-map SERVER_MAP] [--config CONFIG]
-                        [--steps {services,web,core,db,solr,backup} [{services,web,core,db,solr,backup} ...]] [--ask-pass] [-v] [-V]
+usage: deploy-freva-cmd [-h] [--server-map SERVER_MAP] [--config CONFIG] [--steps {web,core,db,solr} [{web,core,db,solr} ...]]
+                        [--ask-pass] [-v] [-V]
 
 Deploy freva and its services on different machines.
 
-options:
+optional arguments:
   -h, --help            show this help message and exit
   --server-map SERVER_MAP
                         Hostname of the service mapping the freva server archtiecture, Note: you can create a server map by running
                         the deploy-freva-map command (default: None)
   --config CONFIG, -c CONFIG
                         Path to ansible inventory file. (default: /home/wilfred/.config/freva/deployment/inventory.toml)
-  --steps {services,web,core,db,solr,backup} [{services,web,core,db,solr,backup} ...]
-                        The services/code stack to be deployed (default: ['services', 'web', 'core'])
+  --steps {web,core,db,solr} [{web,core,db,solr} ...]
+                        The services/code stack to be deployed (default: ['db', 'solr', 'web', 'core'])
   --ask-pass            Connect to server via ssh passwd instead of public key. (default: False)
   -v, --verbose         Verbosity level (default: 0)
   -V, --version         show program's version number and exit
-
 ```
 
 The `--steps` flags can be used if not all services should be deployed.
 
+## After successful deployment
+
+### Systemd units for all services:
 If the target machine where the services (solr, mariadb, web) were deployed
-is a Linux machine you will have a `systemd` unit service was created.
+are Linux machines you will have access to a `systemd` unit of the created
+service. In general the services can be accessed by `<project_name>-<service_name>.service`
+If for example the `project_name` key was set to `clex-ces` then the following services
+are created:
+
+- database: `clex-ces-db.service`, `clex-ces-vault.serice`
+- solr: `clex-ces.solr.service`
+- web ui: `clex-ces-web.service`, `clex-ces-redis.service`, `clex-ces-httpd.service`
+
+### Access of service data on the host machine
+The data of the services, like the database or solr cores are stored "outside"
+the docker containers on the host machine and can be accessed at
+`/opt/freva/<project_name>/<service_name>_service/` for example
+`/opt/freva/clex-ces/db_service`
+
+
+### Simple backup scripts:
+The `db` and `solr` services offer a very simple backup script that can
+be run from outside the container. To issue a backup command simply call the
+following command `docker/podman exec -it <project_name>-solr/db /usr/local/bin/daily_backup`.
+For example:
+
+```
+podman exec -it clex-ces-solr /usr/local/bin/daily_backup
+```
+
+If you have `anacron` set up on your host machine then a cron script to
+automatically backup databases and solr cores is applied nightly.
+By default the script keeps the last 7 backups. Backup data can be found in:
+
+- `db`:`/opt/freva/<project_name>/db_service>/backup`
+- `solr`: `/opt/freva/<project_name>/solr_service/<core_name>/data/snapshot.YYYYMMDDHHMMSSMS`
+
+This is only a rudimentary backup solution, ideally you should transfer those
+backups regularly to a different location. You can also disable this
+rudimentary backup strategy by deleting the backup scripts in `/etc/cron.daily`
+and replace it by a more sophisticated backup mechanism.
+
 
 ## Known Issues:
 Below are possible solutions to some known issues:
@@ -99,21 +143,15 @@ you can figure out the `db_docker_name` using the following command:
 docker container ls
 ```
 
-#### Git related unit tests in backend playbook fail
-Git pull and push commands tend to fail if you haven't configured git. In this case change into the /tmp/evaluation_system directory of the host that runs the playbook
-then manually trigger the unit tests by
+### Stuck in load/save dialogue in the tui
+The load/save forms can be exited by pressing the `<TAB>` key
+which will get you to input field at the bottom of the screen. If the input
+field has text delete it an press the `<ESC>` key, this will bring you get to
+the screen where you started.
 
-```
-FREVA_ENV=/path/to/root_dir make tests
-```
-You can then check the stderr for messages for git related issues. Usually it helps to configure git before hand:
-
-```bash
-git config --global init.defaultBranch main
-git config --global user.name your_user
-git config --global user.email your@email.com
-```
 
 
 ## Advanced: Adjusting the playbook
-Playbook templates and be found the in the `playbooks` directory. You can also add new variables to the playbook if they are present in the `config/inventory` file.
+Playbook templates and be found the in the `~/.config/freva/deployment/playbooks` directory.
+You can also add new variables to the playbook if they are present in the
+`~/.config/freva/deployment/inventory.toml` file.

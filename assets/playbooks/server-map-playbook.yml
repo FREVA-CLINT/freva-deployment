@@ -2,7 +2,7 @@
 - hosts: freva_map
 
   vars:
-    - docker_cmd: "-v /mnt/freva/server-map:/var/freva/:z --name freva-map -p {{ port }}:5008 -t freva-map:latest"
+    - docker_cmd: "-v /opt/freva/server-map:/var/freva/:z --name freva-map -p {{ port }}:5008 -t freva-map:latest"
   tasks:
     - name: Copying docker/podman wrapper script
       copy:
@@ -23,12 +23,13 @@
         /usr/local/bin/docker-or-podman stop freva-map;
         /usr/local/bin/docker-or-podman rm freva-map;
         /usr/local/bin/docker-or-podman rmi -f freva-map;
+        /usr/local/bin/docker-or-podman rmi -f python;
         echo 0
       become: true
       when: wipe == true
     - name: Cleaning existing directory structure
       file:
-        path: rm -rf /mnt/freva/server-map
+        path: /opt/freva/server-map
         state: absent
       become: true
       when: wipe == true
@@ -46,7 +47,7 @@
       become: true
     - name: Creating directory structure
       file:
-        path: /mnt/freva/server-map
+        path: /opt/freva/server-map
         state: directory
         owner: 9999
         group: 9999

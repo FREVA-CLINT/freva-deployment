@@ -19,16 +19,24 @@ KEY_FILE = Path("/vault/keys")
 CERT_DIR = Path("/data")
 
 
+def read_key():
+    unseal_keys = []
+    token = ""
+    with KEY_FILE.open("r") as f:
+        for line in f.readlines():
+            if "unseal key" in line.lower():
+                unseal_keys.append(line.split(":")[-1].strip())
+            if "initial root token" in line.lower():
+                token = line.split(":")[-1].strip()
+    return unseal_keys, token
+
+
 def unseal():
 
     env = os.environ.copy()
     env["VAULT_ADDR"] = "http://127.0.0.1:8200"
     env["VAULT_SKIP_VERIFY"] = "true"
-    with KEY_FILE.open() as f:
-        unseal_keys = []
-        for line in f.readlines():
-            if "unseal " in line.lower():
-                unseal_keys.append(line.split(":")[-1].strip())
+    unseal_keys, _ = read_key()
     for key in unseal_keys[:3]:
         run(shlex.split(f"vault operator unseal {key}"), env=env)
 
@@ -40,20 +48,9 @@ def deploy_vault():
     env["VAULT_ADDR"] = "http://127.0.0.1:8200"
     env["VAULT_SKIP_VERIFY"] = "true"
     res = run(cmd, stdout=PIPE, stderr=PIPE, env=env)
-    stdout = res.stdout.decode().split("\n")
-    unseal_keys = []
-    token = None
-    print(res.stderr.decode())
-    print("\n".join(stdout))
-    for line in stdout:
-        if "unseal key" in line.lower():
-            unseal_keys.append(line.split(":")[-1].strip())
-        if "initial root token" in line.lower():
-            token = line.split(":")[-1].strip()
-            with KEY_FILE.open("w") as f:
-                for nn, key in enumerate(unseal_keys):
-                    f.write(f"Unseal key #{nn+1}: {key}\n")
-                f.write(f"Root token: {token}")
+    with KEY_FILE.open("w") as f:
+        f.write(res.stdout.decode())
+    unseal_keys, token = read_key()
     unseal()
     if token:
         run(shlex.split(f"vault login {token}"), env=env)
@@ -90,7 +87,7 @@ class Vault(Resource):
         """
         if public_key != os.environ["ROOT_PW"]:
             return jsonify({"status": "fail"})
-        token = self._get_keys("token", public_key, check=False)["key"]
+        _, token = read_key()
         # Get the information from the vault
         url = f"http://127.0.0.1:8200/v1/kv/data/read-eval"
         headers = {"X-Vault-Token": token}
@@ -117,34 +114,15 @@ class Vault(Resource):
         --------
             dict: Vault information
         """
-
+        out = ""
         if entry == "data":
-            token = self._get_keys("token", public_key)["key"]
+            _, token = read_key()
             # Get the information from the vault
             out = requests.get(
                 f"http://127.0.0.1:8200/v1/kv/data/read-eval",
                 headers={"X-Vault-Token": token},
             ).json()["data"]["data"]
-        else:
-            out = self._get_keys(entry, public_key)
         return jsonify(out)
-
-    def _get_keys(self, entry, public_key, check=True):
-        """Get vault server information."""
-        entry = entry.strip().replace(" ", "").replace("#", "")
-        if public_key != self.public_key and check:
-            return jsonify({"key": None})
-        with KEY_FILE.open() as f:
-            for line in f.readlines():
-                key, value = line.split(":")
-                key = (
-                    key.replace("Unseal ", "")
-                    .replace("Root ", "")
-                    .replace(" ", "")
-                    .replace("#", "")
-                )
-                if key == entry:
-                    return {"key": value.strip()}
 
 
 api.add_resource(Vault, "/vault/<entry>/<public_key>")  # Route_3
@@ -157,8 +135,8 @@ if __name__ == "__main__":
     if len(cmd) == 0:
         cmd = ["vault", "server", "-config", "/vault/vault-server-tls.hcl"]
     p = Popen(cmd, env=os.environ.copy())
-    time.sleep(0.5)
-    if not KEY_FILE.is_file():
+    time.sleep(1)
+    if not KEY_FILE.exists():
         deploy_vault()
     else:
         unseal()

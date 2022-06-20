@@ -164,10 +164,11 @@ class BaseForm(npyscreen.FormMultiPageWithMenus, npyscreen.FormWithMenus):
         super().draw_form()
         menus = [
             " " + self.__class__.MENU_KEY + ":Main Menu ",
-            "^T:Next Tab ",
+            "^K:Prev. Tab ",
+            "^L:Next Tab ",
             "^R:Run ",
             "^S:Save ",
-            "^L:Load ",
+            "^O:Load ",
             "^E:Exit ",
         ]
         y, x = self.display_menu_advert_at()
@@ -183,22 +184,27 @@ class BaseForm(npyscreen.FormMultiPageWithMenus, npyscreen.FormWithMenus):
                 self.columns - X - 1,
             )
 
-    def change_forms(self, *args, **keywords) -> None:
+    def previews_form(self, *args, **keywords) -> None:
+        return self.change_forms(*args, reverse=True, **keywords)
+
+    def change_forms(self, *args, reverse=False, **keywords) -> None:
         """Cycle between the deployment config forms."""
-        name = self.name.lower()
+        for step in self.parentApp._steps_lookup.keys():
+            if self.name.lower().startswith(step):
+                name = step
+                break
+            elif self.name.lower().startswith("database"):
+                name = "db"
+                break
         keys = self.parentApp._steps_lookup.keys()
         steps = list(self.parentApp._steps_lookup.values())
-        change_to = dict(zip(keys, steps[1:] + [steps[0]]))
-        for step in keys:
-            if name.startswith(step):
-                self.parentApp.current_form = step
-                self.parentApp.change_form(change_to[step])
-                return
-        self.parentApp.current_form = "core"
-        self.parentApp.change_form("MAIN")
-
-    # def whenDisplayText(self, argument):
-    #    npyscreen.notify_confirm(argument)
+        if reverse:
+            change_to = dict(zip(keys, [steps[-1]] + steps[:-1]))
+        else:
+            change_to = dict(zip(keys, steps[1:] + [steps[0]]))
+        # raise ValueError(change_to, reverse, self.parentApp._steps_lookup)
+        self.parentApp.current_form = name
+        self.parentApp.change_form(change_to[name])
 
     def run_deployment(self, *args) -> None:
         """Switch to the deployment setup form."""
@@ -210,9 +216,10 @@ class BaseForm(npyscreen.FormMultiPageWithMenus, npyscreen.FormWithMenus):
         self.how_exited_handers[
             npyscreen.wgwidget.EXITED_ESCAPE
         ] = self.parentApp.exit_application
-        self.add_handlers({"^L": self.parentApp.load_dialog})
+        self.add_handlers({"^O": self.parentApp.load_dialog})
         self.add_handlers({"^S": self.parentApp.save_dialog})
-        self.add_handlers({"^T": self.change_forms})
+        self.add_handlers({"^K": self.previews_form})
+        self.add_handlers({"^L": self.change_forms})
         self.add_handlers({"^R": self.run_deployment})
         self.add_handlers({"^E": self.parentApp.exit_application})
         # The menus are created here.

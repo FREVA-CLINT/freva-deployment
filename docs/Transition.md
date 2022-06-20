@@ -1,61 +1,14 @@
-# Transitioning guide
+# Appendix II: Transitioning guide
 
 The following serves as a guide to transition an existing freva instance
 (within the python*2* frame work) to the new (python*3* based) version.
 
-We have created a small command line interface (`freva-migrate`) that
-helps migrating content of an existing freva framework to the new one.
-The `freva-migrate` command has two sub commands:
-
-```bash
-usage: freva-migrate [-h] [-v] [-V] {database,drs-config} ...
-
-Utilities to handle migrations from old freva systems.
-
-positional arguments:
-  {database,drs-config}
-                        Migration commands:
-    database            Use this command to migrate an existing freva database to a recently set up system.
-    drs-config          Migrate old drs structure definitions to new toml style.
-
-options:
-  -h, --help            show this help message and exit
-  -v, --verbose         Verbosity level (default: 0)
-  -V, --version         show program's version number and exit
-```
-
-## Transition to new DRS Config
-
-In the old version the DRS File configuration, that is the definitions
-defining the metadata of datasets, was hard coded into the module
-`evaluation_system.model.file`. In the new version this configuration
-is saved in a designated [toml](https://toml.io/en/) file (drs_confif.toml).
-To read an existing DRS Configuration from an 'old' instance of freva and
-convert it to the new freva DRS Config toml file use the `drs-config` sub-coammand
-of the `freva-migrate` command line interface.
-
-```
-freva-migrate drs-config --help
-usage: freva-migrate drs-config [-h] [--python-path python-path]
-
-Freva drs structure migration
-
-options:
-  -h, --help            show this help message and exit
-  --python-path python-path
-                        Python path of the old freva instance, leave blank if you loaded the old freva
-                        module / source file. (default: None)
-```
-
-> **_Note:_** You can either load/source the old freva instance or simply point the `--python-path` option to the python path of the old freva.
-
-Once the command has been executed the resulting `drs_config.toml` should be
-place next to the `evaluation_system.conf` file. That is the `freva` folder within the
-`root_dir` location of the new freva instance, for example `/mnt/project/freva`.
-
-
 
 ## Transition to new Database
+We have created a small command line interface (`freva-migrate`) that
+helps migrating content of an existing freva framework to the new one.
+The `freva-migrate` command has currently one sub commands:
+
 The new system has witnessed small changes to the database structure the `database`
 sub-command of the `freva-migrate` command helps to transition to this new
 database structure. To migrate a database of a old installation of the freva
@@ -90,6 +43,20 @@ name for your institution as a unique identifier.
 
 After the command has been applied the new database with its "old" content from
 the previous freva instance will be ready for use.
+
+
+## Transition to new DRS Config
+
+In the old version the DRS File configuration, that is the definitions
+defining the metadata of datasets, was hard coded into the module
+`evaluation_system.model.file`. In the new version this configuration
+is saved in a designated [toml](https://toml.io/en/) file (drs_config.toml).
+The ingestion of data is done by the new `freva-ingest` software, which is
+written in rust. More information on this configuration and usage of the
+ingestion software can be found on the
+[README](https://gitlab.dkrz.de/freva/freva-ingest).
+
+
 
 ## Transitioning of the Plugins
 

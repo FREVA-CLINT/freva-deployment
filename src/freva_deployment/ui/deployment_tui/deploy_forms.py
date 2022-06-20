@@ -90,7 +90,15 @@ class CoreScreen(BaseForm):
                     name=f"{self.num}User data directory:",
                     value=cfg.get("base_dir_location", ""),
                 ),
-                True,
+                False,
+            ),
+            preview_path=(
+                self.add_widget_intelligent(
+                    npyscreen.TitleText,
+                    name=f"{self.num}Plugin output dir for the web UI (preview path):",
+                    value=cfg.get("preview_path", ""),
+                ),
+                False,
             ),
             admins=(
                 self.add_widget_intelligent(
@@ -115,8 +123,8 @@ class CoreScreen(BaseForm):
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
                     name=(
-                        f"{self.num}Optional username to change to on the"
-                        "remote machine:"
+                        f"{self.num}Optional username to change to on the "
+                        "remote machine, leave blank for none:"
                     ),
                     value=cfg.get("ansible_become_user", ""),
                 ),
@@ -157,8 +165,8 @@ class CoreScreen(BaseForm):
             ansible_user=(
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
-                    name=f"{self.num}Remote login user (leave blank for current user):",
-                    value=cfg.get("ansible_user", ""),
+                    name=f"{self.num}Username for remote machine:",
+                    value=cfg.get("ansible_user", getuser()),
                 ),
                 False,
             ),
@@ -395,8 +403,8 @@ class WebScreen(BaseForm):
             ansible_user=(
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
-                    name=f"{self.num}Remote login user (leave blank for current user):",
-                    value=cfg.get("ansible_user", ""),
+                    name=f"{self.num}Username for remote machine:",
+                    value=cfg.get("ansible_user", getuser()),
                 ),
                 False,
             ),
@@ -472,8 +480,8 @@ class DBScreen(BaseForm):
             ansible_user=(
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
-                    name=f"{self.num}Remote login user (leave blank for current user):",
-                    value=cfg.get("ansible_user", ""),
+                    name=f"{self.num}Username for remote machine:",
+                    value=cfg.get("ansible_user", getuser()),
                 ),
                 False,
             ),
@@ -542,8 +550,8 @@ class SolrScreen(BaseForm):
             ansible_user=(
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
-                    name=f"{self.num}Remote login user (leave blank for current user):",
-                    value=cfg.get("ansible_user", ""),
+                    name=f"{self.num}Username for remote machine:",
+                    value=cfg.get("ansible_user", getuser()),
                 ),
                 False,
             ),

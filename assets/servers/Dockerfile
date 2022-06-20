@@ -11,6 +11,5 @@ RUN python3 -m ensurepip && echo "nameserver 8.8.8.8" >> /etc/resolv.conf &&\
     chmod +x /usr/local/bin/restservice &&\
     pip3 install --no-cache --upgrade pip setuptools toml requests flask flask_restful
 USER python
-# RUN pip3 install --no-cache --upgrade --user pip setuptools toml requests flask flask_restful
 VOLUME /var/freva/
 CMD ["/usr/local/bin/restservice"]
