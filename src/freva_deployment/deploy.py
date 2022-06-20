@@ -50,9 +50,7 @@ class DeployFactory:
     _steps_with_cert: tuple[str, ...] = ("db", "vault", "core", "web")
 
     def __init__(
-        self,
-        steps: list[str] | None = None,
-        config_file: Path | str | None = None,
+        self, steps: list[str] | None = None, config_file: Path | str | None = None,
     ) -> None:
 
         self._config_keys: list[str] = []
@@ -151,6 +149,11 @@ class DeployFactory:
         root_dir = self.cfg["core"]["config"].get("root_dir", "")
         if not root_dir:
             self.cfg["core"]["config"]["root_dir"] = install_dir
+        preview_path = self.cfg["core"]["config"].get("preview_path", "")
+        if not preview_path:
+            self.cfg["core"]["config"]["preview_path"] = str(
+                Path(self.cfg["config"]["base_dir_location"]) / "share" / "preview"
+            )
         self.cfg["core"]["config"]["keyfile"] = self.public_key_file
         git_exe = self.cfg["core"]["config"].get("git_path")
         self.cfg["core"]["config"]["git_path"] = git_exe or "git"
@@ -262,8 +265,7 @@ class DeployFactory:
 
     def _get_files_copy(self, key) -> Path | None:
         return dict(
-            core=self.eval_conf_file.absolute(),
-            web=self.eval_conf_file.absolute(),
+            core=self.eval_conf_file.absolute(), web=self.eval_conf_file.absolute(),
         ).get(key, None)
 
     @property
@@ -324,10 +326,10 @@ class DeployFactory:
             config[step]["hosts"] = self.cfg[step]["hosts"]
             config[step]["vars"] = {}
             for key, value in self.cfg[step]["config"].items():
-                if key not in ("root_passwd", "wipe"):
-                    new_key = f"{step}_{key}"
-                else:
+                if key in ("root_passwd", "wipe"):
                     new_key = key
+                else:
+                    new_key = f"{step}_{key}"
                 config[step]["vars"][new_key] = value
             config[step]["vars"]["project_name"] = self.project_name
             # Add additional keys
@@ -384,6 +386,7 @@ class DeployFactory:
             ("web", "project_website"),
             ("core", "root_dir"),
             ("core", "base_dir_location"),
+            ("core", "preview_path"),
         )
         cfg_file = asset_dir / "config" / "evaluation_system.conf.tmpl"
         with cfg_file.open() as f_obj:

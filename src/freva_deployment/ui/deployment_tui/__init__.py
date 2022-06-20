@@ -4,7 +4,7 @@ import argparse
 
 from freva_deployment import __version__
 from freva_deployment.deploy import DeployFactory
-from freva_deployment.utils import set_log_level
+from freva_deployment.utils import set_log_level, RichConsole
 from .main_window import MainApp
 
 
@@ -46,6 +46,7 @@ def tui() -> None:
     if setup:
         server_map = setup.pop("server_map")
         ask_pass = setup.pop("ask_pass")
-        print(setup)
+        steps = ", ".join(setup["steps"])
+        RichConsole.print(f"Playing steps: [i]{steps}[/] with ansible")
         with DeployFactory(**setup) as DF:
             DF.play(server_map, ask_pass, verbosity)

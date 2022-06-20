@@ -22,9 +22,10 @@ config_dir = Path(appdirs.user_config_dir()) / "freva" / "deployment"
 asset_dir = Path(appdirs.user_data_dir()) / "freva" / "deployment"
 password_prompt = (
     "[green]Choose[/] a [b]master password[/], this password will be used to:\n"
-    "- create a self signed [magenta]certificate[/] for accessing the freva credentials\n"
     "- create the [magenta]mysql root[/] password\n"
-    "- set the [magenta]django admin[/] web password\n[b][green]choose[/] master password[/]"
+    "- set the [magenta]django admin[/] web password\n"
+    "[b]Note:[/] Ideally this password can be shared amongst other [i]admins[/].\n"
+    "[b][green]choose[/] master password[/]"
 )
 
 ServiceInfo = NamedTuple(

@@ -49,14 +49,16 @@
       when: core_admin_group is not defined
     - name: Creating user work directory
       file:
-        path: "{{ item }}"
+        path: "{{core_base_dir_location}}"
         state: directory
         mode: "3775"
-      with_items:
-        - "{{ core_base_dir_location }}"
-        - "{{ core_base_dir_location }}/share/"
-        - "{{ core_base_dir_location }}/data/"
-        - "{{ core_base_dir_location }}/share/preview/"
+      become: "{{'yes' if core_ansible_become_user is defined else 'no' }}"
+      ignore_errors: true
+    - name: Creating preview path
+      file:
+        path: "{{core_preview_path}}"
+        state: directory
+        mode: "3775"
       become: "{{'yes' if core_ansible_become_user is defined else 'no' }}"
       ignore_errors: true
     - name: Inserting evaluation_sytem.conf file without admin group

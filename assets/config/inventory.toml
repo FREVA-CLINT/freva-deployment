@@ -112,6 +112,11 @@ root_dir = ""
 install = true
 ## The directory where the user specific output will be stored
 base_dir_location = ""
+## Set the directory holding the user content, like plots, for the web user
+## interface. Note: after plugin application, display content of the plugin
+## output will be copied to this directory. The default location of this
+## directory (if left value left blank) is ${base_dir_location}/share/preview
+preview_path = ""
 # Set the target architecutre of the system where the backend will be installed
 # to. You can choose from the following options:
 # Linux-x86_64 (default), Linux-aarch64, Linux-ppc64le, Linux-s390x, MacOSX-x86_64
