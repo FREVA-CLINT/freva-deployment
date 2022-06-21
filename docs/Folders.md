@@ -1,4 +1,4 @@
-# Primer: Basic Freva configuring
+# Primer: Basic Freva configuration
 
 Because the framework consists of multiple parts, Freva has to be configured
 to work with those different parts. This is especially true for the web ui
