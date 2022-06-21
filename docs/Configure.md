@@ -71,6 +71,19 @@ The `--steps` flags can be used if not all services should be deployed.
 
 ## After successful deployment
 
+## Activation scripts for users
+The core deployment will create activation scripts for various shell flavours.
+The following activation scripts are located in the `<root_dir>/freva` folder:
+* *activate_sh*: To be sourced by shell flavours like shell, bash, zsh etc.
+* *activate_csh*: To be sourced by c-shell flavours like csh, tcsh
+* *activate_fish*: To be source by fish
+* *loadfreva.module*: Modules file
+The source scripts can either be copied where they're automatically sourced
+or users can be instructed to use the source command for their shell. If
+modules is available on the host system you can copy the *loadfreva.modules* file
+into the `MODULEPATH` location.
+
+
 ### Systemd units for all services:
 If the target machine where the services (solr, mariadb, web) were deployed
 are Linux machines you will have access to a `systemd` unit of the created

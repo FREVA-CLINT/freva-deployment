@@ -143,7 +143,12 @@ like plots into the plugin folder, which can be displayed by the web ui.
 This interconnection is usually fulfilled creating a network mount from the
 HPC system to the machine running the web ui. The deployment routine is expects
 the preview folder and `evaluation_system.conf` to be present (mounted) during
-on the host machine during deployment time. Please also refer to the
+on the host machine during deployment time. The docker container expects the
+mounts to be in the same path as on the HPC system. For example, if the
+an instance of freva has been deployed on `/work/clex/freva-clex` then
+the this directory should be available via the same path on the machine running
+the django web application. The same applies to all paths defined in the
+plugin section in the `evaluation_system.conf`. Please also refer to the
 [Architecture section](Architecture.html#web-based-user-interface) for more
 information.
 
