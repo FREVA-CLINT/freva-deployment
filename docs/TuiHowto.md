@@ -1,6 +1,6 @@
 # Appendix I: Usage of the text user interface
 We have create a simple text user interface (tui) that helps you setting up a
-freva instance at your institution. At this stage the documentation assumes that
+Freva instance at your institution. At this stage the documentation assumes that
 you have installed the necessary server infrastructure and pre-requisites.
 Please refer to the [installation](Installation.html) and [configuration section](Configuration.html)
 for more details.
@@ -34,7 +34,7 @@ Some variables need to be set for the deployment setup while others don't and
 can be configured later.
 
 ## Core setup
-The first screen configures the setup of freva at the HPC system. We refer to
+The first screen configures the setup of Freva at the HPC system. We refer to
 this step as the *core* deployment. At the top of the screen you'll see a tick
 box, which indicates whether or not this step is used for deployment. If this
 box is *un*ticked - tick/untick using the `<SPACE>` key - the deployment will
@@ -51,7 +51,7 @@ essential setup steps:
 3. Tick/Untick this box to install (override) a new anaconda environment. Unticking
    this box can be useful if you have already an anaconda environment set up
    and want to either reconfigure it or use this anaconda environment for a
-   different freva project.
+   different Freva project.
 4. Set the directory where project specific configuration is stored. See also
    the `root_dir` description in the
    [basic configuration section](Folders.html#configuring-the-evaluation-system-section).
@@ -60,26 +60,26 @@ essential setup steps:
    [basic configuration section](Folders.html#configuring-the-evaluation-system-section).
 6. Set the preview path mentioned in the
    [basic configuration section](Folders.html#configuring-the-evaluation-system-section).
-7. Set the user names (comma separated) of the freva admins of this project.
-8. If you have a special user group for freva admins you can set this this key
+7. Set the user names (comma separated) of the Freva admins of this project.
+8. If you have a special user group for Freva admins you can set this this key
    here. This will cause the creation of folders with permissions suitable
-   for multi-user write acces (2775) on the target machine. This assures that
-   multiple admins can adjust the freva configuration. You can leave this
+   for multi-user write access (2775) on the target machine. This assures that
+   multiple admins can adjust the Freva configuration. You can leave this
    variable blank.
 9. If you need to change to a common user (via sudo -i) that is able to install
-   freva on the HPC system you can set this common user name here. Note that this
+   Freva on the HPC system you can set this common user name here. Note that this
    method should only be used if freva needs to be set up with a shared user
    account *and* you cannot log on to the HPC system with this shared user name.
    Most of the time it should not be necessary to use this option, either because
    you don't need a shared user account, or you can instruct ansible to directly
    log on as the shared user.
 10. If you have an anaconda binary already installed on the target system you
-   can set the path to the `conda` or `mamab` executable here. Leaving this variable
+   can set the path to the `conda` or `mamba` executable here. Leaving this variable
    blank (default) will cause the deployment to temporary download and create
    an anaconda install script - which will get deleted afterwards.
-11. Select a pre-defined target architecture for the anaconda environment.
-   Note: Installing freva has only been tested for MacOSX-x86_64,
-   Linux-x86_64 and Linux-aarch64 (arm).
+11. Select a pre-defined target architecture for the anaconda environment.\
+   _Note_: The Freva installation has been tested for MacOSX-x86_64,
+   Linux-x86_64, Linux-aarch64 (arm) and Windows 10 WSL2 x86_64.
 12. Ansible needs python to be present on the remote machine, if not present
    in the default path (such as `/usr/bin/python3`) set the path to the `python3.4+`
    binary.
@@ -88,8 +88,8 @@ essential setup steps:
    such as `/usr/bin/git`.
 
 ### Notes on the core setup
-It is good practice to use only one anaconda environment for multiple freva
-instances. Each freva instance only differs in it's configuration
+It is good practice to use only one anaconda environment for multiple Freva
+instances. Each Freva instance only differs in its configuration
 (`evaluation_system.conf`)
 
 ## Web ui setup
@@ -108,20 +108,20 @@ essential setup steps:
 3. Main html color scheme.
 4. Html color for borders.
 5. Html color for hover mode boxes.
-6. A short text about the freva admin team/group. This text will go to the
+6. A short text about the Freva admin team/group. This text will go to the
    header of the web page.
 7. Contact email address of the admin(s).
 8. Address of the institute, will be appearing in the footer of the website.
 9. Detailed overview over the project, this text will go into the left central
-   box in the freva main page. It should describe the purpose of this project
+   box in the Freva main page. It should describe the purpose of this project
 10. The header for the detailed overview mentioned in 9.
 11. Host name(s) - usually HPC login node(s) - the web backend code submits
     plugin jobs from. The backend will logon to this host name and submit a
     plugin job.
 12. String of ldap server uri(s) (comma separated). The ldap server uris are
     used to make authentication requests via the web side.
-13. Tick this box (`<SPACE>`) to enbale TLS encrypted connection from the django
-    web appliction to the ldap server.
+13. Tick this box (`<SPACE>`) to enable TLS encrypted connection from the django
+    web application to the ldap server.
     [See also django ldap tls config](https://django-auth-ldap.readthedocs.io/en/latest/authentication.html#notes)
 14. Set the user group name that is allowed to logon to the web ui.
 15. Set the ldap user base filters. See also the
@@ -144,9 +144,9 @@ This interconnection is usually fulfilled creating a network mount from the
 HPC system to the machine running the web ui. The deployment routine is expects
 the preview folder and `evaluation_system.conf` to be present (mounted) during
 on the host machine during deployment time. The docker container expects the
-mounts to be in the same path as on the HPC system. For example, if the
-an instance of freva has been deployed on `/work/clex/freva-clex` then
-the this directory should be available via the same path on the machine running
+mounts to be in the same path as on the HPC system. For example, if
+an instance of Freva has been deployed on `/work/clex/freva-clex` then
+this directory should be available via the same path on the machine running
 the django web application. The same applies to all paths defined in the
 plugin section in the `evaluation_system.conf`. Please also refer to the
 [Architecture section](Architecture.html#web-based-user-interface) for more
@@ -154,7 +154,7 @@ information.
 
 The django web application service needs two more services, that are
 automatically set up. Those are a redis service, which is used as a database
-query cache and a apache httpd service that is used as reverse proxy.
+query cache and an apache httpd service that is used as reverse proxy.
 The httpd configuration for the reverse proxy will be saved
 `/opt/freva/<project_name>/web_service/`.
 
@@ -210,22 +210,22 @@ on the database connection are stored. The `evaluation_system` core library
 will automatically make a connection to the vault in order retrieve the
 login credentials. Any existing database is *not* overridden if you deploy
 a new database and do not chose to delete any pre existing data. The database
-will be store in `/opt/freva/<project_name>/db_service` on the database server
+will be stored in `/opt/freva/<project_name>/db_service` on the database server
 host.
 
 ## The run screen.
-The last of the five screen is the so called run screen. This screen sets up
+The last of the five screen is the so called run screen. This screen sets up a
 configuration that is common among the above described steps. You can enter this
 screen by pressing the `CTRL+r` key combination. The following options are
 available:
 
 ![](tui_run.png)
 
-1. Set a unique project name for this specific freva instance, for example
+1. Set a unique project name for this specific Freva instance, for example
    `clex-ces`.
 2. If desired you can save the already configured settings to a
 [`toml`](https://toml.io/en/) configuration file.
-3. If you've set up a service that keeps track of all installed freva instances
+3. If you've set up a service that keeps track of all installed Freva instances
 at your institution you can specify the host name here. Please refer to the
 [service map section](Installation.html#setting-up-a-service-that-maps-the-server-structure-optional)
 for more details.
@@ -238,9 +238,9 @@ wish to deploy the web ui. This option might become optional in the future.
 you can check this box (`<SPACE>`) to establish connections via ssh password.
 
 ### Notes on the run screen
-After after hitting the `<OK>` button on the lower right the application will
+After hitting the `<OK>` button on the lower right the application will
 check for any missing configuration keys. The `<Cancel>` button will bring you
 back to the last configuration screen. If you hit `<OK>` and keys are missing
-you will notified about the missing key and be brought back to the screen that
+you will be notified about the missing key and be brought back to the screen that
 has missing information. If everything is fine you'll be ask if you want to
-continue. After this the ansible will start to play the playbook.
+continue. After this, the ansible will start to play the playbook.

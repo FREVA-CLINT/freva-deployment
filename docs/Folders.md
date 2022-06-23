@@ -18,17 +18,17 @@ following:
 [evaluation_system]
 # Freva - Free Evaluation System Framework configuration file
 # This file contains the necessary configuration information
-# which is needed to run freva
+# which is needed to run Freva
 #
-# Username(s) - comma separated - of the admins of the proejct
+# Username(s) - comma separated - of the admins of the project
 admins=
 #
-# An Infromative project name
+# An informative project name
 project_name=freva
-# The url the freva web ui can be accessed with
+# The url the Freva web ui can be accessed with
 project_website=
 
-# Main configuration path of the freva instance default to the etc dir
+# Main configuration path of the Freva instance default to the etc dir
 # of the python environment
 root_dir=
 #
@@ -41,7 +41,7 @@ base_dir_location=${root_dir}/freva_output
 #:    local   := <home>/<base_dir>...
 #:    central := <base_dir_location>/<username>/<base_dir>...
 #:
-directory_structure_type=scratch
+directory_structure_type=central
 
 # The directory name of the <base_dir> (only used if `directory_structure_type`
 # is set to central - defaults to `project_name`
@@ -53,7 +53,7 @@ base_dir=${project_name}
 scheduler_system=local
 # The directory where temporary job scripts are created
 scheduler_input_dir=/tmp/${scheduler_system}_output
-# The output directory where stdour/stderr of the jobs are stored
+# The output directory where stdout/stderr of the jobs are stored
 scheduler_output_dir=${base_dir_location}/share/${scheduler_system}_output
 
 # The directory data where preview data (images etc) for the web ui
@@ -112,13 +112,13 @@ in the `evaluation_system` section:
 - *admins*: comma separated list of username(s) that are administering the
   instance of the Freva. Admins have more rights in the framework, like
   crawling *all* user data.
-- *project_name*: Name of this specific freva instance, for example `clex-ces`
+- *project_name*: Name of this specific Freva instance, for example `clex-ces`
    which would be the central evaluation system (ces) for the clex project.
-- *root_dir*: The `root_dir` is directory that holds additional freva related
+- *root_dir*: The `root_dir` is directory that holds additional Freva related
    configuration. By default this folder is the path prefix of the python
-   distribution where freva is installed to. If you're using multiple instances that share
+   distribution where Freva is installed to. If you're using multiple instances that share
    a common python (anaconda) environment this directory will distinguish the instances.
-   For example two projects *project_a* and *project_b* share a freva installation
+   For example two projects *project_a* and *project_b* share a Freva installation
    which is installed into `$HOME/anaconda/freva` then *project_b* would get its
    configuration by setting the `root_dir` to `/path/to/project_b` where
    the `evaluation_system.conf` file would be located in

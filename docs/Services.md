@@ -1,7 +1,7 @@
 # Remote control of project services
 This option only applies if you have installed a [service mapping](Installation.html#setting-up-a-service-that-maps-the-server-structure).
 The installation routine saves the host names of the services for each project in
-as central location. After deployment the project services can be restarted,
+a central location. After the deployment the project services can be restarted,
 stopped or started via the `freva-service` command.
 
 ```bash
@@ -9,7 +9,7 @@ freva-service --help
 usage: freva-service [-h] [--server-map SERVER_MAP] [--services {web,db,solr} [{web,db,solr} ...]] [--user USER] [-v] [-V]
                      {start,stop,restart,status} [project_name]
 
-Interact with installed freva services.
+Interact with installed Freva services.
 
 positional arguments:
   {start,stop,restart,status}
@@ -19,7 +19,7 @@ positional arguments:
 options:
   -h, --help            show this help message and exit
   --server-map SERVER_MAP
-                        Hostname of the service mapping the freva server archtiecture, Note: you can create a server map by running
+                        Hostname of the service mapping the Freva server architecture, Note: you can create a server map by running
                         the deploy-freva-map command (default: None)
   --services {web,db,solr} [{web,db,solr} ...]
                         The services to be started|stopped|restarted|checked (default: ['solr', 'db', 'web'])

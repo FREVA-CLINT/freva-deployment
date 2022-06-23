@@ -8,9 +8,9 @@ The Free evaluation system framework (Freva) consists of three basic parts:
 - command line interface and a python client as user interface to the core library.
 - services, such as a apache solr data search service, mariadb database and web service providing a web-based user interface (web ui) to the core library
 
-Command line interface, python client and web ui make use of the core library, the core library on the other hand makes use of the apache solr and maraidb services. This hierachy is outlined in the figure below:
+Command line interface, python client and web ui make use of the core library, the core library on the other hand makes use of the apache solr and mariadb services. This hierachy is outlined in the figure below:
 
-![](Concept_Map.jpg)
+![](Concept_Map.png)
 
 ### Core library and command line interface:
 
@@ -70,7 +70,8 @@ The next sections propose various deployment strategies for the framework:
 
 ### One service one machine set up:
 
-![](Topography_1.jpg)
+![](Topography_1.png)
+
 *One service one machine*: Every service is installed on a dedicated machine
 
 
@@ -78,12 +79,13 @@ This setup deploys the cli on a central instance and the services on dedicated m
 We recommend this setup since it minimises the load on each host machine and minimises failure due to load issues.
 In a typical scenario the core configuration stored in a central location is made accessible to the machine hosting the web ui container.
 The cli also connects and communicates to machines hosting the apache solr and mariadb containers.
-The valut server will always be running on the same machine that hosts the mariadb service.
+The vault server will always be running on the same machine that hosts the mariadb service.
 
 
 
 ### All services on one machine set up:
-![](Topography_2.jpg)
+![](Topography_2.png)
+
 *All services on one machine*: All services are installed on the same machine
 
 This setup deploys the cli on a central instance and all services on one single machine
@@ -94,7 +96,8 @@ to administer since all services are running on one entry point.
 
 ### Multi-cli setup:
 
-![](Topography_3.jpg)
+![](Topography_3.png)
+
 *Multi-cli*: The command line interface and core library are installed on many compute nodes
 
 

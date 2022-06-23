@@ -1,18 +1,18 @@
 # Appendix II: Transitioning guide
 
-The following serves as a guide to transition an existing freva instance
+The following serves as a guide to transition an existing Freva instance
 (within the python*2* frame work) to the new (python*3* based) version.
 
 
 ## Transition to new Database
 We have created a small command line interface (`freva-migrate`) that
-helps migrating content of an existing freva framework to the new one.
+helps migrating content of an existing Freva framework to the new one.
 The `freva-migrate` command has currently one sub commands:
 
-The new system has witnessed small changes to the database structure the `database`
+The new system has witnessed small changes to the database structure. The `database`
 sub-command of the `freva-migrate` command helps to transition to this new
-database structure. To migrate a database of a old installation of the freva
-system to a freshly deployed freva instance used the following command:
+database structure. To migrate a database of an old installation of the Freva
+system to a freshly deployed Freva instance use the following command:
 
 ```
 usage: freva-migrate database [-h] [--old-port OLD_PORT] [--old-db OLD_DB] [--old-pw OLD_PW] [--old-user OLD_USER]
@@ -33,7 +33,7 @@ options:
   --old-user OLD_USER  The old database user (default: evaluationsystem)
 ```
 
-The `cert-file` positional argument refers the public certificate file that was
+The `cert-file` positional argument refers to the public certificate file that was
 created during the deployment process and is needed to establish a connection to
 the new database (via the vault). You can either use the one that has been
 saved by the deployment or use it from the freva config directory. By default
@@ -42,13 +42,13 @@ for example `/mnt/project/freva/project.crt`. Also don't forget to set the domai
 name for your institution as a unique identifier.
 
 After the command has been applied the new database with its "old" content from
-the previous freva instance will be ready for use.
+the previous Freva instance will be ready for use.
 
 
 ## Transition to new DRS Config
 
-In the old version the DRS File configuration, that is the definitions
-defining the metadata of datasets, was hard coded into the module
+In the old version the DRS (Date Reference Syntax) File configuration, 
+that is the definitions of dataset metadata, was hard coded into the module
 `evaluation_system.model.file`. In the new version this configuration
 is saved in a designated [toml](https://toml.io/en/) file (drs_config.toml).
 The ingestion of data is done by the new `freva-ingest` software, which is
@@ -60,21 +60,21 @@ ingestion software can be found on the
 
 ## Transitioning of the Plugins
 
-The freva plugins are an essential part of freva.
+The Freva plugins are an essential part of Freva.
 Most likely the transitioning from the old python2 to the new python3 based
 system, needs special care. A complete rewrite of the plugin manager is planned.
-This section should therefore seen as intermediate solutions for plugin transitioning.
+This section should therefore be seen as intermediate solutions for plugin transitioning.
 
 Currently we recommend creating an anaconda environment for each plugin.
 This approach has several advantages:
 
-- reproducible as each plugin will get a anaconda environment file
+- reproducible as each plugin will get a anaconda environment file.
 - no version and dependency conflicts occur.
 - once set up easy to maintain.
 
 These are the disadvantages of this method:
 
-- A anaconda environment file has to be created for each plugin.
+- an anaconda environment file has to be created for each plugin.
 
 
 ### Transitioning steps:
@@ -91,8 +91,8 @@ freva plugin -l
 
 ```
 
-Most certainly the plugin manger will output a warning, that the plugin could not be loaded.
-If it does change the plugins accordingly to make the warning messages go away.
+Most certainly, the plugin manager will output a warning that the plugin could not be loaded.
+If it does, change the plugins accordingly to make the warning messages go away.
 
 3. Download the [conda environment file template](https://swift.dkrz.de/v1/dkrz_3d3c7abc-1681-4012-b656-3cc1058c52a9/k204230/freva-transition/plugin-env.yml) and the [Makefile template](https://swift.dkrz.de/v1/dkrz_3d3c7abc-1681-4012-b656-3cc1058c52a9/k204230/freva-transition/Makefile)
 
@@ -102,7 +102,7 @@ If it does change the plugins accordingly to make the warning messages go away.
 
 6. Execute `make all` to install the conda environment and build the plugin dependencies.
 
-7. Execute the plugin and check if everything goes will.
+7. Execute the plugin and check if everything goes well.
 
 8. Format the plugin using black: `black -t py310 path_to_plugin.py`
 
@@ -111,7 +111,7 @@ Python plugins (especially python2) need special care. The recommended strategy
 is to convert the plugin content to python3. If this is not possible an anaconda
 python2 environment should be created.
 
-If in the original plugin the plugin code directly executed in the `runTool`
+If in the original plugin the plugin code is directly executed in the `runTool`
 method this code has to be split from the `runTool` method. The
 transition strategy is gathering the essential information in a `json` file that
 is passed to the actual core part of the plugin. The code below shows a simple
