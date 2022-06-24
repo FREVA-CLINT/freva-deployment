@@ -80,7 +80,7 @@ The following activation scripts are located in the `<root_dir>/freva` folder:
 * *loadfreva.module*: Modules file
 The source scripts can either be copied where they are automatically sourced
 or users can be instructed to use the source command for their shell. If
-modules are available on the host system you can copy the *loadfreva.modules* file
+`modules` is available on the host system you can copy the *loadfreva.modules* file
 into the `MODULEPATH` location.
 
 

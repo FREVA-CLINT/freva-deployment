@@ -78,8 +78,8 @@ essential setup steps:
    blank (default) will cause the deployment to temporary download and create
    an anaconda install script - which will get deleted afterwards.
 11. Select a pre-defined target architecture for the anaconda environment.\
-   _Note_: The Freva installation has been tested for MacOSX-x86_64,
-   Linux-x86_64, Linux-aarch64 (arm) and Windows 10 WSL2 x86_64.
+   _Note_: The Freva installation has only been tested for MacOSX-x86_64,
+   Linux-x86_64 (including Windows wsl2) and Linux-aarch64 (arm).
 12. Ansible needs python to be present on the remote machine, if not present
    in the default path (such as `/usr/bin/python3`) set the path to the `python3.4+`
    binary.
