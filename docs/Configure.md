@@ -1,5 +1,5 @@
 # Running and configuring the deployment
-A complete freva instance will need the following services:
+A complete Freva instance will need the following services:
 
 - solr servers (hostname of the apache solr server)
 - db servers (hostname of the MariaDB server)
@@ -21,15 +21,15 @@ The same applies to the path to the git binary:
 git_path=/sw/spack-levante/git-2.31.1-25ve7r/bin/git
 ```
 ## A map of your server infrastructure (optional)
-Different freva instances are installed across different server hosts. Usually
-the different freva instances running at an institution are distinguished by
+Different Freva instances are installed across different server hosts. Usually
+the different Freva instances running at an institution are distinguished by
 a unique project name for example `clex`.
 To keep track of all server and services we have created a service that keeps
-track of the locations of all services for certain freva instances.
+track of the locations of all services for certain Freva instances.
 *Before* the first deployment we recommend to setup this server map by issuing
 the `deploy-freva-map` command. Please also refer to the [installation section](Installation.html#setting-up-a-service-that-maps-the-server-structure)
 for more details. This step is only necessary *once* per institution, please talk
-to the admins of any other freva instances at your institution if this service
+to the admins of any other Freva instances at your institution if this service
 has already been set up.
 
 
@@ -51,12 +51,12 @@ deploy-freva-cmd --help
 usage: deploy-freva-cmd [-h] [--server-map SERVER_MAP] [--config CONFIG] [--steps {web,core,db,solr} [{web,core,db,solr} ...]]
                         [--ask-pass] [-v] [-V]
 
-Deploy freva and its services on different machines.
+Deploy Freva and its services on different machines.
 
 optional arguments:
   -h, --help            show this help message and exit
   --server-map SERVER_MAP
-                        Hostname of the service mapping the freva server archtiecture, Note: you can create a server map by running
+                        Hostname of the service mapping the Freva server architecture, Note: you can create a server map by running
                         the deploy-freva-map command (default: None)
   --config CONFIG, -c CONFIG
                         Path to ansible inventory file. (default: /home/wilfred/.config/freva/deployment/inventory.toml)
@@ -78,9 +78,9 @@ The following activation scripts are located in the `<root_dir>/freva` folder:
 * *activate_csh*: To be sourced by c-shell flavours like csh, tcsh
 * *activate_fish*: To be source by fish
 * *loadfreva.module*: Modules file
-The source scripts can either be copied where they're automatically sourced
+The source scripts can either be copied where they are automatically sourced
 or users can be instructed to use the source command for their shell. If
-modules is available on the host system you can copy the *loadfreva.modules* file
+`modules` is available on the host system you can copy the *loadfreva.modules* file
 into the `MODULEPATH` location.
 
 
