@@ -21,7 +21,7 @@ The same applies to the path to the git binary:
 git_path=/sw/spack-levante/git-2.31.1-25ve7r/bin/git
 ```
 ## A map of your server infrastructure (optional)
-Different fFreva instances are installed across different server hosts. Usually
+Different Freva instances are installed across different server hosts. Usually
 the different Freva instances running at an institution are distinguished by
 a unique project name for example `clex`.
 To keep track of all server and services we have created a service that keeps
