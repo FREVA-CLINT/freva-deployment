@@ -111,8 +111,8 @@ Python plugins (especially python2) need special care. The recommended strategy
 is to convert the plugin content to python3. If this is not possible an anaconda
 python2 environment should be created.
 
-If in the original plugin the plugin code is directly executed in the `runTool`
-method this code has to be split from the `runTool` method. The
+If in the original plugin the plugin code is directly executed in the `run_rool` 
+method (formerly named `runTool`) this code has to be split from the new `run_tool` method. The
 transition strategy is gathering the essential information in a `json` file that
 is passed to the actual core part of the plugin. The code below shows a simple
 python2 plugin:
