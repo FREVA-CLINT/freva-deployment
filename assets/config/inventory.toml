@@ -14,6 +14,9 @@
 ## The first part of this configuration defines general configuration that
 ## is common among all deployment steps.
 
+# The the project name that should be used for this freva instance
+# NOTE: this key has to be the first in the file
+project_name = ""
 ## Set the path to the SSL certfificate files that is used to make password
 ## queries to the vault server or used as web certfificates.
 [certificates]
@@ -25,8 +28,6 @@ privat_keyfile = ""
 chain_keyfile = ""
 
 
-# The the project name that should be used for this freva instance
-project_name = ""
 
 [web]
 # Set the hostnames where all services web ui will be deployed
