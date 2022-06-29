@@ -347,7 +347,7 @@ class WebScreen(BaseForm):
             allowed_group=(
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
-                    name=f"{self.num}Unix group(s) allowed to log on to the web:",
+                    name=f"{self.num}Unix group allowed to log on to the web:",
                     value=cfg.get("allowed_group", "my_freva"),
                 ),
                 True,
