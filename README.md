@@ -1,27 +1,46 @@
 # Deployment of the Free Evaluation Framework Freva
 
-The code in this repository is used to deploy freva in different computing environments. The general strategy is to split the deployment into 4 different steps, these are :
+The code in this repository is used to deploy freva in different computing
+environments. The general strategy is to split the deployment into
+4 different steps, these are :
 - Deploy MariaDB service via docker
-- Deploy a Hashicorp Vault service for storing and retrieving passwords and other sensitive data via docker (this step get automatically activated once the MariaDB service is set)
+- Deploy a Hashicorp Vault service for storing and retrieving passwords
+  and other sensitive data via docker
+  (this step get automatically activated once the MariaDB service is set)
 - Deploy Apache Solr service via docker
 - Deploy command line interface backend ([evaluation_system](https://gitlab.dkrz.de/freva/evaluation_system))
 - Deploy web front end ([freva_web](https://gitlab.dkrz.de/freva/freva_web))
 
 
-> **_Note:_** A vault server is auto deployed once the mariadb server is deployed. The vault centrally stores all passwords and other sensitive data. During the deployment of the vault server a public key is generated which is used to open the vault. This public key will be saved in the `evaluation_system` backend root directory. Only if saved this key and the key in the vault match, secrets can be retrieved. Therefore it might be a good idea to deploy, the mariadb server (and with it the vault) and the `evaluation_system` backend togehter.
+> **_Note:_** A vault server is auto deployed once the mariadb server is deployed.
+The vault centrally stores all passwords and other sensitive data.
+During the deployment of the vault server a public key is generated which is
+used to open the vault. This public key will be saved in the `evaluation_system`
+backend root directory. Only if saved this key and the key in the vault match,
+secrets can be retrieved. Therefore it might be a good idea to deploy,
+the mariadb server (and with it the vault) and the `evaluation_system`
+backend togehter.
 
-On *CentOS* python SELinux libraries need to be installed. If you choose to install ansible via the `install_ansible` you'll have to use `conda` to install libselinux for your CentOS version. For example : `conda install -c conda-forge  libselinux-cos7-x86_64`
+On *CentOS* python SELinux libraries need to be installed. If you choose to
+install ansible via the `install_ansible` you'll have to use `conda` to
+install libselinux for your CentOS version.
+For example : `conda install -c conda-forge  libselinux-cos7-x86_64`
 
 # Pre-Requisites
-The main work will be done by [ansible](https://docs.ansible.com/ansible/latest/index.html), hence some level of familiarity with ansible is advantagous.
-Since we are using ansible we can use this deployment routine from a workstation computer (like a Mac-book). You do not need to run the depoyment on the machines where things get installed.
-The only requirement is that you have to setup ansible and you can establish ssh connections to the servers.
+The main work will be done by
+[ansible](https://docs.ansible.com/ansible/latest/index.html), hence some level
+of familiarity with ansible is advantagous. Since we are using ansible we can
+use this deployment routine from a workstation computer (like a Mac-book).
+You do not need to run the depoyment on the machines where things get installed.
+The only requirement is that you have to setup ansible and you can establish
+ssh connections to the servers.
 ### Preparation on windows based system (without wsl).
-Currently ansible is not natively available on windows based systems. You can use the
-unix runtime environment [cygwin](https://www.cygwin.com) to download and install the
-needed software. Just follow the steps listed on the web page to setup
-cygwin on your windows system. In order to be able to install the freva deployment
-programm you'll first need to install the following packages via cygwin:
+Currently ansible is not natively available on windows based systems. You can use
+the unix runtime environment [cygwin](https://www.cygwin.com) to download
+and install the needed software. Just follow the steps listed on the web page
+to setup cygwin on your windows system. In order to be able to install the
+freva deployment programm you'll first need to install the following packages
+via cygwin:
 
 - python3
 - python3-devel
@@ -33,13 +52,16 @@ programm you'll first need to install the following packages via cygwin:
 
 We also recommend installing a command line based text editor like vim, nano, etc.
 
-After installing the above listed packages via cygwin you can clone and install the freva deployment:
+After installing the above listed packages via cygwin you can clone and
+install the freva deployment:
 
 ```bash
-pip install (--user) git+https://gitlab.dkrz.de/freva/deployment.git
+pip install freva-deployment --extra-index-url https://gitlab.dkrz.de/api/v4/projects/1732/packages/pypi/simple
 ```
+Add the `--user` flag if you don't have sufficient rights.
 ## Installation on \*nix systems or wsl.
-If you're using Linux, OsX or a Windows subsystem for Linux (WSL) it should be sufficient to issues the following commands:
+If you're using Linux, OsX or a Windows subsystem for Linux (WSL) it should
+be sufficient to issues the following commands:
 
 ```bash
 pip install (--user) ansible
@@ -47,7 +69,8 @@ pip install (--user) git+https://gitlab.dkrz.de/freva/deployment.git
 ```
 
 This command installs ansible and all required python packages.
-> **_Note:_** On *CentOS* python SELinux libraries need to be installed. You will need to install libselinux for your CentOS version.
+> **_Note:_** On *CentOS* python SELinux libraries need to be installed.
+> You will need to install libselinux for your CentOS version.
 
 ```bash
 python3 -m pip install (--user) libselinux-python3
@@ -55,15 +78,19 @@ python3 -m pip install (--user) libselinux-python3
 
 ## Commands after installation:
 The `pip` install command will create *four* different commands:
-- `deploy-freva-map`: To setup a service that keeps track of all deployed freva instances and their services.
+- `deploy-freva-map`: To setup a service that keeps track of all deployed
+   freva instances and their services.
 - `deploy-freva`: Text user interface to configure and run the deployment.
 - `deploy-freva-cmd`: Run already configured deployment.
 - `freva-service`: Start|Stop|Restart|Check services of freva instances.
-- `freva-migrate`: Command line interface to manage project migration from old freva systems to new ones.
+- `freva-migrate`: Command line interface to manage project migration from
+   old freva systems to new ones.
 
 
 ## Installing docker/podman and sudo access to the service servers
-Since the services of MariaDB, Apache Solr and Apache web will be deployed on docker container images, docker needs to be available on the target servers. Usually installing and running docker requires *root* privileges.
+Since the services of MariaDB, Apache Solr and Apache web will be deployed on
+docker container images, docker needs to be available on the target servers.
+Usually installing and running docker requires *root* privileges.
 Hence, on the servers that will be running docker you will need root access.
 There exist an option to install and run docker without root,
 information on a root-less docker option
@@ -97,7 +124,10 @@ options:
   -v, --verbose         Verbosity level (default: 0)
   -V, --version         show program's version number and exit
 ```
-> **_Note_:** As the service keeps track of all freva instances within your institution, this has to be deployed only *once*. Please make sure that other admins who might need to install freva are aware of the host name for this service. *This step is optional*
+> **_Note_:** As the service keeps track of all freva instances within your
+institution, this has to be deployed only *once*. Please make sure that other
+admins who might need to install freva are aware of the host name
+for this service. *This step is optional*
 
 # Configuring the deployment
 A complete freva instance will need the following services:
@@ -116,7 +146,8 @@ Two typical server topography could look the following:
 ## Setting the python and git path
 Some systems do not have access to python3.6+ (/usr/bin/python3) or git by default.
 In such cases you can overwrite the `ansible_python_interpreter` in the inventory
-settings of the server section to point ansible to a custom `python3` bindary. For example
+settings of the server section to point ansible to a custom `python3` bindary.
+For example
 
 ```
 ansible_python_interpreter=/sw/spack-rhel6/miniforge3-4.9.2-3-Linux-x86_64-pwdbqi/bin/python3
@@ -134,9 +165,12 @@ The command `deploy-freva` opens a text user interface (tui) that will walk
 you through the setup of the deployment.
 The tui allows to edit, save, load and run a configuration file
 
-> **_Note:_** Navigation is similar to the one of the *nano* text editor. The shortcuts start with a `^` which indicates `CTRL+`.
-> * the pop up menus (e.g. `Exit`) must be navigated pressing `tab` to select the options and then `Enter`.
-> * the configuration files must be saved as a `.toml` as the the tui only recognises this extension.
+> **_Note:_** Navigation is similar to the one of the *nano* text editor.
+> The shortcuts start with a `^` which indicates `CTRL+`.
+> * the pop up menus (e.g. `Exit`) must be navigated pressing `tab` to
+> select the options and then `Enter`.
+> * the configuration files must be saved as a `.toml` as the the tui
+> only recognises this extension.
 > * to paste with the mouse (\*nix style), double middle click.
 
 

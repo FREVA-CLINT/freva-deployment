@@ -43,23 +43,23 @@ We also recommend installing a command line based text editor like vim, nano, et
 After installing the above listed packages via cygwin you can clone and install the freva-deployment:
 
 ```bash
-pip install (--user) git+https://gitlab.dkrz.de/freva/deployment.git
+pip install freva-deployment --extra-index-url https://gitlab.dkrz.de/api/v4/projects/1732/packages/pypi/simple
 ```
 ### Installation on \*nix systems or wsl.
 If you're using Linux, OsX or a Windows subsystem for Linux (WSL) it should be
 sufficient to issues the following commands:
 
 ```bash
-pip install (--user) ansible
-pip install (--user) git+https://gitlab.dkrz.de/freva/deployment.git
+pip install ansible
+pip install freva-deployment --extra-index-url https://gitlab.dkrz.de/api/v4/projects/1732/packages/pypi/simple
 ```
 
 This command installs ansible and all required python packages.
 > **_Note:_** On *CentOS* python SELinux libraries need to be installed.
-You will need to install libselinux for your CentOS version.
+> You will need to install libselinux for your CentOS version.
 
 ```bash
-python3 -m pip install (--user) libselinux-python3
+python3 -m pip install libselinux-python3
 ```
 ## Installing docker/podman and sudo access to the service servers
 Since the services of MariaDB, Apache Solr and Apache httpd will be deployed on
