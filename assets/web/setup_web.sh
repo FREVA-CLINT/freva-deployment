@@ -1,4 +1,5 @@
 #!/bin/bash
+export PATH=/opt/condaenv/bin:$PATH
 export DJANGO_SUPERUSER_PASSWORD=$1
 export DJANGO_SUPERUSER_EMAIL=admin@freva.de
 if [ -z $1 ];then
@@ -6,9 +7,10 @@ if [ -z $1 ];then
     exit 1
 fi
 
-/opt/condaenv/python manage.py migrate --fake contenttypes
-/opt/condaenv/python manage.py migrate --fake-initial --noinput
-/opt/condaenv/python manage.py createsuperuser \
+python manage.py migrate --fake contenttypes
+python manage.py migrate --fake-initial --noinput
+python manage.py collectstatic --noinput
+python manage.py createsuperuser \
     --noinput \
     --username freva-admin \
     --email $DJANGO_SUPERUSER_EMAIL || echo 0
