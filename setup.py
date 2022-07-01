@@ -101,6 +101,7 @@ setup(
     long_description=read("README.md"),
     long_description_content_type="text/markdown",
     include_package_data=True,
+    package_data={"assets": ["assets"]},
     license="GPLv3",
     packages=find_packages("src"),
     package_dir={"": "src"},
