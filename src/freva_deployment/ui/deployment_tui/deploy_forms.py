@@ -354,7 +354,10 @@ class WebScreen(BaseForm):
                         f"{self.num}Ldap server name(s) used for authentication"
                         " - comma separated:"
                     ),
-                    value=cfg.get("auth_ldap_server_uri", "ldap://idm-dmz.dkrz.de",),
+                    value=cfg.get(
+                        "auth_ldap_server_uri",
+                        "ldap://idm-dmz.dkrz.de",
+                    ),
                 ),
                 True,
             ),
@@ -395,7 +398,8 @@ class WebScreen(BaseForm):
                     npyscreen.TitleText,
                     name=f"{self.num}Ldap search keys for group base:",
                     value=cfg.get(
-                        "ldap_group_base", "cn=groups,cn=accounts,dc=dkrz,dc=de",
+                        "ldap_group_base",
+                        "cn=groups,cn=accounts,dc=dkrz,dc=de",
                     ),
                 ),
                 True,
@@ -617,7 +621,8 @@ class RunForm(npyscreen.FormMultiPageAction):
             return
         public_keyfile = self.public_keyfile.value or self.chain_keyfile.value
         cert_files = dict(
-            public=public_keyfile or "", private=self.private_keyfile.value or "",
+            public=public_keyfile or "",
+            private=self.private_keyfile.value or "",
         )
         for key_type, keyfile in cert_files.items():
             for step, deploy_form in self.parentApp._forms.items():
