@@ -117,7 +117,7 @@ class CoreScreen(BaseForm):
                 self.add_widget_intelligent(
                     npyscreen.TitleCombo,
                     name=f"{self.num}Workload manger",
-                    value=self.scheduler_index(cfg.get("scheduler_system")),
+                    value=self.scheduler_index(cast(str, cfg.get("scheduler_system"))),
                     values=self.scheduler_systems,
                 ),
                 True,
