@@ -118,6 +118,13 @@ base_dir_location = ""
 ## output will be copied to this directory. The default location of this
 ## directory (if left value left blank) is ${base_dir_location}/share/preview
 preview_path = ""
+## Set the workload manager system, currently available are:
+## "local", "slurm", "pbs", "lfs", "moab", "oar", "sge"
+scheduler_system = "local"
+## Set the path to the directory that containes the stdout of the plugings,
+## this directory must be accessible to the web ui. The workload manager
+## will write the stdout into this directory. Defaults to ${base_dir_location}/share
+scheduler_output_dir = ""
 # Set the target architecutre of the system where the backend will be installed
 # to. You can choose from the following options:
 # Linux-x86_64 (default), Linux-aarch64, Linux-ppc64le, Linux-s390x, MacOSX-x86_64
