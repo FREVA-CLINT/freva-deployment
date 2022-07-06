@@ -60,31 +60,33 @@ essential setup steps:
    [basic configuration section](Folders.html#configuring-the-evaluation-system-section).
 6. Set the preview path mentioned in the
    [basic configuration section](Folders.html#configuring-the-evaluation-system-section).
-7. Set the user names (comma separated) of the Freva admins of this project.
-8. If you have a special user group for Freva admins you can set this this key
+7. Set the workload manager system from the dropdown menu.
+8. Set the output directory of the stdout of the workload manger.
+9. Set the user names (comma separated) of the Freva admins of this project.
+10. If you have a special user group for Freva admins you can set this this key
    here. This will cause the creation of folders with permissions suitable
    for multi-user write access (2775) on the target machine. This assures that
    multiple admins can adjust the Freva configuration. You can leave this
    variable blank.
-9. If you need to change to a common user (via sudo -i) that is able to install
+11. If you need to change to a common user (via sudo -i) that is able to install
    Freva on the HPC system you can set this common user name here. Note that this
    method should only be used if freva needs to be set up with a shared user
    account *and* you cannot log on to the HPC system with this shared user name.
    Most of the time it should not be necessary to use this option, either because
    you don't need a shared user account, or you can instruct ansible to directly
    log on as the shared user.
-10. If you have an anaconda binary already installed on the target system you
+12. If you have an anaconda binary already installed on the target system you
    can set the path to the `conda` or `mamba` executable here. Leaving this variable
    blank (default) will cause the deployment to temporary download and create
    an anaconda install script - which will get deleted afterwards.
-11. Select a pre-defined target architecture for the anaconda environment.\
+13. Select a pre-defined target architecture for the anaconda environment.\
    _Note_: The Freva installation has only been tested for MacOSX-x86_64,
    Linux-x86_64 (including Windows wsl2) and Linux-aarch64 (arm).
-12. Ansible needs python to be present on the remote machine, if not present
+14. Ansible needs python to be present on the remote machine, if not present
    in the default path (such as `/usr/bin/python3`) set the path to the `python3.4+`
    binary.
-13. Set the login user name for the remote machine.
-14. Set the path to the `git` executable if not in default path
+15. Set the login user name for the remote machine.
+16. Set the path to the `git` executable if not in default path
    such as `/usr/bin/git`.
 
 ### Notes on the core setup

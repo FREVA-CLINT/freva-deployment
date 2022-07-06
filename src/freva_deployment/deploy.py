@@ -61,6 +61,7 @@ class DeployFactory:
         self.inventory_file: Path = Path(self._td.name) / "inventory.yaml"
         self.eval_conf_file: Path = Path(self._td.name) / "evaluation_system.conf"
         self.web_conf_file: Path = Path(self._td.name) / "freva_web.toml"
+        self.apache_config: Path = Path(self._td.name) / "freva_web.conf"
         self._db_pass: str = ""
         self._steps = steps or ["services", "core", "web"]
         self._inv_tmpl = Path(config_file or config_dir / "inventory.toml")
@@ -74,8 +75,11 @@ class DeployFactory:
     def public_key_file(self) -> str:
         """Path to the public certificate file."""
         public_keyfile = self.cfg["certificates"].get("public_keyfile")
+        chain_keyfile = self.cfg["certificates"].get("chain_keyfile")
         if public_keyfile:
             return str(Path(public_keyfile).expanduser().absolute())
+        if chain_keyfile:
+            return str(Path(chain_keyfile).expanduser().absolute())
         raise ValueError("You must give a valid path to a public key file.")
 
     @property
@@ -92,7 +96,7 @@ class DeployFactory:
         keyfile = self.cfg["certificates"].get("chain_keyfile")
         if keyfile:
             return str(Path(keyfile).expanduser().absolute())
-        raise ValueError("You must give a valid path to a chain key file.")
+        return ""
 
     def _prep_vault(self) -> None:
         """Prepare the vault."""
@@ -153,6 +157,10 @@ class DeployFactory:
             self.cfg["core"]["config"]["root_dir"] = install_dir
         preview_path = self.cfg["core"]["config"].get("preview_path", "")
         base_dir_location = self.cfg["core"]["config"].get("base_dir_location", "")
+        scheduler_output_dir = self.cfg["core"]["config"].get(
+            "scheduler_output_dir", ""
+        )
+        scheduler_system = self.cfg["core"]["config"].get("scheduler_system", "local")
         if not preview_path:
             if base_dir_location:
                 self.cfg["core"]["config"]["preview_path"] = str(
@@ -160,6 +168,10 @@ class DeployFactory:
                 )
             else:
                 self.cfg["core"]["config"]["preview_path"] = ""
+        if not scheduler_output_dir:
+            scheduler_output_dir = str(Path(base_dir_location) / "share")
+        scheduler_output_dir = Path(scheduler_output_dir) / scheduler_system
+        self.cfg["core"]["config"]["scheduler_output_dir"] = str(scheduler_output_dir)
         self.cfg["core"]["config"]["keyfile"] = self.public_key_file
         git_exe = self.cfg["core"]["config"].get("git_path")
         self.cfg["core"]["config"]["git_path"] = git_exe or "git"
@@ -235,7 +247,21 @@ class DeployFactory:
         self.cfg["web"]["config"]["root_passwd"] = self.master_pass
         self.cfg["web"]["config"]["private_keyfile"] = self.private_key_file
         self.cfg["web"]["config"]["public_keyfile"] = self.public_key_file
-        self.cfg["web"]["config"]["chain_keyfile"] = self.chain_key_file
+        self.cfg["web"]["config"]["chain_keyfile"] = (
+            self.chain_key_file or self.public_key_file
+        )
+        self.cfg["web"]["config"]["apache_config_file"] = str(self.apache_config)
+        self._prep_apache_config()
+
+    def _prep_apache_config(self):
+        config = []
+        with (Path(asset_dir) / "web" / "freva_web.conf").open() as f_obj:
+            for line in f_obj.readlines():
+                if not self.chain_key_file and "SSLCertificateChainFile" in line:
+                    continue
+                config.append(line)
+        with open(self.apache_config, "w") as f_obj:
+            f_obj.write("".join(config))
 
     def __enter__(self):
         return self
@@ -306,7 +332,12 @@ class DeployFactory:
     ) -> None:
         """Set additional values to the configuration."""
         if step in self._needs_core:
-            for key in ("root_dir", "base_dir_location"):
+            for key in (
+                "root_dir",
+                "base_dir_location",
+                "preview_path",
+                "scheduler_output_dir",
+            ):
                 value = self.cfg["core"]["config"].get(key, "")
                 config[step]["vars"][f"core_{key}"] = value
         config[step]["vars"][f"{step}_hostname"] = self.cfg[step]["hosts"]
@@ -394,6 +425,8 @@ class DeployFactory:
             ("core", "root_dir"),
             ("core", "base_dir_location"),
             ("core", "preview_path"),
+            ("core", "scheduler_output_dir"),
+            ("core", "scheduler_system"),
         )
         cfg_file = asset_dir / "config" / "evaluation_system.conf.tmpl"
         with cfg_file.open() as f_obj:
@@ -404,7 +437,8 @@ class DeployFactory:
                 for key, value in keys:
                     if line.startswith(value):
                         cfg = self.cfg[key]["config"].get(value, "")
-                        lines[num] = f"{value}={cfg}\n"
+                        if cfg:
+                            lines[num] = f"{value}={cfg}\n"
                 for step in ("solr", "db"):
                     cfg = self.cfg[step]["config"].get("port", "")
                     if line.startswith(f"{step}.port"):

@@ -64,7 +64,7 @@
         cmd: >
           /usr/local/bin/docker-or-podman build
           --build-arg=project={{ project_name }}
-          --build-arg=rootpw={{ root_passwd }} -t {{ vault_name }}:latest .
+          --build-arg=rootpw='{{ root_passwd }}' -t {{ vault_name }}:latest .
       become: true
     - name: Starting vault container
       shell: /usr/local/bin/docker-or-podman run -d {{docker_cmd}}

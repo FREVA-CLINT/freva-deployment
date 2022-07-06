@@ -39,6 +39,19 @@ class CoreScreen(BaseForm):
     certificates: list[str] = ["public"]
     """The type of certificate files this step needs."""
 
+    @property
+    def scheduler_systems(self):
+        """Define available scheduler systems."""
+        return ["local", "slurm", "pbs", "lfs", "moab", "oar", "sge"]
+
+    def scheduler_index(self, scheduler_system: str = ""):
+        """Get the index of the saved scheduler_system"""
+        scheduler_system = scheduler_system or "local"
+        for nn, choice in enumerate(self.scheduler_systems):
+            if choice == scheduler_system:
+                return nn
+        return 0
+
     def _add_widgets(self) -> None:
         """Add widgets to the screen."""
         self.list_keys: list[str] = []
@@ -97,6 +110,24 @@ class CoreScreen(BaseForm):
                     npyscreen.TitleText,
                     name=f"{self.num}Plugin output dir for the web UI (preview path):",
                     value=cfg.get("preview_path", ""),
+                ),
+                False,
+            ),
+            scheduler_system=(
+                self.add_widget_intelligent(
+                    npyscreen.TitleCombo,
+                    name=f"{self.num}Workload manger",
+                    value=self.scheduler_index(cast(str, cfg.get("scheduler_system"))),
+                    values=self.scheduler_systems,
+                ),
+                True,
+            ),
+            scheduler_output_dir=(
+                self.add_widget_intelligent(
+                    npyscreen.TitleText,
+                    name=f"{self.num}Ouput dir. of the scheduler system, "
+                    "${base_dir_location}/share",
+                    value=cfg.get("scheduler_output_dir", ""),
                 ),
                 False,
             ),
@@ -588,10 +619,10 @@ class RunForm(npyscreen.FormMultiPageAction):
         if missing_form:
             self.parentApp.change_form(missing_form)
             return
+        public_keyfile = self.public_keyfile.value or self.chain_keyfile.value
         cert_files = dict(
-            public=self.public_keyfile.value or "",
+            public=public_keyfile or "",
             private=self.private_keyfile.value or "",
-            chain=self.chain_keyfile.value or "",
         )
         for key_type, keyfile in cert_files.items():
             for step, deploy_form in self.parentApp._forms.items():
@@ -606,6 +637,16 @@ class RunForm(npyscreen.FormMultiPageAction):
                             msg = f"You must give a {key_type} certificate file."
                         npyscreen.notify_confirm(msg, title="ERROR")
                         return
+
+        cert_files["chain"] = self.chain_keyfile.value or ""
+        if not cert_files["chain"]:
+            value = npyscreen.notify_yes_no(
+                "It is advised to create a chained certificate file. "
+                "This enhances the web ui security. Continue anyway?",
+                title="WARNING",
+            )
+            if not value:
+                return
         save_file = self.parentApp.save_config_to_file(write_toml_file=True)
         if isinstance(save_file, Path):
             save_file = str(save_file)
