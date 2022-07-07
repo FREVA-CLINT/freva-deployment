@@ -479,7 +479,8 @@ class WebScreen(BaseForm):
                     npyscreen.TitleCombo,
                     name=(f"{self.num}Ldap group type"),
                     value=self.get_index(
-                        ["posix", "nested"], cfg.get("ldap_group_type", "nested")
+                        ["posix", "nested"],
+                        cast(str, cfg.get("ldap_group_type", "nested")),
                     ),
                     values=["posix", "nested"],
                 ),
