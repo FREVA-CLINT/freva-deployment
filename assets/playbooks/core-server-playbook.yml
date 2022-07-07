@@ -61,6 +61,7 @@
         state: directory
         mode: "3775"
       become: "{{'yes' if core_ansible_become_user is defined else 'no' }}"
+      ignore_errors: true
       when: core_scheduler_output_dir | length != 0
     - name: Creating preview path
       file:
@@ -120,7 +121,7 @@
         chdir: /tmp/evaluation_system
       environment:
         PYTHON3: "{{ ansible_python_interpreter }}"
-        EVALUATION_SYSTEM_CONFIG_FILE: "{{ core_root_dir }}/{{eval_path}}"
+        EVALUATION_SYSTEM_CONFIG_FILE: "/tmp/evaluation_system/evaluation_system.conf"
       become: "{{'yes' if core_ansible_become_user is defined else 'no' }}"
     - name: Copying Public key file
       copy:

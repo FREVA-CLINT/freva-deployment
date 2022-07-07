@@ -219,6 +219,13 @@ class WebScreen(BaseForm):
     certificates: list[str] = ["public", "private", "chain"]
     """The type of certificate files this step needs."""
 
+    def get_index(self, choices: list[str], key: str):
+        """Get the key value pair for a combo box"""
+        for nn, choice in enumerate(choices):
+            if choice == key:
+                return nn
+        return 0
+
     def _add_widgets(self) -> None:
         """Add widgets to the screen."""
         self.list_keys = "contacts", "address", "scheduler_host"
@@ -420,6 +427,69 @@ class WebScreen(BaseForm):
                     npyscreen.TitlePassword,
                     name=f"{self.num}Password for ldap user:",
                     value=cfg.get("ldap_user_pw", "dkrzprox"),
+                ),
+                True,
+            ),
+            ldap_first_name_field=(
+                self.add_widget_intelligent(
+                    npyscreen.TitleText,
+                    name=(f"{self.num}Ldap search search key for first name"),
+                    value=cfg.get(
+                        "ldap_first_name_field",
+                        "givenname",
+                    ),
+                ),
+                False,
+            ),
+            ldap_last_name_field=(
+                self.add_widget_intelligent(
+                    npyscreen.TitleText,
+                    name=(f"{self.num}Ldap search search key for last name"),
+                    value=cfg.get(
+                        "ldap_last_name_field",
+                        "sn",
+                    ),
+                ),
+                False,
+            ),
+            ldap_email_field=(
+                self.add_widget_intelligent(
+                    npyscreen.TitleText,
+                    name=(f"{self.num}Ldap search search key for email addr"),
+                    value=cfg.get(
+                        "ldap_email_field",
+                        "mail",
+                    ),
+                ),
+                False,
+            ),
+            ldap_group_class=(
+                self.add_widget_intelligent(
+                    npyscreen.TitleText,
+                    name=(f"{self.num}Ldap object class"),
+                    value=cfg.get(
+                        "ldap_group_class",
+                        "groupOfNames",
+                    ),
+                ),
+                True,
+            ),
+            ldap_group_type=(
+                self.add_widget_intelligent(
+                    npyscreen.TitleCombo,
+                    name=(f"{self.num}Ldap group type"),
+                    value=self.get_index(
+                        ["posix", "nested"], cfg.get("ldap_group_type", "nested")
+                    ),
+                    values=["posix", "nested"],
+                ),
+                True,
+            ),
+            ldap_model=(
+                self.add_widget_intelligent(
+                    npyscreen.TitleText,
+                    name=(f"{self.num}Ldap tools class to be used for authentication."),
+                    value=cfg.get("ldap_model", "MiklipUserInformation"),
                 ),
                 True,
             ),
