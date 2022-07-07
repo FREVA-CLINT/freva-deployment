@@ -183,6 +183,22 @@ ldap_user_base = "cn=users,cn=accounts,dc=dkrz,dc=de"
 ldap_group_base = "cn=groups,cn=accounts,dc=dkrz,dc=de"
 ## distinguished name (dn) for the ldap user
 ldap_user_dn = "uid=dkrzagent,cn=sysaccounts,cn=etc,dc=dkrz,dc=de"
+## use encrypted ldap connection (needs to be configured)
+auth_ldap_start_tls = false
+## Set ldap last name search key
+ldap_last_name_field = "givenname"
+## Set ldap first name search key
+ldap_first_name_field = "sn"
+## Set ldap email earch key
+ldap_email_name_field = "mail"
+# Set the ldap group class name
+ldap_group_class = "groupOfNames"
+# Set the ldap group type, available values are are [posix, nested]
+ldap_group_type = "nested"
+# Set the ldap tools class for users
+ldap_model = "MiklipUserInformation"
+
+
 ## set the passwd for the ldap user
 ldap_user_pw = "dkrzprox"
 #######
