@@ -159,7 +159,7 @@ hover_color = "#d0513a"
 ## The about us text is a small blurb about freva within the project
 about_us_text = ""
 ## Set a list of email addresses for contacts
-contacts = ""
+contacts = [""]
 ## Now set postal address
 address = "Project name, German Climate Computing Centre (DKRZ), Bundesstr. 45a, 20146 Hamburg, Germany."
 ## Here you can set a lengthy project description.

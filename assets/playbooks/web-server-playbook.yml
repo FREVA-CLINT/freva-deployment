@@ -49,7 +49,7 @@
         -v /opt/freva/{{project_name}}/web_service/cacert.pem:/etc/ssl/certs/cacert.pem:z
         -v {{ core_scheduler_output_dir }}:{{ core_scheduler_output_dir }}:ro
         -v /opt/freva/{{project_name}}/web_service/static:/srv/static:z
-        -v {{ core_preview_path }}:/srv/preview:ro
+        -v {{ core_preview_path }}:/srv/static/preview:ro
         -e SCHEDULER_DIR={{core_scheduler_output_dir}}
         -e FREVA_HOST={{web_server_name}} -p 80:80 -p 443:443 httpd:latest
     - redis_name: "{{ project_name }}-redis"
