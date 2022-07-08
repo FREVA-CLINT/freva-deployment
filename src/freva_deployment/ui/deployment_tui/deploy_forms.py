@@ -288,7 +288,9 @@ class WebScreen(BaseForm):
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
                     name=f"{self.num}Contact email address:",
-                    value=",".join(cfg.get("contacts", "admin@freva.dkrz.de")),
+                    value=",".join(
+                        cast(List[str], cfg.get("contacts", "admin@freva.dkrz.de"))
+                    ),
                 ),
                 True,
             ),
@@ -361,7 +363,10 @@ class WebScreen(BaseForm):
                         f"{self.num}Ldap server name(s) used for authentication"
                         " - comma separated:"
                     ),
-                    value=cfg.get("auth_ldap_server_uri", "ldap://idm-dmz.dkrz.de",),
+                    value=cfg.get(
+                        "auth_ldap_server_uri",
+                        "ldap://idm-dmz.dkrz.de",
+                    ),
                 ),
                 True,
             ),
@@ -402,7 +407,8 @@ class WebScreen(BaseForm):
                     npyscreen.TitleText,
                     name=f"{self.num}Ldap search keys for group base:",
                     value=cfg.get(
-                        "ldap_group_base", "cn=groups,cn=accounts,dc=dkrz,dc=de",
+                        "ldap_group_base",
+                        "cn=groups,cn=accounts,dc=dkrz,dc=de",
                     ),
                 ),
                 True,
@@ -430,7 +436,10 @@ class WebScreen(BaseForm):
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
                     name=(f"{self.num}Ldap search search key for first name"),
-                    value=cfg.get("ldap_first_name_field", "givenname",),
+                    value=cfg.get(
+                        "ldap_first_name_field",
+                        "givenname",
+                    ),
                 ),
                 False,
             ),
@@ -438,7 +447,10 @@ class WebScreen(BaseForm):
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
                     name=(f"{self.num}Ldap search search key for last name"),
-                    value=cfg.get("ldap_last_name_field", "sn",),
+                    value=cfg.get(
+                        "ldap_last_name_field",
+                        "sn",
+                    ),
                 ),
                 False,
             ),
@@ -446,7 +458,10 @@ class WebScreen(BaseForm):
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
                     name=(f"{self.num}Ldap search search key for email addr"),
-                    value=cfg.get("ldap_email_field", "mail",),
+                    value=cfg.get(
+                        "ldap_email_field",
+                        "mail",
+                    ),
                 ),
                 False,
             ),
@@ -454,7 +469,10 @@ class WebScreen(BaseForm):
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
                     name=(f"{self.num}Ldap object class"),
-                    value=cfg.get("ldap_group_class", "groupOfNames",),
+                    value=cfg.get(
+                        "ldap_group_class",
+                        "groupOfNames",
+                    ),
                 ),
                 True,
             ),
@@ -676,7 +694,8 @@ class RunForm(npyscreen.FormMultiPageAction):
             return
         public_keyfile = self.public_keyfile.value or self.chain_keyfile.value
         cert_files = dict(
-            public=public_keyfile or "", private=self.private_keyfile.value or "",
+            public=public_keyfile or "",
+            private=self.private_keyfile.value or "",
         )
         for key_type, keyfile in cert_files.items():
             for step, deploy_form in self.parentApp._forms.items():
