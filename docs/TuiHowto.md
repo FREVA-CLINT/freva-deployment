@@ -61,7 +61,9 @@ essential setup steps:
 6. Set the preview path mentioned in the
    [basic configuration section](Folders.html#configuring-the-evaluation-system-section).
 7. Set the workload manager system from the dropdown menu.
-8. Set the output directory of the stdout of the workload manger.
+8. Set the output directory of the stdout of the workload manger. Note:
+   the workload manager type, like pbs, will be automatically appended to this
+   directory.
 9. Set the user names (comma separated) of the Freva admins of this project.
 10. If you have a special user group for Freva admins you can set this this key
    here. This will cause the creation of folders with permissions suitable
@@ -110,32 +112,41 @@ essential setup steps:
 3. Main html color scheme.
 4. Html color for borders.
 5. Html color for hover mode boxes.
-6. A short text about the Freva admin team/group. This text will go to the
+6. Set the path to the institution logo. This should be the path to the logo
+   on the machine that runs the web.
+7. A short text about the Freva admin team/group. This text will go to the
    header of the web page.
-7. Contact email address of the admin(s).
-8. Address of the institute, will be appearing in the footer of the website.
-9. Detailed overview over the project, this text will go into the left central
+8. Contact email address of the admin(s).
+9. Address of the institute, will be appearing in the footer of the website.
+10. Detailed overview over the project, this text will go into the left central
    box in the Freva main page. It should describe the purpose of this project
-10. The header for the detailed overview mentioned in 9.
-11. Host name(s) - usually HPC login node(s) - the web backend code submits
+11. The header for the detailed overview mentioned in 9.
+12. Host name(s) - usually HPC login node(s) - the web backend code submits
     plugin jobs from. The backend will logon to this host name and submit a
     plugin job.
-12. String of ldap server uri(s) (comma separated). The ldap server uris are
+13. String of ldap server uri(s) (comma separated). The ldap server uris are
     used to make authentication requests via the web side.
-13. Tick this box (`<SPACE>`) to enable TLS encrypted connection from the django
+14. Tick this box (`<SPACE>`) to enable TLS encrypted connection from the django
     web application to the ldap server.
     [See also django ldap tls config](https://django-auth-ldap.readthedocs.io/en/latest/authentication.html#notes)
-14. Set the user group name that is allowed to logon to the web ui.
-15. Set the ldap user base filters. See also the
+15. Set the user group name that is allowed to logon to the web ui.
+16. Set the ldap user base filters. See also the
     [djanog ldap authentication for user](https://django-auth-ldap.readthedocs.io/en/latest/users.html)
-16. Set the ldap group base filters. See also the
+17. Set the ldap group base filters. See also the
     [django ldap authentication for groups](https://django-auth-ldap.readthedocs.io/en/latest/groups.html#finding-groups)
-17. Set the distinguished name of the ldap user. This setting is used to make
+18. Set the distinguished name of the ldap user. This setting is used to make
     queries to the ldap server. TODO: [this might not be necessary](https://django-auth-ldap.readthedocs.io/en/latest/authentication.html#search-bind)
-18. Set the password for the ldap user.
-19. Set the path to the `python3.4+` binary, this should be set if the python
+19. Set the password for the ldap user.
+20. Set the ldap search key for finding the first name entries
+21. Set the ldap search key for finding the last name entries
+22. Set the ldap search key for finding email addresses
+23. Set the type of ldap object class name
+24. Set the type of ldap group type (nested or posix). Note: This is a
+    dropdown menu, hit enter to select the options.
+25. Set the evaluation_system ldap class that handles the ldap connections
+26. Set the path to the `python3.4+` binary, this should be set if the python
     binary is not part of the `$PATH` variable.
-20. Set the login user name for the remote machine.
+27. Set the login user name for the remote machine.
 
 ### Notes on the web ui setup
 Currently there are ties between the core running on the HPC machine and

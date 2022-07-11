@@ -216,7 +216,7 @@ class DeployFactory:
         if web_host == "127.0.0.1":
             web_host = "localhost"
         self.cfg["web"]["config"]["host"] = web_host
-        _webserver_items["INSTITUTION_LOGO"] = "/path/to/your/logo"
+        # _webserver_items["INSTITUTION_LOGO"] = "/path/to/your/logo"
         trusted_origin = urlparse(server_name)
         if trusted_origin.scheme:
             _webserver_items["CSRF_TRUSTED_ORIGINS"] = [
@@ -235,7 +235,7 @@ class DeployFactory:
         except (FileNotFoundError, IOError, KeyError):
             pass
         try:
-            _webserver_items["IMPRINT"] = _webserver_items["ADDRESS"].split(",")
+            _webserver_items["IMPRINT"] = _webserver_items["IMPRINT"].split(",")
         except AttributeError:
             pass
         with self.web_conf_file.open("w") as f_obj:
