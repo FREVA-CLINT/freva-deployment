@@ -7,6 +7,7 @@ __pycache__/*
 build/
 *.tmpl
 docs/_build/
+dist/
 my.log
 src/freva_deployment/__pycache__
 src/freva_deployment/cli/__pycache__

@@ -1,5 +1,6 @@
 stages:
     - doc
+    - release
 
 lint:
     image: python
@@ -29,3 +30,23 @@ pages:
         when: always
         paths:
             - public
+
+release_job:
+    stage: release
+    image: registry.gitlab.com/gitlab-org/release-cli:latest
+    needs: ["pages"]
+    tags:
+        - docker, specific
+    rules:
+        - if: $CI_COMMIT_TAG
+    before_script:
+        - pip install twine
+    script:
+        - python setup.py sdist
+        - TWINE_PASSWORD=${CI_JOB_TOKEN}
+          TWINE_USERNAME=98c8de339e1258db33f138635ca128
+          python -m twine upload --repository-url
+          ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/pypi dist/*
+    release:
+        tag_name: '$CI_COMMIT_TAG'
+        description: '$CI_COMMIT_TAG'
