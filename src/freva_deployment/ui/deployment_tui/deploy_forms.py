@@ -228,7 +228,7 @@ class WebScreen(BaseForm):
 
     def _add_widgets(self) -> None:
         """Add widgets to the screen."""
-        self.list_keys = "contacts", "address", "scheduler_host"
+        self.list_keys = "contacts", "imprint", "scheduler_host"
         cfg = self.get_config(self.step)
         for key in self.list_keys:
             if key in cfg and isinstance(cfg[key], str):
@@ -276,11 +276,21 @@ class WebScreen(BaseForm):
                 ),
                 True,
             ),
+            institution_logo=(
+                self.add_widget_intelligent(
+                    npyscreen.TitleText,
+                    name=f"{self.num}Path to the institution logo.",
+                    value=cfg.get(
+                        "institution_logo", "/path/to/logo/on/target/machine"
+                    ),
+                ),
+                True,
+            ),
             about_us_text=(
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
                     name=f"{self.num}About us text - short blurb about Freva:",
-                    value=cfg.get("about_us_test", "Testing"),
+                    value=cfg.get("about_us_text", "Testing"),
                 ),
                 True,
             ),
@@ -288,11 +298,13 @@ class WebScreen(BaseForm):
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
                     name=f"{self.num}Contact email address:",
-                    value=cfg.get("contatcs", "admin@freva.dkrz.de"),
+                    value=",".join(
+                        cast(List[str], cfg.get("contacts", "admin@freva.dkrz.de"))
+                    ),
                 ),
                 True,
             ),
-            address=(
+            imprint=(
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
                     name=f"{self.num}Institution address - comma separated:",
@@ -300,7 +312,7 @@ class WebScreen(BaseForm):
                         cast(
                             List[str],
                             cfg.get(
-                                "address",
+                                "imprint",
                                 [
                                     "freva",
                                     "German Climate Computing Centre (DKRZ)",
