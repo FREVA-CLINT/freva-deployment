@@ -228,6 +228,9 @@ class MainApp(npyscreen.NPSAppManaged):
 
     def read_cert_file(self, key: str) -> str:
         """Read the certificate file from the cache."""
+        cert_file = cast(str, self.config.get("certificates", {}).get(key, ""))
+        if cert_file:
+            return cert_file
         return cast(str, self._read_cache(key, ""))
 
     @property

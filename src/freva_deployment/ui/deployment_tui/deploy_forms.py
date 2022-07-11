@@ -744,6 +744,7 @@ class RunForm(npyscreen.FormMultiPageAction):
     def on_cancel(self) -> None:
         """Define what happens after the the cancel button is hit."""
         name = self.parentApp.current_form.lower()
+        self.parentApp.setup = {}
         for step, form_name in self.parentApp._steps_lookup.items():
             if name.startswith(step):
                 # Tell the MyTestApp object to change forms.
@@ -761,11 +762,14 @@ class RunForm(npyscreen.FormMultiPageAction):
     def _add_widgets(self) -> None:
         """Add the widgets to the form."""
 
+        project_name = self.parentApp.config.get(
+            "project_name", self.parentApp._read_cache("project_name", "")
+        )
         ssh_pw = self.parentApp._read_cache("ssh_pw", True)
         self.project_name = self.add_widget_intelligent(
             npyscreen.TitleText,
             name=f"{self.num}Set the name of the project",
-            value=self.parentApp._read_cache("project_name", ""),
+            value=project_name,
         )
         self.inventory_file = self.add_widget_intelligent(
             npyscreen.TitleFilename,
