@@ -63,7 +63,10 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
 def cli(argv: list[str] | None = None) -> None:
     """Run the command line interface."""
     args = parse_args(argv)
-    server_map = guess_map_server(args.server_map, mandatory=False)
+    if args.server_map:
+        server_map = guess_map_server(args.server_map, mandatory=False)
+    else:
+        server_map = ""
     set_log_level(args.verbose)
     with DeployFactory(
         steps=args.steps,
