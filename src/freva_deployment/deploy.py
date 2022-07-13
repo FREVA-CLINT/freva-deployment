@@ -216,16 +216,18 @@ class DeployFactory:
         if web_host == "127.0.0.1":
             web_host = "localhost"
         self.cfg["web"]["config"]["host"] = web_host
-        # _webserver_items["INSTITUTION_LOGO"] = "/path/to/your/logo"
-        trusted_origin = urlparse(server_name)
-        if trusted_origin.scheme:
-            _webserver_items["CSRF_TRUSTED_ORIGINS"] = [
-                f"https://{urlparse(server_name).netloc}"
-            ]
-        else:
-            _webserver_items["CSRF_TRUSTED_ORIGINS"] = [
-                f"https://{urlparse(server_name).path}"
-            ]
+        _webserver_items["CSRF_TRUSTED_ORIGINS"] = []
+        for url in (server_name, self.cfg["web"]["config"]["project_website"]):
+            trusted_origin = urlparse(url)
+
+            if trusted_origin.scheme:
+                _webserver_items["CSRF_TRUSTED_ORIGINS"].append(
+                    f"https://{trusted_origin.netloc}"
+                )
+            else:
+                _webserver_items["CSRF_TRUSTED_ORIGINS"].append(
+                    f"https://{trusted_origin.path}"
+                )
         _webserver_items["FREVA_BIN"] = os.path.join(
             self.cfg["core"]["config"]["install_dir"], "bin"
         )
