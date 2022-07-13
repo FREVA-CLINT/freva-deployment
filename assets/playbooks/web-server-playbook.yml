@@ -41,7 +41,7 @@
         -v {{core_base_dir_location}}:{{core_base_dir_location}}:ro
         -e EVALUATION_SYSTEM_CONFIG_FILE={{core_root_dir}}/freva/evaluation_system.conf
         --name {{web_name}}
-        -t registry.gitlab.dkrz.de/freva/freva_web/freva_web:update_urls
+        -t registry.gitlab.dkrz.de/freva/freva_web/freva_web:main
     - docker_apache_cmd: >
         -v /opt/freva/{{project_name}}/web_service/freva_web.conf:/usr/local/apache2/conf/httpd.conf:z
         -v /opt/freva/{{project_name}}/web_service/server-cert.crt:/etc/ssl/certs/server-cert.crt:z
