@@ -45,6 +45,9 @@
         echo 0
       become: true
       ignore_errors: true
+    - name: Pulling container
+      become: true
+      shell: /usr/local/bin/docker-or-podman pull mariadb:latest
     - name: Creating docker network
       shell: >
         /usr/local/bin/docker-or-podman network create "{{ project_name }}";

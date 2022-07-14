@@ -50,6 +50,7 @@
         -v /opt/freva/{{project_name}}/web_service/static:/srv/static:z
         -v {{ core_preview_path }}:/srv/static/preview:ro
         -e SCHEDULER_DIR={{core_scheduler_output_dir}}
+        --security-opt label=disable
         -e FREVA_HOST={{web_server_name}} -p 80:80 -p 443:443 httpd:latest
     - redis_name: "{{ project_name }}-redis"
     - apache_name: "{{project_name}}-httpd"
@@ -86,7 +87,8 @@
         /usr/local/bin/docker-or-podman rm {{redis_name}};
         /usr/local/bin/docker-or-podman stop {{apache_name}};
         /usr/local/bin/docker-or-podman rm {{apache_name}};
-        echo 0
+        /usr/local/bin/docker-or-podman rmi redis;
+        /usr/local/bin/docker-or-podman rmi httpd; echo 0
       ignore_errors: true
       become: true
     - name: Deleting existing web-directory
@@ -115,6 +117,14 @@
            dest: "{{service_dir}}/cacert.pem"}
         - {src: "{{asset_dir}}/web/setup_web.sh",
            dest: "{{service_dir}}/setup_web.sh"}
+    - name: Pulling containers
+      become: true
+      shell:
+        cmd: /usr/local/bin/docker-or-podman pull {{item}}
+      with_items:
+        - "redis:latest"
+        - "httpd:latest"
+        - "registry.gitlab.dkrz.de/freva/freva_web/freva_web:main"
     - name: Creating redis container
       become: true
       shell:
@@ -127,10 +137,6 @@
         cmd: >
           /usr/local/bin/docker-or-podman  run -d --name {{apache_name}}
           {{docker_apache_cmd}}
-    - name: debug
-      shell:
-        cmd: >
-          echo /usr/local/bin/docker-or-podman  run -d --name {{apache_name}} {{docker_apache_cmd}} > /tmp/podman_cmd
     - name: Getting freva_web image
       become: true
       shell: /usr/local/bin/docker-or-podman  run -d {{docker_web_cmd}}
@@ -157,9 +163,18 @@
       shell: >
         /usr/local/bin/docker-or-podman exec -it {{web_name}}
         /bin/bash /tmp/setup_web.sh '{{root_passwd}}'
-    - name: Restarting web service
+    - name: Adjusting uid of www-data in httpd container
       become: true
-      shell: systemctl restart {{web_name}}
+      shell: >
+        /usr/local/bin/docker-or-podman exec -it -u root {{apache_name}}
+        usermod -u $(id -u {{ansible_user}}) www-data
+      ignore_errors: true
+    - name: Restarting services
+      become: true
+      shell: systemctl restart {{item}}
+      with_items:
+        - "{{apache_name}}"
+        - "{{web_name}}"
       when: systemctl.stat.exists == true
     - name: Deleting tmporary files
       file:

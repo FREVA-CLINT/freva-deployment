@@ -35,6 +35,9 @@
         exit 0
       ignore_errors: true
       become: true
+    - name: Pulling container
+      become: true
+      shell: /usr/local/bin/docker-or-podman pull vault:latest
     - name: Creating docker network
       shell: >
         /usr/local/bin/docker-or-podman network create "{{ project_name }}";
