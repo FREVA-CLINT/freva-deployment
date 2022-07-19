@@ -1,6 +1,15 @@
 ---
+- hosts: vault
+  vars:
+    - ansible_python_interpreter: "{{ vault_ansible_python_interpreter }}"
+  tasks:
+    - name: Inserting email secrets
+      become: true
+      shell: >
+        /usr/local/bin/docker-or-podman exec -it {{ vault_name }}
+        vault kv put kv/email username={{vault_email_user}}
+        password='{{vault_email_password}}'
 - hosts: core
-
   vars:
     - ansible_python_interpreter: "{{ core_ansible_python_interpreter }}"
     - ansible_become_user: "{{ core_ansible_become_user if core_ansible_become_user is defined else 'root' }}"
