@@ -85,8 +85,9 @@ class Vault(Resource):
         --------
             dict: status information
         """
+        out, status = {}, 401
         if public_key != os.environ["ROOT_PW"]:
-            return jsonify({"status": "fail"})
+            return out, status
         _, token = read_key()
         # Get the information from the vault
         url = f"http://127.0.0.1:8200/v1/kv/data/read-eval"
@@ -94,7 +95,7 @@ class Vault(Resource):
         out = requests.get(url, headers=headers).json()["data"]
         out["data"]["db.passwd"] = entry
         r = requests.post(url, json=out, headers=headers)
-        return jsonify({"status": "success"})
+        return {}, 201
 
     def get(self, entry, public_key):
         """Get method, for getting vault information.
@@ -114,15 +115,32 @@ class Vault(Resource):
         --------
             dict: Vault information
         """
-        out = ""
+        out = {}
+        status = 401
+        _, token = read_key()
+        if public_key != self.public_key:
+            return out, 401
+        if entry == "token":
+            return {"X-Vault-Token": token}, 200
         if entry == "data":
-            _, token = read_key()
             # Get the information from the vault
-            out = requests.get(
-                f"http://127.0.0.1:8200/v1/kv/data/read-eval",
+            req = requests.get(
+                "http://127.0.0.1:8200/v1/kv/data/read-eval",
                 headers={"X-Vault-Token": token},
-            ).json()["data"]["data"]
-        return jsonify(out)
+            )
+        else:
+            req = requests.get(
+                f"http://127.0.0.1:8200/v1/kv/data/{entry}",
+                headers={"X-Vault-Token": token},
+            )
+            out = req.json()["data"]["data"]
+            status = req.status_code
+        try:
+            out = req.json()["data"]["data"]
+            status = req.status_code
+        except KeyError:
+            out = req.json()
+        return out, status
 
 
 api.add_resource(Vault, "/vault/<entry>/<public_key>")  # Route_3

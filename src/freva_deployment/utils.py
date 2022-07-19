@@ -161,6 +161,25 @@ def upload_server_map(
         logger.error("Could not update server information %s", req.json())
 
 
+def get_email_credentials() -> tuple[str, str]:
+    """Read login credentials for email server.
+
+    Returns
+    =======
+    tuple: username and password
+    """
+
+    msg = (
+        "\nThe web will need login credentials to connect to the [b green]mail server [/]"
+        "that has been set up.\nYou should now enter your [it]login credentials[/].\n"
+        "[b]Note:[/]These credentials will be securely stored in an encrypted vault\n"
+    )
+    RichConsole.print(msg)
+    username = Prompt.ask("[green b]Username[/] for mail server")
+    password = Prompt.ask("[green b]Password[/] for mail server", password=True)
+    return username, password
+
+
 def get_passwd(min_characters: int = 8) -> str:
     """Create a secure pasword.
 

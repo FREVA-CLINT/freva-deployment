@@ -228,7 +228,7 @@ class WebScreen(BaseForm):
 
     def _add_widgets(self) -> None:
         """Add widgets to the screen."""
-        self.list_keys = "contacts", "imprint", "scheduler_host"
+        self.list_keys = "imprint", "scheduler_host"
         cfg = self.get_config(self.step)
         for key in self.list_keys:
             if key in cfg and isinstance(cfg[key], str):
@@ -298,9 +298,18 @@ class WebScreen(BaseForm):
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
                     name=f"{self.num}Contact email address:",
-                    value=",".join(
-                        cast(List[str], cfg.get("contacts", "admin@freva.dkrz.de"))
+                    value=str(cfg.get("contacts", "data@dkrz.de")),
+                ),
+                True,
+            ),
+            email_host=(
+                self.add_widget_intelligent(
+                    npyscreen.TitleText,
+                    name=(
+                        f"{self.num}Smtp email that will be used to send "
+                        "emails to the contacts via the web ui"
                     ),
+                    value=cfg.get("email_host", "mailhost.dkrz.de"),
                 ),
                 True,
             ),
