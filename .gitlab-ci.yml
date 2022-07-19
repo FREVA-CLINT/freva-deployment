@@ -12,7 +12,7 @@ lint:
         - python3 -m pip install .[test]
     script:
         - mypy --install-types --non-interactive
-        - black --check -t 39 src
+        - black --check -t py310 src
 
 pages:
     image: python
