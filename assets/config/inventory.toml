@@ -17,13 +17,17 @@
 # The the project name that should be used for this freva instance
 # NOTE: this key has to be the first in the file
 project_name = ""
+
 ## Set the path to the SSL certfificate files that is used to make password
 ## queries to the vault server or used as web certfificates.
 [certificates]
+
 ## Path to the public keyfile
 public_keyfile = ""
+
 ## Path to the private keyfile
 privat_keyfile = ""
+
 ## Path to the chain file
 chain_keyfile = ""
 
@@ -63,19 +67,27 @@ hosts = ""
 ##in order to deploy the system correctly
 ##
 [db.config]
+
 ## Config variables for the database service
 port = 3306
 user = ""
 db = ""
+
 ##If you need a different user name you can set it here:
 #ansible_user = "username"
+
 ## You can set the db_host seperately, if none is given (default)
 ## the one from the hostsnames above are taken
-##db_host = ""
+
+db_host = ""
+
 ## Ansible needs a python3 interpreter, which can be set for custom python3 instances
 #ansible_python_interpreter = ""
+
 ##If you need a different user name you can set it here:
+
 #ansible_python_interpreter="/usr/bin/python3"
+
 ##Indicate whether or not to empty any pre-existing folders/docker volumes.
 ##(Useful for a truely fresh start) (default: False)
 wipe = false
@@ -83,12 +95,16 @@ wipe = false
 [solr.config]
 ## Config variables for the solr service
 port = 8983
+
 # Set the memory for the solr server
 mem = "4g"
 ## Ansible needs a python3 interpreter, which can be set for custom python3 instances
+
 #ansible_python_interpreter = ""
+
 ## If you need a different user name you can set it here:
 #ansible_user = "username"
+
 ##Indicate whether or not to empty any pre-existing folders/docker volumes.
 ##(Useful for a truely fresh start) (default: False)
 wipe = false
@@ -98,48 +114,62 @@ wipe = false
 ## List of user(s) that can alter the configuration of the freva cmd line interface
 ## If blank, the user that runs the deployment is chosen
 admins = ""
+
 ## The path where the core should be installed
 install_dir=""
+
 ## Set the path to any existing conda executable on the target machine,
 ## if not existing (default) a tmporary conda distribution will be downloaded
 conda_exec_path=""
+
 ## The directory where the project configuration files will be stored, leave
 ## blank to use the same directory as `install_dir`
 root_dir = ""
+
 ## If you which not to install a core instance but only configure one set the
 ## install variable to false. This can be useful if you have a central instance
 ## of freva deployed and want to setup a project specific configuration that
 ## uses this central instance
 install = true
+
 ## The directory where the user specific output will be stored
 base_dir_location = ""
+
 ## Set the directory holding the user content, like plots, for the web user
 ## interface. Note: after plugin application, display content of the plugin
 ## output will be copied to this directory. The default location of this
 ## directory (if left value left blank) is ${base_dir_location}/share/preview
 preview_path = ""
+
 ## Set the workload manager system, currently available are:
 ## "local", "slurm", "pbs", "lfs", "moab", "oar", "sge"
 scheduler_system = "local"
+
 ## Set the path to the directory that containes the stdout of the plugings,
 ## this directory must be accessible to the web ui. The workload manager
 ## will write the stdout into this directory. Defaults to ${base_dir_location}/share
 scheduler_output_dir = ""
+
 # Set the target architecutre of the system where the backend will be installed
 # to. You can choose from the following options:
 # Linux-x86_64 (default), Linux-aarch64, Linux-ppc64le, Linux-s390x, MacOSX-x86_64
 arch = "Linux-x86_64"
+
 ## If you need to install the core or its configuration as a different user you can
 ## set the ansible_become_user variable, this will install the the core as a
 ## different user
 #ansible_become_user = "username"
+
 ##If you need a different user name you can set it here:
 #ansible_user = "username"
+
 ## Ansible needs a python3 interpreter, which can be set for custom python3 instances
 #ansible_python_interpreter = ""
+
 ## The core deployment needs git, if git is not in the default PATH vraiable
 ## you can set the path to the git executable
 #git_path = ""
+
 ##Indicate whether or not to empty any pre-existing folders/docker volumes.
 ##(Useful for a truely fresh start) (default: False)
 wipe = false
@@ -148,69 +178,99 @@ wipe = false
 [web.config]
 ## List of user that can alter the configuration of freva web
 project_website = "www.freva.dkrz.de"
+
 ## Ansible needs a python3 interpreter, which can be set for custom python3 instances
 #ansible_python_interpreter = ""
+
 ##If you need a different user name you can set it here:
 #ansible_user = "username"
+
 ##Set html colors
 main_color = "Tomato"
 border_color = "#6c2e1f"
 hover_color = "#d0513a"
+
 ## The about us text is a small blurb about freva within the project
 about_us_text = ""
+
 ## Set the path to the institution logo, this should be the path to the logo
 ## as seen by the target system
 institution_logo = "/path/to/logo/on/target/machine"
-## Set a list of email addresses for contacts
-contacts = [""]
+
+## Set a an email addresses acting a a contact point for users
+contacts = ""
+
+## Set the smpt email server that will be used to send emails to contacts via the web ui
+email_host = ""
+
 ## Now set postal address
 imprint = "Project name, German Climate Computing Centre (DKRZ), Bundesstr. 45a, 20146 Hamburg, Germany."
+
 ## Here you can set a lengthy project description.
 ## You can also set a path to a filename that contains the information.
 ## Instead of text you can set a path to a file containing the text, like a html file.
 homepage_text = "Bal bla bla."
+
 ## Set a one line blurb of the project
 homepage_heading = "Short description of the project."
+
 ## Set the name of the project/institution
 institution_name = "Freva"
+
 ## Set the slurm scheduler host
 scheduler_host = ["levante.dkrz.de"]
+
 ## Settings for ldap
+
 ## Ldap server name(s)
 auth_ldap_server_uri = "ldap://idm-dmz.dkrz.de"
+
 ## Set the group that will be allowed to log on
 allowed_group = "test_group"
+
 ## Set the ldap search user base
 ldap_user_base = "cn=users,cn=accounts,dc=dkrz,dc=de"
+
 ## Set the ldap search group base, note: do not add the allowed_group as it will be auto added
 ldap_group_base = "cn=groups,cn=accounts,dc=dkrz,dc=de"
+
 ## distinguished name (dn) for the ldap user
 ldap_user_dn = "uid=dkrzagent,cn=sysaccounts,cn=etc,dc=dkrz,dc=de"
+
 ## use encrypted ldap connection (needs to be configured)
 auth_ldap_start_tls = false
+
 ## Set ldap last name search key
 ldap_last_name_field = "givenname"
+
 ## Set ldap first name search key
 ldap_first_name_field = "sn"
+
 ## Set ldap email earch key
 ldap_email_name_field = "mail"
-# Set the ldap group class name
-ldap_group_class = "groupOfNames"
-# Set the ldap group type, available values are are [posix, nested]
-ldap_group_type = "nested"
-# Set the ldap tools class for users
-ldap_model = "MiklipUserInformation"
 
+## Set the ldap group class name
+ldap_group_class = "groupOfNames"
+
+## Set the ldap group type, available values are are [posix, nested]
+ldap_group_type = "nested"
+
+## Set the ldap tools class for users
+ldap_model = "MiklipUserInformation"
 
 ## set the passwd for the ldap user
 ldap_user_pw = "dkrzprox"
+
 #######
 ## Set the hosts that are allowed to execute wsgi code
 allowed_hosts = ["www.freva.dkrz.de", "localhost"]
+
 ## Turn on/off debug mode on the website
 debug=false
+
 ## Which plugin id should be used for the web tour
 guest_tour_result = 105
+
 ## Set the menu entries
 # Menu entries consist of three entries these are:
 # [Label, url, html_id] -> e.g Plugins, plugins:home, plugin_menu

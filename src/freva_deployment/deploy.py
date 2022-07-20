@@ -20,6 +20,7 @@ from .utils import (
     asset_dir,
     config_dir,
     get_passwd,
+    get_email_credentials,
     logger,
     upload_server_map,
     RichConsole,
@@ -57,6 +58,7 @@ class DeployFactory:
 
         self._config_keys: list[str] = []
         self.master_pass: str = ""
+        self.email_password: str = ""
         self._td: TemporaryDirectory = TemporaryDirectory(prefix="inventory")
         self.inventory_file: Path = Path(self._td.name) / "inventory.yaml"
         self.eval_conf_file: Path = Path(self._td.name) / "evaluation_system.conf"
@@ -107,8 +109,8 @@ class DeployFactory:
         self.cfg["vault"]["config"]["root_passwd"] = self.master_pass
         self.cfg["vault"]["config"]["passwd"] = self.db_pass
         self.cfg["vault"]["config"]["keyfile"] = self.public_key_file
-        self.cfg["vault"]["config"]["email"] = ",".join(
-            self.cfg["web"]["config"].get("contacts", [])
+        self.cfg["vault"]["config"]["email"] = self.cfg["web"]["config"].get(
+            "contacts", ""
         )
 
     def _prep_db(self) -> None:
@@ -126,8 +128,8 @@ class DeployFactory:
         if not db_host:
             self.cfg["db"]["config"]["host"] = host
         self.cfg["db"]["config"].setdefault("port", "3306")
-        self.cfg["db"]["config"]["email"] = ",".join(
-            self.cfg["web"]["config"].get("contacts", [])
+        self.cfg["db"]["config"]["email"] = self.cfg["web"]["config"].get(
+            "contacts", ""
         )
         self._prep_vault()
 
@@ -139,8 +141,8 @@ class DeployFactory:
             self.cfg["solr"]["config"][key] = (
                 self.cfg["solr"]["config"].get(key) or default
             )
-        self.cfg["solr"]["config"]["email"] = ",".join(
-            self.cfg["web"]["config"].get("contacts", [])
+        self.cfg["solr"]["config"]["email"] = self.cfg["web"]["config"].get(
+            "contacts", ""
         )
 
     def _prep_core(self) -> None:
@@ -246,6 +248,13 @@ class DeployFactory:
             self.cfg[key]["config"]["config_toml_file"] = str(self.web_conf_file)
         if not self.master_pass:
             self.master_pass = get_passwd()
+        email_user, self.email_password = get_email_credentials()
+        self._prep_vault()
+        self.cfg["vault"]["config"]["ansible_python_interpreter"] = self.cfg["db"][
+            "config"
+        ].get("ansible_python_interpreter", "/usr/bin/python3")
+        self.cfg["vault"]["config"]["email_user"] = email_user
+        self.cfg["vault"]["config"]["email_password"] = self.email_password
         self.cfg["web"]["config"]["root_passwd"] = self.master_pass
         self.cfg["web"]["config"]["private_keyfile"] = self.private_key_file
         self.cfg["web"]["config"]["public_keyfile"] = self.public_key_file
@@ -474,13 +483,10 @@ class DeployFactory:
         self.create_eval_config()
         with self.inventory_file.open("w") as f_obj:
             f_obj.write(inventory)
-        if self.master_pass:
-            inventory_str = inventory.replace(
-                self.master_pass, "*" * len(self.master_pass)
-            )
-        else:
-            inventory_str = inventory
-        RichConsole.print(inventory_str, style="bold", markup=True)
+        for passwd in (self.email_password, self.master_pass):
+            if passwd:
+                inventory = inventory.replace(passwd, "*" * len(passwd))
+        RichConsole.print(inventory, style="bold", markup=True)
         logger.info("Playing the playbooks with ansible")
         RichConsole.print(
             "[b]Note:[/] The [blue]BECOME[/] password refers to the "
