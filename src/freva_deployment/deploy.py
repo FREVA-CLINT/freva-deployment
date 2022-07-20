@@ -483,9 +483,10 @@ class DeployFactory:
         self.create_eval_config()
         with self.inventory_file.open("w") as f_obj:
             f_obj.write(inventory)
+        inventory_str = inventory
         for passwd in (self.email_password, self.master_pass):
             if passwd:
-                inventory = inventory.replace(passwd, "*" * len(passwd))
+                inventory_str = inventory_str.replace(passwd, "*" * len(passwd))
         RichConsole.print(inventory, style="bold", markup=True)
         logger.info("Playing the playbooks with ansible")
         RichConsole.print(
