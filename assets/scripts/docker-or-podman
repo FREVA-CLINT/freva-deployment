@@ -19,7 +19,7 @@ def get_ids(username: Optional[str]) -> Dict[str, int]:
     return dict(uid=user.pw_uid, gid=user.pw_gid)
 
 
-def parse_args() -> List[str]:
+def parse_args(cont_cmd: str) -> List[str]:
     """Parse the commandline arguments."""
 
     app = argparse.ArgumentParser(prog=sys.argv[0], description="Docker/Podman wrapper")
@@ -31,6 +31,7 @@ def parse_args() -> List[str]:
         default=None,
     )
     args, container_args = app.parse_known_args()
+    ipv6_enable = ["--net", "slirp4netns:allow_host_loopback=true,enable_ipv6=true"]
     arguments = [args.command]
     for key, value in get_ids(args.username).items():
         if args.command == "build" and value:
@@ -38,6 +39,8 @@ def parse_args() -> List[str]:
         elif args.command == "run" and value:
             arguments.append("-e")
             arguments.append(f"{key.upper()}={value}")
+        if args.command == "run" and cont_cmd == "podman":
+            arguments += ipv6_enable
     return arguments + container_args
 
 
@@ -91,7 +94,7 @@ def write_command_to_disk(
 if __name__ == "__main__":
 
     container_cmd = get_container_cmd()
-    command = container_cmd + parse_args()
+    command = container_cmd + parse_args(container_cmd[0])
     write_command_to_disk(command)
     try:
         subprocess.run(command, check=True)

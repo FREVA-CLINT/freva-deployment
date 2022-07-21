@@ -16,9 +16,23 @@
         -p {{ db_port }}:3306
         -e MYSQL_ROOT_PASSWORD='{{ root_passwd }}'
         -v /root/freva-service-config/mysql/create_tables.sql:/docker-entrypoint-initdb.d/002_create_tables.sql:z
-        -v /root/reset_root_pw.sh:/docker-entrypoint-initdb.d/001_reset_passwords.sh:z
         -v /root/freva-service-config/mysql/daily_backup.sh:/usr/local/bin/daily_backup:z
         -t mariadb:latest
+    - skip_tables_cmd: >
+        --net {{ project_name }} -v
+        /opt/freva/{{project_name}}/db_service:/var/lib/mysql:z
+        --name {{ db_name }} -e HOST={{ db_host }}
+        -e NUM_BACKUPS=7
+        -e PROJECT={{ project_name }}
+        -e MYSQL_USER={{db_user}}
+        -e MYSQL_PASSWORD='{{db_passwd}}'
+        -e MYSQL_DATABASE={{db_db}}
+        -e BACKUP_DIR=/var/lib/mysql/backup
+        -p {{ db_port }}:3306
+        -e MYSQL_ROOT_PASSWORD='{{ root_passwd }}'
+        -v /root/freva-service-config/mysql/create_tables.sql:/docker-entrypoint-initdb.d/002_create_tables.sql:z
+        -v /root/freva-service-config/mysql/daily_backup.sh:/usr/local/bin/daily_backup:z
+        -t mariadb:latest mysqld_safe --skip-grant-tables
     - continer_name: "{{ db_name }}"
     - vault_name: "{{project_name}}-vault"
   tasks:
@@ -69,7 +83,7 @@
       become: true
     - name: Copying auxillary files to target machine
       become: true
-      copy: src="{{ asset_dir }}/db_service/reset_root_pw.sh" dest=/root/
+      copy: src="{{ asset_dir }}/db_service/reset_root_pw.sh" dest=/tmp/
     - name: Copying systemd files
       copy:
         src: "{{ asset_dir }}/scripts/{{ item }}"
@@ -84,6 +98,21 @@
         repo: https://gitlab.dkrz.de/freva/freva-service-config.git
         dest: /root/freva-service-config
         update: true
+    - name: Preparing the root password reset I
+      become: true
+      shell: /usr/local/bin/docker-or-podman run -d {{skip_tables_cmd}}
+    - pause: seconds=2
+    - name: Preparing the root password reset II
+      become: true
+      shell:  /usr/local/bin/docker-or-podman cp /tmp/reset_root_pw.sh {{db_name}}:/tmp
+    - name: Resetting the root password
+      become: true
+      shell: /usr/local/bin/docker-or-podman exec -it {{db_name}} bash /tmp/reset_root_pw.sh
+    - name: Deleting temp. container
+      become: true
+      shell: |
+        /usr/local/bin/docker-or-podman stop {{db_name}}
+        /usr/local/bin/docker-or-podman rm {{db_name}}
     - name: Creating the mysql docker container
       shell: /usr/local/bin/docker-or-podman run -d {{docker_cmd}}
       become: true
@@ -97,17 +126,14 @@
       shell: sh /tmp/create_cron.sh "{{ db_name }}" "{{db_email}}"
       when: cron.stat.exists == true
     - name: Deleting auxillary files
+      become: true
       file:
         state: absent
         path: "{{ item }}"
       with_items:
         - /tmp/create_systemd.py
         - /tmp/create_cron.sh
-    - name: Resetting the passwords
-      become: true
-      shell: >
-        /usr/local/bin/docker-or-podman exec -it {{db_name}}
-        /bin/bash /docker-entrypoint-initdb.d/001_reset_passwords.sh
+        - /tmp/reset_root_pw.sh
     - name: Restarting docker container
       become: true
       shell: systemctl restart "{{ db_name }}"
