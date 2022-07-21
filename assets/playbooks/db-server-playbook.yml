@@ -100,9 +100,17 @@
         update: true
     - name: Preparing the root password reset I
       become: true
+      shell: /usr/local/bin/docker-or-podman run -d {{docker_cmd}}
+    - pause: seconds=5
+    - name: Preparing the root password reset II
+      shell: |
+        /usr/local/bin/docker-or-podman stop {{db_name}}
+        /usr/local/bin/docker-or-podman rm {{db_name}}
+    - name: Preparing the root password reset III
+      become: true
       shell: /usr/local/bin/docker-or-podman run -d {{skip_tables_cmd}}
     - pause: seconds=2
-    - name: Preparing the root password reset II
+    - name: Preparing the root password reset IV
       become: true
       shell:  /usr/local/bin/docker-or-podman cp /tmp/reset_root_pw.sh {{db_name}}:/tmp
     - name: Resetting the root password
