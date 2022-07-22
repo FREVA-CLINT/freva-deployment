@@ -55,29 +55,28 @@ We also recommend installing a command line based text editor like vim, nano, et
 After installing the above listed packages via cygwin you can clone and
 install the freva deployment:
 
-```bash
-pip install freva-deployment --extra-index-url https://gitlab.dkrz.de/api/v4/projects/1732/packages/pypi/simple
+```console
+python3 -m pip install -U freva-deployment
 ```
 Add the `--user` flag if you don't have sufficient rights.
 ## Installation on \*nix systems or wsl.
 If you're using Linux, OsX or a Windows subsystem for Linux (WSL) it should
 be sufficient to issues the following commands:
 
-```bash
-pip install (--user) ansible
-pip install (--user) git+https://gitlab.dkrz.de/freva/deployment.git
+```console
+python3 pip install -U freva-deployment
 ```
 
 This command installs ansible and all required python packages.
 > **_Note:_** On *CentOS* python SELinux libraries need to be installed.
 > You will need to install libselinux for your CentOS version.
 
-```bash
-python3 -m pip install (--user) libselinux-python3
+```console
+python3 -m pip install libselinux-python3
 ```
 
 ## Commands after installation:
-The `pip` install command will create *four* different commands:
+The `pip install` command will create *four* different commands:
 - `deploy-freva-map`: To setup a service that keeps track of all deployed
    freva instances and their services.
 - `deploy-freva`: Text user interface to configure and run the deployment.
@@ -85,6 +84,14 @@ The `pip` install command will create *four* different commands:
 - `freva-service`: Start|Stop|Restart|Check services of freva instances.
 - `freva-migrate`: Command line interface to manage project migration from
    old freva systems to new ones.
+If you can't find the commands mentioned above pip was probably installing
+them in the user space. In that case you need to append your `PATH`
+environment variable by `~/.local/bin`.If you use bash for example, add
+the following command to your local `.bashrc`:
+
+```console
+export PATH=$PATH:$HOME/.local/bin
+```
 
 
 ## Installing docker/podman and sudo access to the service servers
@@ -105,7 +112,7 @@ We have created a service that keeps track of the locations of all services for
 a certain freva instance. Although not strictly needed we recommend you to setup
 this special server mapping service. To do so use the following command:
 
-```bash
+```console
 deploy-freva-map --help
 usage: deploy-freva-map [-h] [--port PORT] [--wipe] [--user USER] [--python-path PYTHON_PATH] [-v] [-V] servername
 
@@ -218,7 +225,7 @@ If the target machine where the services (solr, mariadb, web) were deployed
 is a Linux machine you will have a `systemd` unit service was created.
 You can control the service via the `freva-service` command:
 
-```bash
+```console
 freva-service --help
 usage: freva-service [-h] [--server-map SERVER_MAP] [--services {web,db,solr} [{web,db,solr} ...]] [--user USER] [-v] [-V]
                      {start,stop,restart,status} [project_name]
@@ -241,9 +248,9 @@ options:
   -v, --verbose         Verbosity level (default: 0)
   -V, --version         show program's version number and exit
 ```
-The following command restarts `web` server for the `xces` project at dkrz:
-```bash
-freva-service restart xces --services web --user k12345 --domain dkrz
+The following command restarts `web` server for the `xces`:
+```console
+freva-service restart xces --services web --user k12345
 ```
 All services (`db`, `web` and `solr`) will be selected if the `--services` option
 is omitted.
@@ -279,7 +286,7 @@ you can figure out the `db_docker_name` using the following command:
 docker container ls
 ```
 
-### Git related unit tests in backend playbook fail
+### Git related unit tests in core playbook fail
 Git pull and push commands tend to fail if you haven't configured git. In this case change into the /tmp/evaluation_system directory of the host that runs the playbook
 then manually trigger the unit tests by
 

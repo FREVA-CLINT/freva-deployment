@@ -46,7 +46,7 @@ Please refer to the [Appendix I](TuiHowto.html) on tui usage instructions.
 If you already have a configuration saved in a toml inventory file you can
 issue the `deploy-freva-cmd` command:
 
-```bash
+```console
 deploy-freva-cmd --help
 usage: deploy-freva-cmd [-h] [--server-map SERVER_MAP] [--config CONFIG] [--steps {web,core,db,solr} [{web,core,db,solr} ...]]
                         [--ask-pass] [-v] [-V]
@@ -80,16 +80,16 @@ The following activation scripts are located in the `<root_dir>/freva` folder:
 * *loadfreva.module*: Modules file
 The source scripts can either be copied where they are automatically sourced
 or users can be instructed to use the source command for their shell. If
-`modules` is available on the host system you can copy the *loadfreva.modules* file
-into the `MODULEPATH` location.
+`modules` is available on the host system you can copy the *loadfreva.modules*
+file into the `MODULEPATH` location.
 
 
 ### Systemd units for all services:
 If the target machine where the services (solr, mariadb, web) were deployed
 are Linux machines you will have access to a `systemd` unit of the created
-service. In general the services can be accessed by `<project_name>-<service_name>.service`
-If for example the `project_name` key was set to `clex-ces` then the following services
-are created:
+service. In general the services can be accessed by
+`<project_name>-<service_name>.service` If for example the `project_name`
+key was set to `clex-ces` then the following services are created:
 
 - database: `clex-ces-db.service`, `clex-ces-vault.serice`
 - solr: `clex-ces.solr.service`
