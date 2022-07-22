@@ -45,7 +45,7 @@ release_job:
         - pip install twine
         - chmod +x /usr/local/bin/release-cli
     script:
-        - python setup.py sdist
+        - python setup.py sdist bdist_wheel
         - TWINE_PASSWORD=${CI_JOB_TOKEN}
           TWINE_USERNAME=gitlab-ci-token
           python -m twine upload --skip-existing --verbose --repository-url
