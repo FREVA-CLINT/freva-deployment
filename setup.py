@@ -120,7 +120,7 @@ def get_data_files() -> List[str]:
     files = []
     for d in dirs:
         target_dir = Path("share") / "freva" / "deployment" / d.relative_to(ASSET_DIR)
-        add_files = [str(f) for f in d.rglob("*") if f.is_file()]
+        add_files = [str(f.relative_to(ASSET_DIR) for f in d.rglob("*") if f.is_file()]
         if add_files:
             files.append((str(target_dir), add_files))
     return files
