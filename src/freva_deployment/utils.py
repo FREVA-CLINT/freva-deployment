@@ -5,7 +5,9 @@ import logging
 import json
 from pathlib import Path
 import re
-from subprocess import run, PIPE
+from subprocess import PIPE
+import sys
+import shutil
 from typing import cast, NamedTuple
 
 import appdirs
@@ -18,8 +20,7 @@ logging.basicConfig(format="%(name)s - %(levelname)s - %(message)s", level=loggi
 logger = logging.getLogger("freva-deployment")
 
 RichConsole = Console(markup=True, force_terminal=True)
-config_dir = Path(appdirs.user_config_dir()) / "freva" / "deployment"
-asset_dir = Path(appdirs.user_data_dir()) / "freva" / "deployment"
+
 password_prompt = (
     "[green]Choose[/] a [b]master password[/], this password will be used to:\n"
     "- create the [magenta]mysql root[/] password\n"
@@ -31,6 +32,34 @@ password_prompt = (
 ServiceInfo = NamedTuple(
     "ServiceInfo", [("name", str), ("python_path", str), ("hosts", str)]
 )
+
+
+class AssetDir:
+    def __init__(self):
+
+        self._user_asset_dir = Path(appdirs.user_data_dir()) / "freva" / "deployment"
+        self._user_config_dir = Path(appdirs.user_config_dir()) / "freva" / "deployment"
+        self._central_asset_dir = Path(sys.exec_prefix) / "freva" / "deployment"
+
+    @property
+    def asset_dir(self):
+        if self._user_asset_dir.exists():
+            return self._user_asset_dir
+        return self._central_asset_dir
+
+    @property
+    def config_dir(self):
+        inventory_file = self._user_config_dir / "inventory.toml"
+        if inventory_file.exists():
+            return self._user_config_dir
+        self._user_config_dir.mkdir(exist_ok=True, parents=True)
+        shutil.copy(self.asset_dir / "config" / "inventory.toml", inventory_file)
+        return self._user_config_dir
+
+
+AD = AssetDir()
+asset_dir = AD.asset_dir
+config_dir = AD.config_dir
 
 
 def guess_map_server(

@@ -7,11 +7,27 @@ import urllib.request
 from setuptools import setup, find_packages
 from setuptools.command.develop import develop
 from setuptools.command.install import install
+import sys
+from typing import List
 
 
 THIS_DIR = Path(__file__).parent
 CONFIG_DIR = Path("freva") / "deployment"
 ASSET_DIR = THIS_DIR / "assets"
+
+
+INSTALL_REQUIRES = [
+    "appdirs",
+    "npyscreen",
+    "numpy",
+    "PyMySQL",
+    "pyncclient",
+    "pyyml",
+    "rich",
+    "toml",
+    "tomlkit",
+    "requests",
+]
 
 
 def find_version(*parts):
@@ -90,6 +106,26 @@ def read(*parts: str) -> str:
         return f.read()
 
 
+def get_packages() -> List[str]:
+    """Get the packages needed to install."""
+    plf = sys.platform
+    if plf.startswith("win") or plf.startswith("cygwin") or plf.startswith("ms"):
+        return INSTALL_REQUIRES
+    INSTALL_REQUIRES.append("ansible")
+    return INSTALL_REQUIRES
+
+
+def get_data_files() -> List[str]:
+    dirs = [d for d in ASSET_DIR.rglob("*") if d.is_dir()]
+    files = []
+    for d in dirs:
+        target_dir = Path("share") / "freva" / "deployment" / d.relative_to(ASSET_DIR)
+        add_files = [str(f.relative_to(THIS_DIR)) for f in d.rglob("*") if f.is_file()]
+        if add_files:
+            files.append((str(target_dir), add_files))
+    return files
+
+
 setup(
     name="freva_deployment",
     version=find_version("src", "freva_deployment", "__init__.py"),
@@ -101,7 +137,7 @@ setup(
     long_description=read("README.md"),
     long_description_content_type="text/markdown",
     include_package_data=True,
-    package_data={"assets": ["assets"]},
+    data_files=get_data_files(),
     license="GPLv3",
     packages=find_packages("src"),
     package_dir={"": "src"},
@@ -119,18 +155,7 @@ setup(
         ]
     },
     setup_requires=["appdirs"],
-    install_requires=[
-        "appdirs",
-        "npyscreen",
-        "numpy",
-        "PyMySQL",
-        "pyncclient",
-        "pyyml",
-        "rich",
-        "toml",
-        "tomlkit",
-        "requests",
-    ],
+    install_requires=get_packages(),
     extras_require={
         "docs": [
             "sphinx",
