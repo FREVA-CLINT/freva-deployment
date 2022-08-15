@@ -49,9 +49,11 @@ basic deployment setup and servicing Freva will be introduced.
    Folders
    Installation
    Configure
+   AfterDeployment
    Services
    TuiHowto
    Transition
+   LegalNotes
    modules
 
 

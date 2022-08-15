@@ -69,62 +69,6 @@ optional arguments:
 
 The `--steps` flags can be used if not all services should be deployed.
 
-## After successful deployment
-
-## Activation scripts for users
-The core deployment will create activation scripts for various shell flavours.
-The following activation scripts are located in the `<root_dir>/freva` folder:
-* *activate_sh*: To be sourced by shell flavours like shell, bash, zsh etc.
-* *activate_csh*: To be sourced by c-shell flavours like csh, tcsh
-* *activate_fish*: To be source by fish
-* *loadfreva.module*: Modules file
-The source scripts can either be copied where they are automatically sourced
-or users can be instructed to use the source command for their shell. If
-`modules` is available on the host system you can copy the *loadfreva.modules*
-file into the `MODULEPATH` location.
-
-
-### Systemd units for all services:
-If the target machine where the services (solr, mariadb, web) were deployed
-are Linux machines you will have access to a `systemd` unit of the created
-service. In general the services can be accessed by
-`<project_name>-<service_name>.service` If for example the `project_name`
-key was set to `clex-ces` then the following services are created:
-
-- database: `clex-ces-db.service`, `clex-ces-vault.serice`
-- solr: `clex-ces.solr.service`
-- web ui: `clex-ces-web.service`, `clex-ces-redis.service`, `clex-ces-httpd.service`
-
-### Access of service data on the host machine
-The data of the services, like the database or solr cores are stored "outside"
-the docker containers on the host machine and can be accessed at
-`/opt/freva/<project_name>/<service_name>_service/` for example
-`/opt/freva/clex-ces/db_service`
-
-
-### Simple backup scripts:
-The `db` and `solr` services offer a very simple backup script that can
-be run from outside the container. To issue a backup command simply call the
-following command `docker/podman exec -it <project_name>-solr/db /usr/local/bin/daily_backup`.
-For example:
-
-```
-podman exec -it clex-ces-solr /usr/local/bin/daily_backup
-```
-
-If you have `anacron` set up on your host machine then a cron script to
-automatically backup databases and solr cores is applied nightly.
-By default the script keeps the last 7 backups. Backup data can be found in:
-
-- `db`:`/opt/freva/<project_name>/db_service>/backup`
-- `solr`: `/opt/freva/<project_name>/solr_service/<core_name>/data/snapshot.YYYYMMDDHHMMSSMS`
-
-This is only a rudimentary backup solution, ideally you should transfer those
-backups regularly to a different location. You can also disable this
-rudimentary backup strategy by deleting the backup scripts in `/etc/cron.daily`
-and replace it by a more sophisticated backup mechanism.
-
-
 ## Known Issues:
 Below are possible solutions to some known issues:
 
