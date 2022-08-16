@@ -50,6 +50,9 @@
       stat:
         path: /etc/cron.daily
       register: cron
+    - name: Deleting config file
+      shell: rm -rf /root/freva-service-config/
+      warn: false
     - name: Stopping services and deleting existing containers
       shell: >
         /usr/local/bin/docker-or-podman stop {{db_name}};
