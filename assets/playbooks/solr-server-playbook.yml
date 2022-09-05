@@ -30,9 +30,6 @@
       stat:
         path: /etc/cron.daily
       register: cron
-    - name: Deleting config file
-      shell: rm -rf /root/freva-service-config/
-      warn: false
     - name: Stopping services and deleting existing containers
       shell: >
         systemctl stop {{solr_name}};
@@ -43,6 +40,11 @@
       ignore_errors: true
       become: true
     - pause: seconds=5
+    - name: Deleting config file
+      file:
+        state: absent
+        force: true
+        path: "/root/freva-service-config/"
     - name: Creating docker network
       shell: >
         /usr/local/bin/docker-or-podman network create "{{ project_name }}";
