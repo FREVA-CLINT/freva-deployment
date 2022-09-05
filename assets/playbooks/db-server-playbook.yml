@@ -64,6 +64,7 @@
         state: absent
         force: true
         path: "/root/freva-service-config/"
+      become: true
     - name: Pulling container
       become: true
       shell: /usr/local/bin/docker-or-podman pull mariadb:latest

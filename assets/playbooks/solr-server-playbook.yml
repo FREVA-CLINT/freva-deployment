@@ -45,6 +45,7 @@
         state: absent
         force: true
         path: "/root/freva-service-config/"
+      become: true
     - name: Creating docker network
       shell: >
         /usr/local/bin/docker-or-podman network create "{{ project_name }}";
