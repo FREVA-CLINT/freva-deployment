@@ -10,6 +10,7 @@ lint:
         - docker, specific
     before_script:
         - python3 -m pip install .[test]
+        - mkdir .mypy_cache
     script:
         - mypy --install-types --non-interactive
         - black --check -t py310 src
