@@ -121,7 +121,7 @@
         chdir: /tmp/evaluation_system
       environment:
         PYTHON3: "{{ ansible_python_interpreter }}"
-        EVALUATION_SYSTEM_CONFIG_FILE: "/tmp/evaluation_system/evaluation_system.conf"
+        EVALUATION_SYSTEM_CONFIG_FILE: "{{ core_root_dir }}/freva/evaluation_system.conf"
         PYTHON_VERSION: ""
       become: "{{'yes' if core_ansible_become_user is defined else 'no' }}"
     - name: Copying Public key file
