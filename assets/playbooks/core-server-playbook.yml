@@ -117,7 +117,7 @@
       become: "{{'yes' if core_ansible_become_user is defined else 'no' }}"
     - name: Configuring evaluation_system
       shell:
-        cmd: $PYTHON3 deploy.py {{ core_root_dir }} -s --no-conda
+        cmd: $PYTHON3 deploy.py {{ core_install_dir }} -s --no-conda
         chdir: /tmp/evaluation_system
       environment:
         PYTHON3: "{{ ansible_python_interpreter }}"
