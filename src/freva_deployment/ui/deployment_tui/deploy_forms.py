@@ -370,7 +370,10 @@ class WebScreen(BaseForm):
                     npyscreen.TitleText,
                     name=f"{self.num}Scheduler hostname(s) - comma separated:",
                     value=",".join(
-                        cast(List[str], cfg.get("scheduler_host", ["levante.dkrz.de"]))
+                        cast(
+                            List[str],
+                            cfg.get("scheduler_host", ["levante.dkrz.de"]),
+                        )
                     ),
                 ),
                 True,
@@ -409,7 +412,7 @@ class WebScreen(BaseForm):
                     name=f"{self.num}Unix group allowed to log on to the web:",
                     value=cfg.get("allowed_group", "my_freva"),
                 ),
-                True,
+                False,
             ),
             ldap_user_base=(
                 self.add_widget_intelligent(
@@ -545,7 +548,9 @@ class DBScreen(BaseForm):
         cfg = self.get_config(self.step)
         db_ports: list[int] = list(range(3300, 3320))
         port_idx = get_index(
-            cast(List[str], list(map(str, db_ports))), str(cfg.get("port", 3306)), 6
+            cast(List[str], list(map(str, db_ports))),
+            str(cfg.get("port", 3306)),
+            6,
         )
         self.input_fields: dict[str, tuple[npyscreen.TitleText, bool]] = dict(
             hosts=(

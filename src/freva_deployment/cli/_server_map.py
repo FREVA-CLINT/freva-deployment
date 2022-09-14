@@ -36,7 +36,10 @@ def parse_args(args: list[str]) -> argparse.Namespace:
         default=6111,
     )
     app.add_argument(
-        "--wipe", default=False, action="store_true", help="Delete any existing data."
+        "--wipe",
+        default=False,
+        action="store_true",
+        help="Delete any existing data.",
     )
     app.add_argument(
         "--user",

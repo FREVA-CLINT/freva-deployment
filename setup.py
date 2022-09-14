@@ -139,6 +139,11 @@ setup(
     include_package_data=True,
     data_files=get_data_files(),
     license="GPLv3",
+    project_urls={
+        "Documentation": "https://freva.gitlab-pages.dkrz.de/deployment/index.html",
+        "Issues": "https://gitlab.dkrz.de/freva/deployment/-/issues",
+        "Source": "https://gitlab.dkrz.de/freva/deployment",
+    },
     packages=find_packages("src"),
     package_dir={"": "src"},
     cmdclass={

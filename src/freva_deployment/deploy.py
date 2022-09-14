@@ -339,7 +339,9 @@ class DeployFactory:
         return ["web", "core"]
 
     def _set_additional_config_values(
-        self, step: str, config: dict[str, dict[str, dict[str, str | int | bool]]]
+        self,
+        step: str,
+        config: dict[str, dict[str, dict[str, str | int | bool]]],
     ) -> None:
         """Set additional values to the configuration."""
         if step in self._needs_core:
@@ -462,7 +464,10 @@ class DeployFactory:
                 f_obj.write("".join(lines))
 
     def play(
-        self, server_map: str | None = None, ask_pass: bool = True, verbosity: int = 0
+        self,
+        server_map: str | None = None,
+        ask_pass: bool = True,
+        verbosity: int = 0,
     ) -> None:
         """Play the ansible playbook.
 
@@ -503,7 +508,10 @@ class DeployFactory:
             cmd += " --ask-pass"
         try:
             _ = run(
-                shlex.split(cmd), env=os.environ.copy(), cwd=str(asset_dir), check=True
+                shlex.split(cmd),
+                env=os.environ.copy(),
+                cwd=str(asset_dir),
+                check=True,
             )
         except KeyboardInterrupt:
             pass
