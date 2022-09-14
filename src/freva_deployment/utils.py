@@ -97,7 +97,13 @@ def guess_map_server(
             host_name, _, port = inp_server.partition(":")
             port = port or str(default_port)
             return f"{host_name}:{port}"
-    except (FileNotFoundError, IOError, ValueError, KeyError, json.JSONDecodeError):
+    except (
+        FileNotFoundError,
+        IOError,
+        ValueError,
+        KeyError,
+        json.JSONDecodeError,
+    ):
         pass
     if mandatory:
         raise ValueError(

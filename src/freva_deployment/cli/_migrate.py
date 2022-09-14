@@ -44,7 +44,12 @@ def exec_command(
     _ = env.pop("EVALUATION_SYSTEM_CONFIG_FILE", "")
     std = stdout or PIPE
     res = run(
-        shlex.split(command), stdout=std, stderr=PIPE, shell=shell, env=env, check=False
+        shlex.split(command),
+        stdout=std,
+        stderr=PIPE,
+        shell=shell,
+        env=env,
+        check=False,
     )
     try:
         res.check_returncode()
@@ -203,7 +208,10 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         help="The name of the old database",
     )
     db_parser.add_argument(
-        "--old-pw", type=str, default=None, help="The passowrd to the old database"
+        "--old-pw",
+        type=str,
+        default=None,
+        help="The passowrd to the old database",
     )
     db_parser.add_argument(
         "--old-user",

@@ -109,6 +109,7 @@
       shell: /usr/local/bin/docker-or-podman run -d {{docker_cmd}}
     - pause: seconds=5
     - name: Preparing the root password reset II
+      become: true
       shell: |
         /usr/local/bin/docker-or-podman stop {{db_name}}
         /usr/local/bin/docker-or-podman rm {{db_name}}
