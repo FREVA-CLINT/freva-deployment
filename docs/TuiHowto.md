@@ -1,4 +1,4 @@
-# Appendix I: Usage of the text user interface
+# Usage of the text user interface
 We have create a simple text user interface (tui) that helps you setting up a
 Freva instance at your institution. At this stage the documentation assumes that
 you have installed the necessary server infrastructure and pre-requisites.
@@ -133,7 +133,7 @@ essential setup steps:
     [See also django ldap tls config](https://django-auth-ldap.readthedocs.io/en/latest/authentication.html#notes)
 16. Set the user group name that is allowed to logon to the web ui.
 17. Set the ldap user base filters. See also the
-    [djanog ldap authentication for user](https://django-auth-ldap.readthedocs.io/en/latest/users.html)
+    [django ldap authentication for user](https://django-auth-ldap.readthedocs.io/en/latest/users.html)
 18. Set the ldap group base filters. See also the
     [django ldap authentication for groups](https://django-auth-ldap.readthedocs.io/en/latest/groups.html#finding-groups)
 19. Set the distinguished name of the ldap user. This setting is used to make
@@ -177,10 +177,12 @@ The httpd configuration for the reverse proxy will be saved
 `/opt/freva/<project_name>/web_service/`.
 
 During the deployment process of the web ui you will be ask your login
-credentials for the smtp email server. The credentials are needed to connect
-to the email server and send emails. Your credentials won't be saved anywhere
-on disk but securely stored in the vault service that gets deployed when setting
-up the database.
+credentials for the smtp email server. An email server is necessary because
+the web backend has a email sending functionality. This functionality makes
+it easy for users to communicate and share results with other users.
+Login credentials are needed to connect to the email server and send emails.
+Your credentials won't be saved anywhere on disk but securely stored in the
+vault service that gets deployed when setting up the database.
 
 
 

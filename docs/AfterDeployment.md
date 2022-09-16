@@ -77,3 +77,88 @@ and terms of usage. Those statements can be added as flat-pages in the django
 *admin* panel. All flat-pages starting with the url **/legal** for example
 `/legal/privacy/` will be added as a link to the footer of home page. Examples
 of the content of such flat-pages can be found in the [Appendix III](LegalNotes.html).
+
+## Amending the already existing containers
+Sometimes it might by helpful to change existing containers, such as adding
+extra mount points. One way of doing so is
+[adjusting the playbook](Configure.html#advanced-adjusting-the-playbook) *before*
+deployment. If already existing containers should be amended a different
+strategy can be applied:
+
+- Get the container ID of the service that should be changed:
+```console
+docker ps -aqf "name=<project>-<service>"
+```
+- Commit this ID to a new name (project-service-old)
+```console
+docker commit <container_id> <new_container_name>
+```
+- Stop the service:
+
+```console
+systemclt stop <project>-<service>
+```
+or
+```console
+docker stop <project>-<service>
+```
+- The deployment wrapper creating the containers will log all commands that
+have been used to create containers. To get the container creation command that
+was used check the content of the following file:
+
+```console
+cat /root/.freva_container_commands/<project>-<service>.run
+```
+
+- Replace the container name in the shown command (`<project>-<service>`) by
+(`<new_container_name>`) and add the part that should be amended, like a new
+volume or environment variable. Also replace the `-t image` part by
+`<new_container_name>`. Then run this command.
+
+- Remove the old container:
+```console
+docker rm <project>-<service>
+```
+
+- Rename the new container name (`<new_container_name>`) to the old name:
+
+```console
+docker rename <new_container_name> <project>-<service>
+```
+
+- Restart the service: `systemctl restart <project>-<service>`
+
+Below you can find a real example:
+
+```console
+$: docker ps -aqf "name=clex-web"
+e907fb462deb
+$: docker commit e907fb462deb clex-web-old
+sha256:b5c71c91e30e6424099218af6b83dbd3b7b8e05eb3bdf1404e4716dcc4e3e86d
+$: systemctl stop clex-web
+$: cat /root/.freva_container_commands/clex-web.run
+container clex-web created at 2022-09-16 09:19:28.868972 using command:
+
+/bin/docker run -d -p 8000:8000
+-v /work/freva:/work/freva:ro -v /work/freva/share/slurm:/work/freva/share/slurm:ro
+-v /opt/freva/clex/web_service/static:/opt/freva_web/static:z
+-v /work/freva/share/work:/work/freva/share/work:ro
+-e EVALUATION_SYSTEM_CONFIG_FILE=/work/freva/evaluation_system.conf
+--name freva-dev-web -t registry.gitlab.dkrz.de/freva/freva_web/freva_web:main
+
+$: /bin/docker run -d -p 8000:8000 \
+-v /work/freva:/work/freva:ro -v /work/freva/share/slurm:/work/freva/share/slurm:ro \
+-v /opt/freva/clex/web_service/static:/opt/freva_web/static:z \
+-v /opt/freva/clex/web_service/static:/opt/freva_web/static:z \
+-v /work/freva/share/work:/work/freva/share/work:ro \
+-v /work/new_mount:/work/new_mount:ro \
+-e EVALUATION_SYSTEM_CONFIG_FILE=/work/freva/evaluation_system.conf \
+--name clex-web-old clex-web-old
+991e704b066d3a608504091d243f56cbac67100f54a7a5aeca0c352bbc4f4696
+
+$: docker rm clex-web
+clex-web
+
+$: docker rename clex-web-old clex-web
+$: systemctl restart clex-web
+```
