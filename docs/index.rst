@@ -5,6 +5,13 @@
 
 Welcome to freva admin documentation!
 =====================================
+
+.. image:: _static/freva_flowchart-new.jpg
+   :width: 320
+   :align: center
+
+
+
 Freva, the free evaluation system framework, is a data search and analysis
 platform developed by the atmospheric science community for the atmospheric
 science community. With help of Freva researchers can:
