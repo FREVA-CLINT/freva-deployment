@@ -6,7 +6,7 @@
 Welcome to freva admin documentation!
 =====================================
 
-.. image:: _static/freva_flowchart-new.jpg
+.. image:: freva_flowchart-new.jpg
    :width: 320
    :align: center
 
