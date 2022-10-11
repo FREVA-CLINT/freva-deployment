@@ -1,5 +1,7 @@
 # Deployment of the Free Evaluation Framework Freva
 
+[![Documentation Status](https://readthedocs.org/projects/freva-deployment/badge/?version=latest)](https://freva-deployment.readthedocs.io/en/latest/?badge=latest)
+
 The code in this repository is used to deploy freva in different computing
 environments. The general strategy is to split the deployment into
 4 different steps, these are :
@@ -8,7 +10,7 @@ environments. The general strategy is to split the deployment into
   and other sensitive data via docker
   (this step get automatically activated once the MariaDB service is set)
 - Deploy Apache Solr service via docker
-- Deploy command line interface backend ([evaluation_system](https://gitlab.dkrz.de/freva/evaluation_system))
+- Deploy command line interface backend ([evaluation_system](https://github.com/FREVA-CLINT/freva))
 - Deploy web front end ([freva_web](https://gitlab.dkrz.de/freva/freva_web))
 
 

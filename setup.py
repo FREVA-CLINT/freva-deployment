@@ -43,7 +43,7 @@ def download_assets() -> None:
     assets = [
         (
             ASSET_DIR / "config" / "evaluation_system.conf.tmpl",
-            "https://gitlab.dkrz.de/freva/evaluation_system/-/raw/freva-dev/assets/evaluation_system.conf",
+            "https://raw.githubusercontent.com/FREVA-CLINT/freva/main/assets/evaluation_system.conf",
         )
     ]
     for path, url in assets:
@@ -109,7 +109,11 @@ def read(*parts: str) -> str:
 def get_packages() -> List[str]:
     """Get the packages needed to install."""
     plf = sys.platform
-    if plf.startswith("win") or plf.startswith("cygwin") or plf.startswith("ms"):
+    if (
+        plf.startswith("win")
+        or plf.startswith("cygwin")
+        or plf.startswith("ms")
+    ):
         return INSTALL_REQUIRES
     INSTALL_REQUIRES.append("ansible")
     return INSTALL_REQUIRES
@@ -119,8 +123,12 @@ def get_data_files() -> List[str]:
     dirs = [d for d in ASSET_DIR.rglob("*") if d.is_dir()]
     files = []
     for d in dirs:
-        target_dir = Path("share") / "freva" / "deployment" / d.relative_to(ASSET_DIR)
-        add_files = [str(f.relative_to(THIS_DIR)) for f in d.rglob("*") if f.is_file()]
+        target_dir = (
+            Path("share") / "freva" / "deployment" / d.relative_to(ASSET_DIR)
+        )
+        add_files = [
+            str(f.relative_to(THIS_DIR)) for f in d.rglob("*") if f.is_file()
+        ]
         if add_files:
             files.append((str(target_dir), add_files))
     return files
@@ -132,7 +140,7 @@ setup(
     author="Martin Bergemann",
     author_email="martin.bergemann@dkrz.de",
     maintainer="Martin Bergemann",
-    url="https://gitlab.dkrz.de/freva/deployment.git",
+    url="https://github.com/FREVA-CLINT/freva.git",
     description="Deploy freva and its services on different machines.",
     long_description=read("README.md"),
     long_description_content_type="text/markdown",
@@ -140,9 +148,9 @@ setup(
     data_files=get_data_files(),
     license="GPLv3",
     project_urls={
-        "Documentation": "https://freva.gitlab-pages.dkrz.de/deployment/index.html",
-        "Issues": "https://gitlab.dkrz.de/freva/deployment/-/issues",
-        "Source": "https://gitlab.dkrz.de/freva/deployment",
+        "Documentation": "https://freva-deployment.readthedocs.io/en/latest/",
+        "Issues": "https://github.com/FREVA-CLINT/freva/issues",
+        "Source": "https://github.com/FREVA-CLINT/freva",
     },
     packages=find_packages("src"),
     package_dir={"": "src"},

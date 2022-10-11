@@ -5,7 +5,7 @@ The general strategy is to split the deployment into different steps, these are 
 - Deploy MariaDB service via docker
 - Deploy a HashiCorp Vault service for storing and retrieving passwords and other sensitive data via docker (this step get automatically activated once the MariaDB service is set)
 - Deploy Apache Solr service via docker
-- Deploy command line interface backend ([evaluation_system](https://gitlab.dkrz.de/freva/evaluation_system))
+- Deploy command line interface backend ([evaluation_system](https://github.com/FREVA-CLINT/freva))
 - Deploy web front end ([freva_web](https://gitlab.dkrz.de/freva/freva_web))
   The web front end deployment is sub divided into three parts:
     - Deployment of the django web application
