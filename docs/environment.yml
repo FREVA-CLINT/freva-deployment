@@ -1,0 +1,15 @@
+name: tintx
+channels:
+  - conda-forge
+dependencies:
+  - python=3.10
+  - ipython
+  - pip
+  - pip:
+      - freva-deployment[docs]
+      - sphinx-execute-code-python3
+      - sphinx-rtd-theme
+      - sphinxcontrib_github_alt
+      - nbsphinx
+      - recommonmark
+      - sphinx
