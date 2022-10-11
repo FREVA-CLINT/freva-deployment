@@ -1,7 +1,7 @@
 FROM vault:latest
 
 LABEL maintainer="DRKZ-CLINT"
-LABEL repository="https://gitlab.dkrz.de/freva/deployment.git"
+LABEL repository="https://github.com/FREVA-CLINT/freva.git"
 
 ARG project="freva-ces"
 ARG rootpw=""

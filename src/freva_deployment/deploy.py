@@ -179,7 +179,7 @@ class DeployFactory:
         self.cfg["core"]["config"]["git_path"] = git_exe or "git"
         self.cfg["core"]["config"][
             "git_url"
-        ] = "https://gitlab.dkrz.de/freva/evaluation_system.git"
+        ] = "https://github.com/FREVA-CLINT/freva.git"
 
     def _prep_web(self) -> None:
         """prepare the web deployment."""

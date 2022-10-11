@@ -1,7 +1,7 @@
 FROM python:latest
 
 LABEL maintainer="DRKZ-CLINT"
-LABEL repository="https://gitlab.dkrz.de/freva/deployment.git"
+LABEL repository="https://github.com/FREVA-CLINT/freva.git"
 
 ENV SERVER_FILE="/var/freva/servers.toml"
 COPY restservice.py /usr/local/bin/restservice

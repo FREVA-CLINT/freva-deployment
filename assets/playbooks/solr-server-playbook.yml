@@ -69,7 +69,7 @@
     - name: Getting additional configurations
       become: true
       git:
-        repo: https://gitlab.dkrz.de/freva/freva-service-config.git
+        repo: https://github.com/FREVA-CLINT/freva-service-config.git
         dest: /root/freva-service-config
         update: true
     - name: Copy systemd files
