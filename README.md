@@ -147,7 +147,7 @@ A complete freva instance will need the following services:
 - backendservers (hostname(s) where the command line interface will be installed)
 
 Two typical server topography could look the following:
-| ![](docs/Topography.jpg) |
+| ![](docs/Topography.png) |
 |:--:|
 | *Two different server structures*. In setup I the services are running on the same host that servers two docker containers. The website is deployed on a dedicated server while the backend is installed on a hpc login node with access to a gpfs/lustre file system. Setup II deploys the MariaDB and Solr services on dedicated servers. The command line interfaces are also deployed on independent servers.|
 ---
