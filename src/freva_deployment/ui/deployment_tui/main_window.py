@@ -44,11 +44,11 @@ class MainApp(npyscreen.NPSAppManaged):
         for step in self._steps_lookup.keys():
             self.config.setdefault(step, {"hosts": "", "config": {}})
         self._add_froms()
-        self.start_auto_save()
+        self.thread_stop = threading.Event()
+        # self.start_auto_save()
 
     def start_auto_save(self) -> None:
         """(Re)-Start the auto save thread."""
-        self.thread_stop = threading.Event()
         self._save_thread = threading.Thread(target=self._auto_save)
         self._save_thread.start()
 
@@ -174,15 +174,15 @@ class MainApp(npyscreen.NPSAppManaged):
         ssh_pw = self._setup_form.use_ssh_pw.value
         if isinstance(ssh_pw, list):
             ssh_pw = bool(ssh_pw[0])
+        self.config["certificates"] = cert_files
+        self.config["project_name"] = project_name or ""
         config = {
             "save_file": save_file,
             "steps": self.steps,
-            "project_name": project_name,
             "ssh_pw": ssh_pw,
             "server_map": server_map,
             "config": self.config,
         }
-        config.update(cert_files)
         with open(self.cache_dir / "freva_deployment.json", "w") as f:
             json.dump({k: v for (k, v) in config.items()}, f, indent=3)
         if write_toml_file is False:

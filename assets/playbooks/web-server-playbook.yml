@@ -49,8 +49,9 @@
         -v /opt/freva/{{project_name}}/web_service/static:/opt/freva_web/static:z
         -v {{core_base_dir_location}}:{{core_base_dir_location}}:ro
         -e EVALUATION_SYSTEM_CONFIG_FILE={{core_root_dir}}/freva/evaluation_system.conf
+        -e DJANGO_SUPERUSER_PASSWORD={{ root_passwd }}
         --name {{web_name}}
-        -t registry.gitlab.dkrz.de/freva/freva_web/freva_web:main
+        -t ghcr.io/freva-clint/freva-web
     - docker_apache_cmd: >
         -v /opt/freva/{{project_name}}/web_service/freva_web.conf:/usr/local/apache2/conf/httpd.conf:z
         -v /opt/freva/{{project_name}}/web_service/server-cert.crt:/etc/ssl/certs/server-cert.crt:z
@@ -124,8 +125,6 @@
            dest: "{{service_dir}}/server-key.key"}
         - {src: "{{web_chain_keyfile}}",
            dest: "{{service_dir}}/cacert.pem"}
-        - {src: "{{asset_dir}}/web/setup_web.sh",
-           dest: "{{service_dir}}/setup_web.sh"}
     - name: Pulling containers
       become: true
       shell:
@@ -133,7 +132,7 @@
       with_items:
         - "redis:latest"
         - "httpd:latest"
-        - "registry.gitlab.dkrz.de/freva/freva_web/freva_web:main"
+        - "ghcr.io/freva-clint/freva-web"
     - name: Creating redis container
       become: true
       shell:
@@ -162,16 +161,6 @@
           /tmp/create_systemd.py {{web_name}} --requires {{redis_name}} {{apache_name}} --enable
       when: systemctl.stat.exists == true
     - pause: seconds=5
-    - name: Adding setup_web script
-      become: true
-      shell: >
-        /usr/local/bin/docker-or-podman cp {{service_dir}}/setup_web.sh
-        {{web_name}}:/tmp/setup_web.sh
-    - name: Setting django admin
-      become: true
-      shell: >
-        /usr/local/bin/docker-or-podman exec -it {{web_name}}
-        /bin/bash /tmp/setup_web.sh '{{root_passwd}}'
     - name: Adjusting uid of www-data in httpd container
       become: true
       shell: >
