@@ -35,7 +35,6 @@
         src: "{{ core_config_toml_file }}"
         dest: "{{ core_root_dir }}/freva/web/freva_web_conf.toml"
         mode: "2775"
-      when: wipe == true
       become: "{{'yes' if core_ansible_become_user is defined else 'no' }}"
 
 - hosts: web
@@ -52,7 +51,7 @@
         -e EVALUATION_SYSTEM_CONFIG_FILE={{core_root_dir}}/freva/evaluation_system.conf
         -e DJANGO_SUPERUSER_PASSWORD={{ root_passwd }}
         --name {{web_name}}
-        -t ghcr.io/freva-clint/freva-web:latest
+        -t ghcr.io/freva-clint/freva-web
     - docker_apache_cmd: >
         -v /opt/freva/{{project_name}}/web_service/freva_web.conf:/usr/local/apache2/conf/httpd.conf:z
         -v /opt/freva/{{project_name}}/web_service/server-cert.crt:/etc/ssl/certs/server-cert.crt:z
@@ -133,7 +132,7 @@
       with_items:
         - "redis:latest"
         - "httpd:latest"
-        - "registry.gitlab.dkrz.de/freva/freva_web/freva_web:main"
+        - "ghcr.io/freva-clint/freva-web"
     - name: Creating redis container
       become: true
       shell:
