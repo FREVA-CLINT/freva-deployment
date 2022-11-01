@@ -59,18 +59,10 @@ class MainApp(npyscreen.NPSAppManaged):
             CoreScreen,
             name="Core deployment",
         )
-        self._forms["web"] = self.addForm(
-            "SECOND", WebScreen, name="Web deployment"
-        )
-        self._forms["db"] = self.addForm(
-            "THIRD", DBScreen, name="Database deployment"
-        )
-        self._forms["solr"] = self.addForm(
-            "FOURTH", SolrScreen, name="Solr deployment"
-        )
-        self._setup_form = self.addForm(
-            "SETUP", RunForm, name="Apply the Deployment"
-        )
+        self._forms["web"] = self.addForm("SECOND", WebScreen, name="Web deployment")
+        self._forms["db"] = self.addForm("THIRD", DBScreen, name="Database deployment")
+        self._forms["solr"] = self.addForm("FOURTH", SolrScreen, name="Solr deployment")
+        self._setup_form = self.addForm("SETUP", RunForm, name="Apply the Deployment")
 
     def exit_application(self, *args, **kwargs) -> None:
         value = npyscreen.notify_ok_cancel(
@@ -162,9 +154,7 @@ class MainApp(npyscreen.NPSAppManaged):
             )
         return None
 
-    def _save_config_to_file(
-        self, write_toml_file: bool = False
-    ) -> Path | None:
+    def _save_config_to_file(self, write_toml_file: bool = False) -> Path | None:
         cache_file = self.cache_dir / ".temp_file.toml"
         save_file = self._setup_form.inventory_file.value
         if save_file:
@@ -234,9 +224,7 @@ class MainApp(npyscreen.NPSAppManaged):
     @property
     def _steps(self) -> list[str]:
         """Read the deployment-steps from the cache."""
-        return cast(
-            List[str], self._read_cache("steps", ["core", "web", "db", "solr"])
-        )
+        return cast(List[str], self._read_cache("steps", ["core", "web", "db", "solr"]))
 
     def read_cert_file(self, key: str) -> str:
         """Read the certificate file from the cache."""
