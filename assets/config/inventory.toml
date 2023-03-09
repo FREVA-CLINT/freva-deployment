@@ -235,7 +235,7 @@ ldap_user_base = "cn=users,cn=accounts,dc=dkrz,dc=de"
 ldap_group_base = "cn=groups,cn=accounts,dc=dkrz,dc=de"
 
 ## distinguished name (dn) for the ldap user
-ldap_user_dn = "uid=dkrzagent,cn=sysaccounts,cn=etc,dc=dkrz,dc=de"
+ldap_user_dn = ""
 
 ## use encrypted ldap connection (needs to be configured)
 auth_ldap_start_tls = false
@@ -259,7 +259,7 @@ ldap_group_type = "nested"
 ldap_model = "MiklipUserInformation"
 
 ## set the passwd for the ldap user
-ldap_user_pw = "dkrzprox"
+ldap_user_pw = ""
 
 #######
 ## Set the hosts that are allowed to execute wsgi code
