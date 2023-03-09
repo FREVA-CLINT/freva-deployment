@@ -24,4 +24,4 @@ jobs:
       run: black --check -t py310 src
 
     - name: type checking
-      run: mypy
+      run: mypy --install-types --non-interactive

@@ -36,7 +36,6 @@ ServiceInfo = NamedTuple(
 
 class AssetDir:
     def __init__(self):
-
         self._user_asset_dir = Path(appdirs.user_data_dir()) / "freva" / "deployment"
         self._user_config_dir = Path(appdirs.user_config_dir()) / "freva" / "deployment"
         self._central_asset_dir = Path(sys.exec_prefix) / "freva" / "deployment"
