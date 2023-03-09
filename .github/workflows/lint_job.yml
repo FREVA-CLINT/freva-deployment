@@ -22,3 +22,6 @@ jobs:
     -
       name: formating
       run: black --check -t py310 src
+
+    - name: type checking
+      run: mypy --install-types --non-interactive

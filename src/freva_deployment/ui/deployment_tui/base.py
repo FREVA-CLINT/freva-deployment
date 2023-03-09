@@ -22,7 +22,6 @@ class FileSelector(npyscreen.FileSelector):
     def __init__(
         self, *args, file_extentions: str | list[str] = [".toml"], **kwargs
     ) -> None:
-
         if isinstance(file_extentions, str):
             self.file_extentions = [file_extentions]
         else:

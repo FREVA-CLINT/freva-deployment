@@ -55,7 +55,6 @@ class DeployFactory:
         steps: list[str] | None = None,
         config_file: Path | str | None = None,
     ) -> None:
-
         self._config_keys: list[str] = []
         self.master_pass: str = ""
         self.email_password: str = ""
@@ -192,10 +191,10 @@ class DeployFactory:
             self.cfg["web"]["config"]["admin"] = admin
         _webserver_items = {}
         try:
-            _webserver_items = {
-                k.replace("web_", "").upper(): v
-                for (k, v) in self.cfg["web"]["config"].items()
-            }
+            for k, v in self.cfg["web"]["config"].items():
+                key = k.replace("web_", "").upper()
+                if key not in ("LDAP_USER_PW", "LDAP_USER_DN"):
+                    _webserver_items[key] = v
         except KeyError as error:
             raise KeyError(
                 "No web config section given, please configure the web.config"
@@ -389,7 +388,6 @@ class DeployFactory:
 
     @property
     def _playbook_file(self) -> Path:
-
         return Path(self._td.name) / "ansible-playbook.yml"
 
     @property
