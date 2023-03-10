@@ -37,7 +37,6 @@ ServiceInfo = NamedTuple(
 
 
 class AssetDir:
-
     this_module = "freva_deployment"
 
     def __init__(self):
