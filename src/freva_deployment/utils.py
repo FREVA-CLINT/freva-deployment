@@ -18,9 +18,7 @@ from rich.console import Console
 from rich.prompt import Prompt
 import toml
 
-logging.basicConfig(
-    format="%(name)s - %(levelname)s - %(message)s", level=logging.INFO
-)
+logging.basicConfig(format="%(name)s - %(levelname)s - %(message)s", level=logging.INFO)
 logger = logging.getLogger("freva-deployment")
 
 RichConsole = Console(markup=True, force_terminal=True)
@@ -43,12 +41,8 @@ class AssetDir:
     this_module = "freva_deployment"
 
     def __init__(self):
-        self._user_asset_dir = (
-            Path(appdirs.user_data_dir()) / "freva" / "deployment"
-        )
-        self._user_config_dir = (
-            Path(appdirs.user_config_dir()) / "freva" / "deployment"
-        )
+        self._user_asset_dir = Path(appdirs.user_data_dir()) / "freva" / "deployment"
+        self._user_config_dir = Path(appdirs.user_config_dir()) / "freva" / "deployment"
 
     @property
     def _central_asset_dir(self):
@@ -62,9 +56,9 @@ class AssetDir:
             warnings.warn("Guessing asset dir location, this might fail")
             return Path(sys.exec_prefix) / "share" / "freva" / "deployment"
         try:
-            inventory = [
-                f.partition(",")[0] for f in records if "inventory.toml" in f
-            ][0]
+            inventory = [f.partition(",")[0] for f in records if "inventory.toml" in f][
+                0
+            ]
         except IndexError:
             warnings.warn("Guessing asset dir location, this might fail")
             return Path(sys.exec_prefix) / "share" / "freva" / "deployment"
@@ -83,9 +77,7 @@ class AssetDir:
         if inventory_file.exists():
             return self._user_config_dir
         self._user_config_dir.mkdir(exist_ok=True, parents=True)
-        shutil.copy(
-            self.asset_dir / "config" / "inventory.toml", inventory_file
-        )
+        shutil.copy(self.asset_dir / "config" / "inventory.toml", inventory_file)
         return self._user_config_dir
 
 
@@ -150,9 +142,7 @@ def set_log_level(verbosity: int) -> None:
     logger.setLevel(max(logging.INFO - 10 * verbosity, logging.DEBUG))
 
 
-def get_setup_for_service(
-    service: str, setups: list[ServiceInfo]
-) -> tuple[str, str]:
+def get_setup_for_service(service: str, setups: list[ServiceInfo]) -> tuple[str, str]:
     """Get the setup of a service configuration."""
     for setup in setups:
         if setup.name == service:
@@ -165,9 +155,7 @@ def read_db_credentials(
 ) -> dict[str, str]:
     """Read database config."""
     with cert_file.open() as f_obj:
-        key = "".join(
-            [k.strip() for k in f_obj.readlines() if not k.startswith("-")]
-        )
+        key = "".join([k.strip() for k in f_obj.readlines() if not k.startswith("-")])
         sha = hashlib.sha512(key.encode()).hexdigest()
     url = f"http://{db_host}:{port}/vault/data/{sha}"
     return requests.get(url).json()
@@ -247,9 +235,7 @@ def get_email_credentials() -> tuple[str, str]:
     )
     RichConsole.print(msg)
     username = Prompt.ask("[green b]Username[/] for mail server")
-    password = Prompt.ask(
-        "[green b]Password[/] for mail server", password=True
-    )
+    password = Prompt.ask("[green b]Password[/] for mail server", password=True)
     return username, password
 
 
@@ -284,9 +270,7 @@ def _create_passwd(min_characters: int, msg: str = "") -> str:
         if not re.search(check, master_pass):
             is_ok = False
             break
-    is_safe: bool = (
-        len([True for c in "[_@$#$%^&*-!]" if c in master_pass]) > 0
-    )
+    is_safe: bool = len([True for c in "[_@$#$%^&*-!]" if c in master_pass]) > 0
     if is_ok is False or is_safe is False:
         raise ValueError(
             (
@@ -296,9 +280,7 @@ def _create_passwd(min_characters: int, msg: str = "") -> str:
                 "- have at least one special special character."
             )
         )
-    master_pass_2 = Prompt.ask(
-        "[bold green]re-enter[/] master password", password=True
-    )
+    master_pass_2 = Prompt.ask("[bold green]re-enter[/] master password", password=True)
     if master_pass != master_pass_2:
         raise ValueError("Passwords do not match")
     return master_pass
