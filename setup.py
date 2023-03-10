@@ -8,7 +8,7 @@ from setuptools import setup, find_packages
 from setuptools.command.develop import develop
 from setuptools.command.install import install
 import sys
-from typing import List
+from typing import List, Tuple
 
 
 THIS_DIR = Path(__file__).parent
@@ -119,9 +119,9 @@ def get_packages() -> List[str]:
     return INSTALL_REQUIRES
 
 
-def get_data_files() -> List[str]:
+def get_data_files() -> List[Tuple[str, List[str]]]:
     dirs = [d for d in ASSET_DIR.rglob("*") if d.is_dir()]
-    files = []
+    data_files = []
     for d in dirs:
         target_dir = (
             Path("share") / "freva" / "deployment" / d.relative_to(ASSET_DIR)
@@ -130,8 +130,8 @@ def get_data_files() -> List[str]:
             str(f.relative_to(THIS_DIR)) for f in d.rglob("*") if f.is_file()
         ]
         if add_files:
-            files.append((str(target_dir), add_files))
-    return files
+            data_files.append((str(target_dir), add_files))
+    return data_files
 
 
 setup(

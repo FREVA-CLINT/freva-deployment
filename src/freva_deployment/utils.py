@@ -4,11 +4,13 @@ import hashlib
 import logging
 import json
 from pathlib import Path
+import pkg_resources
 import re
 from subprocess import PIPE
 import sys
 import shutil
 from typing import cast, NamedTuple
+import warnings
 
 import appdirs
 import requests
@@ -35,10 +37,32 @@ ServiceInfo = NamedTuple(
 
 
 class AssetDir:
+    this_module = "freva_deployment"
+
     def __init__(self):
         self._user_asset_dir = Path(appdirs.user_data_dir()) / "freva" / "deployment"
         self._user_config_dir = Path(appdirs.user_config_dir()) / "freva" / "deployment"
-        self._central_asset_dir = Path(sys.exec_prefix) / "freva" / "deployment"
+
+    @property
+    def _central_asset_dir(self):
+        distribution = pkg_resources.get_distribution(self.this_module)
+        try:
+            records = distribution.get_metadata("RECORD").splitlines()
+        except FileNotFoundError:
+            asset_dir = Path(distribution.module_path).parent / "assets"
+            if asset_dir.is_dir():
+                return asset_dir
+            warnings.warn("Guessing asset dir location, this might fail")
+            return Path(sys.exec_prefix) / "share" / "freva" / "deployment"
+        try:
+            inventory = [f.partition(",")[0] for f in records if "inventory.toml" in f][
+                0
+            ]
+        except IndexError:
+            warnings.warn("Guessing asset dir location, this might fail")
+            return Path(sys.exec_prefix) / "share" / "freva" / "deployment"
+        asset_path = (Path(distribution.module_path) / inventory).parent.parent
+        return Path.resolve(asset_path)
 
     @property
     def asset_dir(self):
