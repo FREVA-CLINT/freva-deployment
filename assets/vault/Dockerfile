@@ -22,8 +22,7 @@ RUN set -ex &&\
 
 RUN python3 -m ensurepip
 RUN pip3 install --no-cache --upgrade pip setuptools &&\
-    pip3 install requests flask flask_restful &&\
-    echo "nameserver 8.8.8.8" >> /etc/resolv.conf
+    pip3 install requests flask flask_restful
 
 EXPOSE 5002
 VOLUME /vault/file

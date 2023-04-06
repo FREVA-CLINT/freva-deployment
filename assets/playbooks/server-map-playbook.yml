@@ -43,7 +43,10 @@
     - name: Building docker images
       shell:
         chdir: /tmp/servers
-        cmd: /usr/local/bin/docker-or-podman build -t freva-map:latest .
+        cmd: >
+          /usr/local/bin/docker-or-podman build 
+          -t freva-map:latest 
+          --dns 8.8.8.8 .
       become: true
     - name: Creating directory structure
       file:
