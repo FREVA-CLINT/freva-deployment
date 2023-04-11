@@ -6,6 +6,7 @@ from typing import cast, List, Dict
 
 from .base import BaseForm, logger
 from freva_deployment import AVAILABLE_PYTHON_VERSIONS, AVAILABLE_CONDA_ARCHS
+from freva_deployment.utils import get_current_file_dir
 
 
 def get_index(values: list[str], target: str, default: int = 0) -> int:
@@ -184,6 +185,19 @@ class CoreScreen(BaseForm):
                     values=AVAILABLE_CONDA_ARCHS,
                 ),
                 True,
+            ),
+            core_playbook=(
+                self.add_widget_intelligent(
+                    npyscreen.TitleFilename,
+                    name=(
+                        f"{self.num}Set the path to the playbook used for"
+                        " setting up the system."
+                    ),
+                    value=cfg.get(
+                        "core_playbook",
+                    ),
+                ),
+                False,
             ),
             ansible_python_interpreter=(
                 self.add_widget_intelligent(
@@ -481,7 +495,7 @@ class WebScreen(BaseForm):
                     npyscreen.TitleText,
                     name=(f"{self.num}Ldap search search key for email addr"),
                     value=cfg.get(
-                        "ldap_email_field",
+                        "ldap_email_name_field",
                         "mail",
                     ),
                 ),
@@ -517,6 +531,19 @@ class WebScreen(BaseForm):
                     value=cfg.get("ldap_model", "MiklipUserInformation"),
                 ),
                 True,
+            ),
+            web_playbook=(
+                self.add_widget_intelligent(
+                    npyscreen.TitleFilename,
+                    name=(
+                        f"{self.num}Set the path to the playbook used for"
+                        " setting up the system."
+                    ),
+                    value=cfg.get(
+                        "web_playbook",
+                    ),
+                ),
+                False,
             ),
             ansible_python_interpreter=(
                 self.add_widget_intelligent(
@@ -597,6 +624,32 @@ class DBScreen(BaseForm):
                 ),
                 True,
             ),
+            db_playbook=(
+                self.add_widget_intelligent(
+                    npyscreen.TitleFilename,
+                    name=(
+                        f"{self.num}Set the path to the db playbook used for"
+                        " setting up the system."
+                    ),
+                    value=cfg.get(
+                        "db_playbook",
+                    ),
+                ),
+                False,
+            ),
+            vault_playbook=(
+                self.add_widget_intelligent(
+                    npyscreen.TitleFilename,
+                    name=(
+                        f"{self.num}Set the path to the vault playbook used for"
+                        " setting up the system."
+                    ),
+                    value=cfg.get(
+                        "vault_playbook",
+                    ),
+                ),
+                False,
+            ),
             ansible_python_interpreter=(
                 self.add_widget_intelligent(
                     npyscreen.TitleFilename,
@@ -667,6 +720,19 @@ class SolrScreen(BaseForm):
                 ),
                 True,
             ),
+            solr_playbook=(
+                self.add_widget_intelligent(
+                    npyscreen.TitleFilename,
+                    name=(
+                        f"{self.num}Set the path to the playbook used for"
+                        " setting up the system."
+                    ),
+                    value=cfg.get(
+                        "solr_playbook",
+                    ),
+                ),
+                False,
+            ),
             ansible_python_interpreter=(
                 self.add_widget_intelligent(
                     npyscreen.TitleFilename,
@@ -721,15 +787,21 @@ class RunForm(npyscreen.FormMultiPageAction):
             public=public_keyfile or "",
             private=self.private_keyfile.value or "",
         )
+        save_file = Path(
+            self.parentApp.get_save_file(self.inventory_file.value or None)
+        )
         for key_type, keyfile in cert_files.items():
+            key_file = Path(get_current_file_dir(save_file.parent, str(keyfile)))
             for step, deploy_form in self.parentApp._forms.items():
-                if not keyfile or not Path(keyfile).is_file():
+                if not keyfile or not Path(key_file).is_file():
                     if (
                         key_type in deploy_form.certificates
                         and step in self.parentApp.steps
                     ):
                         if keyfile:
-                            msg = f"{key_type} certificate file `{keyfile}` must exist."
+                            msg = (
+                                f"{key_type} certificate file `{key_file}` must exist."
+                            )
                         else:
                             msg = f"You must give a {key_type} certificate file."
                         npyscreen.notify_confirm(msg, title="ERROR")
@@ -744,16 +816,18 @@ class RunForm(npyscreen.FormMultiPageAction):
             )
             if not value:
                 return
-        save_file = self.parentApp.save_config_to_file(write_toml_file=True)
-        if isinstance(save_file, Path):
-            save_file = str(save_file)
+        _ = self.parentApp.save_config_to_file(
+            save_file=save_file, write_toml_file=True
+        )
         self.parentApp.setup = {
             "server_map": self.server_map.value,
             "steps": list(set(self.parentApp.steps)),
             "ask_pass": bool(self.use_ssh_pw.value),
-            "config_file": save_file or None,
+            "config_file": str(save_file) or None,
         }
-        self.parentApp.exit_application(msg="Do you want to continue?")
+        self.parentApp.exit_application(
+            save_file=save_file, msg="Do you want to continue?"
+        )
 
     def on_cancel(self) -> None:
         """Define what happens after the the cancel button is hit."""

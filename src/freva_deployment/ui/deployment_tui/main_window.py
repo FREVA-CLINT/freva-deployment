@@ -12,7 +12,7 @@ import npyscreen
 import tomlkit
 
 from freva_deployment.utils import asset_dir, config_dir
-from .base import selectFile, BaseForm
+from .base import selectFile, BaseForm, VarForm
 from .deploy_forms import WebScreen, DBScreen, SolrScreen, CoreScreen, RunForm
 
 
@@ -30,26 +30,35 @@ class MainApp(npyscreen.NPSAppManaged):
 
     def onStart(self) -> None:
         """When Application starts, set up the Forms that will be used."""
+        npyscreen.setTheme(npyscreen.Themes.ElegantTheme)
         self.cache_dir.mkdir(exist_ok=True, parents=True)
         self.setup: dict[str, Any] = {}
+        self._forms: dict[str, BaseForm] = {}
+        self.current_form = "core"
+        self.init()
+        self.thread_stop = threading.Event()
+        # self.start_auto_save()
+
+    def init(self) -> None:
         self._steps_lookup = {
             "core": "MAIN",
             "web": "SECOND",
             "solr": "FOURTH",
             "db": "THIRD",
         }
-        self._forms: dict[str, BaseForm] = {}
-        self.current_form = "core"
         self.config = cast(Dict[str, Any], self._read_cache("config", {}))
         for step in self._steps_lookup.keys():
             self.config.setdefault(step, {"hosts": "", "config": {}})
         self._add_froms()
-        self.thread_stop = threading.Event()
-        # self.start_auto_save()
+
+    def reset(self) -> None:
+        npyscreen.blank_terminal()
+        self.init()
 
     def start_auto_save(self) -> None:
         """(Re)-Start the auto save thread."""
         self._save_thread = threading.Thread(target=self._auto_save)
+        self._save_thread.daemon = True
         self._save_thread.start()
 
     def _add_froms(self) -> None:
@@ -59,10 +68,18 @@ class MainApp(npyscreen.NPSAppManaged):
             CoreScreen,
             name="Core deployment",
         )
-        self._forms["web"] = self.addForm("SECOND", WebScreen, name="Web deployment")
-        self._forms["db"] = self.addForm("THIRD", DBScreen, name="Database deployment")
-        self._forms["solr"] = self.addForm("FOURTH", SolrScreen, name="Solr deployment")
-        self._setup_form = self.addForm("SETUP", RunForm, name="Apply the Deployment")
+        self._forms["web"] = self.addForm(
+            "SECOND", WebScreen, name="Web deployment"
+        )
+        self._forms["db"] = self.addForm(
+            "THIRD", DBScreen, name="Database deployment"
+        )
+        self._forms["solr"] = self.addForm(
+            "FOURTH", SolrScreen, name="Solr deployment"
+        )
+        self._setup_form = self.addForm(
+            "SETUP", RunForm, name="Apply the Deployment"
+        )
 
     def exit_application(self, *args, **kwargs) -> None:
         value = npyscreen.notify_ok_cancel(
@@ -71,7 +88,7 @@ class MainApp(npyscreen.NPSAppManaged):
         if value is True:
             self.thread_stop.set()
             self.setNextForm(None)
-            self.save_config_to_file()
+            self.save_config_to_file(save_file=kwargs.get("save_file"))
             self.editing = False
             self.switchFormNow()
 
@@ -154,20 +171,25 @@ class MainApp(npyscreen.NPSAppManaged):
             )
         return None
 
-    def _save_config_to_file(self, write_toml_file: bool = False) -> Path | None:
+    def get_save_file(self, save_file: Path | None = None) -> str:
+        """Get the name of the file where the config should be stored to."""
         cache_file = self.cache_dir / ".temp_file.toml"
-        save_file = self._setup_form.inventory_file.value
         if save_file:
-            save_file = str(Path(save_file).expanduser().absolute())
-        else:
-            save_file = None
+            save_file = Path(save_file).expanduser().absolute()
+        return str(save_file or cache_file)
+
+    def _save_config_to_file(
+        self,
+        write_toml_file: bool = False,
+        save_file: Path | None = None,
+    ) -> Path | None:
         cert_files = dict(
             public_keyfile=self._setup_form.public_keyfile.value or "",
             private_keyfile=self._setup_form.private_keyfile.value or "",
             chain_keyfile=self._setup_form.chain_keyfile.value or "",
         )
         for key, value in cert_files.items():
-            if value:
+            if value and "cfd" not in value.lower():
                 cert_files[key] = str(Path(value).expanduser().absolute())
         project_name = self._setup_form.project_name.value
         server_map = self._setup_form.server_map.value
@@ -177,7 +199,7 @@ class MainApp(npyscreen.NPSAppManaged):
         self.config["certificates"] = cert_files
         self.config["project_name"] = project_name or ""
         config = {
-            "save_file": save_file,
+            "save_file": self.get_save_file(save_file),
             "steps": self.steps,
             "ssh_pw": ssh_pw,
             "server_map": server_map,
@@ -187,7 +209,6 @@ class MainApp(npyscreen.NPSAppManaged):
             json.dump({k: v for (k, v) in config.items()}, f, indent=3)
         if write_toml_file is False:
             return None
-        save_file = Path(save_file or cache_file)
         try:
             with open(asset_dir / "config" / "inventory.toml") as f:
                 config_tmpl = cast(Dict[str, Any], tomlkit.load(f))
@@ -201,11 +222,11 @@ class MainApp(npyscreen.NPSAppManaged):
             config_tmpl[step]["hosts"] = settings["hosts"]
             for key, config in settings["config"].items():
                 config_tmpl[step]["config"][key] = config
-        save_file.parent.mkdir(exist_ok=True, parents=True)
-        with open(save_file, "w") as f:
+        Path(self.save_file).parent.mkdir(exist_ok=True, parents=True)
+        with open(self.save_file, "w") as f:
             toml_string = tomlkit.dumps(config_tmpl)
             f.write(toml_string)
-        return save_file
+        return Path(self.save_file)
 
     @property
     def cache_dir(self) -> Path:
@@ -224,7 +245,9 @@ class MainApp(npyscreen.NPSAppManaged):
     @property
     def _steps(self) -> list[str]:
         """Read the deployment-steps from the cache."""
-        return cast(List[str], self._read_cache("steps", ["core", "web", "db", "solr"]))
+        return cast(
+            List[str], self._read_cache("steps", ["core", "web", "db", "solr"])
+        )
 
     def read_cert_file(self, key: str) -> str:
         """Read the certificate file from the cache."""

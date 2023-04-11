@@ -38,11 +38,14 @@ def tui() -> None:
     except KeyboardInterrupt:
         try:
             main_app.thread_stop.set()
-            main_app.save_config_to_file()
+            main_app.save_config_to_file(
+                save_file=main_app._setup_form.inventory_file.value
+            )
         except AttributeError:
             pass
         return
     setup = main_app.setup
+    main_app.thread_stop.set()
     if setup:
         server_map = setup.pop("server_map")
         ask_pass = setup.pop("ask_pass")

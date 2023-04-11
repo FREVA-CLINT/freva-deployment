@@ -1,11 +1,14 @@
 from __future__ import annotations
 import os
+import json
 from pathlib import Path
 import logging
+from typing import Any, cast
 
 import curses
+from freva_deployment.utils import asset_dir, config_file
 import npyscreen
-
+import tomlkit
 
 logging.basicConfig(level=logging.DEBUG)
 logger: logging.Logger = logging.getLogger("deploy-freva-tui")
@@ -101,6 +104,9 @@ class BaseForm(npyscreen.FormMultiPageWithMenus, npyscreen.FormWithMenus):
     """
     certificates: list[str] = []
     """The type of certificate files this step needs."""
+
+    playbook_dir: Path = asset_dir / "playbooks"
+    """Default playbook location."""
 
     def get_config(self, key) -> dict[str, str | bool | list[str]]:
         """Read the configuration for a step."""
@@ -201,7 +207,6 @@ class BaseForm(npyscreen.FormMultiPageWithMenus, npyscreen.FormWithMenus):
             change_to = dict(zip(keys, [steps[-1]] + steps[:-1]))
         else:
             change_to = dict(zip(keys, steps[1:] + [steps[0]]))
-        # raise ValueError(change_to, reverse, self.parentApp._steps_lookup)
         self.parentApp.current_form = name
         self.parentApp.change_form(change_to[name])
 
@@ -209,6 +214,26 @@ class BaseForm(npyscreen.FormMultiPageWithMenus, npyscreen.FormWithMenus):
         """Switch to the deployment setup form."""
         self.parentApp.current_form = self.name
         self.parentApp.change_form("SETUP")
+
+    def add_variables(self):
+        """Add some environment variables for running the deployment."""
+        popup = VarForm()
+        popup.edit()
+        del popup
+
+    def clear_cache(self):
+        """Clear the app cache."""
+        with open(self.parentApp.cache_dir / "freva_deployment.json", "w") as f:
+            json.dump({}, f, indent=3)
+        self.parentApp.reset()
+
+    def setTheme(self, theme: str) -> None:
+        self.theme_manager.theme = getattr(npyscreen.Themes, theme)
+        self.theme_manager.theme = theme  # getattr(npyscreen.Themes, theme)
+        self.parentApp.DEFAULT_THEME = theme
+        self.create()
+        self.display()
+        self.display()
 
     def create(self) -> None:
         """Setup the form."""
@@ -227,9 +252,11 @@ class BaseForm(npyscreen.FormMultiPageWithMenus, npyscreen.FormWithMenus):
         self._change_form = self.parentApp.change_form
         self.menu.addItemsFromList(
             [
+                ("Set Variables", self.add_variables, "^V"),
                 ("Save Config", self.parentApp.save_dialog, "^S"),
                 ("Load Config", self.parentApp.load_dialog, "^L"),
                 ("Run Deployment", self.run_deployment, "^R"),
+                ("Clear App Cache", self.clear_cache, ""),
                 ("Exit Application", self.parentApp.exit_application, "^E"),
             ]
         )
@@ -251,3 +278,88 @@ class BaseForm(npyscreen.FormMultiPageWithMenus, npyscreen.FormWithMenus):
             scroll_exit=True,
         )
         self._add_widgets()
+
+
+class VarForm(npyscreen.FormMultiPageActionWithMenus):
+    """Definition of the form that applies the actual deployment."""
+
+    _num: int = 0
+
+    @property
+    def num(self) -> str:
+        """Calculate the number for enumerations of any input field."""
+        self._num += 1
+        return f"{self._num}. "
+
+    def create(self):
+        npyscreen.setTheme(npyscreen.Themes.ElegantTheme)
+        self.cfg = None
+        self.keys = []
+        self.values = []
+        self.cfg = tomlkit.loads(config_file.read_text())
+        for key, value in self.cfg["variables"].items():
+            self.add_widget_intelligent(
+                npyscreen.TitleText, name=f"{self.num}{key}:", value=value
+            )
+        self.add_widget_intelligent(
+            npyscreen.TitleText,
+            name="__________________________",
+            editable=False,
+        )
+        self.delete = self.add_widget_intelligent(
+            npyscreen.TitleCombo,
+            name="Delete Keys",
+            value=0,
+            relx=4,
+            values=[""] + list(self.cfg["variables"].keys()),
+        )
+        self.add_btn = self.add_widget_intelligent(
+            npyscreen.ButtonPress,
+            name="Press for new key",
+            use_max_space=True,
+            when_pressed_function=self._add_new_keys,
+        )
+        self.add_widget_intelligent(
+            npyscreen.TitleText,
+            name="__________________________",
+            editable=False,
+        )
+
+    def _add_new_keys(self, *args, **kwargs) -> None:
+        buttons = [self._widgets__.pop(-1), self._widgets__.pop(-1)]  # type: ignore
+        self.keys.append(
+            self.add_widget_intelligent(
+                npyscreen.TitleText,
+                name=f"Set a new key:",
+                value="",
+                editable=True,
+            )
+        )
+        self.values.append(
+            self.add_widget_intelligent(
+                npyscreen.TitleText,
+                name=f"Set a the according value:",
+                value="",
+                editable=True,
+            )
+        )
+
+        self._widgets__ = cast(list[Any], self._widgets__ + buttons)  # type: ignore
+        self.display()
+
+    def on_ok(self) -> None:
+        if self.delete.value > 0:
+            key = list(self.cfg["variables"].keys())[self.delete.value - 1]
+            del self.cfg["variables"][key]
+        for key, value in zip(self.keys, self.values):
+            if key.value and value.value:
+                self.cfg["variables"][key.value.upper()] = value.value
+
+        toml_str = tomlkit.dumps(self.cfg)
+        self.value = self.key = None
+        with config_file.open("w", encoding="utf-8") as f_obj:
+            f_obj.write(toml_str)
+        self.cfg = None
+
+    def on_cancel(self) -> None:
+        self.cfg = None
