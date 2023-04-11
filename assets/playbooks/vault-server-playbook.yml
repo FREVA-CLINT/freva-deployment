@@ -6,6 +6,7 @@
     - continer_name: "{{ vault_name }}"
     - docker_cmd: >
         --net {{ project_name }} --cap-add=IPC_LOCK
+        --dns 8.8.8.8
         -v /opt/freva/{{project_name}}/vault_service:/data:z
         -p 5002:5002 --name={{ vault_name }} {{ vault_name }}:latest
   tasks:
@@ -67,8 +68,7 @@
         cmd: >
           /usr/local/bin/docker-or-podman build
           --build-arg=project={{ project_name }}
-          --build-arg=rootpw='{{ root_passwd }}' -t {{ vault_name }}:latest 
-          --dns 8.8.8.8 .
+          --build-arg=rootpw='{{ root_passwd }}' -t {{ vault_name }}:latest .
       become: true
     - name: Starting vault container
       shell: /usr/local/bin/docker-or-podman run -d {{docker_cmd}}

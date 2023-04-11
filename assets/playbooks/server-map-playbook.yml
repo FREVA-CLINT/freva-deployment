@@ -2,7 +2,7 @@
 - hosts: freva_map
 
   vars:
-    - docker_cmd: "-v /opt/freva/server-map:/var/freva/:z --name freva-map -p {{ port }}:5008 -t freva-map:latest"
+    - docker_cmd: "-v /opt/freva/server-map:/var/freva/:z --dns 8.8.8.8 --name freva-map -p {{ port }}:5008 -t freva-map:latest"
   tasks:
     - name: Copying docker/podman wrapper script
       copy:
@@ -44,9 +44,8 @@
       shell:
         chdir: /tmp/servers
         cmd: >
-          /usr/local/bin/docker-or-podman build 
-          -t freva-map:latest 
-          --dns 8.8.8.8 .
+          /usr/local/bin/docker-or-podman build
+          -t freva-map:latest .
       become: true
     - name: Creating directory structure
       file:
