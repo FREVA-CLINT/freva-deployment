@@ -19,12 +19,14 @@ navigation panel on the bottom. Navigation is done by shortcuts and similar
 to those used in the *nano* text editor. All shortcuts start with
 a `^` which indicates `CTRL+`, main shortcuts are:
 - `CTRL+x`: Enter main menu.
-- `CTRL+e`: Exit application.
+- `CRTL+v`: Edit/Add environment variables.
 - `CTRL+o`: Load a saved configuration.
 - `CTRL+s`: Save a configuration to a [`.toml`](https://toml.io/en/).
 - `CTRL+k`: Go to previous *setup* screen.
 - `CTRL+l`: Go to next *setup* screen.
 - `CTRL+r`: Got to the *run* screen.
+- `CTRL+d`: Clear the application cache.
+- `CTRL+e`: Exit application.
 > **_Note:_** The load/save forms can be exited by pressing the `<TAB>` key
 which will get you to input field at the bottom of the screen. If the input
 field has text delete it an press the `<ESC>` key, this will bring you get to
@@ -84,11 +86,15 @@ essential setup steps:
 13. Select a pre-defined target architecture for the anaconda environment.\
    _Note_: The Freva installation has only been tested for MacOSX-x86_64,
    Linux-x86_64 (including Windows wsl2) and Linux-aarch64 (arm).
-14. Ansible needs python to be present on the remote machine, if not present
+14. If you want to customise the installation process you can set the path
+    to a custom ansible playbook here. If this is set then the deployment
+    will use this playbook instead of the default playbook that ships with
+    the system. Leave blank for default behaviour.
+15. Ansible needs python to be present on the remote machine, if not present
    in the default path (such as `/usr/bin/python3`) set the path to the `python3.4+`
    binary.
-15. Set the login user name for the remote machine.
-16. Set the path to the `git` executable if not in default path
+16. Set the login user name for the remote machine.
+17. Set the path to the `git` executable if not in default path
    such as `/usr/bin/git`.
 
 ### Notes on the core setup
@@ -146,9 +152,13 @@ essential setup steps:
 25. Set the type of ldap group type (nested or posix). Note: This is a
     dropdown menu, hit enter to select the options.
 26. Set the evaluation_system ldap class that handles the ldap connections
-27. Set the path to the `python3.4+` binary, this should be set if the python
+27. If you want to customise the installation process you can set the path
+    to a custom ansible playbook here. If this is set then the deployment
+    will use this playbook instead of the default playbook that ships with
+    the system. Leave blank for default behaviour.
+28. Set the path to the `python3.4+` binary, this should be set if the python
     binary is not part of the `$PATH` variable.
-28. Set the login user name for the remote machine.
+29. Set the login user name for the remote machine.
 
 ### Notes on the web ui setup
 Currently there are ties between the core running on the HPC machine and
@@ -200,9 +210,13 @@ following explains the essential setup steps:
 2. Tick this box (`<SPACE>`) if you want to delete any pre existing solr data.
 3. Select how much memory you want to allocate for the solr server process.
 4. Select the port the solr server is running on.
-5. Set the path to the `python3.4+` binary, this should be set if the python
+5. If you want to customise the installation process you can set the path
+   to a custom ansible playbook here. If this is set then the deployment
+   will use this playbook instead of the default playbook that ships with
+   the system. Leave blank for default behaviour.
+6. Set the path to the `python3.4+` binary, this should be set if the python
     binary is not part of the `$PATH` variable.
-6. Set the login user name for the remote machine.
+7. Set the login user name for the remote machine.
 
 ### Notes on the solr setup
 Although still configurable, the name of the solr core (files) might be
@@ -228,9 +242,17 @@ following explains the essential setup steps:
 3. Set the database user name.
 4. Set the database name.
 5. Set the port the database server is running on.
-5. Set the path to the `python3.4+` binary, this should be set if the python
+6. If you want to customise the installation process you can set the path
+    to a custom *database* ansible playbook here. If this is set then the
+    deployment will use this playbook instead of the default playbook that
+    ships with the system. Leave blank for default behaviour.
+7. If you want to customise the installation process you can set the path
+    to a custom *vault* ansible playbook here. If this is set then the
+    deployment will use this playbook instead of the default playbook that
+    ships with the system. Leave blank for default behaviour.
+8. Set the path to the `python3.4+` binary, this should be set if the python
     binary is not part of the `$PATH` variable.
-6. Set the login user name for the remote machine.
+9. Set the login user name for the remote machine.
 
 ### Notes on the database setup
 This step also includes the deployment of a vault service where all information

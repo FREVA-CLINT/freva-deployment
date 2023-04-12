@@ -13,12 +13,13 @@ from tempfile import TemporaryDirectory, mkdtemp
 from typing import Any
 
 from numpy import sign
-import toml
+import tomlkit
 import yaml
 
 from .utils import (
     asset_dir,
     config_dir,
+    load_config,
     get_passwd,
     get_email_credentials,
     logger,
@@ -69,6 +70,7 @@ class DeployFactory:
         self._cfg_tmpl = self.aux_dir / "evaluation_system.conf.tmpl"
         self.cfg = self._read_cfg()
         self.project_name = self.cfg.pop("project_name", None)
+        self.playbooks: dict[str, Path | None] = {}
         if not self.project_name:
             raise ValueError("You must set a project name")
 
@@ -103,6 +105,7 @@ class DeployFactory:
         """Prepare the vault."""
         self._config_keys.append("vault")
         self.cfg["vault"] = self.cfg["db"].copy()
+        self.playbooks["vault"] = self.cfg["db"]["config"].get("vault_playbook")
         if not self.master_pass:
             self.master_pass = get_passwd()
         self.cfg["vault"]["config"]["root_passwd"] = self.master_pass
@@ -130,12 +133,14 @@ class DeployFactory:
         self.cfg["db"]["config"]["email"] = self.cfg["web"]["config"].get(
             "contacts", ""
         )
+        self.playbooks["db"] = self.cfg["db"]["config"].get("db_playbook")
         self._prep_vault()
 
     def _prep_solr(self) -> None:
         """prepare the apache solr service."""
         self._config_keys.append("solr")
         self.cfg["solr"]["config"].pop("core", None)
+        self.playbooks["solr"] = self.cfg["solr"]["config"].get("solr_playbook")
         for key, default in dict(mem="4g", port=8983).items():
             self.cfg["solr"]["config"][key] = (
                 self.cfg["solr"]["config"].get(key) or default
@@ -147,6 +152,7 @@ class DeployFactory:
     def _prep_core(self) -> None:
         """prepare the core deployment."""
         self._config_keys.append("core")
+        self.playbooks["core"] = self.cfg["core"]["config"].get("core_playbook")
         self.cfg["core"]["config"]["admins"] = (
             self.cfg["core"]["config"].get("admins") or getuser()
         )
@@ -183,6 +189,7 @@ class DeployFactory:
     def _prep_web(self) -> None:
         """prepare the web deployment."""
         self._config_keys.append("web")
+        self.playbooks["web"] = self.cfg["web"]["config"].get("web_playbook")
         self._prep_core()
         admin = self.cfg["core"]["config"]["admins"]
         if not isinstance(admin, str):
@@ -242,7 +249,7 @@ class DeployFactory:
         except AttributeError:
             pass
         with self.web_conf_file.open("w") as f_obj:
-            toml.dump(_webserver_items, f_obj)
+            tomlkit.dump(_webserver_items, f_obj)
         for key in ("core", "web"):
             self.cfg[key]["config"]["config_toml_file"] = str(self.web_conf_file)
         if not self.master_pass:
@@ -281,8 +288,7 @@ class DeployFactory:
 
     def _read_cfg(self) -> dict[str, Any]:
         try:
-            with self._inv_tmpl.open() as f_obj:
-                return dict(toml.load(f_obj))
+            return dict(load_config(self._inv_tmpl))
         except FileNotFoundError as error:
             raise FileNotFoundError(f"No such file {self._inv_tmpl}") from error
 
@@ -421,8 +427,11 @@ class DeployFactory:
         playbook = []
         for step in self.steps:
             getattr(self, f"_prep_{step}")()
-            playbook_file = self.playbook_dir / f"{step}-server-playbook.yml"
-            with playbook_file.open() as f_obj:
+            playbook_file = (
+                self.playbooks.get(step)
+                or self.playbook_dir / f"{step}-server-playbook.yml"
+            )
+            with Path(playbook_file).open() as f_obj:
                 playbook += yaml.safe_load(f_obj)
         with self._playbook_file.open("w") as f_obj:
             yaml.dump(playbook, f_obj)

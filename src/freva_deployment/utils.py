@@ -9,7 +9,7 @@ import re
 from subprocess import PIPE
 import sys
 import shutil
-from typing import cast, NamedTuple
+from typing import Any, NamedTuple, cast
 import warnings
 
 import appdirs
@@ -22,6 +22,20 @@ logging.basicConfig(format="%(name)s - %(levelname)s - %(message)s", level=loggi
 logger = logging.getLogger("freva-deployment")
 
 RichConsole = Console(markup=True, force_terminal=True)
+
+config_text = """
+### This is the global config file for the freva deployment
+[general]
+[variables]
+### you can set here different *global* variables that are
+### evaluatated in the deployment configurations. For example
+### if you set here the variable USER = "foo" then you can
+### use the this defined variable in the inventory file to
+### set the ansible user: anisble_user="${USER}"
+
+# USER="myusername"
+# USER_GROUP = "myusergroup"
+"""
 
 password_prompt = (
     "[green]Choose[/] a [b]master password[/], this password will be used to:\n"
@@ -79,10 +93,54 @@ class AssetDir:
         shutil.copy(self.asset_dir / "config" / "inventory.toml", inventory_file)
         return self._user_config_dir
 
+    @property
+    def config_file(self):
+        cfg_file = self.config_dir / "freva-deployment.config"
+        if not cfg_file.exists():
+            cfg_file.parent.mkdir(exist_ok=True, parents=True)
+            with cfg_file.open("w", encoding="utf-8") as f_obj:
+                f_obj.write(config_text)
+        return cfg_file
+
 
 AD = AssetDir()
 asset_dir = AD.asset_dir
 config_dir = AD.config_dir
+config_file = AD.config_file
+
+
+def get_current_file_dir(inp_dir: str | Path, value: str) -> str:
+    """Get a path with the CFD as a variable."""
+    if "${CFD}" in value.upper() or "$CFD" in value.upper():
+        value = value.replace("${CFD}", "$CFD")
+        part_1, _, part_2 = value.partition("$CFD/")
+        return str(Path(inp_dir, *Path(part_2).parts))
+    return value
+
+
+def _convert_dict(
+    inp_dict: dict[str, str | dict[str, Any]],
+    variables: dict[str, str],
+    cfd: Path,
+) -> None:
+    for key, value in inp_dict.items():
+        if isinstance(value, dict):
+            _convert_dict(value, variables, cfd)
+        elif isinstance(value, str):
+            for varn, variable in variables.items():
+                if f"${{{varn}}}" in value or f"${varn}" in value:
+                    value = value.replace(f"${{{varn}}}", f"${varn}")
+                    value = value.replace(f"${varn}", variable)
+            inp_dict[key] = get_current_file_dir(cfd, value)
+
+
+def load_config(inp_file: str | Path) -> dict[str, Any]:
+    """Load the inventory toml file and replace all environment variables."""
+    inp_file = Path(inp_file).expanduser().absolute()
+    variables = cast(dict[str, str], toml.loads(config_file.read_text())["variables"])
+    config = toml.loads(inp_file.read_text())
+    _convert_dict(config, variables, inp_file.parent)
+    return config
 
 
 def guess_map_server(

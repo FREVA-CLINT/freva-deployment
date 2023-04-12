@@ -92,6 +92,14 @@ db_host = ""
 ##(Useful for a truely fresh start) (default: False)
 wipe = false
 
+## In case you want to set a custom path to a ansible playbook,
+## you can do this here, by default the deployment will use the playbook
+## located in the user config directory.
+## NOTE: only adjust this if you know what you are doing, if you leave this
+## blank the system will used the default playbook (standard procedure)
+db_playbook = ""
+vault_playbook = ""
+
 [solr.config]
 ## Config variables for the solr service
 port = 8983
@@ -108,6 +116,13 @@ mem = "4g"
 ##Indicate whether or not to empty any pre-existing folders/docker volumes.
 ##(Useful for a truely fresh start) (default: False)
 wipe = false
+## In case you want to set a custom path to a ansible playbook,
+## you can do this here, by default the deployment will use the playbook
+## located in the user config directory.
+## NOTE: only adjust this if you know what you are doing, if you leave this
+## blank the system will used the default playbook (standard procedure)
+solr_playbook = ""
+
 
 
 [core.config]
@@ -174,6 +189,12 @@ arch = "Linux-x86_64"
 ##(Useful for a truely fresh start) (default: False)
 wipe = false
 
+## In case you want to set a custom path to a ansible playbook,
+## you can do this here, by default the deployment will use the playbook
+## located in the user config directory.
+## NOTE: only adjust this if you know what you are doing, if you leave this
+## blank the system will used the default playbook (standard procedure)
+core_playbook = ""
 
 [web.config]
 ## List of user that can alter the configuration of freva web
@@ -279,3 +300,9 @@ menu_entries = [["Data-Browser", "solr:data_browser","browser_menu"],
                 ["History","history:history","history_menu"],
                 ["Result-Browser", "history:result_browser","result_browser_menu"],
                 ["Help", "plugins:about","doc_menu"]]
+## In case you want to set a custom path to a ansible playbook,
+## you can do this here, by default the deployment will use the playbook
+## located in the user config directory.
+## NOTE: only adjust this if you know what you are doing, if you leave this
+## blank the system will used the default playbook (standard procedure)
+web_playbook = ""

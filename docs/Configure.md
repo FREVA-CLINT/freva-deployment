@@ -69,6 +69,48 @@ optional arguments:
 
 The `--steps` flags can be used if not all services should be deployed.
 
+## Using environment variables
+Once the deployment configuration is set up it might be useful to store the
+config and all the files that are needed to run the deployment at a central,
+yet *secure* location. This can be useful if multiple admins will have to take
+turns in (re)-deploying the system and thus the configuration has to be up to
+date for those admins. The problem that arises is that the setup might differ
+slightly for each person and computer running the deployment. For instance the
+`ansible_user` key might differ. For this purpose the deployment supports setting
+environment variables. Those environment variables can be used in the configuration
+file. Like `ansible_user = $USER`. You can then set up the `USER` variable with
+help of the deployment tui. To do so open the main menu (`CTRL+x`) and then
+choose the add set variables options (`CTRL+v`). You can then add or edit
+variables. In the figure below the `USER` variable is set to a specific user
+name. If the deployment encounters an entry using `$USER` variable it will be
+replaced by the according value that points to the `$USER` variable.
+
+![Add Variable](Variable.png)
+
+### Relative paths using the $CFD variable
+Instead of setting the absolute paths in the configuration files
+for example the path to the public certificate files, you should give the
+paths *relative* to the configuration file. To indicate that the
+freva-deployment machinery should create paths relative to the configuration
+you should set all paths starting with the `$CFD` (current file directory)
+variable. For example if the configuration file is located in
+`/home/user/config/foo/foo.toml` and the public cert file is located in the
+same directory as the configuration file then you can set the path to the cert
+file in the configuration files via `$CFD/foo.crt`.
+
+This will assure that paths will work from any other machine.
+
+## Advanced: Adjusting the playbook
+Playbook templates and be found the in the `~/.config/freva/deployment/playbooks` directory.
+You can customise those playbooks if the standard installation procedure is
+not well suited. Each deployment section offers the option to set paths
+to custom playbook files instead of the standard playbook files. To change
+the behaviour of the installation for a certain freva instance, simply adjust
+the path to the playbook for that step in the inventory file or tui. For example:
+
+- `web_playbook = '/home/myuser/playbooks/my-web.yml'`
+
+
 ## Known Issues:
 Below are possible solutions to some known issues:
 
@@ -105,10 +147,3 @@ The load/save forms can be exited by pressing the `<TAB>` key
 which will get you to input field at the bottom of the screen. If the input
 field has text delete it an press the `<ESC>` key, this will bring you get to
 the screen where you started.
-
-
-
-## Advanced: Adjusting the playbook
-Playbook templates and be found the in the `~/.config/freva/deployment/playbooks` directory.
-You can also add new variables to the playbook if they are present in the
-`~/.config/freva/deployment/inventory.toml` file.
