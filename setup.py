@@ -163,6 +163,7 @@ setup(
     install_requires=get_packages(),
     extras_require={
         "docs": [
+            "furo",
             "sphinx",
             "nbsphinx",
             "recommonmark",

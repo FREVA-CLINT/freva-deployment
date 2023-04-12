@@ -12,6 +12,7 @@
 #
 import os
 import sys
+from datetime import date
 from recommonmark.parser import CommonMarkParser
 
 sys.path.insert(0, os.path.abspath("."))
@@ -21,8 +22,8 @@ sys.path.insert(0, os.path.abspath("../../src"))
 # -- Project information -----------------------------------------------------
 
 project = "freva-deployment"
-copyright = "2022, Martin Bergemann"
-author = "Martin Bergemann"
+copyright = f"{date.today().year}, DKRZ - CLINT"
+author = "Climate Informatics and Technology"
 
 # The full version, including alpha/beta/rc tags
 release = "2022.03.01"
@@ -57,13 +58,20 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = "sphinx_rtd_theme"
-
+html_theme = "furo"
+html_logo = "freva_owl.svg"
+html_favicon = "freva_owl.svg"
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ["_static"]
-
+html_theme_options = {
+    "navigation_with_keys": True,
+    "top_of_page_button": "edit",
+    "light_css_variables": {
+        "color-brand-primary": "tomato",
+    },
+}
 source_parsers = {
     ".md": CommonMarkParser,
 }
