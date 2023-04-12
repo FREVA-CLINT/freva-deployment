@@ -87,6 +87,18 @@ replaced by the according value that points to the `$USER` variable.
 
 ![Add Variable](Variable.png)
 
+### Relative paths using the $CFD variable
+Instead of setting the absolute paths in the configuration files
+for example the path to the public certificate files, you should give the
+paths *relative* to the configuration file. To indicate that the
+freva-deployment machinery should create paths relative to the configuration
+you should set all paths starting with the `$CFD` (current file directory)
+variable. For example if the configuration file is located in
+`/home/user/config/foo/foo.toml` and the public cert file is located in the
+same directory as the configuration file then you can set the path to the cert
+file in the configuration files via `$CFD/foo.crt`.
+
+This will assure that paths will work from any other machine.
 
 ## Advanced: Adjusting the playbook
 Playbook templates and be found the in the `~/.config/freva/deployment/playbooks` directory.
