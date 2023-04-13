@@ -10,6 +10,29 @@ jobs:
       name: Checkout
       uses: actions/checkout@v3
     -
+      name: Set up Python 3.11
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.11"
+    -
+      name: Install packages
+      run: |
+        python3 -m pip install -e .[test]
+        mkdir .mypy_cache
+    -
+      name: formating
+      run: black --check -t py311 src
+    -
+      name: type checking
+      run: mypy --install-types --non-interactive
+
+  cli_test:
+    runs-on: ubuntu-latest
+    steps:
+    -
+      name: Checkout
+      uses: actions/checkout@v3
+    -
       name: Set up Python
       uses: actions/setup-python@v4
       with:
@@ -24,3 +47,19 @@ jobs:
 
     - name: deploy-freva command check
       run: deploy-freva --help
+
+  dependabot:
+    runs-on: ubuntu-latest
+    if: ${{ github.actor == 'dependabot[bot]' && github.event.workflow_run.conclusion == 'success' }}
+    steps:
+      - name: Dependabot metadata
+        id: metadata
+        uses: dependabot/fetch-metadata@v1.1.1
+        with:
+          github-token: "${{ secrets.GITHUB_TOKEN }}"
+      - name: Enable auto-merge for Dependabot PRs
+        if: ${{contains(steps.metadata.outputs.dependency-names, 'my-dependency') && steps.metadata.outputs.update-type == 'version-update:semver-patch'}}
+        run: gh pr merge --auto --merge "$PR_URL"
+        env:
+          PR_URL: ${{github.event.pull_request.html_url}}
+          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
