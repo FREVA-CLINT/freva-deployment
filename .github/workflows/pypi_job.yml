@@ -1,5 +1,5 @@
 name: Create Pip package
-run-name: ${{ github.actor }} is uploading the code to pypi
+run-name: ${{ github.actor }} is uploading the code to pypi 🧉
 
 on:
   push:
@@ -25,7 +25,7 @@ jobs:
         name: Build a binary wheel and a source tarball
         run: python -m build  --sdist --wheel --outdir dist/
       -
-        name: ublish distribution 📦 to PyPI
+        name: publish distribution 📦 to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           password: ${{ secrets.PYPI_API_TOKEN }}

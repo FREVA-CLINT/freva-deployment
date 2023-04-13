@@ -1,5 +1,5 @@
 name: CLI Test
-run-name: ${{ github.actor }} is tesing the cli
+run-name: ${{ github.actor }} is tesing the cli 🧉
 
 on: [push, pull_request]
 jobs:
