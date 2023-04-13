@@ -50,6 +50,7 @@ jobs:
 
   dependabot:
     runs-on: ubuntu-latest
+    needs: [cli_test, lint]
     if: ${{ github.actor == 'dependabot[bot]' && github.event.workflow_run.conclusion == 'success' }}
     steps:
       - name: Dependabot metadata
