@@ -464,9 +464,9 @@ class WebScreen(BaseForm):
                 self.add_widget_intelligent(
                     npyscreen.TitlePassword,
                     name=f"{self.num}Password for ldap user:",
-                    value=cfg.get("ldap_user_pw", "dkrzprox"),
+                    value=cfg.get("ldap_user_pw", ""),
                 ),
-                True,
+                False,
             ),
             ldap_first_name_field=(
                 self.add_widget_intelligent(
