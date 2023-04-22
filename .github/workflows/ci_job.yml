@@ -1,5 +1,5 @@
 name: CLI Test
-run-name: ${{ github.actor }} is tesing the cli
+run-name: ${{ github.actor }} is tesing the cli 🧉
 
 on: [push, pull_request]
 jobs:
@@ -10,8 +10,33 @@ jobs:
       name: Checkout
       uses: actions/checkout@v3
     -
+      name: Set up Python 3.11
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.11"
+    -
+      name: Install packages
+      run: |
+        python3 -m pip install -e .[test]
+        mkdir .mypy_cache
+    -
+      name: formating
+      run: black --check -t py311 src
+    -
+      name: type checking
+      run: mypy --install-types --non-interactive
+
+  cli_test:
+    runs-on: ubuntu-latest
+    steps:
+    -
+      name: Checkout
+      uses: actions/checkout@v3
+    -
       name: Set up Python
       uses: actions/setup-python@v4
+      with:
+        python-version: "3.x"
     -
       name: Install packages
       run: |
@@ -22,3 +47,25 @@ jobs:
 
     - name: deploy-freva command check
       run: deploy-freva --help
+
+  dependabot:
+    runs-on: ubuntu-latest
+    needs: [cli_test, lint]
+    if: ${{ github.actor == 'dependabot[bot]' }}
+    steps:
+      - name: automerge
+        uses: actions/github-script@0.2.0
+        with:
+          script: |
+            github.pullRequests.createReview({
+              owner: context.payload.repository.owner.login,
+              repo: context.payload.repository.name,
+              pull_number: context.payload.pull_request.number,
+              event: 'APPROVE'
+            })
+            github.pullRequests.merge({
+              owner: context.payload.repository.owner.login,
+              repo: context.payload.repository.name,
+              pull_number: context.payload.pull_request.number
+            })
+          github-token: "${{ secrets.GITHUB_TOKEN }}"

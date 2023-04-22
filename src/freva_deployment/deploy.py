@@ -202,6 +202,8 @@ class DeployFactory:
                 key = k.replace("web_", "").upper()
                 if key not in ("LDAP_USER_PW", "LDAP_USER_DN"):
                     _webserver_items[key] = v
+                else:
+                    self.cfg["web"]["config"].setdefault(k, "")
         except KeyError as error:
             raise KeyError(
                 "No web config section given, please configure the web.config"
