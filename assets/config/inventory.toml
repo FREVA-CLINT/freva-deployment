@@ -284,7 +284,7 @@ ldap_user_pw = ""
 
 #######
 ## Set the hosts that are allowed to execute wsgi code
-allowed_hosts = ["www.freva.dkrz.de", "localhost"]
+allowed_hosts = ["localhost"]
 
 ## Turn on/off debug mode on the website
 debug=false
