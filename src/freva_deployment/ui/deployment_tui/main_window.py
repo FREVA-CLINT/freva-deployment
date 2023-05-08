@@ -202,6 +202,9 @@ class MainApp(npyscreen.NPSAppManaged):
         if write_toml_file is False:
             return None
         try:
+            with open(self.save_file) as f:
+                config_tmpl = cast(Dict[str, Any], tomlkit.load(f))
+        except FileNotFoundError:
             with open(asset_dir / "config" / "inventory.toml") as f:
                 config_tmpl = cast(Dict[str, Any], tomlkit.load(f))
         except Exception:
@@ -214,6 +217,10 @@ class MainApp(npyscreen.NPSAppManaged):
             config_tmpl[step]["hosts"] = settings["hosts"]
             for key, config in settings["config"].items():
                 config_tmpl[step]["config"][key] = config
+                if key == "allowed_hosts" and step == "web":
+                    config_tmpl[step]["config"][key] = list(
+                        set(cast(str, config).split(","))
+                    )
         Path(self.save_file).parent.mkdir(exist_ok=True, parents=True)
         with open(self.save_file, "w") as f:
             toml_string = tomlkit.dumps(config_tmpl)

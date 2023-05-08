@@ -392,6 +392,19 @@ class WebScreen(BaseForm):
                 ),
                 True,
             ),
+            allowed_hosts=(
+                self.add_widget_intelligent(
+                    npyscreen.TitleText,
+                    name=f"{self.num}Set additional hostnames django can serve:",
+                    value=",".join(
+                        cast(
+                            List[str],
+                            cfg.get("allowed_hosts", ["localhost"]),
+                        ),
+                    ),
+                ),
+                True,
+            ),
             auth_ldap_server_uri=(
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
