@@ -218,7 +218,9 @@ class MainApp(npyscreen.NPSAppManaged):
             for key, config in settings["config"].items():
                 config_tmpl[step]["config"][key] = config
                 if key == "allowed_hosts" and step == "web":
-                    config_tmpl[step]["config"][key] = list(set(config.split(",")))
+                    config_tmpl[step]["config"][key] = list(
+                        set(cast(str, config).split(","))
+                    )
         Path(self.save_file).parent.mkdir(exist_ok=True, parents=True)
         with open(self.save_file, "w") as f:
             toml_string = tomlkit.dumps(config_tmpl)
