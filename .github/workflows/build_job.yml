@@ -18,8 +18,9 @@ jobs:
             TARGET: macos
             CMD_BUILD: >
                 pyinstaller pyinstaller/pyinstaller-script.py -c --name deploy-freva --onefile &&
-                cp dist/deploy-freva .
-            OUT_FILE_NAME: deploy-freva
+                cd dist &&
+                zip deploy-freva.zip deploy-freva
+            OUT_FILE_NAME: deploy-freva.zip
             ASSET_MIME: application/zip
           - os: windows-latest
             TARGET: windows
@@ -35,6 +36,6 @@ jobs:
       - name: Install dependencies
         run: |
           python3 -m pip install --upgrade pip
-          python3 -m pip install pyinstaller .
+          python3 -m pip install pyinstaller ansible .
       - name: Build with pyinstaller for ${{matrix.TARGET}}
         run: ${{matrix.CMD_BUILD}}
