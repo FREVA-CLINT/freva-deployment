@@ -68,10 +68,18 @@ class MainApp(npyscreen.NPSAppManaged):
             CoreScreen,
             name="Core deployment",
         )
-        self._forms["web"] = self.addForm("SECOND", WebScreen, name="Web deployment")
-        self._forms["db"] = self.addForm("THIRD", DBScreen, name="Database deployment")
-        self._forms["solr"] = self.addForm("FOURTH", SolrScreen, name="Solr deployment")
-        self._setup_form = self.addForm("SETUP", RunForm, name="Apply the Deployment")
+        self._forms["web"] = self.addForm(
+            "SECOND", WebScreen, name="Web deployment"
+        )
+        self._forms["db"] = self.addForm(
+            "THIRD", DBScreen, name="Database deployment"
+        )
+        self._forms["solr"] = self.addForm(
+            "FOURTH", SolrScreen, name="Solr deployment"
+        )
+        self._setup_form = self.addForm(
+            "SETUP", RunForm, name="Apply the Deployment"
+        )
 
     def exit_application(self, *args, **kwargs) -> None:
         value = npyscreen.notify_ok_cancel(
@@ -165,7 +173,6 @@ class MainApp(npyscreen.NPSAppManaged):
                 title="Error",
                 message=f"Couldn't save config:\n{error}",
             )
-            raise error
         return None
 
     def get_save_file(self, save_file: Path | None = None) -> str:
@@ -245,7 +252,9 @@ class MainApp(npyscreen.NPSAppManaged):
     @property
     def _steps(self) -> list[str]:
         """Read the deployment-steps from the cache."""
-        return cast(List[str], self._read_cache("steps", ["core", "web", "db", "solr"]))
+        return cast(
+            List[str], self._read_cache("steps", ["core", "web", "db", "solr"])
+        )
 
     def read_cert_file(self, key: str) -> str:
         """Read the certificate file from the cache."""
