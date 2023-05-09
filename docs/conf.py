@@ -18,6 +18,7 @@ from recommonmark.parser import CommonMarkParser
 sys.path.insert(0, os.path.abspath("."))
 sys.path.insert(0, os.path.abspath("../../src"))
 
+from freva_deployment import __version__
 
 # -- Project information -----------------------------------------------------
 
@@ -26,7 +27,7 @@ copyright = f"{date.today().year}, DKRZ - CLINT"
 author = "Climate Informatics and Technology"
 
 # The full version, including alpha/beta/rc tags
-release = "2022.03.01"
+release = __version__
 
 
 # -- General configuration ---------------------------------------------------
