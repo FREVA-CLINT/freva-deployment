@@ -1,0 +1,41 @@
+name: Building
+run-name: ${{ github.actor }} is building the tui 🧉
+
+# Set the access for individual scopes, or use permissions: write-all
+permissions:
+  pull-requests: write
+on: [push]
+
+jobs:
+  build:
+    name: Build packages
+    needs: createrelease
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: macos-latest
+            TARGET: macos
+            CMD_BUILD: >
+                pyinstaller pyinstaller/pyinstaller-script.py -c --name deploy-freva --onefile &&
+                cd dist/ &&
+                zip -r9 deploy-freva deploy-freva.app/
+            OUT_FILE_NAME: deploy-freva.zip
+            ASSET_MIME: application/zip
+          - os: windows-latest
+            TARGET: windows
+            CMD_BUILD: pyinstaller pyinstaller/pyinstaller-script.py -c --name deploy-freva --onefile &&
+            OUT_FILE_NAME: deploy-freva.exe
+            ASSET_MIME: application/vnd.microsoft.portable-executable
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.11
+      - name: Install dependencies
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -m pip install pyinstaller .
+      - name: Build with pyinstaller for ${{matrix.TARGET}}
+        run: ${{matrix.CMD_BUILD}}
