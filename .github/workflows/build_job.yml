@@ -4,7 +4,10 @@ run-name: ${{ github.actor }} is building the tui 🧉
 # Set the access for individual scopes, or use permissions: write-all
 permissions:
   pull-requests: write
-on: [push]
+on:
+  push:
+    tags:
+      - "*"
 
 jobs:
   build:
