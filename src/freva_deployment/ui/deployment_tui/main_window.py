@@ -37,7 +37,7 @@ class MainApp(npyscreen.NPSAppManaged):
         self.current_form = "core"
         self.init()
         self.thread_stop = threading.Event()
-        # self.start_auto_save()
+        self.start_auto_save()
 
     def init(self) -> None:
         self._steps_lookup = {
@@ -100,7 +100,11 @@ class MainApp(npyscreen.NPSAppManaged):
             cfg = form_obj.check_config(notify=stop_at_missing)
             if cfg is None and stop_at_missing:
                 return self._steps_lookup[step]
-            self.config[step] = cfg
+            try:
+                self.config[step] = cfg
+            except Exception as error:
+                raise ValueError((step, cfg))
+                raise error
         return None
 
     def _auto_save(self) -> None:
@@ -161,6 +165,7 @@ class MainApp(npyscreen.NPSAppManaged):
                 title="Error",
                 message=f"Couldn't save config:\n{error}",
             )
+            raise error
         return None
 
     def get_save_file(self, save_file: Path | None = None) -> str:
@@ -217,10 +222,6 @@ class MainApp(npyscreen.NPSAppManaged):
             config_tmpl[step]["hosts"] = settings["hosts"]
             for key, config in settings["config"].items():
                 config_tmpl[step]["config"][key] = config
-                if key == "allowed_hosts" and step == "web":
-                    config_tmpl[step]["config"][key] = list(
-                        set(cast(str, config).split(","))
-                    )
         Path(self.save_file).parent.mkdir(exist_ok=True, parents=True)
         with open(self.save_file, "w") as f:
             toml_string = tomlkit.dumps(config_tmpl)
