@@ -193,9 +193,7 @@ class CoreScreen(BaseForm):
                         f"{self.num}Set the path to the playbook used for"
                         " setting up the system."
                     ),
-                    value=cfg.get(
-                        "core_playbook",
-                    ),
+                    value=cfg.get("core_playbook", ""),
                 ),
                 False,
             ),
@@ -242,7 +240,7 @@ class WebScreen(BaseForm):
 
     def _add_widgets(self) -> None:
         """Add widgets to the screen."""
-        self.list_keys = "imprint", "scheduler_host"
+        self.list_keys = "imprint", "scheduler_host", "allowed_hosts"
         cfg = self.get_config(self.step)
         for key in self.list_keys:
             if key in cfg and isinstance(cfg[key], str):
@@ -552,9 +550,7 @@ class WebScreen(BaseForm):
                         f"{self.num}Set the path to the playbook used for"
                         " setting up the system."
                     ),
-                    value=cfg.get(
-                        "web_playbook",
-                    ),
+                    value=cfg.get("web_playbook", ""),
                 ),
                 False,
             ),
@@ -644,9 +640,7 @@ class DBScreen(BaseForm):
                         f"{self.num}Set the path to the db playbook used for"
                         " setting up the system."
                     ),
-                    value=cfg.get(
-                        "db_playbook",
-                    ),
+                    value=cfg.get("db_playbook", ""),
                 ),
                 False,
             ),
@@ -657,9 +651,7 @@ class DBScreen(BaseForm):
                         f"{self.num}Set the path to the vault playbook used for"
                         " setting up the system."
                     ),
-                    value=cfg.get(
-                        "vault_playbook",
-                    ),
+                    value=cfg.get("vault_playbook", ""),
                 ),
                 False,
             ),
@@ -740,9 +732,7 @@ class SolrScreen(BaseForm):
                         f"{self.num}Set the path to the playbook used for"
                         " setting up the system."
                     ),
-                    value=cfg.get(
-                        "solr_playbook",
-                    ),
+                    value=cfg.get("solr_playbook", ""),
                 ),
                 False,
             ),
