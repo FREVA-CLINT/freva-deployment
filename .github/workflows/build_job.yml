@@ -18,9 +18,8 @@ jobs:
             TARGET: macos
             CMD_BUILD: >
                 pyinstaller pyinstaller/pyinstaller-script.py -c --name deploy-freva --onefile &&
-                cd dist/ &&
-                zip -r9 deploy-freva deploy-freva.app/
-            OUT_FILE_NAME: deploy-freva.zip
+                cp dist/deploy-freva .
+            OUT_FILE_NAME: deploy-freva
             ASSET_MIME: application/zip
           - os: windows-latest
             TARGET: windows
