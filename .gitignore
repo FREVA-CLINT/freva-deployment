@@ -6,6 +6,7 @@ config/inventory
 __pycache__/*
 build/
 *.tmpl
+*.spec
 docs/_build/
 dist/
 my.log
