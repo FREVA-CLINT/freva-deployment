@@ -17,11 +17,9 @@ jobs:
           - os: macos-latest
             TARGET: macos
             CMD_BUILD: >
-                pyinstaller pyinstaller/pyinstaller-script.py -c --name deploy-freva --onefile &&
-                cd dist &&
-                zip deploy-freva.zip deploy-freva
-            OUT_FILE_NAME: deploy-freva.zip
-            ASSET_MIME: application/zip
+                pyinstaller pyinstaller/pyinstaller-script.py -c --name deploy-freva --onefile
+            OUT_FILE_NAME: deploy-freva
+            ASSET_MIME: application/octet-stream
           - os: windows-latest
             TARGET: windows
             CMD_BUILD: pyinstaller pyinstaller/pyinstaller-script.py -c --name deploy-freva --onefile
@@ -39,3 +37,12 @@ jobs:
           python3 -m pip install pyinstaller ansible .
       - name: Build with pyinstaller for ${{matrix.TARGET}}
         run: ${{matrix.CMD_BUILD}}
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.ASSET_TOKEN }}
+        with:
+          upload_url: ${{ steps.get_release_info.outputs.upload_url }}
+          asset_path: ./dist/${{ matrix.OUT_FILE_NAME}}
+          asset_name: ${{ matrix.OUT_FILE_NAME}}
+          asset_content_type: ${{ matrix.ASSET_MIME}}
