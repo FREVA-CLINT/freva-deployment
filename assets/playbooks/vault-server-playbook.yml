@@ -32,13 +32,13 @@
         systemctl stop {{vault_name}};
         /usr/local/bin/docker-or-podman rm {{vault_name}};
         /usr/local/bin/docker-or-podman rmi -f {{vault_name}};
-        /usr/local/bin/docker-or-podman rmi -f vault;
+        /usr/local/bin/docker-or-podman rmi -f vhashicorp/vault vault;
         exit 0
       ignore_errors: true
       become: true
     - name: Pulling container
       become: true
-      shell: /usr/local/bin/docker-or-podman pull vault:latest
+      shell: /usr/local/bin/docker-or-podman pull hashicorp/vault:latest
     - name: Creating docker network
       shell: >
         /usr/local/bin/docker-or-podman network create "{{ project_name }}";
@@ -70,13 +70,10 @@
           --build-arg=project={{ project_name }}
           --build-arg=rootpw='{{ root_passwd }}' -t {{ vault_name }}:latest .
       become: true
-    - name: Starting vault container
-      shell: /usr/local/bin/docker-or-podman run -d {{docker_cmd}}
-      become: true
     - name: Creating system service
       become: true
       shell: >
-          /tmp/create_systemd.py {{vault_name}}
+          /tmp/create_systemd.py {{vault_name}} {{docker_cmd}}
       ignore_errors: true
     - pause: seconds=3
     - name: Inserting server infrastructure

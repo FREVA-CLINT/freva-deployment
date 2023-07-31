@@ -54,12 +54,10 @@
         owner: 9999
         group: 9999
       become: true
-    - name: Creating the freva-map docker container
-      become: true
-      shell: /usr/local/bin/docker-or-podman run -d {{docker_cmd }}
     - name: Starting freva-map service
       become: true
-      shell: "/tmp/create_systemd.py freva-map"
+      shell: |
+        /tmp/create_systemd.py freva-map {{docker_cmd}}
       when: systemctl.stat.exists == true
     - pause: seconds=3
     - name: Deleting other files

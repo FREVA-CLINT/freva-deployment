@@ -32,7 +32,7 @@
         -e MYSQL_ROOT_PASSWORD='{{ root_passwd }}'
         -v /root/freva-service-config/mysql/create_tables.sql:/docker-entrypoint-initdb.d/002_create_tables.sql:z
         -v /root/freva-service-config/mysql/daily_backup.sh:/usr/local/bin/daily_backup:z
-        -t mariadb:latest mysqld_safe --skip-grant-tables
+        -t mariadb:latest mariadbd-safe --skip-grant-tables
     - continer_name: "{{ db_name }}"
     - vault_name: "{{project_name}}-vault"
   tasks:
@@ -128,13 +128,10 @@
       shell: |
         /usr/local/bin/docker-or-podman stop {{db_name}}
         /usr/local/bin/docker-or-podman rm {{db_name}}
-    - name: Creating the mysql docker container
-      shell: /usr/local/bin/docker-or-podman run -d {{docker_cmd}}
-      become: true
     - name: Creating systemd service
       become: true
       shell: >
-        /tmp/create_systemd.py {{db_name}} --requires {{vault_name}} --enable
+        /tmp/create_systemd.py {{db_name}} "{{docker_cmd}}" --requires {{vault_name}} --enable
       when: systemctl.stat.exists == true
     - name: Creating cron jobs
       become: true

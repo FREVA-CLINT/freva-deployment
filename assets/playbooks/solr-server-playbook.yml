@@ -83,12 +83,9 @@
       shell: /usr/local/bin/docker-or-podman pull solr:latest
     - name: Copy cron create script to target machine
       copy: src="{{ asset_dir }}/scripts/create_cron.sh" dest=/tmp/solr_service/
-    - name: Creating the solr docker container
-      become: true
-      shell: /usr/local/bin/docker-or-podman run -d {{docker_cmd}}
     - name: Starting solr service
       become: true
-      shell: /tmp/create_systemd.py {{solr_name}} --enable
+      shell: /tmp/create_systemd.py {{solr_name}} --enable "{{docker_cmd}}"
       when: systemctl.stat.exists == true
     - pause: seconds=3
     - name: Creating cron jobs

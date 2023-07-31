@@ -136,21 +136,6 @@
         - "redis:latest"
         - "httpd:latest"
         - "ghcr.io/freva-clint/freva-web"
-    - name: Creating redis container
-      become: true
-      shell:
-        cmd: >
-          /usr/local/bin/docker-or-podman  run -d --name {{redis_name}}
-          -p 6379:6379 redis:latest
-    - name: Creating apache reverse proxy container
-      become: true
-      shell:
-        cmd: >
-          /usr/local/bin/docker-or-podman  run -d --name {{apache_name}}
-          {{docker_apache_cmd}}
-    - name: Getting freva_web image
-      become: true
-      shell: /usr/local/bin/docker-or-podman  run -d {{docker_web_cmd}}
     - name: Copying systemd files
       copy:
         src: "{{ asset_dir }}/scripts/create_systemd.py"
@@ -159,9 +144,9 @@
     - name: Creating system services
       become: true
       shell: |
-          /tmp/create_systemd.py {{redis_name}}
-          /tmp/create_systemd.py {{apache_name}}
-          /tmp/create_systemd.py {{web_name}} --requires {{redis_name}} {{apache_name}} --enable
+          /tmp/create_systemd.py {{redis_name}} --name {{redis_name}} -p 6379:6379 redis:latest
+          /tmp/create_systemd.py {{apache_name}} --name {{apache_name}} "{{docker_apache_cmd}}"
+          /tmp/create_systemd.py {{web_name}} --name {{web_name}} "{{docker_web_cmd}}" --requires {{redis_name}} {{apache_name}} --enable
       when: systemctl.stat.exists == true
     - pause: seconds=5
     - name: Adjusting uid of www-data in httpd container
