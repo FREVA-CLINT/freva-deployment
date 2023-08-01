@@ -80,7 +80,7 @@
         mode: "0755"
     - name: Pulling container
       become: true
-      shell: /usr/local/bin/docker-or-podman pull solr:latest
+      shell: /usr/local/bin/docker-or-podman pull docker.io/solr:latest
     - name: Copy cron create script to target machine
       copy: src="{{ asset_dir }}/scripts/create_cron.sh" dest=/tmp/solr_service/
     - name: Starting solr service

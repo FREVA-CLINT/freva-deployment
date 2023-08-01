@@ -1,4 +1,4 @@
-FROM hashicorp/vault:latest
+FROM docker.io/hashicorp/vault:latest
 
 LABEL maintainer="DRKZ-CLINT"
 LABEL repository="https://github.com/FREVA-CLINT/freva.git"

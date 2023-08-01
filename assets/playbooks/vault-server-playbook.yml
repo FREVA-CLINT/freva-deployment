@@ -32,13 +32,13 @@
         systemctl stop {{vault_name}};
         /usr/local/bin/docker-or-podman rm {{vault_name}};
         /usr/local/bin/docker-or-podman rmi -f {{vault_name}};
-        /usr/local/bin/docker-or-podman rmi -f vhashicorp/vault vault;
+        /usr/local/bin/docker-or-podman rmi -f docker.io/hashicorp/vault vault;
         exit 0
       ignore_errors: true
       become: true
     - name: Pulling container
       become: true
-      shell: /usr/local/bin/docker-or-podman pull hashicorp/vault:latest
+      shell: /usr/local/bin/docker-or-podman pull docker.io/hashicorp/vault:latest
     - name: Creating docker network
       shell: >
         /usr/local/bin/docker-or-podman network create "{{ project_name }}";

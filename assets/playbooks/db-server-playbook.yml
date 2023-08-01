@@ -67,7 +67,7 @@
       become: true
     - name: Pulling container
       become: true
-      shell: /usr/local/bin/docker-or-podman pull mariadb:latest
+      shell: /usr/local/bin/docker-or-podman pull docker.io/mariadb:latest
     - name: Creating docker network
       shell: >
         /usr/local/bin/docker-or-podman network create "{{ project_name }}";

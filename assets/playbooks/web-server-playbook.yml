@@ -99,9 +99,9 @@
         /usr/local/bin/docker-or-podman rm {{redis_name}};
         /usr/local/bin/docker-or-podman stop {{apache_name}};
         /usr/local/bin/docker-or-podman rm {{apache_name}};
-        /usr/local/bin/docker-or-podman rmi redis;
+        /usr/local/bin/docker-or-podman rmi -f docker.io/redis;
         /usr/local/bin/docker-or-podman rmi -f ghcr.io/freva-clint/freva-web;
-        /usr/local/bin/docker-or-podman rmi httpd; echo 0
+        /usr/local/bin/docker-or-podman rmi -f docker.io/httpd; echo 0
       ignore_errors: true
       become: true
     - name: Deleting existing web-directory
@@ -133,8 +133,8 @@
       shell:
         cmd: /usr/local/bin/docker-or-podman pull {{item}}
       with_items:
-        - "redis:latest"
-        - "httpd:latest"
+        - "docker.io/redis:latest"
+        - "docker.io/httpd:latest"
         - "ghcr.io/freva-clint/freva-web"
     - name: Copying systemd files
       copy:
