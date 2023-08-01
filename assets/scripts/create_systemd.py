@@ -14,7 +14,7 @@ SYSTEMD_TMPL = dict(
         TimeoutStartSec="35s",
         TimeoutStopSec="35s",
         ExecStartPre="{container_cmd} rm -f {unit}",
-        ExecStart="{container_cmd} run {container_args}",
+        ExecStart="{container_cmd} run --name {unit} {container_args}",
         Restart="no",
     ),
     Install=dict(WantedBy="default.target"),
@@ -58,9 +58,7 @@ def load_unit(unit: str, content: str, enable: bool = True) -> None:
     subprocess.run(["systemctl", "restart", unit], check=True)
 
 
-def create_unit(
-    args: str, unit: str, requires: List[str], enable: bool
-) -> None:
+def create_unit(args: str, unit: str, requires: List[str], enable: bool) -> None:
     """Create the systemd unit."""
     container_cmd = shutil.which("podman") or shutil.which("docker")
     if container_cmd is None:
@@ -70,7 +68,9 @@ def create_unit(
         SYSTEMD_TMPL["Unit"]["After"] += " docker.service"
     for key in ("ExecStart",):
         SYSTEMD_TMPL["Service"][key] = SYSTEMD_TMPL["Service"][key].format(
-            container_cmd=container_cmd, container_args=args
+            container_cmd=container_cmd,
+            container_args=args,
+            unit=unit,
         )
     SYSTEMD_TMPL["Service"]["ExecStartPre"] = SYSTEMD_TMPL["Service"][
         "ExecStartPre"

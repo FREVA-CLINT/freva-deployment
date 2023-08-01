@@ -106,16 +106,15 @@
         update: true
     - name: Preparing the root password reset I
       become: true
-      shell: /usr/local/bin/docker-or-podman run -d {{docker_cmd}}
+      shell: /usr/local/bin/docker-or-podman run -d --name {{db_name}} {{docker_cmd}}
     - pause: seconds=5
     - name: Preparing the root password reset II
       become: true
       shell: |
-        /usr/local/bin/docker-or-podman stop {{db_name}}
-        /usr/local/bin/docker-or-podman rm {{db_name}}
+        /usr/local/bin/docker-or-podman rm -f {{db_name}}
     - name: Preparing the root password reset III
       become: true
-      shell: /usr/local/bin/docker-or-podman run -d {{skip_tables_cmd}}
+      shell: /usr/local/bin/docker-or-podman run -d --name {{db_name}} {{skip_tables_cmd}}
     - pause: seconds=2
     - name: Preparing the root password reset IV
       become: true
@@ -126,8 +125,7 @@
     - name: Deleting temp. container
       become: true
       shell: |
-        /usr/local/bin/docker-or-podman stop {{db_name}}
-        /usr/local/bin/docker-or-podman rm {{db_name}}
+        /usr/local/bin/docker-or-podman rm -f {{db_name}}
     - name: Creating systemd service
       become: true
       shell: >
