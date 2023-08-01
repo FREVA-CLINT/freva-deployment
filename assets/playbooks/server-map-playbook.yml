@@ -2,7 +2,11 @@
 - hosts: freva_map
 
   vars:
-    - docker_cmd: "-v /opt/freva/server-map:/var/freva/:z --dns 8.8.8.8 --name freva-map -p {{ port }}:5008 -t freva-map:latest"
+    - docker_cmd: >
+        -v /opt/freva/server-map:/var/freva/:z
+        --dns 8.8.8.8
+        -p {{ port }}:5008
+        -t ghcr.io/freva-clint/freva-deployment/freva-map:latest
   tasks:
     - name: Copying docker/podman wrapper script
       copy:
@@ -22,7 +26,7 @@
       shell: >
         /usr/local/bin/docker-or-podman stop freva-map;
         /usr/local/bin/docker-or-podman rm freva-map;
-        /usr/local/bin/docker-or-podman rmi -f freva-map;
+        /usr/local/bin/docker-or-podman rmi -f ghcr.io/freva-clint/freva-deployment/freva-map:latest;
         /usr/local/bin/docker-or-podman rmi -f python;
         echo 0
       become: true
@@ -40,13 +44,6 @@
         mode: "0755"
     - name: Copying auxillary files to target machine
       copy: src="{{ asset_dir }}/servers" dest=/tmp
-    - name: Building docker images
-      shell:
-        chdir: /tmp/servers
-        cmd: >
-          /usr/local/bin/docker-or-podman build
-          -t freva-map:latest .
-      become: true
     - name: Creating directory structure
       file:
         path: /opt/freva/server-map

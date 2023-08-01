@@ -52,7 +52,6 @@
         -e LDAP_USER_DN={{web_ldap_user_dn}}
         -e LDAP_USER_PW={{web_ldap_user_pw}}
         -e DJANGO_SUPERUSER_PASSWORD={{ root_passwd }}
-        --name {{web_name}}
         -t ghcr.io/freva-clint/freva-web
     - docker_apache_cmd: >
         -v /opt/freva/{{project_name}}/web_service/freva_web.conf:/usr/local/apache2/conf/httpd.conf:z
@@ -144,9 +143,9 @@
     - name: Creating system services
       become: true
       shell: |
-          /tmp/create_systemd.py {{redis_name}} --name {{redis_name}} -p 6379:6379 redis:latest
-          /tmp/create_systemd.py {{apache_name}} --name {{apache_name}} "{{docker_apache_cmd}}"
-          /tmp/create_systemd.py {{web_name}} --name {{web_name}} "{{docker_web_cmd}}" --requires {{redis_name}} {{apache_name}} --enable
+          /tmp/create_systemd.py {{redis_name}} -p 6379:6379 redis:latest
+          /tmp/create_systemd.py {{apache_name}} "{{docker_apache_cmd}}"
+          /tmp/create_systemd.py {{web_name}} "{{docker_web_cmd}}" --requires {{redis_name}} {{apache_name}} --enable
       when: systemctl.stat.exists == true
     - pause: seconds=5
     - name: Adjusting uid of www-data in httpd container

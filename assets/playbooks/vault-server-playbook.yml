@@ -7,8 +7,10 @@
     - docker_cmd: >
         --net {{ project_name }} --cap-add=IPC_LOCK
         --dns 8.8.8.8
+        -e ROOT_PW='{{ root_passwd }}'
         -v /opt/freva/{{project_name}}/vault_service:/data:z
-        -p 5002:5002 --name={{ vault_name }} {{ vault_name }}:latest
+        -p 5002:5002
+        -t ghcr.io/freva-clint/freva-deployment/vault:latest
   tasks:
     - name: Copying docker/podman wrapper script
       copy:
@@ -32,13 +34,13 @@
         systemctl stop {{vault_name}};
         /usr/local/bin/docker-or-podman rm {{vault_name}};
         /usr/local/bin/docker-or-podman rmi -f {{vault_name}};
-        /usr/local/bin/docker-or-podman rmi -f docker.io/hashicorp/vault vault;
+        /usr/local/bin/docker-or-podman rmi -f ghcr.io/freva-clint/freva-deployment/vault;
         exit 0
       ignore_errors: true
       become: true
     - name: Pulling container
       become: true
-      shell: /usr/local/bin/docker-or-podman pull docker.io/hashicorp/vault:latest
+      shell: /usr/local/bin/docker-or-podman pull ghcr.io/freva-clint/freva-deployment/vault:latest
     - name: Creating docker network
       shell: >
         /usr/local/bin/docker-or-podman network create "{{ project_name }}";
@@ -61,14 +63,6 @@
       copy:
         src: "{{ vault_keyfile }}"
         dest: "/opt/freva/{{project_name}}/vault_service/freva.crt"
-      become: true
-    - name: Building vault images
-      shell:
-        chdir: /tmp/vault
-        cmd: >
-          /usr/local/bin/docker-or-podman build
-          --build-arg=project={{ project_name }}
-          --build-arg=rootpw='{{ root_passwd }}' -t {{ vault_name }}:latest .
       become: true
     - name: Creating system service
       become: true

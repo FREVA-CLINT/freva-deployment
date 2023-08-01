@@ -45,7 +45,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       -
-        name: Build and push
+        name: Build and push vault image
         uses: docker/build-push-action@v4
         with:
           context: assets/vault/
@@ -53,3 +53,13 @@ jobs:
           push: true
           tags: |
             ghcr.io/${{ steps.repository.outputs.repo }}/vault:latest
+
+      -
+        name: Build and push server map image
+        uses: docker/build-push-action@v4
+        with:
+          context: assets/servers/
+          platforms: linux/amd64
+          push: true
+          tags: |
+            ghcr.io/${{ steps.repository.outputs.repo }}/freva-map:latest
