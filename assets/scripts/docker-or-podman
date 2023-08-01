@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import abc
 import argparse
 from datetime import datetime
 from pathlib import Path
@@ -7,7 +8,8 @@ import pwd
 import subprocess
 import shutil
 import sys
-from typing import Dict, List, Optional
+from typing import Any, ClassVar, Dict, List, Optional, Union
+from urllib import parse
 
 
 def get_ids(username: Optional[str]) -> Dict[str, int]:
@@ -19,38 +21,386 @@ def get_ids(username: Optional[str]) -> Dict[str, int]:
     return dict(uid=user.pw_uid, gid=user.pw_gid)
 
 
-def parse_args(cont_cmd: str) -> List[str]:
+class CommandFactory(metaclass=abc.ABCMeta):
+    """A simple command wrapper for running container commands."""
+
+    command: ClassVar[str] = ""
+
+    @staticmethod
+    def get_container_cmd() -> str:
+        """Get the command of the container."""
+        for cmd in ("docker", "podman", "apptainer"):
+            cont_cmd = shutil.which(cmd)
+            if cont_cmd:
+                return cont_cmd
+        raise ValueError("Docker, Podman or Apptainer must be installed")
+
+    def __init__(self, images: List[str]):
+
+        self._images = [parse.urlparse(i) for i in images]
+
+    def network(self, sub_command: str, *flags: str) -> List[str]:
+        """Interact with the network sub commands."""
+        return [self.get_container_cmd(), sub_command] + list(flags)
+
+    def pull(self, **kwargs: Any) -> List[str]:
+        """Pull a container."""
+
+        cli_command = [self.get_container_cmd(), "pull"]
+        for key, values in kwargs.items():
+            if isinstance(values, bool):
+                if values is True:
+                    cli_command.append("--{}".format(key))
+            elif isinstance(values, (str, int, float)):
+                cli_command.append("--{}".format(key))
+                cli_command.append(str(values))
+            elif isinstance(values, list):
+                for value in values:
+                    cli_command.append("--{}".format(key))
+                    cli_command.append(str(value))
+        return cli_command + self.images
+
+    def rm(self, sub_command: str, **kwargs: Any) -> List[str]:
+        """Remove images/containers."""
+
+        cli_command = [self.get_container_cmd(), sub_command, "-f"]
+        return cli_command + self.images
+
+    def run(
+        self,
+        sub_command: str,
+        *command: str,
+        **options: Optional[Union[str, int, float, List[str], bool]],
+    ) -> List[str]:
+        """Construct the container run command."""
+        cli_command = [self.get_container_cmd(), sub_command]
+        if self.command == "podman" and sub_command == "run":
+            cli_command += [
+                "--net",
+                "slirp4netns:allow_host_loopback=true,enable_ipv6=true",
+            ]
+        for key, values in self._translate(options).items():
+            if isinstance(values, bool):
+                if values is True:
+                    cli_command.append("--{}".format(key))
+            elif isinstance(values, (str, int, float)):
+                cli_command.append("--{}".format(key))
+                cli_command.append(str(values))
+            elif isinstance(values, list):
+                for value in values:
+                    cli_command.append("--{}".format(key))
+                    cli_command.append(str(value))
+        return cli_command + self.images + list(command)
+
+    def _translate(self, options: Dict[str, Any]) -> Dict[str, str]:
+        """Translate options into the right commands."""
+        return options
+
+    @property
+    def images(self) -> List[str]:
+        """Get the location of the image."""
+        return [image.path for image in self._images]
+
+
+class Docker(CommandFactory):
+    command = "docker"
+
+
+class Podman(CommandFactory):
+    command = "podman"
+
+
+class Apptainer(CommandFactory):
+    command = "apptainer"
+
+    @property
+    def images(self) -> List[str]:
+        return ["docker://{}".format(image.path) for image in self._images]
+
+    def network(self, sub_command: str, *flags: str) -> List[str]:
+        """Interact with the network sub commands."""
+        return []
+
+    def pull(self, **kwargs: Any) -> List[str]:
+        """Pull a container."""
+
+        cli_command = [self.get_container_cmd(), "pull", "-F"]
+        return cli_command + self.images
+
+    def rm(self, sub_command: str, **kwargs: Any) -> List[str]:
+        """Remove images/containers."""
+        if sub_command == "rmi":
+            new_command = ["delete"]
+        else:
+            new_command = ["oci", "delete"]
+        cli_command = [self.get_container_cmd()] + new_command
+        return cli_command + self.images
+
+    def _translate(self, options: Dict[str, Any]) -> Dict[str, Any]:
+        """Translate the docker commands to an apptainer command."""
+        output = {
+            "env": options.get("env") or [],
+            "mount": [],
+            "dns": None,
+            "network-args": [],
+        }
+        for volume in options.get("volume", []) or []:
+            mounts = volume.split(":", 2)
+            output["mount"].append(
+                "type=bind,source={},destination={}".format(
+                    mounts[0], mounts[1]
+                )
+            )
+        for port in options.get("publish", []) or []:
+            in_port, _, out_port = port.partition(":")
+            output["network-args"].append(
+                "portmap={}:{}/tcp".format(in_port, out_port)
+            )
+        output = {k: v for (k, v) in output.items() if v}
+        if "net" in options:
+            output["network"] = "bridge"
+        if "network" in options or "network-args" in options:
+            output["net"] = True
+        return output
+
+
+def add_standard_args() -> argparse.ArgumentParser:
+    """Add common arguments to a parser."""
+    parser = argparse.ArgumentParser(add_help=False)
+    parser.add_argument(
+        "container",
+        nargs=1,
+        type=str,
+        metavar="CONTAINER",
+        help="Name of the container",
+    )
+    parser.add_argument(
+        "command",
+        nargs=argparse.REMAINDER,
+        type=str,
+        metavar="COMMAND",
+        help="Command",
+    )
+    parser.add_argument(
+        "-i",
+        "--interactive",
+        action="store_true",
+        help="Keep STDIN open even if not attached",
+    )
+    parser.add_argument(
+        "-t", "--tty", action="store_true", help="Allocate a pseudo-TTY"
+    )
+    parser.add_argument(
+        "-e",
+        "--env",
+        type=str,
+        action="append",
+        help="Set environment variables",
+    )
+    parser.add_argument(
+        "-d",
+        "--detach",
+        action="store_true",
+        help="Detached mode: run command in the background",
+    )
+    parser.add_argument(
+        "-u",
+        "--user",
+        type=str,
+        help='Username or UID (format: "<name|uid>[:<group|gid>]"',
+    )
+    parser.add_argument(
+        "-w",
+        "--workdir",
+        type=str,
+        help="Working directory inside the container",
+    )
+    parser.add_argument(
+        "--privileged",
+        action="store_true",
+        help="Give extended privileges to the command",
+    )
+    return parser
+
+
+def parse_args() -> List[str]:
     """Parse the commandline arguments."""
 
-    app = argparse.ArgumentParser(prog=sys.argv[0], description="Docker/Podman wrapper")
-    app.add_argument("command", type=str, help="The sub command that should be run")
-    app.add_argument(
-        "--username",
+    parser = argparse.ArgumentParser(
+        prog=sys.argv[0], description="Container wrapper programm"
+    )
+    subparsers = parser.add_subparsers(title="Subcommands", dest="subcommand")
+    parent = add_standard_args()
+    _ = subparsers.add_parser(
+        "exec",
+        help="Execute a command in a running container",
+        parents=[parent],
+    )
+    parser_pull = subparsers.add_parser(
+        "pull", help="Download an image from a registry"
+    )
+    parser_pull.add_argument(
+        "container",
+        nargs=1,
         type=str,
-        help="Name of the systemd unit that is created.",
+        metavar="CONTAINER",
+        help="Name of the images(s)",
+    )
+    parser_pull.add_argument(
+        "--platform",
+        help="Set platform if server is multi-platform capable",
+        type=str,
+    )
+    parser_pull.add_argument(
+        "-a",
+        "--all-tags",
+        help=" Download all tagged images in the repository",
+        action="store_true",
+    )
+    parser_pull.add_argument(
+        "--disable-content-trust",
+        help="Skip image verification (default true)",
+        action="store_true",
+    )
+    parser_pull.add_argument(
+        "-q",
+        "--quiet",
+        help="Suppress verbose output",
+        action="store_true",
+    )
+    parser_run = subparsers.add_parser(
+        "run",
+        help="Create and run a new container from an image",
+        parents=[parent],
+    )
+    parser_rm = subparsers.add_parser(
+        "rm", help="Remove one or more containers"
+    )
+    parser_network = subparsers.add_parser(
+        "network", help="Manage networks", add_help=False
+    )
+    parser_network.add_argument(
+        "command",
+        help="Subcommands",
+        choices=[
+            "connect",
+            "create",
+            "disconnect",
+            "inspect",
+            "ls",
+            "prune",
+            "rm",
+        ],
+    )
+    parser_network.add_argument(
+        "--container", default=[], type=str, action="append"
+    )
+    parser_network.add_argument(
+        "flags",
+        nargs=argparse.REMAINDER,
+        type=str,
+        metavar="flags",
+    )
+    parser_rmi = subparsers.add_parser("rmi", help="Remove one or more images")
+    parser_rmi.add_argument(
+        "-f",
+        "--force",
+        help="Force the removal of a running container (uses SIGKILL)",
+        action="store_true",
+    )
+    parser_rmi.add_argument(
+        "container",
+        nargs="+",
+        type=str,
+        metavar="CONTAINER",
+        help="Name of the images(s)",
+    )
+    parser_rm.add_argument(
+        "container",
+        nargs="+",
+        type=str,
+        metavar="CONTAINER",
+        help="Name of the container(s)",
+    )
+
+    parser_rm.add_argument(
+        "-f",
+        "--force",
+        help="Force the removal of a running container (uses SIGKILL)",
+        action="store_true",
+    )
+    parser_run.add_argument(
+        "-a",
+        "--attach",
+        help="Attach to STDIN, STDOUT or STDERR",
+        choices=["STDIN", "STDOUT", "STDERR"],
         default=None,
     )
-    args, container_args = app.parse_known_args()
-    ipv6_enable = ["--net", "slirp4netns:allow_host_loopback=true,enable_ipv6=true"]
-    arguments = [args.command]
-    for key, value in get_ids(args.username).items():
-        if args.command == "build" and value:
-            arguments.append(f"--build-arg={key.upper()}={value}")
-        elif args.command == "run" and value:
-            arguments.append("-e")
-            arguments.append(f"{key.upper()}={value}")
-        if args.command == "run" and cont_cmd == "podman":
-            arguments += ipv6_enable
-    return arguments + container_args
+    parser_run.add_argument(
+        "--rm",
+        help="Remove container on exit",
+        action="store_true",
+    )
+    parser_run.add_argument("--hostname", help="Container host name")
+    parser_run.add_argument("--name", help="Assign a name to the container")
+    parser_run.add_argument(
+        "--network", help="Connect a container to a network"
+    )
+    parser_run.add_argument(
+        "-v", "--volume", help="Bind mount a volume", action="append"
+    )
+    parser_run.add_argument(
+        "-p",
+        "--publish",
+        help="Publish a container's port(s) to the host",
+        action="append",
+    )
+    parser_run.add_argument(
+        "-P", "--publish-all", help="Publish all exposed ports to random ports"
+    )
+    parser_run.add_argument(
+        "--pull",
+        type=str,
+        choices=["always", "missing", "never"],
+        default="missing",
+    )
+    parser_run.add_argument(
+        "--security-opt",
+        type=str,
+        help="Storage driver options for the container",
+        action="append",
+    )
+    parser_run.add_argument(
+        "--dns",
+        type=str,
+        help="Set custom DNS servers",
+        action="append",
+    )
 
-
-def get_container_cmd() -> List[str]:
-    """Get the command of the container."""
-    for cmd in ("podman", "docker"):
-        cont_cmd = shutil.which(cmd)
-        if cont_cmd:
-            return [cont_cmd]
-    raise ValueError("Docker or Podman must be installed on the system")
+    args = parser.parse_args()
+    container_cmd = Docker.get_container_cmd()
+    if "podman" in container_cmd:
+        container_cls = Podman(args.container)
+    elif "apptainer" in container_cmd:
+        container_cls = Apptainer(args.container)
+    else:
+        container_cls = Docker(args.container)
+    kwargs = {
+        k: v
+        for (k, v) in args._get_kwargs()
+        if k not in ("subcommand", "container", "command")
+    }
+    if args.subcommand in ("run", "exec"):
+        return container_cls.run(args.subcommand, *args.command, **kwargs)
+    elif args.subcommand in ("rm", "rmi"):
+        return container_cls.rm(args.subcommand, **kwargs)
+    elif args.subcommand in ("pull",):
+        return container_cls.pull(**kwargs)
+    elif args.subcommand in ("network",):
+        return container_cls.network(
+            args.subcommand, args.command, *args.flags
+        )
+    return []
 
 
 def get_container_name(argv: List[str], cmd: str) -> Optional[str]:
@@ -93,10 +443,12 @@ def write_command_to_disk(
 
 if __name__ == "__main__":
 
-    container_cmd = get_container_cmd()
-    command = container_cmd + parse_args(container_cmd[0])
+    command = parse_args()
     write_command_to_disk(command)
-    try:
-        subprocess.run(command, check=True)
-    except subprocess.CalledProcessError:
-        sys.exit(1)
+    print(" ".join(command))
+    sys.exit(0)
+    if command:
+        try:
+            subprocess.run(command, check=True)
+        except subprocess.CalledProcessError:
+            sys.exit(1)
