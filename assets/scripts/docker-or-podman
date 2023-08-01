@@ -14,13 +14,11 @@ from typing import (
     ClassVar,
     Dict,
     List,
-    Literal,
     Optional,
     Tuple,
     Union,
     cast,
 )
-from urllib import parse
 
 FlagType = Union[str, List[str], bool, None]
 """Type for additional command line arguments."""
@@ -46,7 +44,6 @@ class CommandFactory(metaclass=abc.ABCMeta):
     @staticmethod
     def get_container_cmd() -> str:
         """Get the command of the container."""
-        return "/bin/podman"
         for cmd in ("docker", "podman", "apptainer"):
             cont_cmd = shutil.which(cmd)
             if cont_cmd:
@@ -96,9 +93,7 @@ class CommandFactory(metaclass=abc.ABCMeta):
                     cli_command.append(str(value))
         return cli_command + self.images
 
-    def rm(
-        self, sub_command: Literal["rmi", "rm"], **kwargs: FlagType
-    ) -> List[str]:
+    def rm(self, sub_command: str, **kwargs: FlagType) -> List[str]:
         """Remove images/containers.
 
         Parameters
@@ -118,7 +113,7 @@ class CommandFactory(metaclass=abc.ABCMeta):
 
     def run(
         self,
-        sub_command: Literal["run", "exec"],
+        sub_command: str,
         *command: str,
         **options: FlagType,
     ) -> List[str]:
