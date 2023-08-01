@@ -4,10 +4,10 @@ run-name: ${{ github.actor }} is building the container
 "on":
   workflow_dispatch:
   push:
-    tags:
-      - '*'
+    #tags:
+    #  - '*'
     branches:
-      - 'main'
+      - 'updates'
 
 jobs:
   build-and-push-vault-image:
@@ -26,7 +26,6 @@ jobs:
         name: Get tag
         id: repository
         run: |
-          echo "tag=$(echo ${GITHUB_REF##*/})" >> $GITHUB_OUTPUT
           echo "repo=$(echo ${{ github.repository }}|tr 'A-Z' 'a-z')" >> $GITHUB_OUTPUT
 
       -
@@ -53,5 +52,4 @@ jobs:
           platforms: linux/amd64
           push: true
           tags: |
-            ghcr.io/${{ steps.repository.outputs.repo }}/vault:${{ steps.repository.outputs.tag }}
             ghcr.io/${{ steps.repository.outputs.repo }}/vault:latest
