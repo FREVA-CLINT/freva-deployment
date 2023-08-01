@@ -32,7 +32,6 @@ def read_key():
 
 
 def unseal():
-
     env = os.environ.copy()
     env["VAULT_ADDR"] = "http://127.0.0.1:8200"
     env["VAULT_SKIP_VERIFY"] = "true"
@@ -42,7 +41,6 @@ def unseal():
 
 
 def deploy_vault():
-
     cmd = shlex.split("vault operator init")
     env = os.environ.copy()
     env["VAULT_ADDR"] = "http://127.0.0.1:8200"
