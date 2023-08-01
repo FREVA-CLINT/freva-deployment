@@ -32,6 +32,7 @@
         -e MYSQL_ROOT_PASSWORD='{{ root_passwd }}'
         -v /root/freva-service-config/mysql/create_tables.sql:/docker-entrypoint-initdb.d/002_create_tables.sql:z
         -v /root/freva-service-config/mysql/daily_backup.sh:/usr/local/bin/daily_backup:z
+        -v /tmp/reset_root_pw.sh:/tmp/reset_root_pw.sh:ro
         -t mariadb:latest mariadbd-safe --skip-grant-tables
     - continer_name: "{{ db_name }}"
     - vault_name: "{{project_name}}-vault"
@@ -116,9 +117,6 @@
       become: true
       shell: /usr/local/bin/docker-or-podman run -d --name {{db_name}} {{skip_tables_cmd}}
     - pause: seconds=2
-    - name: Preparing the root password reset IV
-      become: true
-      shell:  /usr/local/bin/docker-or-podman cp /tmp/reset_root_pw.sh {{db_name}}:/tmp
     - name: Resetting the root password
       become: true
       shell: /usr/local/bin/docker-or-podman exec -it {{db_name}} bash /tmp/reset_root_pw.sh
