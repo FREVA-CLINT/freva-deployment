@@ -41,11 +41,12 @@ class CommandFactory(metaclass=abc.ABCMeta):
     """Command of the container system."""
 
     def __init__(self, images: List[str]):
-        self._images = [parse.urlparse(i) for i in images]
+        self._images = images
 
     @staticmethod
     def get_container_cmd() -> str:
         """Get the command of the container."""
+        return "/bin/podman"
         for cmd in ("docker", "podman", "apptainer"):
             cont_cmd = shutil.which(cmd)
             if cont_cmd:
@@ -140,11 +141,6 @@ class CommandFactory(metaclass=abc.ABCMeta):
         """
 
         cli_command = [self.get_container_cmd(), sub_command]
-        if self.command == "podman" and sub_command == "run":
-            cli_command += [
-                "--net",
-                "slirp4netns:allow_host_loopback=true,enable_ipv6=true",
-            ]
         for key, values in self._translate(options).items():
             if isinstance(values, bool):
                 if values is True:
@@ -164,7 +160,7 @@ class CommandFactory(metaclass=abc.ABCMeta):
     @property
     def images(self) -> List[str]:
         """Get the location of the image."""
-        return [image.path for image in self._images]
+        return self._images
 
 
 class Docker(CommandFactory):
@@ -187,7 +183,7 @@ class Apptainer(CommandFactory):
     @property
     def images(self) -> List[str]:
         """Get the location of the image."""
-        return ["docker://{}".format(image.path) for image in self._images]
+        return ["docker://{}".format(image) for image in self._images]
 
     def network(self, sub_command: str, *flags: str) -> List[str]:
         """The network sub command doesn't seem to work in apptainer."""

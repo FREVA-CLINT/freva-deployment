@@ -17,7 +17,7 @@
         -e MYSQL_ROOT_PASSWORD='{{ root_passwd }}'
         -v /root/freva-service-config/mysql/create_tables.sql:/docker-entrypoint-initdb.d/002_create_tables.sql:z
         -v /root/freva-service-config/mysql/daily_backup.sh:/usr/local/bin/daily_backup:z
-        -t mariadb:latest
+        -t docker.io/mariadb:latest
     - skip_tables_cmd: >
         --net {{ project_name }} -v
         /opt/freva/{{project_name}}/db_service:/var/lib/mysql:z
@@ -32,8 +32,8 @@
         -e MYSQL_ROOT_PASSWORD='{{ root_passwd }}'
         -v /root/freva-service-config/mysql/create_tables.sql:/docker-entrypoint-initdb.d/002_create_tables.sql:z
         -v /root/freva-service-config/mysql/daily_backup.sh:/usr/local/bin/daily_backup:z
-        -v /tmp/reset_root_pw.sh:/tmp/reset_root_pw.sh:ro
-        -t mariadb:latest mariadbd-safe --skip-grant-tables
+        -v /tmp/reset_root_pw.sh:/tmp/reset_root_pw.sh:z
+        -t docker.io/mariadb:latest mariadbd-safe --skip-grant-tables
     - continer_name: "{{ db_name }}"
     - vault_name: "{{project_name}}-vault"
   tasks:
