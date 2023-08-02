@@ -13,7 +13,6 @@
         src: "{{ asset_dir }}/scripts/docker-or-podman"
         dest: /usr/local/bin/docker-or-podman
         mode: "0775"
-      become: true
     - name: Registering systemctl path
       stat:
         path: /usr/bin/systemctl
@@ -29,13 +28,11 @@
         /usr/local/bin/docker-or-podman rmi -f ghcr.io/freva-clint/freva-deployment/freva-map:latest;
         /usr/local/bin/docker-or-podman rmi -f python;
         echo 0
-      become: true
       when: wipe == true
     - name: Cleaning existing directory structure
       file:
         path: /opt/freva/server-map
         state: absent
-      become: true
       when: wipe == true
     - name: Copy systemd files
       copy:
@@ -50,9 +47,7 @@
         state: directory
         owner: 9999
         group: 9999
-      become: true
     - name: Starting freva-map service
-      become: true
       shell: |
         /tmp/create_systemd.py freva-map {{docker_cmd}}
       when: systemctl.stat.exists == true

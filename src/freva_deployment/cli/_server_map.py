@@ -48,6 +48,15 @@ def parse_args(args: list[str]) -> argparse.Namespace:
         help="Username to log on to the target server.",
     )
     app.add_argument(
+        "--become-user",
+        default="root",
+        type=str,
+        help=(
+            "User that (sudo user) that will be executing the installation"
+            "on the remote server."
+        ),
+    )
+    app.add_argument(
         "--python-path",
         default="/usr/bin/python",
         type=Path,
@@ -108,9 +117,12 @@ def cli(argv: list[str] | None = None) -> None:
         with open(inventory_file.name, "w") as f_obj:
             f_obj.write(inventory)
         cmd = shlex.split(
-            f"ansible-playbook {verbosity} -u {user} --ask-pass --ask-become -i "
-            f"{inventory_file.name} {playbook}"
+            f"ansible-playbook {verbosity} -u {user} --ask-pass -i "
+            f"{inventory_file.name}"
         )
+        if argp.become_user:
+            cmd += ["--ask-become", "-b", "--become-user", argp.become_user]
+        cmd += [str(playbook)]
         run(cmd, check=True)
         cache_dir = Path(appdirs.user_cache_dir()) / "freva-deployment"
         host_name = f"{argp.servername}:{argp.port}"
