@@ -44,7 +44,7 @@ class CommandFactory(metaclass=abc.ABCMeta):
     @staticmethod
     def get_container_cmd() -> str:
         """Get the command of the container."""
-        for cmd in ("docker", "podman", "apptainer"):
+        for cmd in ("apptainer", "podman", "docker"):
             cont_cmd = shutil.which(cmd)
             if cont_cmd:
                 return cont_cmd
@@ -218,6 +218,7 @@ class Apptainer(CommandFactory):
             new_command = ["delete"]
         else:
             # this is not ideal since 'oci' is for root only.
+            return []
             new_command = ["oci", "delete"]
         cli_command = [self.get_container_cmd()] + new_command
         return cli_command + self.images
@@ -245,8 +246,10 @@ class Apptainer(CommandFactory):
         output = {k: v for (k, v) in output.items() if v}
         if "net" in options:
             output["network"] = "bridge"
+            output["fakeroot"] = True
         if "network" in options or "network-args" in options:
             output["net"] = True
+            output["fakeroot"] = True
         return output
 
 
@@ -314,6 +317,12 @@ def parse_args() -> List[str]:
 
     parser = argparse.ArgumentParser(
         prog=sys.argv[0], description="Container wrapper programm"
+    )
+    parser.add_argument(
+        "-p",
+        "--print-only",
+        help="Only print the command",
+        action="store_true",
     )
     subparsers = parser.add_subparsers(title="Subcommands", dest="subcommand")
     parent = add_standard_args()
@@ -415,6 +424,12 @@ def parse_args() -> List[str]:
         help="Set custom DNS servers",
         action="append",
     )
+    parser_run.add_argument(
+        "--cap-add",
+        type=str,
+        help="Linux capabilities",
+        action="append",
+    )
 
     # -------------------------- rm commands ----------------------------------
 
@@ -492,21 +507,26 @@ def parse_args() -> List[str]:
     }
     container_inst = container_cls[container_cmd](args.container)
     kwargs = {
-        k: v
+        k.replace("_", "-"): v
         for (k, v) in args._get_kwargs()
-        if k not in ("subcommand", "container", "command")
+        if k not in ("subcommand", "container", "command", "print_only")
     }
     if args.subcommand in ("run", "exec"):
-        return container_inst.run(args.subcommand, *args.command, **kwargs)
-    if args.subcommand in ("rm", "rmi"):
-        return container_inst.rm(args.subcommand, **kwargs)
-    if args.subcommand in ("pull",):
-        return container_inst.pull(**kwargs)
-    if args.subcommand in ("network",):
-        return container_inst.network(
+        cmd = container_inst.run(args.subcommand, *args.command, **kwargs)
+    elif args.subcommand in ("rm", "rmi"):
+        cmd = container_inst.rm(args.subcommand, **kwargs)
+    elif args.subcommand in ("pull",):
+        cmd = container_inst.pull(**kwargs)
+    elif args.subcommand in ("network",):
+        cmd = container_inst.network(
             args.subcommand, args.command, *args.flags
         )
-    return []
+    else:
+        cmd = []
+    if args.print_only:
+        print(" ".join(cmd))
+        return []
+    return cmd
 
 
 def get_container_name(argv: List[str], cmd: str) -> Optional[str]:
@@ -550,8 +570,8 @@ def write_command_to_disk(
 if __name__ == "__main__":
 
     command_line = parse_args()
-    write_command_to_disk(command_line)
     if command_line:
+        write_command_to_disk(command_line)
         try:
             subprocess.run(command_line, check=True)
         except subprocess.CalledProcessError:

@@ -6,12 +6,13 @@
         -v /opt/freva/server-map:/var/freva/:z
         --dns 8.8.8.8
         -p {{ port }}:5008
+        --name freva-map
         -t ghcr.io/freva-clint/freva-deployment/freva-map:latest
   tasks:
     - name: Copying docker/podman wrapper script
       copy:
         src: "{{ asset_dir }}/scripts/docker-or-podman"
-        dest: /usr/local/bin/docker-or-podman
+        dest: /tmp/docker-or-podman
         mode: "0775"
     - name: Registering systemctl path
       stat:
@@ -23,10 +24,10 @@
     - pause: seconds=2
     - name: Deleting existing contianer
       shell: >
-        /usr/local/bin/docker-or-podman stop freva-map;
-        /usr/local/bin/docker-or-podman rm freva-map;
-        /usr/local/bin/docker-or-podman rmi -f ghcr.io/freva-clint/freva-deployment/freva-map:latest;
-        /usr/local/bin/docker-or-podman rmi -f python;
+        /tmp/docker-or-podman stop freva-map;
+        /tmp/docker-or-podman rm freva-map;
+        /tmp/docker-or-podman rmi -f ghcr.io/freva-clint/freva-deployment/freva-map:latest;
+        /tmp/docker-or-podman rmi -f python;
         echo 0
       when: wipe == true
     - name: Cleaning existing directory structure
@@ -59,3 +60,4 @@
       with_items:
         - "/tmp/create_systemd.py"
         - "/tmp/servers"
+        - "/tmp/docker-or-podman"

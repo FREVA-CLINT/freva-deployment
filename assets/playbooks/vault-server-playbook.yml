@@ -8,16 +8,17 @@
         --net {{ project_name }} --cap-add=IPC_LOCK
         --dns 8.8.8.8
         -e ROOT_PW='{{ root_passwd }}'
+        --name {{vault_name}}
         -v /opt/freva/{{project_name}}/vault_service:/data:z
         -p 5002:5002
         -t ghcr.io/freva-clint/freva-deployment/vault:latest
+    - use_become: "{{ vault_ansible_become_user is defined and vault_ansible_become_user != '' }}"
   tasks:
     - name: Copying docker/podman wrapper script
       copy:
         src: "{{ asset_dir }}/scripts/docker-or-podman"
-        dest: /usr/local/bin/docker-or-podman
+        dest: /tmp/docker-or-podman
         mode: "0775"
-      become: true
     - name: Registering systemctl path
       stat:
         path: /usr/bin/systemctl
@@ -32,21 +33,21 @@
     - name: Stopping services and deleting existing containers
       shell: >
         systemctl stop {{vault_name}};
-        /usr/local/bin/docker-or-podman rm {{vault_name}};
-        /usr/local/bin/docker-or-podman rmi -f {{vault_name}};
-        /usr/local/bin/docker-or-podman rmi -f ghcr.io/freva-clint/freva-deployment/vault;
+        /tmp/docker-or-podman rm {{vault_name}};
+        /tmp/docker-or-podman rmi -f {{vault_name}};
+        /tmp/docker-or-podman rmi -f ghcr.io/freva-clint/freva-deployment/vault;
         exit 0
       ignore_errors: true
-      become: true
+      become: "{{use_become}}"
     - name: Pulling container
-      become: true
-      shell: /usr/local/bin/docker-or-podman pull ghcr.io/freva-clint/freva-deployment/vault:latest
+      become: "{{use_become}}"
+      shell: /tmp/docker-or-podman pull ghcr.io/freva-clint/freva-deployment/vault:latest
     - name: Creating docker network
       shell: >
-        /usr/local/bin/docker-or-podman network create "{{ project_name }}";
+        /tmp/docker-or-podman network create "{{ project_name }}";
         exit 0
       ignore_errors: true
-      become: true
+      become: "{{use_become}}"
     - name: Copying auxillary files to target machine
       copy: src="{{ asset_dir }}/vault" dest=/tmp
     - name: Copying systemd files
@@ -58,29 +59,29 @@
       file:
         state: directory
         path: /opt/freva/{{ project_name }}/vault_service
-      become: true
+      become: "{{use_become}}"
     - name: Copying public key file to target machine
       copy:
         src: "{{ vault_keyfile }}"
         dest: "/opt/freva/{{project_name}}/vault_service/freva.crt"
-      become: true
+      become: "{{use_become}}"
     - name: Creating system service
-      become: true
+      become: "{{use_become}}"
       shell: >
-          /tmp/create_systemd.py {{vault_name}} {{docker_cmd}}
+          /tmp/create_systemd.py {{vault_name}} run {{docker_cmd}}
       ignore_errors: true
     - pause: seconds=3
     - name: Inserting server infrastructure
-      become: true
+      become: "{{use_become}}"
       shell: >
-        /usr/local/bin/docker-or-podman exec -it {{ vault_name }}
+        /tmp/docker-or-podman exec -it {{ vault_name }}
         vault kv put kv/read-eval db.container={{ vault_name }}
         db.host={{ vault_host }}
         db.port={{ db_port }}
         db.passwd='{{ vault_passwd }}'
         db.user={{ db_user }}
         db.db={{ db_db }}
-      become: true
+      become: "{{use_become}}"
     - name: Deleting auxillary files
       file:
         state: absent
@@ -88,3 +89,4 @@
       with_items:
         - "/tmp/vault"
         - "/tmp/create_systemd.py"
+        - "/tmp/docker-or-podman"
