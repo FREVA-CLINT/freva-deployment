@@ -9,6 +9,11 @@
         src: "{{ asset_dir }}/scripts/docker-or-podman"
         dest: /tmp/docker-or-podman
         mode: "0775"
+    - name: Deleting existing email secrets
+      become: "{{use_become}}"
+      shell: >
+        /tmp/docker-or-podman exec -it {{ vault_name }}
+        vault kv delete kv/email
     - name: Inserting email secrets
       become: "{{use_become}}"
       shell: >

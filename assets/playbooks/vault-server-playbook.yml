@@ -75,6 +75,11 @@
           /tmp/create_systemd.py {{vault_name}} run {{docker_cmd}}
       ignore_errors: true
     - pause: seconds=3
+    - name: Deleting existing infrastructure
+      become: "{{use_become}}"
+      shell: >
+        /tmp/docker-or-podman exec -it {{ vault_name }}
+        vault kv delete kv/read-eval
     - name: Inserting server infrastructure
       become: "{{use_become}}"
       shell: >
