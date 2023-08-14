@@ -5,7 +5,7 @@ run-name: ${{ github.actor }} is building the container
   workflow_dispatch:
   push:
     branches:
-      - main
+      - updates
 
 jobs:
   build-and-push-vault-image:

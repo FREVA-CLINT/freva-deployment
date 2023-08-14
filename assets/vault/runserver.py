@@ -15,7 +15,7 @@ import requests
 
 app = Flask(__name__)
 api = Api(app)
-KEY_FILE = Path("/vault/keys")
+KEY_FILE = Path("/vault/file/keys")
 CERT_DIR = Path("/data")
 
 
@@ -35,21 +35,9 @@ def unseal():
     env = os.environ.copy()
     env["VAULT_ADDR"] = "http://127.0.0.1:8200"
     env["VAULT_SKIP_VERIFY"] = "true"
-    unseal_keys, _ = read_key()
+    unseal_keys, token = read_key()
     for key in unseal_keys[:3]:
         run(shlex.split(f"vault operator unseal {key}"), env=env)
-
-
-def deploy_vault():
-    cmd = shlex.split("vault operator init")
-    env = os.environ.copy()
-    env["VAULT_ADDR"] = "http://127.0.0.1:8200"
-    env["VAULT_SKIP_VERIFY"] = "true"
-    res = run(cmd, stdout=PIPE, stderr=PIPE, env=env)
-    with KEY_FILE.open("w") as f:
-        f.write(res.stdout.decode())
-    unseal_keys, token = read_key()
-    unseal()
     if token:
         run(shlex.split(f"vault login {token}"), env=env)
         run(shlex.split(f"vault secrets enable -version=2 -path=kv kv"), env=env)
@@ -57,6 +45,21 @@ def deploy_vault():
             shlex.split(f"vault policy write read-eval /vault/policy-file.hcl"), env=env
         )
 
+def deploy_vault():
+    try:
+        key_text = KEY_FILE.read_text()
+    except FileNotFoundError:
+        key_text = ""
+    if not key_text:
+        cmd = shlex.split("vault operator init")
+        env = os.environ.copy()
+        env["VAULT_ADDR"] = "http://127.0.0.1:8200"
+        env["VAULT_SKIP_VERIFY"] = "true"
+        res = run(cmd, stdout=PIPE, stderr=PIPE, env=env)
+        stdout = res.stdout.decode()
+        with KEY_FILE.open("w") as f:
+            f.write(stdout)
+    unseal()
 
 class Vault(Resource):
     @staticmethod
@@ -152,9 +155,6 @@ if __name__ == "__main__":
         cmd = ["vault", "server", "-config", "/vault/vault-server-tls.hcl"]
     p = Popen(cmd, env=os.environ.copy())
     time.sleep(1)
-    if not KEY_FILE.exists():
-        deploy_vault()
-    else:
-        unseal()
+    deploy_vault()
     app.run(host="0.0.0.0", port="5002")
     p.wait()
