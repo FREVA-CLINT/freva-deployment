@@ -8,5 +8,5 @@ echo "USE mysql; FLUSH PRIVILEGES; ALTER USER "\
      "ALTER USER 'root'@'%' IDENTIFIED BY '$MYSQL_ROOT_PASSWORD'; "\
      "ALTER USER '$MYSQL_USER'@'%' IDENTIFIED BY '$MYSQL_PASSWORD'; "\
      "FLUSH PRIVILEGES;" > /tmp/my.sql
-mysql -u root < /tmp/my.sql
+mariadb -u root < /tmp/my.sql
 rm /tmp/my.sql

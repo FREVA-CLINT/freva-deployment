@@ -1,4 +1,4 @@
-FROM python:latest
+FROM docker.io/python:latest
 
 LABEL maintainer="DRKZ-CLINT"
 LABEL repository="https://github.com/FREVA-CLINT/freva.git"

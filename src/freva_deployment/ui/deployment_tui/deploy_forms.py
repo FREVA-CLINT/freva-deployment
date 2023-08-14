@@ -155,8 +155,8 @@ class CoreScreen(BaseForm):
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
                     name=(
-                        f"{self.num}Optional username to change to on the "
-                        "remote machine, leave blank for none:"
+                        f"{self.num}Become (sudo) user name to change to on "
+                        "remote machine, leave blank if not needed:"
                     ),
                     value=cfg.get("ansible_become_user", ""),
                 ),
@@ -554,6 +554,17 @@ class WebScreen(BaseForm):
                 ),
                 False,
             ),
+            ansible_become_user=(
+                self.add_widget_intelligent(
+                    npyscreen.TitleText,
+                    name=(
+                        f"{self.num}Become (sudo) user name to change to on "
+                        "remote machine, leave blank if not needed:"
+                    ),
+                    value=cfg.get("ansible_become_user", "root"),
+                ),
+                False,
+            ),
             ansible_python_interpreter=(
                 self.add_widget_intelligent(
                     npyscreen.TitleFilename,
@@ -655,6 +666,17 @@ class DBScreen(BaseForm):
                 ),
                 False,
             ),
+            ansible_become_user=(
+                self.add_widget_intelligent(
+                    npyscreen.TitleText,
+                    name=(
+                        f"{self.num}Become (sudo) user name to change to on "
+                        "remote machine, leave blank if not needed:"
+                    ),
+                    value=cfg.get("ansible_become_user", "root"),
+                ),
+                False,
+            ),
             ansible_python_interpreter=(
                 self.add_widget_intelligent(
                     npyscreen.TitleFilename,
@@ -733,6 +755,17 @@ class SolrScreen(BaseForm):
                         " setting up the system."
                     ),
                     value=cfg.get("solr_playbook", ""),
+                ),
+                False,
+            ),
+            ansible_become_user=(
+                self.add_widget_intelligent(
+                    npyscreen.TitleText,
+                    name=(
+                        f"{self.num}Become (sudo) user name to change to on "
+                        "remote machine, leave blank if not needed:"
+                    ),
+                    value=cfg.get("ansible_become_user", "root"),
                 ),
                 False,
             ),

@@ -9,7 +9,7 @@ import string
 from subprocess import run
 import sys
 from urllib.parse import urlparse
-from tempfile import TemporaryDirectory, mkdtemp
+from tempfile import TemporaryDirectory
 from typing import Any
 
 from numpy import sign
@@ -105,6 +105,7 @@ class DeployFactory:
         """Prepare the vault."""
         self._config_keys.append("vault")
         self.cfg["vault"] = self.cfg["db"].copy()
+        self.cfg["vault"]["config"].setdefault("ansible_become_user", "root")
         self.playbooks["vault"] = self.cfg["db"]["config"].get("vault_playbook")
         if not self.master_pass:
             self.master_pass = get_passwd()
@@ -118,6 +119,7 @@ class DeployFactory:
     def _prep_db(self) -> None:
         """prepare the mariadb service."""
         self._config_keys.append("db")
+        self.cfg["db"]["config"].setdefault("ansible_become_user", "root")
         if not self.master_pass:
             self.master_pass = get_passwd()
         host = self.cfg["db"]["hosts"]
@@ -139,6 +141,7 @@ class DeployFactory:
     def _prep_solr(self) -> None:
         """prepare the apache solr service."""
         self._config_keys.append("solr")
+        self.cfg["solr"]["config"].setdefault("ansible_become_user", "root")
         self.cfg["solr"]["config"].pop("core", None)
         self.playbooks["solr"] = self.cfg["solr"]["config"].get("solr_playbook")
         for key, default in dict(mem="4g", port=8983).items():
@@ -152,6 +155,7 @@ class DeployFactory:
     def _prep_core(self) -> None:
         """prepare the core deployment."""
         self._config_keys.append("core")
+        self.cfg["core"]["config"].setdefault("ansible_become_user", "")
         self.playbooks["core"] = self.cfg["core"]["config"].get("core_playbook")
         self.cfg["core"]["config"]["admins"] = (
             self.cfg["core"]["config"].get("admins") or getuser()
@@ -190,6 +194,7 @@ class DeployFactory:
         """prepare the web deployment."""
         self._config_keys.append("web")
         self.playbooks["web"] = self.cfg["web"]["config"].get("web_playbook")
+        self.cfg["web"]["config"].setdefault("ansible_become_user", "root")
         self._prep_core()
         admin = self.cfg["core"]["config"]["admins"]
         if not isinstance(admin, str):
@@ -311,6 +316,7 @@ class DeployFactory:
         return [
             "admins",
             "conda_exec_path",
+            "ansible_become_user",
         ]
 
     def _get_files_copy(self, key) -> Path | None:

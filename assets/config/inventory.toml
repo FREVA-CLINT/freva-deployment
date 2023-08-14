@@ -81,6 +81,9 @@ db = ""
 
 db_host = ""
 
+## Set the become (sudo) user name to change to for installing the services
+ansible_become_user = "root"
+
 ## Ansible needs a python3 interpreter, which can be set for custom python3 instances
 #ansible_python_interpreter = ""
 
@@ -106,6 +109,10 @@ port = 8983
 
 # Set the memory for the solr server
 mem = "4g"
+
+## Set the become (sudo) user name to change to for installing the services
+ansible_become_user = "root"
+
 ## Ansible needs a python3 interpreter, which can be set for custom python3 instances
 
 #ansible_python_interpreter = ""
@@ -173,7 +180,7 @@ arch = "Linux-x86_64"
 ## If you need to install the core or its configuration as a different user you can
 ## set the ansible_become_user variable, this will install the the core as a
 ## different user
-#ansible_become_user = "username"
+# ansible_become_user = "user_name"
 
 ##If you need a different user name you can set it here:
 #ansible_user = "username"
@@ -306,3 +313,8 @@ menu_entries = [["Data-Browser", "solr:data_browser","browser_menu"],
 ## NOTE: only adjust this if you know what you are doing, if you leave this
 ## blank the system will used the default playbook (standard procedure)
 web_playbook = ""
+
+## Set the become (sudo) user name to change to for installing the services
+ansible_become_user = "root"
+
+
