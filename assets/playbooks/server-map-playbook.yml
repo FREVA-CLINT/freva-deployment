@@ -3,6 +3,7 @@
 
   vars:
     - docker_cmd: >
+        run
         -v /opt/freva/server-map:/var/freva/:z
         --dns 8.8.8.8
         -p {{ port }}:5008
