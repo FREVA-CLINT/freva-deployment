@@ -40,10 +40,17 @@ def unseal():
         run(shlex.split(f"vault operator unseal {key}"), env=env)
     if token:
         run(shlex.split(f"vault login {token}"), env=env)
-        run(shlex.split(f"vault secrets enable -version=2 -path=kv kv"), env=env)
         run(
-            shlex.split(f"vault policy write read-eval /vault/policy-file.hcl"), env=env
+            shlex.split(f"vault secrets enable -version=2 -path=kv kv"),
+            env=env,
         )
+        run(
+            shlex.split(
+                f"vault policy write read-eval /vault/policy-file.hcl"
+            ),
+            env=env,
+        )
+
 
 def deploy_vault():
     try:
@@ -60,6 +67,7 @@ def deploy_vault():
         with KEY_FILE.open("w") as f:
             f.write(stdout)
     unseal()
+
 
 class Vault(Resource):
     @staticmethod
@@ -93,9 +101,16 @@ class Vault(Resource):
         # Get the information from the vault
         url = f"http://127.0.0.1:8200/v1/kv/data/read-eval"
         headers = {"X-Vault-Token": token}
-        out = requests.get(url, headers=headers).json()["data"]
-        out["data"]["db.passwd"] = entry
-        r = requests.post(url, json=out, headers=headers)
+        out = (
+            requests.get(url, headers=headers, timeout=3)
+            .json()
+            .get("data", {})
+        )
+        try:
+            out["data"]["db.passwd"] = entry
+        except KeyError:
+            pass
+        _ = requests.post(url, json=out, headers=headers)
         return {}, 201
 
     def get(self, entry, public_key):
@@ -128,14 +143,14 @@ class Vault(Resource):
             req = requests.get(
                 "http://127.0.0.1:8200/v1/kv/data/read-eval",
                 headers={"X-Vault-Token": token},
+                timeout=3,
             )
         else:
             req = requests.get(
                 f"http://127.0.0.1:8200/v1/kv/data/{entry}",
                 headers={"X-Vault-Token": token},
+                timeout=3,
             )
-            out = req.json()["data"]["data"]
-            status = req.status_code
         try:
             out = req.json()["data"]["data"]
             status = req.status_code
