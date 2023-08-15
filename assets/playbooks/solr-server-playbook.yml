@@ -58,7 +58,7 @@
       file:
         path: /opt/freva/{{ project_name }}/solr_service
         state: absent
-      when: wipe == true
+      when: solr_wipe == true
       become: "{{use_become}}"
     - name: Creating directory structure
       file:

@@ -81,7 +81,7 @@
         path: /opt/freva/{{ project_name }}/db_service
         state: absent
       become: "{{use_become}}"
-      when: wipe == true
+      when: db_wipe == true
     - name: Creating directory structure
       file:
         path: /opt/freva/{{ project_name }}/db_service

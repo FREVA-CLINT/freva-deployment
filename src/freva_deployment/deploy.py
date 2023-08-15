@@ -390,7 +390,7 @@ class DeployFactory:
             config[step]["hosts"] = self.cfg[step]["hosts"]
             config[step]["vars"] = {}
             for key, value in self.cfg[step]["config"].items():
-                if key in ("root_passwd", "wipe"):
+                if key in ("root_passwd",):
                     new_key = key
                 else:
                     new_key = f"{step}_{key}"
