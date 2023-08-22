@@ -14,6 +14,7 @@
         -e MYSQL_DATABASE={{db_db}}
         -e BACKUP_DIR=/var/lib/mysql/backup
         -p {{ db_port }}:3306
+        --rm
         --name {{db_name}}
         -e MYSQL_ROOT_PASSWORD='{{ root_passwd }}'
         -v /root/freva-service-config/mysql/create_tables.sql:/docker-entrypoint-initdb.d/002_create_tables.sql:z

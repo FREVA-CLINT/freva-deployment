@@ -63,6 +63,7 @@
     - service_dir: /opt/freva/{{project_name}}/web_service
     - docker_web_cmd: >
         -p 8000:8000
+        --rm
         -v {{ core_root_dir }}:{{ core_root_dir }}:ro
         -v {{ core_scheduler_output_dir}}:{{ core_scheduler_output_dir }}:ro
         -v /opt/freva/{{project_name}}/web_service/static:/opt/freva_web/static:z
@@ -80,6 +81,7 @@
         -v /opt/freva/{{project_name}}/web_service/cacert.pem:/etc/ssl/certs/cacert.pem:z
         -v /opt/freva/{{project_name}}/web_service/static:/srv/static:z
         -v {{ core_preview_path }}:/srv/static/preview:ro
+        --rm
         -e SCHEDULER_DIR={{core_scheduler_output_dir}}
         --name "{{project_name}}-httpd"
         --security-opt label=disable
@@ -164,7 +166,7 @@
     - name: Creating system services
       become: "{{use_become}}"
       shell: |
-          /tmp/create_systemd.py {{redis_name}} run --name {{redis_name}} -p 6379:6379 redis:latest
+          /tmp/create_systemd.py {{redis_name}} run --name {{redis_name}} --rm -p 6379:6379 redis:latest
           /tmp/create_systemd.py {{apache_name}} run "{{docker_apache_cmd}}"
           /tmp/create_systemd.py {{web_name}} run "{{docker_web_cmd}}" --requires {{redis_name}} {{apache_name}} --enable
       when: systemctl.stat.exists == true

@@ -8,6 +8,7 @@
         --net {{ project_name }} --cap-add=IPC_LOCK
         --dns 8.8.8.8
         -e ROOT_PW='{{ root_passwd }}'
+        --rm
         --name {{vault_name}}
         -v /opt/freva/{{project_name}}/vault_service/config:/data:z
         -v /opt/freva/{{project_name}}/vault_service/files:/vault/file:z
@@ -74,12 +75,12 @@
       shell: >
           /tmp/create_systemd.py {{vault_name}} run {{docker_cmd}}
       ignore_errors: true
-    - pause: seconds=3
+    - pause: seconds=10
     - name: Deleting existing infrastructure
-      become: "{{use_become}}"
       shell: >
         /tmp/docker-or-podman exec -it {{ vault_name }}
         vault kv delete kv/read-eval
+      become: "{{use_become}}"
     - name: Inserting server infrastructure
       become: "{{use_become}}"
       shell: >

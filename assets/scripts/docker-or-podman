@@ -142,11 +142,12 @@ class CommandFactory(metaclass=abc.ABCMeta):
                     cli_command.append("--{}".format(key))
             elif isinstance(values, (str, int, float)):
                 cli_command.append("--{}".format(key))
-                cli_command.append(str(values))
+                cli_command.append("{}".format(str(values)))
+
             elif isinstance(values, list):
                 for value in values:
                     cli_command.append("--{}".format(key))
-                    cli_command.append(str(value))
+                    cli_command.append("{}".format(str(value)))
         return cli_command + self.images + list(command)
 
     def _translate(self, options: Dict[str, FlagType]) -> Dict[str, FlagType]:
