@@ -2,9 +2,9 @@
 - hosts: solr
 
   vars:
-    - ansible_python_interpreter: "{{ solr_ansible_python_interpreter }}"
-    - continer_name: "{{ solr_name }}"
-    - docker_cmd: >
+    ansible_python_interpreter: "{{ solr_ansible_python_interpreter }}"
+    continer_name: "{{ solr_name }}"
+    docker_cmd: >
         -e CORE=files
         -e NUM_BACKUPS=7
         -e SOLR_HEAP={{solr_mem}}
@@ -17,8 +17,8 @@
         -p {{ solr_port }}:8983 -t
         --name {{solr_name}}
         -t solr:latest
-    - ansible_become_user: "{{ solr_ansible_become_user | default('root') }}"
-    - use_become: "{{ solr_ansible_become_user is defined and solr_ansible_become_user != '' }}"
+    ansible_become_user: "{{ solr_ansible_become_user | default('root') }}"
+    use_become: "{{ solr_ansible_become_user is defined and solr_ansible_become_user != '' }}"
   tasks:
     - name: Copying docker/podman wrapper script
       copy:

@@ -2,7 +2,7 @@
 - hosts: freva_map
 
   vars:
-    - docker_cmd: >
+    docker_cmd: >
         run
         -v /opt/freva/server-map:/var/freva/:z
         --dns 8.8.8.8
