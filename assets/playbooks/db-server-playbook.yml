@@ -129,8 +129,8 @@
         /tmp/docker-or-podman rm -f {{db_name}}
     - name: Creating systemd service
       become: "{{use_become}}"
-      shell: >
-        /tmp/create_systemd.py {{db_name}} run "{{docker_cmd}}" --requires {{vault_name}} --enable
+      shell: |
+        /tmp/create_systemd.py {{db_name}} run {{docker_cmd | trim}} --requires {{vault_name}} --enable
       when: systemctl.stat.exists == true
     - name: Creating cron jobs
       become: "{{use_become}}"
