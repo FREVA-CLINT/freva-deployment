@@ -2,9 +2,9 @@
 - hosts: vault
 
   vars:
-    - ansible_python_interpreter: "{{ db_ansible_python_interpreter }}"
-    - continer_name: "{{ vault_name }}"
-    - docker_cmd: >
+    ansible_python_interpreter: "{{ db_ansible_python_interpreter }}"
+    continer_name: "{{ vault_name }}"
+    docker_cmd: >
         --net {{ project_name }} --cap-add=IPC_LOCK
         --dns 8.8.8.8
         -e ROOT_PW='{{ root_passwd }}'
@@ -14,7 +14,7 @@
         -v /opt/freva/{{project_name}}/vault_service/files:/vault/file:z
         -p 5002:5002
         -t ghcr.io/freva-clint/freva-deployment/vault:latest
-    - use_become: "{{ vault_ansible_become_user is defined and vault_ansible_become_user != '' }}"
+    use_become: "{{ vault_ansible_become_user is defined and vault_ansible_become_user != '' }}"
   tasks:
     - name: Copying docker/podman wrapper script
       copy:
@@ -75,7 +75,7 @@
       shell: >
           /tmp/create_systemd.py {{vault_name}} run {{docker_cmd}}
       ignore_errors: true
-    - pause: seconds=10
+    - pause: seconds=20
     - name: Deleting existing infrastructure
       shell: >
         /tmp/docker-or-podman exec -it {{ vault_name }}

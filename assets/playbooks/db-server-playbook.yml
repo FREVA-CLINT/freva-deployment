@@ -2,8 +2,8 @@
 - hosts: db
 
   vars:
-    - ansible_python_interpreter: "{{ db_ansible_python_interpreter }}"
-    - docker_cmd: >
+    ansible_python_interpreter: "{{ db_ansible_python_interpreter }}"
+    docker_cmd: >
         --net {{ project_name }} -v
         /opt/freva/{{project_name}}/db_service:/var/lib/mysql:z
         -e HOST={{ db_host }}
@@ -20,7 +20,7 @@
         -v /root/freva-service-config/mysql/create_tables.sql:/docker-entrypoint-initdb.d/002_create_tables.sql:z
         -v /root/freva-service-config/mysql/daily_backup.sh:/usr/local/bin/daily_backup:z
         -t docker.io/mariadb:latest
-    - skip_tables_cmd: >
+    skip_tables_cmd: >
         --net {{ project_name }} -v
         /opt/freva/{{project_name}}/db_service:/var/lib/mysql:z
         -e HOST={{ db_host }}
@@ -37,9 +37,9 @@
         -v /root/freva-service-config/mysql/daily_backup.sh:/usr/local/bin/daily_backup:z
         -v /tmp/reset_root_pw.sh:/tmp/reset_root_pw.sh:z
         -t docker.io/mariadb:latest mariadbd-safe --skip-grant-tables
-    - continer_name: "{{ db_name }}"
-    - vault_name: "{{project_name}}-vault"
-    - use_become: "{{ db_ansible_become_user is defined and db_ansible_become_user != '' }}"
+    continer_name: "{{ db_name }}"
+    vault_name: "{{project_name}}-vault"
+    use_become: "{{ db_ansible_become_user is defined and db_ansible_become_user != '' }}"
   tasks:
     - name: Copying docker/podman wrapper script
       copy:
@@ -129,8 +129,8 @@
         /tmp/docker-or-podman rm -f {{db_name}}
     - name: Creating systemd service
       become: "{{use_become}}"
-      shell: >
-        /tmp/create_systemd.py {{db_name}} run "{{docker_cmd}}" --requires {{vault_name}} --enable
+      shell: |
+        /tmp/create_systemd.py {{db_name}} run {{docker_cmd | trim}} --requires {{vault_name}} --enable
       when: systemctl.stat.exists == true
     - name: Creating cron jobs
       become: "{{use_become}}"

@@ -38,8 +38,9 @@ class CommandFactory(metaclass=abc.ABCMeta):
     command: ClassVar[str] = ""
     """Command of the container system."""
 
-    def __init__(self, images: List[str]):
+    def __init__(self, images: List[str], print_only=False):
         self._images = images
+        self._print_only = print_only
 
     @staticmethod
     def get_container_cmd() -> str:
@@ -66,6 +67,29 @@ class CommandFactory(metaclass=abc.ABCMeta):
         """
         return [self.get_container_cmd(), sub_command] + list(flags)
 
+    def _kwargs_to_list(self, **kwargs: FlagType) -> List[str]:
+        cli_command = []
+        for key, value in kwargs.items():
+            if isinstance(value, bool):
+                if value is True:
+                    cli_command.append("--{}".format(key))
+            elif isinstance(value, (str, int, float)):
+                cli_command.append("--{}".format(key))
+                if key == "env" and self._print_only:
+                    env, _, var = str(value).partition("=")
+                    cli_command.append("{}='{}'".format(env, var))
+                else:
+                    cli_command.append(str(value))
+            elif isinstance(value, list):
+                for item in value:
+                    cli_command.append("--{}".format(key))
+                    if key == "env" and self._print_only:
+                        env, _, var = item.partition("=")
+                        cli_command.append("{}='{}'".format(env, var))
+                    else:
+                        cli_command.append(str(item))
+        return cli_command
+
     def pull(self, **kwargs: FlagType) -> List[str]:
         """Pull a container.
 
@@ -80,18 +104,7 @@ class CommandFactory(metaclass=abc.ABCMeta):
         """
 
         cli_command = [self.get_container_cmd(), "pull"]
-        for key, values in kwargs.items():
-            if isinstance(values, bool):
-                if values is True:
-                    cli_command.append("--{}".format(key))
-            elif isinstance(values, (str, int, float)):
-                cli_command.append("--{}".format(key))
-                cli_command.append(str(values))
-            elif isinstance(values, list):
-                for value in values:
-                    cli_command.append("--{}".format(key))
-                    cli_command.append(str(value))
-        return cli_command + self.images
+        return cli_command + self._kwargs_to_list(**kwargs) + self.images
 
     def rm(self, sub_command: str, **kwargs: FlagType) -> List[str]:
         """Remove images/containers.
@@ -136,19 +149,12 @@ class CommandFactory(metaclass=abc.ABCMeta):
         """
 
         cli_command = [self.get_container_cmd(), sub_command]
-        for key, values in self._translate(options).items():
-            if isinstance(values, bool):
-                if values is True:
-                    cli_command.append("--{}".format(key))
-            elif isinstance(values, (str, int, float)):
-                cli_command.append("--{}".format(key))
-                cli_command.append("{}".format(str(values)))
-
-            elif isinstance(values, list):
-                for value in values:
-                    cli_command.append("--{}".format(key))
-                    cli_command.append("{}".format(str(value)))
-        return cli_command + self.images + list(command)
+        return (
+            cli_command
+            + self._kwargs_to_list(**options)
+            + self.images
+            + list(command)
+        )
 
     def _translate(self, options: Dict[str, FlagType]) -> Dict[str, FlagType]:
         return options
@@ -156,7 +162,7 @@ class CommandFactory(metaclass=abc.ABCMeta):
     @property
     def images(self) -> List[str]:
         """Get the location of the image."""
-        return self._images
+        return list(self._images or [])
 
 
 class Docker(CommandFactory):
@@ -220,7 +226,7 @@ class Apptainer(CommandFactory):
         else:
             # this is not ideal since 'oci' is for root only.
             return []
-            new_command = ["oci", "delete"]
+            # new_command = ["oci", "delete"]
         cli_command = [self.get_container_cmd()] + new_command
         return cli_command + self.images
 
@@ -506,7 +512,9 @@ def parse_args() -> List[str]:
         "apptainer": Apptainer,
         "docker": Docker,
     }
-    container_inst = container_cls[container_cmd](args.container)
+    container_inst = container_cls[container_cmd](
+        args.container, print_only=args.print_only
+    )
     kwargs = {
         k.replace("_", "-"): v
         for (k, v) in args._get_kwargs()
@@ -569,7 +577,6 @@ def write_command_to_disk(
 
 
 if __name__ == "__main__":
-
     command_line = parse_args()
     if command_line:
         write_command_to_disk(command_line)

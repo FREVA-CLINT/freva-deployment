@@ -108,9 +108,13 @@ def read(*parts: str) -> str:
 def get_packages() -> List[str]:
     """Get the packages needed to install."""
     plf = sys.platform
-    if plf.startswith("win") or plf.startswith("cygwin") or plf.startswith("ms"):
+    if (
+        plf.startswith("win")
+        or plf.startswith("cygwin")
+        or plf.startswith("ms")
+    ):
         return INSTALL_REQUIRES
-    INSTALL_REQUIRES.append("ansible")
+    INSTALL_REQUIRES.append("ansible>=2.10")
     return INSTALL_REQUIRES
 
 
@@ -118,8 +122,12 @@ def get_data_files() -> List[Tuple[str, List[str]]]:
     dirs = [d for d in ASSET_DIR.rglob("*") if d.is_dir()]
     data_files = []
     for d in dirs:
-        target_dir = Path("share") / "freva" / "deployment" / d.relative_to(ASSET_DIR)
-        add_files = [str(f.relative_to(THIS_DIR)) for f in d.rglob("*") if f.is_file()]
+        target_dir = (
+            Path("share") / "freva" / "deployment" / d.relative_to(ASSET_DIR)
+        )
+        add_files = [
+            str(f.relative_to(THIS_DIR)) for f in d.rglob("*") if f.is_file()
+        ]
         if add_files:
             data_files.append((str(target_dir), add_files))
     return data_files
