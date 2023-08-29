@@ -119,12 +119,12 @@ def get_packages() -> List[str]:
 
 
 def get_data_files() -> List[Tuple[str, List[str]]]:
+    import appdirs
     dirs = [d for d in ASSET_DIR.rglob("*") if d.is_dir()]
     data_files = []
+    out_dir = Path(appdirs.user_data_dir(Path("freva") / "deployment"))
     for d in dirs:
-        target_dir = (
-            Path("share") / "freva" / "deployment" / d.relative_to(ASSET_DIR)
-        )
+        target_dir = out_dir / d.relative_to(ASSET_DIR)
         add_files = [
             str(f.relative_to(THIS_DIR)) for f in d.rglob("*") if f.is_file()
         ]
