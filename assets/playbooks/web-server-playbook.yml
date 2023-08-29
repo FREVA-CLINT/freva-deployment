@@ -80,12 +80,16 @@
         -v /opt/freva/{{project_name}}/web_service/server-key.key:/etc/ssl/private/server-key.key:z
         -v /opt/freva/{{project_name}}/web_service/cacert.pem:/etc/ssl/certs/cacert.pem:z
         -v /opt/freva/{{project_name}}/web_service/static:/srv/static:z
-        -v {{ core_preview_path }}:/srv/static/preview:ro
+        -v /opt/freva/{{project_name}}/web_service/prepare-httpd:/usr/local/bin/prepare-httpd:z
+        -v {{ core_preview_path }}:/srv/static/preview:z
         --rm
         -e SCHEDULER_DIR={{core_scheduler_output_dir}}
+        -e UID=$(id -u {{ansible_user}})
+        -e GID=$(id -g {{ansible_user}})
         --name "{{project_name}}-httpd"
         --security-opt label=disable
-        -e FREVA_HOST={{web_server_name}} -p 80:80 -p 443:443 httpd:latest
+        -e FREVA_HOST={{web_server_name}} -p 80:80 -p 443:443
+        httpd:latest /usr/local/bin/prepare-httpd
     redis_name: "{{ project_name }}-redis"
     apache_name: "{{project_name}}-httpd"
     use_become: "{{ web_ansible_become_user is defined and web_ansible_become_user != '' }}"
@@ -136,6 +140,12 @@
       file:
         path: "{{service_dir}}/static"
         state: directory
+    - name: Copying httpd entrypoint script
+      become: "{{use_become}}"
+      copy:
+        src: "{{ asset_dir }}/scripts/prepare-httpd"
+        dest: "/opt/freva/{{project_name}}/web_service/prepare-httpd"
+        mode: "0775"
     - name: Copying key files files
       become: "{{use_become}}"
       copy:
@@ -170,13 +180,7 @@
           /tmp/create_systemd.py {{apache_name}} run "{{docker_apache_cmd}}"
           /tmp/create_systemd.py {{web_name}} run "{{docker_web_cmd}}" --requires {{redis_name}} {{apache_name}} --enable
       when: systemctl.stat.exists == true
-    - pause: seconds=5
-    - name: Adjusting uid of www-data in httpd container
-      become: "{{use_become}}"
-      shell: >
-        /tmp/docker-or-podman exec -it -u root {{apache_name}}
-        usermod -u $(id -u {{ansible_user}}) www-data
-      ignore_errors: true
+    - pause: seconds=15
     - name: Restarting services
       become: "{{use_become}}"
       shell: systemctl restart {{item}}
