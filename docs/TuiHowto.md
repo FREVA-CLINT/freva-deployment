@@ -158,7 +158,9 @@ essential setup steps:
     the system. Leave blank for default behaviour.
 28. Set the path to the `python3.4+` binary, this should be set if the python
     binary is not part of the `$PATH` variable.
-29. Set the login user name for the remote machine.
+29. Set the user name that should execute the container commands, defaults
+    to root. Leave blank if no special user is needed.
+30. Set the login user name for the remote machine.
 
 ### Notes on the web ui setup
 Currently there are ties between the core running on the HPC machine and
@@ -214,9 +216,11 @@ following explains the essential setup steps:
    to a custom ansible playbook here. If this is set then the deployment
    will use this playbook instead of the default playbook that ships with
    the system. Leave blank for default behaviour.
-6. Set the path to the `python3.4+` binary, this should be set if the python
-    binary is not part of the `$PATH` variable.
-7. Set the login user name for the remote machine.
+6. Set the user name that should execute the container commands, defaults
+   to root. Leave blank if no special user is needed.
+7. Set the path to the `python3.4+` binary, this should be set if the python
+   binary is not part of the `$PATH` variable.
+8. Set the login user name for the remote machine.
 
 ### Notes on the solr setup
 Although still configurable, the name of the solr core (files) might be
@@ -250,9 +254,11 @@ following explains the essential setup steps:
     to a custom *vault* ansible playbook here. If this is set then the
     deployment will use this playbook instead of the default playbook that
     ships with the system. Leave blank for default behaviour.
-8. Set the path to the `python3.4+` binary, this should be set if the python
+8. Set the user name that should execute the container commands, defaults
+   to root. Leave blank if no special user is needed.
+9. Set the path to the `python3.4+` binary, this should be set if the python
     binary is not part of the `$PATH` variable.
-9. Set the login user name for the remote machine.
+10. Set the login user name for the remote machine.
 
 ### Notes on the database setup
 This step also includes the deployment of a vault service where all information

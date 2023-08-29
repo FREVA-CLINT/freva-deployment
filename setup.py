@@ -177,8 +177,9 @@ setup(
     install_requires=get_packages(),
     extras_require={
         "docs": [
-            "furo",
+            "pydata-sphinx-theme",
             "sphinx",
+            "sphinx-copybutton",
             "nbsphinx",
             "recommonmark",
             "sphinx_rtd_theme",
