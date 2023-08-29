@@ -71,17 +71,18 @@ html_theme_options = {
     "icon_links": [
         {
             "name": "GitHub",
-            "url": "https://github.com/FREVA-CLINT/freva",
+            "url": "https://github.com/FREVA-CLINT/freva-deployment",
             "icon": "fa-brands fa-github",
         }
     ],
     "navigation_with_keys": True,
-    "collapse_navigation": True,
+    "collapse_navigation": False,
     "top_of_page_button": "edit",
     "navigation_depth": 4,
     "navbar_align": "left",
-    "show_nav_level": 4,
+    "show_nav_level": 2,
     "navigation_depth": 4,
+    #    "primary_sidebar_end": ["indices.html", "sidebar-ethical-ads.html"],
     "navbar_center": ["navbar-nav"],
     "secondary_sidebar_items": ["page-toc"],
     "light_css_variables": {
@@ -94,6 +95,13 @@ html_context = {
     "github_version": "main",
     "doc_path": "docs",
 }
+# html_sidebars = {
+#    "**": [
+#        "search-field.html",
+#        "sidebar-nav-bs.html",
+#        "sidebar-ethical-ads.html",
+#    ]
+# }
 
 source_parsers = {
     ".md": CommonMarkParser,
