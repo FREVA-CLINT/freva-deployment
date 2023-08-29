@@ -9,12 +9,20 @@ from setuptools.command.develop import develop
 from setuptools.command.install import install
 import sys
 from typing import List, Tuple
+import urllib.request
 
 
 THIS_DIR = Path(__file__).parent
 CONFIG_DIR = Path("freva") / "deployment"
 ASSET_DIR = THIS_DIR / "assets"
 
+if not Path("appdirs.py").is_file():
+    url = "https://raw.githubusercontent.com/ActiveState/appdirs/master/appdirs.py"
+    urllib.request.urlretrieve(url, "appdirs.py")
+
+import appdirs
+
+Path("appdirs.py").unlink()
 
 INSTALL_REQUIRES = [
     "appdirs",
@@ -121,10 +129,9 @@ def get_packages() -> List[str]:
 def get_data_files() -> List[Tuple[str, List[str]]]:
     dirs = [d for d in ASSET_DIR.rglob("*") if d.is_dir()]
     data_files = []
+    out_dir = Path(appdirs.user_data_dir(Path("freva") / "deployment"))
     for d in dirs:
-        target_dir = (
-            Path("share") / "freva" / "deployment" / d.relative_to(ASSET_DIR)
-        )
+        target_dir = out_dir / d.relative_to(ASSET_DIR)
         add_files = [
             str(f.relative_to(THIS_DIR)) for f in d.rglob("*") if f.is_file()
         ]
@@ -170,8 +177,9 @@ setup(
     install_requires=get_packages(),
     extras_require={
         "docs": [
-            "furo",
+            "pydata-sphinx-theme",
             "sphinx",
+            "sphinx-copybutton",
             "nbsphinx",
             "recommonmark",
             "sphinx_rtd_theme",

@@ -43,6 +43,7 @@ extensions = [
     "recommonmark",
     "sphinx.ext.viewcode",
     "sphinxcontrib_github_alt",
+    "sphinx_copybutton",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -59,7 +60,7 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = "furo"
+html_theme = "pydata_sphinx_theme"
 html_logo = "freva_owl.svg"
 html_favicon = "freva_owl.svg"
 # Add any paths that contain custom static files (such as style sheets) here,
@@ -67,12 +68,41 @@ html_favicon = "freva_owl.svg"
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ["_static"]
 html_theme_options = {
+    "icon_links": [
+        {
+            "name": "GitHub",
+            "url": "https://github.com/FREVA-CLINT/freva-deployment",
+            "icon": "fa-brands fa-github",
+        }
+    ],
     "navigation_with_keys": True,
+    "collapse_navigation": False,
     "top_of_page_button": "edit",
+    "navigation_depth": 4,
+    "navbar_align": "left",
+    "show_nav_level": 2,
+    "navigation_depth": 4,
+    #    "primary_sidebar_end": ["indices.html", "sidebar-ethical-ads.html"],
+    "navbar_center": ["navbar-nav"],
+    "secondary_sidebar_items": ["page-toc"],
     "light_css_variables": {
         "color-brand-primary": "tomato",
     },
 }
+html_context = {
+    "github_user": "FREVA-CLINT",
+    "github_repo": "freva",
+    "github_version": "main",
+    "doc_path": "docs",
+}
+# html_sidebars = {
+#    "**": [
+#        "search-field.html",
+#        "sidebar-nav-bs.html",
+#        "sidebar-ethical-ads.html",
+#    ]
+# }
+
 source_parsers = {
     ".md": CommonMarkParser,
 }
