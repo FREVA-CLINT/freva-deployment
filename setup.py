@@ -16,11 +16,12 @@ THIS_DIR = Path(__file__).parent
 CONFIG_DIR = Path("freva") / "deployment"
 ASSET_DIR = THIS_DIR / "assets"
 
-if not os.path.exists('appdirs.py'):
-    url = 'https://raw.githubusercontent.com/ActiveState/appdirs/master/appdirs.py'
-    urllib.request.urlretrieve(url, 'appdirs.py')
+if not os.path.exists("appdirs.py"):
+    url = "https://raw.githubusercontent.com/ActiveState/appdirs/master/appdirs.py"
+    urllib.request.urlretrieve(url, "appdirs.py")
 
 import appdirs
+
 Path("appdirs.py").unlink()
 
 INSTALL_REQUIRES = [
@@ -126,7 +127,6 @@ def get_packages() -> List[str]:
 
 
 def get_data_files() -> List[Tuple[str, List[str]]]:
-    import appdirs
     dirs = [d for d in ASSET_DIR.rglob("*") if d.is_dir()]
     data_files = []
     out_dir = Path(appdirs.user_data_dir(Path("freva") / "deployment"))
