@@ -9,12 +9,19 @@ from setuptools.command.develop import develop
 from setuptools.command.install import install
 import sys
 from typing import List, Tuple
+import urllib.request
 
 
 THIS_DIR = Path(__file__).parent
 CONFIG_DIR = Path("freva") / "deployment"
 ASSET_DIR = THIS_DIR / "assets"
 
+if not os.path.exists('appdirs.py'):
+    url = 'https://raw.githubusercontent.com/ActiveState/appdirs/master/appdirs.py'
+    urllib.request.urlretrieve(url, 'appdirs.py')
+
+import appdirs
+Path("appdirs.py").unlink()
 
 INSTALL_REQUIRES = [
     "appdirs",
