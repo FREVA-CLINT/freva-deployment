@@ -16,7 +16,7 @@ THIS_DIR = Path(__file__).parent
 CONFIG_DIR = Path("freva") / "deployment"
 ASSET_DIR = THIS_DIR / "assets"
 
-if not os.path.exists("appdirs.py"):
+if not Path("appdirs.py").is_file():
     url = "https://raw.githubusercontent.com/ActiveState/appdirs/master/appdirs.py"
     urllib.request.urlretrieve(url, "appdirs.py")
 
