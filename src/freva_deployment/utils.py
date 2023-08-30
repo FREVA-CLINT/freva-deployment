@@ -63,18 +63,18 @@ class AssetDir:
         try:
             records = distribution.get_metadata("RECORD").splitlines()
         except FileNotFoundError:
-            asset_dir = Path(distribution.module_path).parent / "assets"
+            asset_dir = Path(distribution.module_path).parent / "freva" / "deployment"
             if asset_dir.is_dir():
                 return asset_dir
             warnings.warn("Guessing asset dir location, this might fail")
-            return Path(sys.exec_prefix) / "share" / "freva" / "deployment"
+            return Path(sys.exec_prefix) / "freva" / "deployment"
         try:
             inventory = [f.partition(",")[0] for f in records if "inventory.toml" in f][
                 0
             ]
         except IndexError:
             warnings.warn("Guessing asset dir location, this might fail")
-            return Path(sys.exec_prefix) / "share" / "freva" / "deployment"
+            return Path(sys.exec_prefix) / "freva" / "deployment"
         asset_path = (Path(distribution.module_path) / inventory).parent.parent
         return Path.resolve(asset_path)
 
