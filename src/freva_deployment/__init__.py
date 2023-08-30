@@ -1,4 +1,4 @@
-__version__ = "2308.1.1"
+__version__ = "2308.1.2"
 AVAILABLE_PYTHON_VERSIONS = ["3.7", "3.8", "3.9", "3.10", "3.11"]
 AVAILABLE_CONDA_ARCHS = [
     "Linux-x86_64",
