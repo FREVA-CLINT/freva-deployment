@@ -16,7 +16,7 @@ SYSTEMD_TMPL = dict(
         TimeoutStartSec="35s",
         TimeoutStopSec="35s",
         ExecStartPre="{delete_command}",
-        ExecStart="{container_cmd} {container_args}",
+        ExecStart='/bin/sh -c "{container_cmd} {container_args}"',
         Restart="no",
     ),
     Install=dict(WantedBy="default.target"),
@@ -95,7 +95,9 @@ def get_container_cmd(args: str) -> Tuple[str, str]:
     return "", ""
 
 
-def create_unit(args: str, unit: str, requires: List[str], enable: bool) -> None:
+def create_unit(
+    args: str, unit: str, requires: List[str], enable: bool
+) -> None:
     """Create the systemd unit."""
     container_cmd, container_args = get_container_cmd(args)
     _, delete_command = get_container_cmd("rm -f {}".format(unit))
