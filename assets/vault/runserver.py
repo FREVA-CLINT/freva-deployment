@@ -45,9 +45,7 @@ def unseal():
             env=env,
         )
         run(
-            shlex.split(
-                f"vault policy write read-eval /vault/policy-file.hcl"
-            ),
+            shlex.split(f"vault policy write read-eval /vault/policy-file.hcl"),
             env=env,
         )
 
@@ -101,11 +99,7 @@ class Vault(Resource):
         # Get the information from the vault
         url = f"http://127.0.0.1:8200/v1/kv/data/read-eval"
         headers = {"X-Vault-Token": token}
-        out = (
-            requests.get(url, headers=headers, timeout=3)
-            .json()
-            .get("data", {})
-        )
+        out = requests.get(url, headers=headers, timeout=3).json().get("data", {})
         try:
             out["data"]["db.passwd"] = entry
         except KeyError:
@@ -134,8 +128,6 @@ class Vault(Resource):
         out = {}
         status = 401
         _, token = read_key()
-        if public_key != self.public_key:
-            return out, 401
         if entry == "token":
             return {"X-Vault-Token": token}, 200
         if entry == "data":
