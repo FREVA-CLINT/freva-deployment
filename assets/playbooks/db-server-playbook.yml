@@ -136,6 +136,14 @@
       become: "{{use_become}}"
       shell: sh /tmp/create_cron.sh "{{ db_name }}" "{{db_email}}"
       when: cron.stat.exists == true
+    - name: Restarting docker container
+      become: "{{use_become}}"
+      shell: systemctl restart "{{ db_name }}"
+      when: systemctl.stat.exists == true
+    - name: Creating potentially missing tables
+      become: "{{use_become}}"
+      shell: |
+        /tmp/docker-or-podman exec -it {{db_name}} /bin/sh -c 'mariadb -u root -p{{root_passwd}} {{db_db}} < /docker-entrypoint-initdb.d/002_create_tables.sql'
     - name: Deleting auxillary files
       become: "{{use_become}}"
       file:
@@ -146,7 +154,3 @@
         - /tmp/create_cron.sh
         - /tmp/reset_root_pw.sh
         - /tmp/docker-or-podman
-    - name: Restarting docker container
-      become: "{{use_become}}"
-      shell: systemctl restart "{{ db_name }}"
-      when: systemctl.stat.exists == true
