@@ -3,20 +3,48 @@
 
   vars:
     ansible_python_interpreter: "{{ solr_ansible_python_interpreter }}"
-    continer_name: "{{ solr_name }}"
-    docker_cmd: >
+    container_name: "{{ project_name }}-databrowser"
+    solr_name: "{{project_name}}-solr"
+    mongo_name: "{{project_name}}-mongo"
+    docker_solr_cmd: >
         -e CORE=files
         -e NUM_BACKUPS=7
         -e SOLR_HEAP={{solr_mem}}
         --rm
+        --net {{project_name}}
         -v /opt/freva/{{project_name}}/solr_service:/var/solr/data:z
         -v /opt/freva/freva-service-config/solr/managed-schema.xml:/opt/solr/managed-schema.xml:z
         -v /opt/freva/freva-service-config/solr/create_cores.sh:/docker-entrypoint-initdb.d/create_cores.sh:z
         -v /opt/freva/freva-service-config/solr/synonyms.txt:/opt/solr/synonyms.txt:z
         -v /opt/freva/freva-service-config/solr/daily_backup.sh:/usr/local/bin/daily_backup:z
-        -p {{ solr_port }}:8983 -t
-        --name {{solr_name}}
+        -p {{solr_port}}:8983 -t
+        --name {{project_name}}-solr
         -t solr:latest
+    docker_databrowser_cmd: >
+        --net {{project_name}}
+        -e SOLR_CORE=files
+        -e SOLR_HOST={{solr_hostname}}:{{solr_port}}
+        -e MONGO_HOST={{solr_hostname}}:27017
+        -e MONGO_PASSWORD={{ root_passwd }}
+        -e MONGO_DB=search_stats
+        -e MONGO_USER=mongo
+        --rm
+        -p 7777:8080 -t
+        --name {{project_name}}-databrowser
+        ghcr.io/freva-clint/databrowserapi:latest
+    docker_mongo_cmd: >
+        -e MONGO_INITDB_ROOT_USERNAME=mongo
+        -e MONGO_INITDB_ROOT_PASSWORD={{ root_passwd }}
+        -e MONGO_INITDB_DATABASE=search_stats
+        -p 27017:27017
+        --net {{project_name}}
+        -v /opt/freva/{{project_name}}/databrowser/stats:/data/db:z
+        --rm
+        --name {{project_name}}-mongodb -t
+        mongo:latest
+
+
+
     ansible_become_user: "{{ solr_ansible_become_user | default('root') }}"
     use_become: "{{ solr_ansible_become_user is defined and solr_ansible_become_user != '' }}"
   tasks:
@@ -36,10 +64,19 @@
     - name: Stopping services and deleting existing containers
       become: "{{use_become}}"
       shell: >
-        systemctl stop {{solr_name}};
-        /tmp/docker-or-podman rm {{solr_name}};
-        /tmp/docker-or-podman rmi -f {{solr_name}};
+        systemctl stop {{project_name}}-solr;
+        systemctl stop {{project_name}}-mongo;
+        systemctl stop {{project_name}}-databrowser;
+        /tmp/docker-or-podman rm {{project_name}}-solr;
+        /tmp/docker-or-podman rm {{project_name}}-mongo;
+        /tmp/docker-or-podman rm {{project_name}}-databrowser;
+        /tmp/docker-or-podman rmi -f {{project_name}}-solr;
+        /tmp/docker-or-podman rmi -f {{project_name}}-mongo;
+        /tmp/docker-or-podman rmi -f {{project_name}}-databrowser;
         /tmp/docker-or-podman rmi -f solr;
+        /tmp/docker-or-podman rmi -f solr;
+        /tmp/docker-or-podman rmi -f mongo;
+        /tmp/docker-or-podman rmi -f ghcr.io/freva-clint/databrowserapi
         exit 0
       ignore_errors: true
     - pause: seconds=5
@@ -57,16 +94,25 @@
       become: "{{use_become}}"
     - name: Cleaning existing directory structure
       file:
-        path: /opt/freva/{{ project_name }}/solr_service
+        path: "{items}"
         state: absent
+      with_items:
+        - "/opt/freva/{{ project_name }}/solr_service"
+        - "/opt/freva/{{ project_name }}/databrowser"
       when: solr_wipe == true
       become: "{{use_become}}"
-    - name: Creating directory structure
+    - name: Creating solr directory structure
       file:
         path: /opt/freva/{{ project_name }}/solr_service
         state: directory
         owner: 8983
         group: 8983
+        recurse: true
+      become: "{{use_become}}"
+    - name: Creating mongo directory structure
+      file:
+        path: /opt/freva/{{ project_name }}/databrowser/stats
+        state: directory
         recurse: true
       become: "{{use_become}}"
     - name: Getting additional configurations
@@ -82,13 +128,21 @@
         mode: "0755"
       become: "{{use_become}}"
     - name: Pulling container
-      shell: /tmp/docker-or-podman pull docker.io/solr:latest
+      shell:
+        cmd: /tmp/docker-or-podman pull {{item}}
       become: "{{use_become}}"
+      with_items:
+        - "docker.io/solr:latest"
+        - "docker.io/mongo:latest"
+        - "ghcr.io/freva-clint/databrowserapi:latest"
     - name: Copy cron create script to target machine
       copy: src="{{ asset_dir }}/scripts/create_cron.sh" dest=/tmp/solr_service/
       become: "{{use_become}}"
-    - name: Starting solr service
-      shell: /tmp/create_systemd.py {{solr_name}} run --enable {{docker_cmd}}
+    - name: Creating systemd services
+      shell: |
+        /tmp/create_systemd.py {{solr_name}} run {{docker_solr_cmd | trim}}
+        /tmp/create_systemd.py {{mongo_name}} run {{docker_mongo_cmd | trim}}
+        /tmp/create_systemd.py {{container_name}} run --enable {{docker_databrowser_cmd | trim}} --requires {{solr_name}} {{mongo_name}}
       when: systemctl.stat.exists == true
       become: "{{use_become}}"
     - pause: seconds=3

@@ -61,7 +61,9 @@ class DeployFactory:
         self.email_password: str = ""
         self._td: TemporaryDirectory = TemporaryDirectory(prefix="inventory")
         self.inventory_file: Path = Path(self._td.name) / "inventory.yaml"
-        self.eval_conf_file: Path = Path(self._td.name) / "evaluation_system.conf"
+        self.eval_conf_file: Path = (
+            Path(self._td.name) / "evaluation_system.conf"
+        )
         self.web_conf_file: Path = Path(self._td.name) / "freva_web.toml"
         self.apache_config: Path = Path(self._td.name) / "freva_web.conf"
         self._db_pass: str = ""
@@ -106,7 +108,9 @@ class DeployFactory:
         self._config_keys.append("vault")
         self.cfg["vault"] = self.cfg["db"].copy()
         self.cfg["vault"]["config"].setdefault("ansible_become_user", "root")
-        self.playbooks["vault"] = self.cfg["db"]["config"].get("vault_playbook")
+        self.playbooks["vault"] = self.cfg["db"]["config"].get(
+            "vault_playbook"
+        )
         if not self.master_pass:
             self.master_pass = get_passwd()
         self.cfg["vault"]["config"]["root_passwd"] = self.master_pass
@@ -127,7 +131,9 @@ class DeployFactory:
         self.cfg["db"]["config"]["passwd"] = self.db_pass
         self.cfg["db"]["config"]["keyfile"] = self.public_key_file
         for key in ("name", "user", "db"):
-            self.cfg["db"]["config"][key] = self.cfg["db"]["config"].get(key) or "freva"
+            self.cfg["db"]["config"][key] = (
+                self.cfg["db"]["config"].get(key) or "freva"
+            )
         db_host = self.cfg["db"]["config"].get("host", "")
         if not db_host:
             self.cfg["db"]["config"]["host"] = host
@@ -140,10 +146,15 @@ class DeployFactory:
 
     def _prep_solr(self) -> None:
         """prepare the apache solr service."""
+        if not self.master_pass:
+            self.master_pass = get_passwd()
         self._config_keys.append("solr")
         self.cfg["solr"]["config"].setdefault("ansible_become_user", "root")
+        self.cfg["solr"]["config"]["root_passwd"] = self.master_pass
         self.cfg["solr"]["config"].pop("core", None)
-        self.playbooks["solr"] = self.cfg["solr"]["config"].get("solr_playbook")
+        self.playbooks["solr"] = self.cfg["solr"]["config"].get(
+            "solr_playbook"
+        )
         for key, default in dict(mem="4g", port=8983).items():
             self.cfg["solr"]["config"][key] = (
                 self.cfg["solr"]["config"].get(key) or default
@@ -156,7 +167,9 @@ class DeployFactory:
         """prepare the core deployment."""
         self._config_keys.append("core")
         self.cfg["core"]["config"].setdefault("ansible_become_user", "")
-        self.playbooks["core"] = self.cfg["core"]["config"].get("core_playbook")
+        self.playbooks["core"] = self.cfg["core"]["config"].get(
+            "core_playbook"
+        )
         self.cfg["core"]["config"]["admins"] = (
             self.cfg["core"]["config"].get("admins") or getuser()
         )
@@ -167,11 +180,15 @@ class DeployFactory:
         if not root_dir:
             self.cfg["core"]["config"]["root_dir"] = install_dir
         preview_path = self.cfg["core"]["config"].get("preview_path", "")
-        base_dir_location = self.cfg["core"]["config"].get("base_dir_location", "")
+        base_dir_location = self.cfg["core"]["config"].get(
+            "base_dir_location", ""
+        )
         scheduler_output_dir = self.cfg["core"]["config"].get(
             "scheduler_output_dir", ""
         )
-        scheduler_system = self.cfg["core"]["config"].get("scheduler_system", "local")
+        scheduler_system = self.cfg["core"]["config"].get(
+            "scheduler_system", "local"
+        )
         if not preview_path:
             if base_dir_location:
                 self.cfg["core"]["config"]["preview_path"] = str(
@@ -182,7 +199,9 @@ class DeployFactory:
         if not scheduler_output_dir:
             scheduler_output_dir = str(Path(base_dir_location) / "share")
         scheduler_output_dir = Path(scheduler_output_dir) / scheduler_system
-        self.cfg["core"]["config"]["scheduler_output_dir"] = str(scheduler_output_dir)
+        self.cfg["core"]["config"]["scheduler_output_dir"] = str(
+            scheduler_output_dir
+        )
         self.cfg["core"]["config"]["keyfile"] = self.public_key_file
         git_exe = self.cfg["core"]["config"].get("git_path")
         self.cfg["core"]["config"]["git_path"] = git_exe or "git"
@@ -252,20 +271,24 @@ class DeployFactory:
         except (FileNotFoundError, IOError, KeyError):
             pass
         try:
-            _webserver_items["IMPRINT"] = _webserver_items["IMPRINT"].split(",")
+            _webserver_items["IMPRINT"] = _webserver_items["IMPRINT"].split(
+                ","
+            )
         except AttributeError:
             pass
         with self.web_conf_file.open("w") as f_obj:
             tomlkit.dump(_webserver_items, f_obj)
         for key in ("core", "web"):
-            self.cfg[key]["config"]["config_toml_file"] = str(self.web_conf_file)
+            self.cfg[key]["config"]["config_toml_file"] = str(
+                self.web_conf_file
+            )
         if not self.master_pass:
             self.master_pass = get_passwd()
         email_user, self.email_password = get_email_credentials()
         self._prep_vault()
-        self.cfg["vault"]["config"]["ansible_python_interpreter"] = self.cfg["db"][
-            "config"
-        ].get("ansible_python_interpreter", "/usr/bin/python3")
+        self.cfg["vault"]["config"]["ansible_python_interpreter"] = self.cfg[
+            "db"
+        ]["config"].get("ansible_python_interpreter", "/usr/bin/python3")
         self.cfg["vault"]["config"]["email_user"] = email_user
         self.cfg["vault"]["config"]["email_password"] = self.email_password
         self.cfg["web"]["config"]["root_passwd"] = self.master_pass
@@ -274,14 +297,19 @@ class DeployFactory:
         self.cfg["web"]["config"]["chain_keyfile"] = (
             self.chain_key_file or self.public_key_file
         )
-        self.cfg["web"]["config"]["apache_config_file"] = str(self.apache_config)
+        self.cfg["web"]["config"]["apache_config_file"] = str(
+            self.apache_config
+        )
         self._prep_apache_config()
 
     def _prep_apache_config(self):
         config = []
         with (Path(asset_dir) / "web" / "freva_web.conf").open() as f_obj:
             for line in f_obj.readlines():
-                if not self.chain_key_file and "SSLCertificateChainFile" in line:
+                if (
+                    not self.chain_key_file
+                    and "SSLCertificateChainFile" in line
+                ):
                     continue
                 config.append(line)
         with open(self.apache_config, "w") as f_obj:
@@ -297,7 +325,9 @@ class DeployFactory:
         try:
             return dict(load_config(self._inv_tmpl))
         except FileNotFoundError as error:
-            raise FileNotFoundError(f"No such file {self._inv_tmpl}") from error
+            raise FileNotFoundError(
+                f"No such file {self._inv_tmpl}"
+            ) from error
 
     def _check_config(self) -> None:
         sections = []
@@ -307,8 +337,14 @@ class DeployFactory:
                     sections.append(section)
         for section in sections:
             for key, value in self.cfg[section]["config"].items():
-                if not value and not self._empty_ok and not isinstance(value, bool):
-                    raise ValueError(f"{key} in {section} is empty in {self._inv_tmpl}")
+                if (
+                    not value
+                    and not self._empty_ok
+                    and not isinstance(value, bool)
+                ):
+                    raise ValueError(
+                        f"{key} in {section} is empty in {self._inv_tmpl}"
+                    )
 
     @property
     def _empty_ok(self) -> list[str]:
@@ -334,15 +370,21 @@ class DeployFactory:
         num_chars, num_digits, num_punctuations = 20, 4, 4
         num_chars -= num_digits + num_punctuations
         characters = [
-            "".join([random.choice(string.ascii_letters) for i in range(num_chars)]),
+            "".join(
+                [random.choice(string.ascii_letters) for i in range(num_chars)]
+            ),
             "".join([random.choice(string.digits) for i in range(num_digits)]),
-            "".join([random.choice(punctuations) for i in range(num_punctuations)]),
+            "".join(
+                [random.choice(punctuations) for i in range(num_punctuations)]
+            ),
         ]
         str_characters = "".join(characters)
         _db_pass = "".join(random.sample(str_characters, len(str_characters)))
         while _db_pass.startswith("@"):
             # Vault treats values starting with "@" as file names.
-            _db_pass = "".join(random.sample(str_characters, len(str_characters)))
+            _db_pass = "".join(
+                random.sample(str_characters, len(str_characters))
+            )
         self._db_pass = _db_pass
         return self._db_pass
 
@@ -506,8 +548,10 @@ class DeployFactory:
         inventory_str = inventory
         for passwd in (self.email_password, self.master_pass):
             if passwd:
-                inventory_str = inventory_str.replace(passwd, "*" * len(passwd))
-        RichConsole.print(inventory, style="bold", markup=True)
+                inventory_str = inventory_str.replace(
+                    passwd, "*" * len(passwd)
+                )
+        RichConsole.print(inventory_str, style="bold", markup=True)
         logger.info("Playing the playbooks with ansible")
         RichConsole.print(
             "[b]Note:[/] The [blue]BECOME[/] password refers to the "
