@@ -49,8 +49,8 @@ hosts = ""
 ## leading 0s:
 
 ## hosts = "db-[99:101]-node.example.com"
-[solr]
-## Set the hostnames running the apache solr service
+[databrowser]
+## Set the hostnames running the databrowser service
 hosts = ""
 
 [db]
@@ -103,12 +103,15 @@ wipe = false
 db_playbook = ""
 vault_playbook = ""
 
-[solr.config]
+[databrowser.config]
 ## Config variables for the solr service
-port = 8983
+solr_port = 8983
 
 # Set the memory for the solr server
-mem = "4g"
+solr_mem = "4g"
+
+# Set the port the databrowser should be running on
+databrowser_port = 7777
 
 ## Set the become (sudo) user name to change to for installing the services
 ansible_become_user = "root"
@@ -128,7 +131,7 @@ wipe = false
 ## located in the user config directory.
 ## NOTE: only adjust this if you know what you are doing, if you leave this
 ## blank the system will used the default playbook (standard procedure)
-solr_playbook = ""
+databrowser_playbook = ""
 
 
 
@@ -316,5 +319,3 @@ web_playbook = ""
 
 ## Set the become (sudo) user name to change to for installing the services
 ansible_become_user = "root"
-
-

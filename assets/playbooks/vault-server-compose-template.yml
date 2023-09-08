@@ -1,0 +1,27 @@
+version: '3'
+services:
+  {{vault_name}}:
+    image: ghcr.io/freva-clint/freva-deployment/vault:latest
+    hostname: {{vault_name}}
+    cap_add:
+      - IPC_LOCK
+      - SYS_NICE
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+    networks:
+      - {{project_name}}
+    environment:
+      - ROOT_PW={{ root_passwd }}
+    volumes:
+{% for volume in vault_volumes %}
+      - {{volume}}
+{% endfor %}
+    container_name: {{vault_name}}
+    tty: true
+    ports:
+      - 5002:5002
+
+networks:
+  {{project_name}}:
+    driver: bridge

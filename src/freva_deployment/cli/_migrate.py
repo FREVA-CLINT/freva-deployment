@@ -1,27 +1,29 @@
 """CLI to assist with migrating the system."""
 from __future__ import annotations
+
 import argparse
 import json
-from pathlib import Path
 import os
 import shlex
 import shutil
-from subprocess import run, PIPE, CalledProcessError
 import sys
+from pathlib import Path
+from subprocess import PIPE, CalledProcessError, run
 from tempfile import NamedTemporaryFile, TemporaryDirectory
-from typing import cast, TextIO
+from typing import TextIO, cast
 
-import toml
 import pymysql
+import toml
 
 from freva_deployment import __version__
+
 from ..utils import (
-    logger,
-    read_db_credentials,
     download_server_map,
     get_setup_for_service,
-    set_log_level,
     guess_map_server,
+    logger,
+    read_db_credentials,
+    set_log_level,
 )
 
 DUMP_SCRIPT = """#!{python_bin}

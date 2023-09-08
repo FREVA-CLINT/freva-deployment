@@ -1,12 +1,15 @@
 from __future__ import annotations
+
 from getpass import getuser
-import npyscreen
 from pathlib import Path
-from typing import cast, List, Dict
+from typing import Dict, List, cast
+
+import npyscreen
+
+from freva_deployment import AVAILABLE_CONDA_ARCHS, AVAILABLE_PYTHON_VERSIONS
+from freva_deployment.utils import get_current_file_dir
 
 from .base import BaseForm, logger
-from freva_deployment import AVAILABLE_PYTHON_VERSIONS, AVAILABLE_CONDA_ARCHS
-from freva_deployment.utils import get_current_file_dir
 
 
 def get_index(values: list[str], target: str, default: int = 0) -> int:
@@ -696,25 +699,31 @@ class DBScreen(BaseForm):
         )
 
 
-class SolrScreen(BaseForm):
-    """Form for the solr deployment configuration."""
+class DatabrowserScreen(BaseForm):
+    """Form for the databrowser deployment configuration."""
 
-    step: str = "solr"
+    step: str = "databrowser"
 
     def _add_widgets(self) -> None:
         """Add widgets to the screen."""
         self.list_keys: list[str] = []
         cfg = self.get_config(self.step)
         solr_ports: list[int] = list(range(8980, 9000))
-        port_idx = get_index(
-            [str(p) for p in solr_ports], str(cfg.get("port", 8983)), 3
+        databrowser_ports: list[int] = list(range(7770, 7780))
+        solr_port_idx = get_index(
+            [str(p) for p in solr_ports], str(cfg.get("solr_port", 8983)), 3
+        )
+        databrowser_port_idx = get_index(
+            [str(p) for p in databrowser_ports],
+            str(cfg.get("databrowser_port", 7777)),
+            7,
         )
         self.input_fields: dict[str, tuple[npyscreen.TitleText, bool]] = dict(
             hosts=(
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
                     name=f"{self.num}Server Name(s) where the solr service is deployed:",
-                    value=self.get_host("solr"),
+                    value=self.get_host("databrowser"),
                 ),
                 True,
             ),
@@ -729,7 +738,7 @@ class SolrScreen(BaseForm):
                 ),
                 True,
             ),
-            mem=(
+            solr_mem=(
                 self.add_widget_intelligent(
                     npyscreen.TitleCombo,
                     name=f"{self.num}Virtual memory (in GB) for the solr server:",
@@ -738,23 +747,32 @@ class SolrScreen(BaseForm):
                 ),
                 True,
             ),
-            port=(
+            solr_port=(
                 self.add_widget_intelligent(
                     npyscreen.TitleCombo,
                     name=f"{self.num}Solr port:",
-                    value=port_idx,
+                    value=solr_port_idx,
                     values=solr_ports,
                 ),
                 True,
             ),
-            solr_playbook=(
+            databrowser_port=(
+                self.add_widget_intelligent(
+                    npyscreen.TitleCombo,
+                    name=f"{self.num}Databrowser API port:",
+                    value=databrowser_port_idx,
+                    values=databrowser_ports,
+                ),
+                True,
+            ),
+            databrowser_playbook=(
                 self.add_widget_intelligent(
                     npyscreen.TitleFilename,
                     name=(
                         f"{self.num}Set the path to the playbook used for"
                         " setting up the system."
                     ),
-                    value=cfg.get("solr_playbook", ""),
+                    value=cfg.get("databrowser_playbook", ""),
                 ),
                 False,
             ),

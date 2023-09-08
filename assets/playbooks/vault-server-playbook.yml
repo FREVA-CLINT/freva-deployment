@@ -4,16 +4,10 @@
   vars:
     ansible_python_interpreter: "{{ db_ansible_python_interpreter }}"
     continer_name: "{{ vault_name }}"
-    docker_cmd: >
-        --net {{ project_name }} --cap-add=IPC_LOCK
-        --dns 8.8.8.8
-        -e ROOT_PW='{{ root_passwd }}'
-        --rm
-        --name {{vault_name}}
-        -v /opt/freva/{{project_name}}/vault_service/config:/data:z
-        -v /opt/freva/{{project_name}}/vault_service/files:/vault/file:z
-        -p 5002:5002
-        -t ghcr.io/freva-clint/freva-deployment/vault:latest
+    compose_file: /opt/freva/compose_services/{{vault_name}}-compose.yml
+    vault_volumes:
+      - /opt/freva/{{project_name}}/vault_service/config:/data:z
+      - /opt/freva/{{project_name}}/vault_service/files:/vault/file:z
     use_become: "{{ vault_ansible_become_user is defined and vault_ansible_become_user != '' }}"
   tasks:
     - name: Copying docker/podman wrapper script
@@ -35,21 +29,15 @@
     - name: Stopping services and deleting existing containers
       shell: >
         systemctl stop {{vault_name}};
+        systemctl disable {{vault_name}};
         /tmp/docker-or-podman rm {{vault_name}};
-        /tmp/docker-or-podman rmi -f {{vault_name}};
-        /tmp/docker-or-podman rmi -f ghcr.io/freva-clint/freva-deployment/vault;
+        /tmp/docker-or-podman rmi -f {{vault_name}} ghcr.io/freva-clint/freva-deployment/vault;
         exit 0
       ignore_errors: true
       become: "{{use_become}}"
     - name: Pulling container
       become: "{{use_become}}"
       shell: /tmp/docker-or-podman pull ghcr.io/freva-clint/freva-deployment/vault:latest
-    - name: Creating docker network
-      shell: >
-        /tmp/docker-or-podman network create "{{ project_name }}";
-        exit 0
-      ignore_errors: true
-      become: "{{use_become}}"
     - name: Copying auxillary files to target machine
       copy: src="{{ asset_dir }}/vault" dest=/tmp
     - name: Copying systemd files
@@ -70,11 +58,22 @@
         src: "{{ vault_keyfile }}"
         dest: "/opt/freva/{{project_name}}/vault_service/config/freva.crt"
       become: "{{use_become}}"
-    - name: Creating system service
+    - name: Creating compose directory structure
+      file:
+        path: /opt/freva/compose_services/foo
+        state: directory
+        recurse: true
       become: "{{use_become}}"
-      shell: >
-          /tmp/create_systemd.py {{vault_name}} run {{docker_cmd}}
-      ignore_errors: true
+    - name: Creating compose file
+      become: "{{use_become}}"
+      template:
+        src: "{{ asset_dir }}/playbooks/vault-server-compose-template.yml"
+        dest: "/opt/freva/compose_services/{{vault_name}}-compose.yml"
+    - name: Creating system services
+      become: "{{use_become}}"
+      shell: |
+        /tmp/create_systemd.py {{vault_name}} compose --enable --project-name {{project_name}} -f {{compose_file}} up;
+      when: systemctl.stat.exists == true
     - pause: seconds=20
     - name: Deleting existing infrastructure
       shell: >
@@ -90,7 +89,7 @@
         db.port={{ db_port }}
         db.passwd='{{ vault_passwd }}'
         db.user={{ db_user }}
-        db.db={{ db_db }}
+        db.db={{ vault_db }}
       become: "{{use_become}}"
     - name: Deleting auxillary files
       file:

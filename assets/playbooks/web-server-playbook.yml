@@ -61,39 +61,45 @@
   vars:
     ansible_python_interpreter: "{{ web_ansible_python_interpreter }}"
     service_dir: /opt/freva/{{project_name}}/web_service
-    docker_web_cmd: >
-        -p 8000:8000
-        --rm
-        -v {{ core_root_dir }}:{{ core_root_dir }}:ro
-        -v {{ core_scheduler_output_dir}}:{{ core_scheduler_output_dir }}:ro
-        -v /opt/freva/{{project_name}}/web_service/static:/opt/freva_web/static:z
-        -v {{core_base_dir_location}}:{{core_base_dir_location}}:ro
-        -e EVALUATION_SYSTEM_CONFIG_FILE={{core_root_dir}}/freva/evaluation_system.conf
-        -e LDAP_USER_DN={{web_ldap_user_dn}}
-        -e LDAP_USER_PW={{web_ldap_user_pw}}
-        -e DJANGO_SUPERUSER_PASSWORD={{ root_passwd }}
-        --name {{web_name}}
-        -t ghcr.io/freva-clint/freva-web
-    docker_apache_cmd: >
-        -v /opt/freva/{{project_name}}/web_service/freva_web.conf:/usr/local/apache2/conf/httpd.conf:z
-        -v /opt/freva/{{project_name}}/web_service/server-cert.crt:/etc/ssl/certs/server-cert.crt:z
-        -v /opt/freva/{{project_name}}/web_service/server-key.key:/etc/ssl/private/server-key.key:z
-        -v /opt/freva/{{project_name}}/web_service/cacert.pem:/etc/ssl/certs/cacert.pem:z
-        -v /opt/freva/{{project_name}}/web_service/static:/srv/static:z
-        -v /opt/freva/{{project_name}}/web_service/prepare-httpd:/usr/local/bin/prepare-httpd:z
-        -v {{ core_preview_path }}:/srv/static/preview:z
+    compose_file: /opt/freva/compose_services/{{databrowser_name}}-compose.yml
+    web_volumes:
+      - "{{ core_root_dir }}:{{ core_root_dir }}:ro"
+      - "{{ core_scheduler_output_dir}}:{{ core_scheduler_output_dir }}:ro"
+      - "/opt/freva/{{project_name}}/web_service/static:/opt/freva_web/static:z"
+      - "{{core_base_dir_location}}:{{core_base_dir_location}}:ro"
+    apache_volumes:
+      - "/opt/freva/{{project_name}}/web_service/freva_web.conf:/usr/local/apache2/conf/httpd.conf:z"
+      - "/opt/freva/{{project_name}}/web_service/server-cert.crt:/etc/ssl/certs/server-cert.crt:z"
+      - "/opt/freva/{{project_name}}/web_service/server-key.key:/etc/ssl/private/server-key.key:z"
+      - "/opt/freva/{{project_name}}/web_service/cacert.pem:/etc/ssl/certs/cacert.pem:z"
+      - "/opt/freva/{{project_name}}/web_service/static:/srv/static:z"
+      - "/opt/freva/{{project_name}}/web_service/prepare-httpd:/usr/local/bin/prepare-httpd:z"
+      - "{{ core_preview_path }}:/srv/static/preview:z"
+      docker_apache_cmd: >
         --rm
         -e SCHEDULER_DIR={{core_scheduler_output_dir}}
         -e UID=$(id -u {{ansible_user}})
         -e GID=$(id -g {{ansible_user}})
         --name "{{project_name}}-httpd"
         --security-opt label=disable
+        -e DATABROWSER_HOST={{web_databrowser_host}}
         -e FREVA_HOST={{web_server_name}} -p 80:80 -p 443:443
         httpd:latest /usr/local/bin/prepare-httpd
     redis_name: "{{ project_name }}-redis"
     apache_name: "{{project_name}}-httpd"
+    web_name: "{{project_name}}-web"
     use_become: "{{ web_ansible_become_user is defined and web_ansible_become_user != '' }}"
   tasks:
+    - name: Get UID
+      command: id -u {{ ansible_user }}
+      register: uid_result
+    - name: Get GID
+      command: id -g {{ ansible_user }}
+      register: gid_result
+    - name: Set UID and GID as facts
+      set_fact:
+        uid: "{{ uid_result.stdout }}"
+        gid: "{{ gid_result.stdout }}"
     - name: Copying docker/podman wrapper script
       copy:
         src: "{{ asset_dir }}/scripts/docker-or-podman"
@@ -116,18 +122,13 @@
       when: core.stat.exists == false
     - name: Stopping services
       shell: >
-        systemctl stop {{ web_name }};
-        systemctl stop {{ redis_name }};
-        systemctl stop {{ apache_name }};
-        /tmp/docker-or-podman stop {{web_name}};
-        /tmp/docker-or-podman rm {{web_name}};
-        /tmp/docker-or-podman stop {{redis_name}};
-        /tmp/docker-or-podman rm {{redis_name}};
-        /tmp/docker-or-podman stop {{apache_name}};
-        /tmp/docker-or-podman rm {{apache_name}};
-        /tmp/docker-or-podman rmi -f docker.io/redis;
-        /tmp/docker-or-podman rmi -f ghcr.io/freva-clint/freva-web;
-        /tmp/docker-or-podman rmi -f docker.io/httpd; echo 0
+        systemctl stop {{ web_name }} {{ redis_name }} {{ apache_name }};
+        systemctl disable {{ web_name }} {{ redis_name }} {{ apache_name }};
+        systemctl reset-failed;
+        /tmp/docker-or-podman stop {{web_name}} {{web_name}} {{redis_name}};
+        /tmp/docker-or-podman rm {{web_name}} {{redis_name}} {{apache_name}};
+        /tmp/docker-or-podman rmi -f docker.io/redis ghcr.io/freva-clint/freva-web docker.io/httpd;
+        echo 0
       ignore_errors: true
       become: "{{use_become}}"
     - name: Deleting existing web-directory
@@ -146,6 +147,12 @@
         src: "{{ asset_dir }}/scripts/prepare-httpd"
         dest: "/opt/freva/{{project_name}}/web_service/prepare-httpd"
         mode: "0775"
+    - name: Creating compose directory structure
+      file:
+        path: /opt/freva/compose_services/foo
+        state: directory
+        recurse: true
+      become: "{{use_become}}"
     - name: Copying key files files
       become: "{{use_become}}"
       copy:
@@ -173,12 +180,15 @@
         src: "{{ asset_dir }}/scripts/create_systemd.py"
         dest: /tmp/create_systemd.py
         mode: "0755"
+    - name: Creating compose file
+      become: "{{use_become}}"
+      template:
+        src: "{{ asset_dir }}/playbooks/web-server-compose-template.yml"
+        dest: "/opt/freva/compose_services/{{databrowser_name}}-compose.yml"
     - name: Creating system services
       become: "{{use_become}}"
       shell: |
-          /tmp/create_systemd.py {{redis_name}} run --name {{redis_name}} --rm -p 6379:6379 redis:latest
-          /tmp/create_systemd.py {{apache_name}} run "{{docker_apache_cmd}}"
-          /tmp/create_systemd.py {{web_name}} run "{{docker_web_cmd}}" --requires {{redis_name}} {{apache_name}} --enable
+        /tmp/create_systemd.py {{web_name}} compose --enable --project-name {{project_name}} -f {{compose_file}} up
       when: systemctl.stat.exists == true
     - pause: seconds=15
     - name: Restarting services

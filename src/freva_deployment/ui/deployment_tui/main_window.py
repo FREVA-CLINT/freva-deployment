@@ -1,19 +1,27 @@
 """The Freva deployment Text User Interface (TUI) helps to configure a
 deployment setup for a new instance of freva."""
 from __future__ import annotations
+
 import json
-from pathlib import Path
-import time
 import threading
+import time
+from pathlib import Path
 from typing import Any, Dict, List, cast
 
 import appdirs
 import npyscreen
 import tomlkit
 
-from freva_deployment.utils import asset_dir, config_dir
-from .base import selectFile, BaseForm, VarForm
-from .deploy_forms import WebScreen, DBScreen, SolrScreen, CoreScreen, RunForm
+from freva_deployment.utils import asset_dir, config_dir, load_config
+
+from .base import BaseForm, VarForm, selectFile
+from .deploy_forms import (
+    CoreScreen,
+    DBScreen,
+    RunForm,
+    DatabrowserScreen,
+    WebScreen,
+)
 
 
 class MainApp(npyscreen.NPSAppManaged):
@@ -43,7 +51,7 @@ class MainApp(npyscreen.NPSAppManaged):
         self._steps_lookup = {
             "core": "MAIN",
             "web": "SECOND",
-            "solr": "FOURTH",
+            "databrowser": "FOURTH",
             "db": "THIRD",
         }
         self.config = cast(Dict[str, Any], self._read_cache("config", {}))
@@ -70,7 +78,9 @@ class MainApp(npyscreen.NPSAppManaged):
         )
         self._forms["web"] = self.addForm("SECOND", WebScreen, name="Web deployment")
         self._forms["db"] = self.addForm("THIRD", DBScreen, name="Database deployment")
-        self._forms["solr"] = self.addForm("FOURTH", SolrScreen, name="Solr deployment")
+        self._forms["databrowser"] = self.addForm(
+            "FOURTH", DatabrowserScreen, name="Databrowser deployment"
+        )
         self._setup_form = self.addForm("SETUP", RunForm, name="Apply the Deployment")
 
     def exit_application(self, *args, **kwargs) -> None:
@@ -206,11 +216,9 @@ class MainApp(npyscreen.NPSAppManaged):
         if write_toml_file is False:
             return None
         try:
-            with open(self.save_file) as f:
-                config_tmpl = cast(Dict[str, Any], tomlkit.load(f))
+            config_tmpl = load_config(self.save_file)
         except FileNotFoundError:
-            with open(asset_dir / "config" / "inventory.toml") as f:
-                config_tmpl = cast(Dict[str, Any], tomlkit.load(f))
+            config_tmpl = load_config(asset_dir / "config" / "inventory.toml")
         except Exception:
             config_tmpl = self.config
         config_tmpl["certificates"] = cert_files
@@ -244,7 +252,9 @@ class MainApp(npyscreen.NPSAppManaged):
     @property
     def _steps(self) -> list[str]:
         """Read the deployment-steps from the cache."""
-        return cast(List[str], self._read_cache("steps", ["core", "web", "db", "solr"]))
+        return cast(
+            List[str], self._read_cache("steps", ["core", "web", "db", "databrowser"])
+        )
 
     def read_cert_file(self, key: str) -> str:
         """Read the certificate file from the cache."""

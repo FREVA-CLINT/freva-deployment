@@ -1,22 +1,22 @@
 """Collection of utils for deployment."""
 from __future__ import annotations
+
 import hashlib
-import logging
 import json
-from pathlib import Path
-import pkg_resources
+import logging
 import re
-from subprocess import PIPE
-import sys
 import shutil
-from typing import Any, NamedTuple, cast
+import sys
 import warnings
+from pathlib import Path
+from typing import Any, MutableMapping, NamedTuple, cast
 
 import appdirs
+import pkg_resources
 import requests
+import tomlkit
 from rich.console import Console
 from rich.prompt import Prompt
-import toml
 
 logging.basicConfig(
     format="%(name)s - %(levelname)s - %(message)s", level=logging.INFO
@@ -94,14 +94,16 @@ class AssetDir:
         return self._central_asset_dir
 
     @property
+    def inventory_file(self) -> Path:
+        return self.asset_dir / "config" / "inventory.toml"
+
+    @property
     def config_dir(self):
         inventory_file = self._user_config_dir / "inventory.toml"
         if inventory_file.exists():
             return self._user_config_dir
         self._user_config_dir.mkdir(exist_ok=True, parents=True)
-        shutil.copy(
-            self.asset_dir / "config" / "inventory.toml", inventory_file
-        )
+        shutil.copy(self.inventory_file, inventory_file)
         return self._user_config_dir
 
     @property
@@ -145,13 +147,40 @@ def _convert_dict(
             inp_dict[key] = get_current_file_dir(cfd, value)
 
 
+def _update_config(
+    new_config: MutableMapping[str, Any], old_config: MutableMapping[str, Any]
+) -> None:
+    for key, value in old_config.items():
+        if key in new_config and isinstance(value, dict):
+            _update_config(new_config[key], old_config[key])
+        else:
+            new_config[key] = value
+
+
+def _create_new_config(inp_file: Path) -> Path:
+    """Update any old configuration file to a newer version."""
+    config = tomlkit.loads(inp_file.read_text())
+    config_tmpl = tomlkit.loads(AD.inventory_file.read_text())
+    # Legacy solr:
+    if "solr" in config:
+        config["databrowser"] = config.pop("solr")
+        for key in ("port", "mem"):
+            if key in config["databrowser"]["config"]:
+                config["databrowser"]["config"][f"solr_{key}"] = config[
+                    "databrowser"
+                ]["config"].pop(key)
+    _update_config(config_tmpl, config)
+    inp_file.write_text(tomlkit.dumps(config_tmpl))
+    return inp_file
+
+
 def load_config(inp_file: str | Path) -> dict[str, Any]:
     """Load the inventory toml file and replace all environment variables."""
-    inp_file = Path(inp_file).expanduser().absolute()
+    inp_file = _create_new_config(Path(inp_file).expanduser().absolute())
     variables = cast(
-        dict[str, str], toml.loads(config_file.read_text())["variables"]
+        dict[str, str], tomlkit.loads(config_file.read_text())["variables"]
     )
-    config = toml.loads(inp_file.read_text())
+    config = tomlkit.loads(inp_file.read_text())
     _convert_dict(config, variables, inp_file.parent)
     return config
 
@@ -285,7 +314,7 @@ def upload_server_map(
         _upload_data[service] = config
     host, _, port = server_map.partition(":")
     port = port or "6111"
-    req_data = dict(config=toml.dumps(_upload_data))
+    req_data = dict(config=tomlkit.dumps(_upload_data))
     logger.debug("Uploading %s", req_data)
     req = requests.put(f"http://{host}:{port}/{project_name}", data=req_data)
     if req.status_code == 201:

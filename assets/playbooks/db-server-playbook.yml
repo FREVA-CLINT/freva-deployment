@@ -3,38 +3,42 @@
 
   vars:
     ansible_python_interpreter: "{{ db_ansible_python_interpreter }}"
+    compose_file: /opt/freva/compose_services/{{db_name}}-compose.yml
+    db_volumes:
+      - /opt/freva/freva-service-config/mysql/create_tables.sql:/docker-entrypoint-initdb.d/002_create_tables.sql:z
+      - /opt/freva/freva-service-config/mysql/daily_backup.sh:/usr/local/bin/daily_backup:z
     docker_cmd: >
-        --net {{ project_name }} -v
+        --network {{ project_name }} -v
         /opt/freva/{{project_name}}/db_service:/var/lib/mysql:z
         -e HOST={{ db_host }}
         -e NUM_BACKUPS=7
         -e PROJECT={{ project_name }}
         -e MYSQL_USER={{db_user}}
         -e MYSQL_PASSWORD='{{db_passwd}}'
-        -e MYSQL_DATABASE={{db_db}}
+        -e MYSQL_DATABASE={{db}}
         -e BACKUP_DIR=/var/lib/mysql/backup
         -p {{ db_port }}:3306
+        -v /opt/freva/freva-service-config/mysql/create_tables.sql:/docker-entrypoint-initdb.d/002_create_tables.sql:z
+        -v /opt/freva/freva-service-config/mysql/daily_backup.sh:/usr/local/bin/daily_backup:z
         --rm
         --name {{db_name}}
-        -e MYSQL_ROOT_PASSWORD='{{ root_passwd }}'
-        -v /root/freva-service-config/mysql/create_tables.sql:/docker-entrypoint-initdb.d/002_create_tables.sql:z
-        -v /root/freva-service-config/mysql/daily_backup.sh:/usr/local/bin/daily_backup:z
+        -e MYSQL_ROOT_PASSWORD={{ root_passwd }}
         -t docker.io/mariadb:latest
     skip_tables_cmd: >
-        --net {{ project_name }} -v
+        --network {{ project_name }} -v
         /opt/freva/{{project_name}}/db_service:/var/lib/mysql:z
         -e HOST={{ db_host }}
         -e NUM_BACKUPS=7
         -e PROJECT={{ project_name }}
         -e MYSQL_USER={{db_user}}
         -e MYSQL_PASSWORD='{{db_passwd}}'
-        -e MYSQL_DATABASE={{db_db}}
+        -e MYSQL_DATABASE={{db}}
         -e BACKUP_DIR=/var/lib/mysql/backup
         -p {{ db_port }}:3306
-        -e MYSQL_ROOT_PASSWORD='{{ root_passwd }}'
+        -e MYSQL_ROOT_PASSWORD={{ root_passwd }}
         --name {{db_name}}
-        -v /root/freva-service-config/mysql/create_tables.sql:/docker-entrypoint-initdb.d/002_create_tables.sql:z
-        -v /root/freva-service-config/mysql/daily_backup.sh:/usr/local/bin/daily_backup:z
+        -v /opt/freva/freva-service-config/mysql/create_tables.sql:/docker-entrypoint-initdb.d/002_create_tables.sql:z
+        -v /opt/freva/freva-service-config/mysql/daily_backup.sh:/usr/local/bin/daily_backup:z
         -v /tmp/reset_root_pw.sh:/tmp/reset_root_pw.sh:z
         -t docker.io/mariadb:latest mariadbd-safe --skip-grant-tables
     continer_name: "{{ db_name }}"
@@ -58,6 +62,8 @@
       shell: >
         /tmp/docker-or-podman stop {{db_name}};
         systemctl stop {{db_name}};
+        systemctl disable {{db_name}};
+        systemctl reset-failed;
         /tmp/docker-or-podman rm {{db_name}};
         /tmp/docker-or-podman rmi -f mariadb;
         echo 0
@@ -67,7 +73,7 @@
       file:
         state: absent
         force: true
-        path: "/root/freva-service-config/"
+        path: "/opt/freva/freva-service-config/"
       become: "{{use_become}}"
     - name: Pulling container
       become: "{{use_become}}"
@@ -106,7 +112,7 @@
       become: "{{use_become}}"
       git:
         repo: https://github.com/FREVA-CLINT/freva-service-config.git
-        dest: /root/freva-service-config
+        dest: /opt/freva/freva-service-config
         update: true
     - name: Preparing the root password reset I
       become: "{{use_become}}"
@@ -127,23 +133,31 @@
       become: "{{use_become}}"
       shell: |
         /tmp/docker-or-podman rm -f {{db_name}}
-    - name: Creating systemd service
+    - name: Creating compose directory structure
+      file:
+        path: /opt/freva/compose_services
+        state: directory
+        recurse: true
+      become: "{{use_become}}"
+    - name: Creating compose file
+      become: "{{use_become}}"
+      template:
+        src: "{{ asset_dir }}/playbooks/db-server-compose-template.yml"
+        dest: "/opt/freva/compose_services/{{db_name}}-compose.yml"
+    - name: Creating system services
       become: "{{use_become}}"
       shell: |
-        /tmp/create_systemd.py {{db_name}} run {{docker_cmd | trim}} --requires {{vault_name}} --enable
+        /tmp/create_systemd.py {{db_name}} compose --enable --project-name {{project_name}} -f {{compose_file}} up
       when: systemctl.stat.exists == true
     - name: Creating cron jobs
       become: "{{use_become}}"
       shell: sh /tmp/create_cron.sh "{{ db_name }}" "{{db_email}}"
       when: cron.stat.exists == true
-    - name: Restarting docker container
-      become: "{{use_become}}"
-      shell: systemctl restart "{{ db_name }}"
-      when: systemctl.stat.exists == true
+    - pause: seconds=5
     - name: Creating potentially missing tables
       become: "{{use_become}}"
       shell: |
-        /tmp/docker-or-podman exec -it {{db_name}} /bin/sh -c 'mariadb -u root -p{{root_passwd}} {{db_db}} < /docker-entrypoint-initdb.d/002_create_tables.sql'
+        /tmp/docker-or-podman exec -it {{db_name}} /bin/sh -c 'mariadb -u root -p{{root_passwd}} {{db}} < /docker-entrypoint-initdb.d/002_create_tables.sql'
     - name: Deleting auxillary files
       become: "{{use_become}}"
       file:

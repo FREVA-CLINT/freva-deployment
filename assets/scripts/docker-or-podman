@@ -45,11 +45,34 @@ class CommandFactory(metaclass=abc.ABCMeta):
     @staticmethod
     def get_container_cmd() -> str:
         """Get the command of the container."""
-        for cmd in ("apptainer", "podman", "docker"):
+        for cmd in ("podman", "docker", "apptainer"):
             cont_cmd = shutil.which(cmd)
             if cont_cmd:
                 return cont_cmd
         raise ValueError("Docker, Podman or Apptainer must be installed")
+
+    def compose(self, *args, **kwargs) -> List[str]:
+        """User the compose command.
+
+        Parameters
+        ----------
+        **kwargs: Any
+            Additional command line arguments
+        Returns
+        -------
+        list[str]: Constructed command line arguemnts.
+        """
+        container_cmd = Path(self.get_container_cmd()).name
+        command = shutil.which(f"{container_cmd}-compose")
+        if not command:
+            txt = (
+                f"{container_cmd} is available but not {container_cmd}-compose"
+                " which should be installed on the system."
+            )
+            print(txt, file=sys.stderr)
+            raise ValueError(txt)
+        _args = self._kwargs_to_list(**kwargs)
+        return [command] + _args + list(args)
 
     def network(self, sub_command: str, *flags: str) -> List[str]:
         """Interact with the network sub commands.
@@ -369,6 +392,30 @@ def parse_args() -> List[str]:
         action="store_true",
     )
 
+    # -------------------------- Compose commands -----------------------------
+    parser_compose = subparsers.add_parser(
+        "compose",
+        help="Define and run multi-container applications",
+    )
+    parser_compose.add_argument("-p", "--project-name", help="Project name")
+    parser_compose.add_argument(
+        "-f",
+        "--file",
+        help="Compose configuration files",
+    )
+    parser_compose.add_argument(
+        "--project-directory",
+        help=(
+            "Specify an alternate working directory "
+            "(default: the path of the, first specified, Compose file)"
+        ),
+    )
+    parser_compose.add_argument(
+        "command",
+        nargs=argparse.REMAINDER,
+        type=str,
+        metavar="command",
+    )
     # -------------------------- Exec commands --------------------------------
 
     _ = subparsers.add_parser(
@@ -400,6 +447,9 @@ def parse_args() -> List[str]:
     parser_run.add_argument("--name", help="Assign a name to the container")
     parser_run.add_argument(
         "--network", help="Connect a container to a network"
+    )
+    parser_run.add_argument(
+        "--network-alias", help="Add network-scoped alias for the container"
     )
     parser_run.add_argument(
         "-v", "--volume", help="Bind mount a volume", action="append"
@@ -513,7 +563,7 @@ def parse_args() -> List[str]:
         "docker": Docker,
     }
     container_inst = container_cls[container_cmd](
-        args.container, print_only=args.print_only
+        getattr(args, "container", None), print_only=args.print_only
     )
     kwargs = {
         k.replace("_", "-"): v
@@ -530,6 +580,8 @@ def parse_args() -> List[str]:
         cmd = container_inst.network(
             args.subcommand, args.command, *args.flags
         )
+    elif args.subcommand in ("compose",):
+        cmd = container_inst.compose(*args.command, **kwargs)
     else:
         cmd = []
     if args.print_only:
