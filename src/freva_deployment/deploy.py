@@ -1,5 +1,6 @@
 """Module to run the freva deployment."""
 from __future__ import annotations
+
 import json
 import os
 import random
@@ -72,7 +73,6 @@ class DeployFactory:
         self._inv_tmpl = Path(config_file or config_dir / "inventory.toml")
         self._cfg_tmpl = self.aux_dir / "evaluation_system.conf.tmpl"
         self.cfg = self._read_cfg()
-        self.info = {}
         self.project_name = self.cfg.pop("project_name", None)
         self.playbooks: dict[str, Path | None] = {}
         if not self.project_name:
@@ -121,7 +121,6 @@ class DeployFactory:
         self.cfg["vault"]["config"]["email"] = self.cfg["web"]["config"].get(
             "contacts", ""
         )
-        self.info["vault"] = self.cfg["vault"]["config"]
 
     def _prep_db(self) -> None:
         """prepare the mariadb service."""
@@ -170,7 +169,6 @@ class DeployFactory:
         self.cfg["databrowser"]["config"]["email"] = self.cfg["web"][
             "config"
         ].get("contacts", "")
-        self.info["databrowser"] = self.cfg["databrowser"]["config"]
         if prep_web:
             self._prep_web(False)
 

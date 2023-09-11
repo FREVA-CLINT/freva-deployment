@@ -9,15 +9,15 @@ import shutil
 import sys
 import warnings
 from pathlib import Path
-from typing import Any, MutableMapping, NamedTuple, cast
+from typing import Any, Dict, MutableMapping, NamedTuple, Union, cast
 
 import appdirs
 import pkg_resources
 import requests
 import tomlkit
 from rich.console import Console
-from rich.prompt import Prompt
 from rich.logging import RichHandler
+from rich.prompt import Prompt
 
 logger_stream_handle = RichHandler(
     rich_tracebacks=False,
@@ -169,7 +169,10 @@ def _update_config(
 
 def _create_new_config(inp_file: Path) -> Path:
     """Update any old configuration file to a newer version."""
-    config = tomlkit.loads(inp_file.read_text())
+    config = cast(
+        Dict[str, Dict[str, Dict[str, Union[str, float, int, bool]]]],
+        tomlkit.loads(inp_file.read_text()),
+    )
     config_tmpl = tomlkit.loads(AD.inventory_file.read_text())
     # Legacy solr:
     if "solr" in config:
