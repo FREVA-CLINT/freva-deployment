@@ -17,6 +17,7 @@ SYSTEMD_TMPL = dict(
         TimeoutStopSec="35s",
         ExecStartPre='/bin/sh -c "{delete_command}"',
         ExecStart='/bin/sh -c "{container_cmd} {container_args}"',
+        ExecStop='/bin/sh -c "{delete_command}"',
         Restart="no",
     ),
     Install=dict(WantedBy="default.target"),
@@ -123,9 +124,10 @@ def create_unit(
             container_args=container_args,
             unit=unit,
         )
-    SYSTEMD_TMPL["Service"]["ExecStartPre"] = SYSTEMD_TMPL["Service"][
-        "ExecStartPre"
-    ].format(delete_command=delete_command)
+    for key in ("ExecStartPre", "ExecStop"):
+        SYSTEMD_TMPL["Service"][key] = SYSTEMD_TMPL["Service"][key].format(
+            delete_command=delete_command
+        )
     for service in requires:
         for key in ("After", "Requires"):
             try:
