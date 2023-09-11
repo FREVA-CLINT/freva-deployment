@@ -4,7 +4,7 @@ services:
     image: mariadb:latest
     hostname: {{db_name}}
     networks:
-      - {{project_name}}
+      - {{db_name}}
     environment:
       - ROOT_PW={{ root_passwd }}
       - HOST={{ db_host }}
@@ -25,5 +25,5 @@ services:
       - {{db_port}}:3306
 
 networks:
-  {{project_name}}:
+  {{db_name}}:
     driver: bridge

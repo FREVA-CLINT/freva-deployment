@@ -6,7 +6,7 @@ services:
     container_name: {{apache_name}}
     hostname: {{apache_name}}
     networks:
-      - {{project_name}}
+      - {{web_name}}
     environment:
       - SCHEDULER_DIR={{core_scheduler_output_dir}}
       - UID={{uid}}
@@ -25,25 +25,25 @@ services:
   {{redis_name}}:
     image: redis
     networks:
-      - {{project_name}}
+      - {{web_name}}
     ports:
       - 6379:6379
     tty: true
+    container_name: {{redis_name}}
+    hostname: {{redis_name}}
 
   {{web_name}}:
     image: ghcr.io/freva-clint/freva-web
     container_name: {{web_name}}
     hostname: {{web_name}}
     networks:
-      - {{project_name}}
+      - {{web_name}}
     environment:
       - EVALUATION_SYSTEM_CONFIG_FILE={{core_root_dir}}/freva/evaluation_system.conf
       - LDAP_USER_DN={{web_ldap_user_dn}}
       - LDAP_USER_PW={{web_ldap_user_pw}}
       - DJANGO_SUPERUSER_PASSWORD={{ root_passwd }}
     volumes:
-    container_name: {{redis_name}}
-    hostname: {{redis_name}}
 {% for volume in web_volumes %}
       - {{volume}}
 {% endfor %}
@@ -55,5 +55,5 @@ services:
       - {{apache_name}}
 
 networks:
-  {{project_name}}:
+  {{web_name}}:
     driver: bridge

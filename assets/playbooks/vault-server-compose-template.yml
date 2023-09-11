@@ -10,7 +10,7 @@ services:
       - 8.8.8.8
       - 8.8.4.4
     networks:
-      - {{project_name}}
+      - {{vault_name}}
     environment:
       - ROOT_PW={{ root_passwd }}
     volumes:
@@ -23,5 +23,5 @@ services:
       - 5002:5002
 
 networks:
-  {{project_name}}:
+  {{vault_name}}:
     driver: bridge

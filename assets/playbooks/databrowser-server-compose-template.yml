@@ -5,7 +5,7 @@ services:
     container_name: {{solr_name}}
     hostname: {{solr_name}}
     networks:
-      - {{project_name}}
+      - {{databrowser_name}}
     environment:
       - CORE=files
       - NUM_BACKUPS=7
@@ -23,7 +23,7 @@ services:
     container_name: {{mongo_name}}
     hostname: {{mongo_name}}
     networks:
-      - {{project_name}}
+      - {{databrowser_name}}
     environment:
       - MONGO_INITDB_ROOT_USERNAME=mongo
       - MONGO_INITDB_ROOT_PASSWORD={{ root_passwd}}
@@ -40,7 +40,7 @@ services:
     image: ghcr.io/freva-clint/databrowserapi:latest
     hostname: {{databrowser_name}}
     networks:
-      - {{project_name}}
+      - {{databrowser_name}}
     environment:
       - SOLR_CORE=files
       - SOLR_HOST={{solr_name}}:8983
@@ -57,5 +57,5 @@ services:
     tty: true
 
 networks:
-  {{project_name}}:
+  {{databrowser_name}}:
     driver: bridge

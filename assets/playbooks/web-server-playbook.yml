@@ -61,7 +61,7 @@
   vars:
     ansible_python_interpreter: "{{ web_ansible_python_interpreter }}"
     service_dir: /opt/freva/{{project_name}}/web_service
-    compose_file: /opt/freva/compose_services/{{databrowser_name}}-compose.yml
+    compose_file: /opt/freva/compose_services/{{web_name}}-compose.yml
     web_volumes:
       - "{{ core_root_dir }}:{{ core_root_dir }}:ro"
       - "{{ core_scheduler_output_dir}}:{{ core_scheduler_output_dir }}:ro"
@@ -125,7 +125,7 @@
         systemctl stop {{ web_name }} {{ redis_name }} {{ apache_name }};
         systemctl disable {{ web_name }} {{ redis_name }} {{ apache_name }};
         systemctl reset-failed;
-        /tmp/docker-or-podman stop {{web_name}} {{web_name}} {{redis_name}};
+        /tmp/docker-or-podman stop {{web_name}} {{apache_name}} {{redis_name}};
         /tmp/docker-or-podman rm {{web_name}} {{redis_name}} {{apache_name}};
         /tmp/docker-or-podman rmi -f docker.io/redis ghcr.io/freva-clint/freva-web docker.io/httpd;
         echo 0
@@ -149,7 +149,7 @@
         mode: "0775"
     - name: Creating compose directory structure
       file:
-        path: /opt/freva/compose_services/foo
+        path: /opt/freva/compose_services
         state: directory
         recurse: true
       become: "{{use_become}}"
@@ -184,11 +184,11 @@
       become: "{{use_become}}"
       template:
         src: "{{ asset_dir }}/playbooks/web-server-compose-template.yml"
-        dest: "/opt/freva/compose_services/{{databrowser_name}}-compose.yml"
+        dest: "{{compose_file}}"
     - name: Creating system services
       become: "{{use_become}}"
       shell: |
-        /tmp/create_systemd.py {{web_name}} compose --enable --project-name {{project_name}} -f {{compose_file}} up
+        /tmp/create_systemd.py {{web_name}} compose --enable --project-name {{web_name}} -f {{compose_file}} up --remove-orphans
       when: systemctl.stat.exists == true
     - pause: seconds=15
     - name: Restarting services

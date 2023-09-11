@@ -4,6 +4,7 @@
   vars:
     ansible_python_interpreter: "{{ databrowser_ansible_python_interpreter }}"
     databrowser_name: "{{project_name}}-databrowser"
+    compose_file: /opt/freva/compose_services/{{databrowser_name}}-compose.yml
     solr_name: "{{project_name}}-solr"
     mongo_name: "{{project_name}}-mongo"
     solr_volumes:
@@ -78,18 +79,15 @@
       become: "{{use_become}}"
     - name: Creating compose directory structure
       file:
-        path: /opt/freva/compose_services/foo
+        path: /opt/freva/compose_services
         state: directory
         recurse: true
       become: "{{use_become}}"
     - name: Creating directory structure
       file:
-        path: "{item}"
+        path: /opt/freva/{{ project_name }}/databrowser
         state: directory
         recurse: true
-      with_items:
-        - /opt/freva/{{ project_name }}/databrowser
-        - /opt/freva/compose_services/foo
       become: "{{use_become}}"
     - name: Getting additional configurations
       git:
@@ -118,10 +116,10 @@
       become: "{{use_become}}"
       template:
         src: "{{ asset_dir }}/playbooks/databrowser-server-compose-template.yml"
-        dest: "/opt/freva/compose_services/{{databrowser_name}}-compose.yml"
+        dest: "{{compose_file}}"
     - name: Creating systemd services
       shell: |
-        /tmp/create_systemd.py {{databrowser_name}} compose --enable --project-name {{project_name}} -f /opt/freva/compose_services/{{databrowser_name}}-compose.yml up
+        /tmp/create_systemd.py {{databrowser_name}} compose --enable --project-name {{databrowser_name}} -f {{compose_file}} up --remove-orphans
       when: systemctl.stat.exists == true
       become: "{{use_become}}"
     - pause: seconds=3
@@ -139,3 +137,15 @@
         - /tmp/create_systemd.py
         - /tmp/solr_service
       become: "{{use_become}}"
+- hosts: web
+  vars:
+    use_become: "{{ web_ansible_become_user is defined and web_ansible_become_user != '' }}"
+  tasks:
+    - name: Registering systemctl path
+      stat:
+        path: /usr/bin/systemctl
+      register: systemctl
+    - name: Restarting web container
+      shell: systemctl restart {{web_name}}; echo 0
+      become: "{{use_become}}"
+      when: systemctl.stat.exists == true

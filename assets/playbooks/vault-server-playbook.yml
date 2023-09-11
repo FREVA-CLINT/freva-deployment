@@ -60,7 +60,7 @@
       become: "{{use_become}}"
     - name: Creating compose directory structure
       file:
-        path: /opt/freva/compose_services/foo
+        path: /opt/freva/compose_services
         state: directory
         recurse: true
       become: "{{use_become}}"
@@ -72,7 +72,7 @@
     - name: Creating system services
       become: "{{use_become}}"
       shell: |
-        /tmp/create_systemd.py {{vault_name}} compose --enable --project-name {{project_name}} -f {{compose_file}} up;
+        /tmp/create_systemd.py {{vault_name}} compose --enable --project-name {{vault_name}} -f {{compose_file}} up --remove-orphans
       when: systemctl.stat.exists == true
     - pause: seconds=20
     - name: Deleting existing infrastructure

@@ -147,7 +147,7 @@
     - name: Creating system services
       become: "{{use_become}}"
       shell: |
-        /tmp/create_systemd.py {{db_name}} compose --enable --project-name {{project_name}} -f {{compose_file}} up
+        /tmp/create_systemd.py {{db_name}} compose --enable --project-name {{db_name}} -f {{compose_file}} up --remove-orphans
       when: systemctl.stat.exists == true
     - name: Creating cron jobs
       become: "{{use_become}}"
@@ -168,3 +168,15 @@
         - /tmp/create_cron.sh
         - /tmp/reset_root_pw.sh
         - /tmp/docker-or-podman
+- hosts: web
+  vars:
+    use_become: "{{ web_ansible_become_user is defined and web_ansible_become_user != '' }}"
+  tasks:
+    - name: Registering systemctl path
+      stat:
+        path: /usr/bin/systemctl
+      register: systemctl
+    - name: Restarting web container
+      shell: systemctl restart {{web_name}}; echo 0
+      become: "{{use_become}}"
+      when: systemctl.stat.exists == true
