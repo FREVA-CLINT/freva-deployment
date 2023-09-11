@@ -180,7 +180,7 @@ setup(
             "ipython",  # For nbsphinx syntax highlighting
             "sphinxcontrib_github_alt",
         ],
-        "test": ["mypy", "black", "types-toml", "types-PyMySQL"],
+        "test": ["mypy", "isort", "black", "types-toml", "types-PyMySQL"],
     },
     python_requires=">=3.8",
     classifiers=[
