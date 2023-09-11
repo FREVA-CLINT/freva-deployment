@@ -91,7 +91,7 @@ def get_container_cmd(args: str) -> Tuple[str, str]:
     )
     out = res.stdout.decode().split()
     if out:
-        return out[0], " ".join(out[1:]).replace("%", "%%")
+        return out[0], " ".join(out[1:])
     return "", ""
 
 

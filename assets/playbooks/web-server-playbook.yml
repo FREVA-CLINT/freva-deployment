@@ -75,7 +75,7 @@
       - "/opt/freva/{{project_name}}/web_service/static:/srv/static:z"
       - "/opt/freva/{{project_name}}/web_service/prepare-httpd:/usr/local/bin/prepare-httpd:z"
       - "{{ core_preview_path }}:/srv/static/preview:z"
-      docker_apache_cmd: >
+    docker_apache_cmd: >
         --rm
         -e SCHEDULER_DIR={{core_scheduler_output_dir}}
         -e UID=$(id -u {{ansible_user}})

@@ -7,6 +7,7 @@
     db_volumes:
       - /opt/freva/freva-service-config/mysql/create_tables.sql:/docker-entrypoint-initdb.d/002_create_tables.sql:z
       - /opt/freva/freva-service-config/mysql/daily_backup.sh:/usr/local/bin/daily_backup:z
+      - /opt/freva/{{project_name}}/db_service:/var/lib/mysql:z
     docker_cmd: >
         --network {{ project_name }} -v
         /opt/freva/{{project_name}}/db_service:/var/lib/mysql:z
