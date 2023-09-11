@@ -15,13 +15,7 @@ import tomlkit
 from freva_deployment.utils import asset_dir, config_dir, load_config
 
 from .base import BaseForm, VarForm, selectFile
-from .deploy_forms import (
-    CoreScreen,
-    DatabrowserScreen,
-    DBScreen,
-    RunForm,
-    WebScreen,
-)
+from .deploy_forms import CoreScreen, DatabrowserScreen, DBScreen, RunForm, WebScreen
 
 
 class MainApp(npyscreen.NPSAppManaged):
@@ -76,12 +70,18 @@ class MainApp(npyscreen.NPSAppManaged):
             CoreScreen,
             name="Core deployment",
         )
-        self._forms["web"] = self.addForm("SECOND", WebScreen, name="Web deployment")
-        self._forms["db"] = self.addForm("THIRD", DBScreen, name="Database deployment")
+        self._forms["web"] = self.addForm(
+            "SECOND", WebScreen, name="Web deployment"
+        )
+        self._forms["db"] = self.addForm(
+            "THIRD", DBScreen, name="Database deployment"
+        )
         self._forms["databrowser"] = self.addForm(
             "FOURTH", DatabrowserScreen, name="Databrowser deployment"
         )
-        self._setup_form = self.addForm("SETUP", RunForm, name="Apply the Deployment")
+        self._setup_form = self.addForm(
+            "SETUP", RunForm, name="Apply the Deployment"
+        )
 
     def exit_application(self, *args, **kwargs) -> None:
         value = npyscreen.notify_ok_cancel(
@@ -253,7 +253,8 @@ class MainApp(npyscreen.NPSAppManaged):
     def _steps(self) -> list[str]:
         """Read the deployment-steps from the cache."""
         return cast(
-            List[str], self._read_cache("steps", ["core", "web", "db", "databrowser"])
+            List[str],
+            self._read_cache("steps", ["core", "web", "db", "databrowser"]),
         )
 
     def read_cert_file(self, key: str) -> str:

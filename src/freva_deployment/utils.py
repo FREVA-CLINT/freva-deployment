@@ -173,9 +173,11 @@ def _create_new_config(inp_file: Path) -> Path:
         Dict[str, Dict[str, Dict[str, Union[str, float, int, bool]]]],
         tomlkit.loads(inp_file.read_text()),
     )
+    create_backup = False
     config_tmpl = tomlkit.loads(AD.inventory_file.read_text())
     # Legacy solr:
     if "solr" in config:
+        create_backup = True
         config["databrowser"] = config.pop("solr")
         for key in ("port", "mem"):
             if key in config["databrowser"]["config"]:
@@ -183,6 +185,10 @@ def _create_new_config(inp_file: Path) -> Path:
                     "databrowser"
                 ]["config"].pop(key)
     _update_config(config_tmpl, config)
+    if create_backup:
+        inp_file.with_suffix(inp_file.suffix + ".bck").write_text(
+            inp_file.read_text()
+        )
     inp_file.write_text(tomlkit.dumps(config_tmpl))
     return inp_file
 
