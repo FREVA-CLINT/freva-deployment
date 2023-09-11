@@ -17,9 +17,19 @@ import requests
 import tomlkit
 from rich.console import Console
 from rich.prompt import Prompt
+from rich.logging import RichHandler
 
+logger_stream_handle = RichHandler(
+    rich_tracebacks=False,
+    show_path=False,
+    console=Console(soft_wrap=True, stderr=True),
+)
+logger_stream_handle.setLevel(logging.INFO)
 logging.basicConfig(
-    format="%(name)s - %(levelname)s - %(message)s", level=logging.INFO
+    format="%(message)s",
+    handlers=[logger_stream_handle],
+    datefmt="[%X]",
+    level=logging.INFO,
 )
 logger = logging.getLogger("freva-deployment")
 
