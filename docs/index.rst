@@ -10,6 +10,10 @@ Welcome to freva admin documentation!
    :width: 320
    :align: center
 
+.. note::
+
+    Please check :ref:`whatsnew` for any update announcments.
+
 
 
 Freva, the free evaluation system framework, is a data search and analysis
@@ -62,6 +66,7 @@ basic deployment setup and servicing Freva will be introduced.
    Transition
    LegalNotes
    modules
+   whatsnew
 
 
 
