@@ -60,5 +60,5 @@ deploy-freva = "freva_deployment.ui.deployment_tui:tui"
 [tool.flit.sdist]
 include = ["assets/*"]
 
-#[tool.flit.external-data]
-#directory = "assets"
+[tool.flit.external-data]
+directory = "assets"
