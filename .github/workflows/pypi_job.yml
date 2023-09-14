@@ -10,8 +10,8 @@ jobs:
   pipy:
     runs-on: ubuntu-latest
     env:
-      - FLIT_USERNAME: __token__
-      - FLIT_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+      FLIT_USERNAME: __token__
+      FLIT_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
     steps:
       -
         name: Checkout
