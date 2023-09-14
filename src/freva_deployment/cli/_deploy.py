@@ -1,12 +1,14 @@
 """Command line interface for the deployment."""
 from __future__ import annotations
+
 import argparse
-from pathlib import Path
 import sys
+from pathlib import Path
 
 from freva_deployment import __version__
+
 from ..deploy import DeployFactory
-from ..utils import config_dir, set_log_level, guess_map_server
+from ..utils import config_dir, guess_map_server, set_log_level
 
 
 def parse_args(argv: list[str] | None) -> argparse.Namespace:

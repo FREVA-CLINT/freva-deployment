@@ -1,0 +1,64 @@
+[build-system]
+requires = ["flit_core >=3.2,<4"]
+build-backend = "flit_core.buildapi"
+
+[project]
+name = "freva-deployment"
+authors = [{name = "DKRZ, Clint", email = "freva@dkrz.de"}]
+readme = "README.md"
+license = {file = "LICENSE"}
+classifiers = [
+               "Development Status :: 3 - Alpha",
+               "Environment :: Console",
+               "Intended Audience :: Developers",
+               "Intended Audience :: Science/Research",
+               "License :: OSI Approved :: BSD License",
+               "Operating System :: POSIX :: Linux",
+               "Programming Language :: Python :: 3",
+]
+dynamic = ["version"]
+description = "Deployment of the Free Evaluation Framework Freva"
+requires-python = ">=3.7"
+dependencies = [ "appdirs",
+             "ansible>=2.10",
+             "npyscreen",
+             "numpy",
+             "PyMySQL",
+             "PyYAML",
+             "rich",
+             "toml",
+             "tomlkit",
+             "requests",
+]
+[project.optional-dependencies]
+docs = [
+    "pydata-sphinx-theme",
+    "sphinx",
+    "sphinx-copybutton",
+    "nbsphinx",
+    "recommonmark",
+    "sphinx_rtd_theme",
+    "ipython",
+    "sphinxcontrib_github_alt",
+]
+test = ["mypy", "black", "isort", "types-toml", "types-PyMySQL"]
+
+[project.urls]
+Documentation = "https://freva-deployment.readthedocs.io/en/latest/"
+Issues = "https://github.com/FREVA-CLINT/freva/issues"
+Source = "https://github.com/FREVA-CLINT/freva"
+Home = "https://freva-deployment.readthedocs.io/en/latest"
+
+[project.scripts]
+deploy-freva-cmd = "freva_deployment.cli:deploy"
+deploy-freva-map = "freva_deployment.cli:server_map"
+freva-service = "freva_deployment.cli:service"
+freva-migrate = "freva_deployment.cli:migrate"
+deploy-freva = "freva_deployment.ui.deployment_tui:tui"
+
+
+[tool.flit.sdist]
+include = ["assets/*"]
+
+[tool.flit.external-data]
+directory = "assets"

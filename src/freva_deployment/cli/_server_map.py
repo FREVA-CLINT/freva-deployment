@@ -1,19 +1,21 @@
 """CLI to interact with running services."""
 from __future__ import annotations
+
 import argparse
-from getpass import getuser
 import json
 import logging
-from pathlib import Path
 import shlex
-from subprocess import run
 import sys
+from getpass import getuser
+from pathlib import Path
+from subprocess import run
 from tempfile import NamedTemporaryFile
 
 import appdirs
 from numpy import sign
 
 from freva_deployment import __version__
+
 from ..utils import asset_dir, logger
 
 

@@ -1,14 +1,16 @@
 from __future__ import annotations
-import os
-import json
-from pathlib import Path
-import logging
-from typing import Any, cast
 
 import curses
-from freva_deployment.utils import asset_dir, config_file
+import json
+import logging
+import os
+from pathlib import Path
+from typing import Any, cast
+
 import npyscreen
 import tomlkit
+
+from freva_deployment.utils import asset_dir, config_file
 
 logging.basicConfig(level=logging.DEBUG)
 logger: logging.Logger = logging.getLogger("deploy-freva-tui")

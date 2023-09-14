@@ -1,24 +1,26 @@
 """Collection of utils for deployment."""
 from __future__ import annotations
+
 import hashlib
-import logging
 import json
-from pathlib import Path
-import pkg_resources
+import logging
+import os
 import re
-from subprocess import PIPE
-import sys
 import shutil
+import sys
+import sysconfig
+from pathlib import Path
 from typing import Any, NamedTuple, cast
-import warnings
 
 import appdirs
 import requests
+import toml
 from rich.console import Console
 from rich.prompt import Prompt
-import toml
 
-logging.basicConfig(format="%(name)s - %(levelname)s - %(message)s", level=logging.INFO)
+logging.basicConfig(
+    format="%(name)s - %(levelname)s - %(message)s", level=logging.INFO
+)
 logger = logging.getLogger("freva-deployment")
 
 RichConsole = Console(markup=True, force_terminal=True)
@@ -54,43 +56,55 @@ class AssetDir:
     this_module = "freva_deployment"
 
     def __init__(self):
-        self._user_asset_dir = Path(appdirs.user_data_dir()) / "freva" / "deployment"
-        self._user_config_dir = Path(appdirs.user_config_dir()) / "freva" / "deployment"
+        self._user_asset_dir = (
+            Path(appdirs.user_data_dir()) / "freva" / "deployment"
+        )
+        self._user_config_dir = (
+            Path(appdirs.user_config_dir()) / "freva" / "deployment"
+        )
+
+    @staticmethod
+    def get_dirs(user: bool = True, key: str = "data") -> Path:
+        """Get the 'scripts' and 'purelib' directories we'll install into.
+
+        This is now a thin wrapper around sysconfig.get_paths(). It's not inlined,
+        because some tests mock it out to install to a different location.
+        """
+
+        if user:
+            if (sys.platform == "darwin") and sysconfig.get_config_var(
+                "PYTHONFRAMEWORK"
+            ):
+                return Path(sysconfig.get_paths("osx_framework_user")[key])
+            return Path(sysconfig.get_paths(os.name + "_user")[key])
+        # The default scheme is 'posix_prefix' or 'nt', and should work for e.g.
+        # installing into a virtualenv
+        return Path(sysconfig.get_paths()[key])
 
     @property
-    def _central_asset_dir(self):
-        distribution = pkg_resources.get_distribution(self.this_module)
-        try:
-            records = distribution.get_metadata("RECORD").splitlines()
-        except FileNotFoundError:
-            asset_dir = Path(distribution.module_path).parent / "freva" / "deployment"
-            if asset_dir.is_dir():
-                return asset_dir
-            warnings.warn("Guessing asset dir location, this might fail")
-            return Path(sys.exec_prefix) / "freva" / "deployment"
-        try:
-            inventory = [f.partition(",")[0] for f in records if "inventory.toml" in f][
-                0
-            ]
-        except IndexError:
-            warnings.warn("Guessing asset dir location, this might fail")
-            return Path(sys.exec_prefix) / "freva" / "deployment"
-        asset_path = (Path(distribution.module_path) / inventory).parent.parent
-        return Path.resolve(asset_path)
-
-    @property
-    def asset_dir(self):
-        if self._user_asset_dir.exists():
-            return self._user_asset_dir
-        return self._central_asset_dir
+    def asset_dir(self) -> Path:
+        data_dir = self.get_dirs(False) / "share" / "freva" / "deployment"
+        user_dir = self.get_dirs(True) / "share" / "freva" / "deployment"
+        for path in (data_dir, user_dir):
+            if path.is_dir():
+                return path
+        raise ValueError(
+            "Could not find asset dir, please consider reinstalling the package."
+        )
 
     @property
     def config_dir(self):
         inventory_file = self._user_config_dir / "inventory.toml"
         if inventory_file.exists():
-            return self._user_config_dir
-        self._user_config_dir.mkdir(exist_ok=True, parents=True)
-        shutil.copy(self.asset_dir / "config" / "inventory.toml", inventory_file)
+            return self.asset_dir
+        inventory_file.parent.mkdir(exist_ok=True, parents=True)
+        try:
+            inventory_file.unlink()
+        except FileNotFoundError:
+            pass
+        shutil.copy2(
+            self.asset_dir / "config" / "inventory.toml", inventory_file
+        )
         return self._user_config_dir
 
     @property
@@ -137,7 +151,9 @@ def _convert_dict(
 def load_config(inp_file: str | Path) -> dict[str, Any]:
     """Load the inventory toml file and replace all environment variables."""
     inp_file = Path(inp_file).expanduser().absolute()
-    variables = cast(dict[str, str], toml.loads(config_file.read_text())["variables"])
+    variables = cast(
+        dict[str, str], toml.loads(config_file.read_text())["variables"]
+    )
     config = toml.loads(inp_file.read_text())
     _convert_dict(config, variables, inp_file.parent)
     return config
@@ -199,7 +215,9 @@ def set_log_level(verbosity: int) -> None:
     logger.setLevel(max(logging.INFO - 10 * verbosity, logging.DEBUG))
 
 
-def get_setup_for_service(service: str, setups: list[ServiceInfo]) -> tuple[str, str]:
+def get_setup_for_service(
+    service: str, setups: list[ServiceInfo]
+) -> tuple[str, str]:
     """Get the setup of a service configuration."""
     for setup in setups:
         if setup.name == service:
@@ -212,7 +230,9 @@ def read_db_credentials(
 ) -> dict[str, str]:
     """Read database config."""
     with cert_file.open() as f_obj:
-        key = "".join([k.strip() for k in f_obj.readlines() if not k.startswith("-")])
+        key = "".join(
+            [k.strip() for k in f_obj.readlines() if not k.startswith("-")]
+        )
         sha = hashlib.sha512(key.encode()).hexdigest()
     url = f"http://{db_host}:{port}/vault/data/{sha}"
     return requests.get(url).json()
@@ -292,7 +312,9 @@ def get_email_credentials() -> tuple[str, str]:
     )
     RichConsole.print(msg)
     username = Prompt.ask("[green b]Username[/] for mail server")
-    password = Prompt.ask("[green b]Password[/] for mail server", password=True)
+    password = Prompt.ask(
+        "[green b]Password[/] for mail server", password=True
+    )
     return username, password
 
 
@@ -327,7 +349,9 @@ def _create_passwd(min_characters: int, msg: str = "") -> str:
         if not re.search(check, master_pass):
             is_ok = False
             break
-    is_safe: bool = len([True for c in "[_@$#$%^&*-!]" if c in master_pass]) > 0
+    is_safe: bool = (
+        len([True for c in "[_@$#$%^&*-!]" if c in master_pass]) > 0
+    )
     if is_ok is False or is_safe is False:
         raise ValueError(
             (
@@ -337,7 +361,9 @@ def _create_passwd(min_characters: int, msg: str = "") -> str:
                 "- have at least one special special character."
             )
         )
-    master_pass_2 = Prompt.ask("[bold green]re-enter[/] master password", password=True)
+    master_pass_2 = Prompt.ask(
+        "[bold green]re-enter[/] master password", password=True
+    )
     if master_pass != master_pass_2:
         raise ValueError("Passwords do not match")
     return master_pass
