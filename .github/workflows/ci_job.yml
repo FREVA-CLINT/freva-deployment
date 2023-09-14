@@ -24,7 +24,7 @@ jobs:
         mkdir .mypy_cache
     -
       name: formating
-      run: black --check -t py311 src
+      run: isort --profile black -t py311 -l 79 src
     -
       name: type checking
       run: mypy --install-types --non-interactive

@@ -1,10 +1,11 @@
 """The Freva deployment Text User Interface (TUI) helps to configure a
 deployment setup for a new instance of freva."""
 from __future__ import annotations
+
 import json
-from pathlib import Path
-import time
 import threading
+import time
+from pathlib import Path
 from typing import Any, Dict, List, cast
 
 import appdirs
@@ -12,8 +13,9 @@ import npyscreen
 import tomlkit
 
 from freva_deployment.utils import asset_dir, config_dir
-from .base import selectFile, BaseForm, VarForm
-from .deploy_forms import WebScreen, DBScreen, SolrScreen, CoreScreen, RunForm
+
+from .base import BaseForm, VarForm, selectFile
+from .deploy_forms import CoreScreen, DBScreen, RunForm, SolrScreen, WebScreen
 
 
 class MainApp(npyscreen.NPSAppManaged):

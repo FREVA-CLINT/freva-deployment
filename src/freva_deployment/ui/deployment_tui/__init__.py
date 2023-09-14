@@ -1,10 +1,12 @@
 """Call the freva tui."""
 from __future__ import annotations
+
 import argparse
 
 from freva_deployment import __version__
 from freva_deployment.deploy import DeployFactory
-from freva_deployment.utils import set_log_level, RichConsole
+from freva_deployment.utils import RichConsole, set_log_level
+
 from .main_window import MainApp
 
 

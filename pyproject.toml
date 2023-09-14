@@ -41,7 +41,7 @@ docs = [
     "ipython",
     "sphinxcontrib_github_alt",
 ]
-test = ["mypy", "black", "types-toml", "types-PyMySQL"]
+test = ["mypy", "black", "isort", "types-toml", "types-PyMySQL"]
 
 [project.urls]
 Documentation = "https://freva-deployment.readthedocs.io/en/latest/"

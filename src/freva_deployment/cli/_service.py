@@ -1,26 +1,28 @@
 """CLI to interact with running services."""
 from __future__ import annotations
+
 import argparse
+import shlex
+import sys
 from getpass import getuser
 from pathlib import Path
-import shlex
-from subprocess import run, PIPE
-import sys
+from subprocess import PIPE, run
 from tempfile import TemporaryDirectory
 
-from numpy import sign
 import requests
-from rich.console import Console
 import yaml
+from numpy import sign
+from rich.console import Console
 
 from freva_deployment import __version__
+
 from ..utils import (
-    download_server_map,
-    logger,
-    set_log_level,
     ServiceInfo,
+    download_server_map,
     get_setup_for_service,
     guess_map_server,
+    logger,
+    set_log_level,
 )
 
 

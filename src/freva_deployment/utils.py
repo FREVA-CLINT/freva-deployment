@@ -1,22 +1,22 @@
 """Collection of utils for deployment."""
 from __future__ import annotations
+
 import hashlib
+import json
 import logging
 import os
-import json
-from pathlib import Path
 import re
+import shutil
 import sys
 import sysconfig
-import shutil
+from pathlib import Path
 from typing import Any, NamedTuple, cast
-import warnings
 
 import appdirs
 import requests
+import toml
 from rich.console import Console
 from rich.prompt import Prompt
-import toml
 
 logging.basicConfig(
     format="%(name)s - %(levelname)s - %(message)s", level=logging.INFO

@@ -1,12 +1,15 @@
 from __future__ import annotations
+
 from getpass import getuser
-import npyscreen
 from pathlib import Path
-from typing import cast, List, Dict
+from typing import Dict, List, cast
+
+import npyscreen
+
+from freva_deployment import AVAILABLE_CONDA_ARCHS, AVAILABLE_PYTHON_VERSIONS
+from freva_deployment.utils import get_current_file_dir
 
 from .base import BaseForm, logger
-from freva_deployment import AVAILABLE_PYTHON_VERSIONS, AVAILABLE_CONDA_ARCHS
-from freva_deployment.utils import get_current_file_dir
 
 
 def get_index(values: list[str], target: str, default: int = 0) -> int:
