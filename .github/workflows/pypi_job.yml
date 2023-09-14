@@ -9,27 +9,23 @@ on:
 jobs:
   pipy:
     runs-on: ubuntu-latest
+    env:
+      - FLIT_USERNAME: __token__
+      - FLIT_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
     steps:
       -
         name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       -
         name: Setup Python
         uses: actions/setup-python@v4
         with:
           python-version: "3.x"
       - name: Adding the evaluation config file
-        run: wget https://raw.githubusercontent.com/FREVA-CLINT/freva/main/assets/evaluation_system.conf -O assets/config/evaluation_system.conf.tmpl
+        run: wget https://raw.githubusercontent.com/FREVA-CLINT/freva/main/assets/evaluation_system.conf -O assets/share/freva/deployment/config/evaluation_system.conf.tmpl
       -
-        name: Install pypa/build
-        run: python -m pip install build appdirs wheel
+        name: Install flit
+        run: python -m pip install flit
       -
-        name: Build a binary wheel and a source tarball
-        run: |
-          python setup.py sdist build_py
-          python setup.py bdist_wheel
-      -
-        name: publish distribution 📦 to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          password: ${{ secrets.PYPI_API_TOKEN }}
+        name: Publishing freva-deployment 📦 to PyPI
+        run: flit publish
