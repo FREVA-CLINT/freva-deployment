@@ -46,7 +46,7 @@ jobs:
         name: Build and push vault image
         uses: docker/build-push-action@v4
         with:
-          context: assets/vault/
+          context: assets/share/freva/deployment/vault/
           platforms: linux/amd64
           push: true
           tags: |
@@ -56,7 +56,7 @@ jobs:
         name: Build and push server map image
         uses: docker/build-push-action@v4
         with:
-          context: assets/servers/
+          context: assets/share/freva/deployment/servers/
           platforms: linux/amd64
           push: true
           tags: |

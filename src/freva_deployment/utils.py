@@ -14,23 +14,11 @@ from typing import Any, Dict, MutableMapping, NamedTuple, Union, cast
 import appdirs
 import pkg_resources
 import requests
-import tomlkit
 from rich.console import Console
 from rich.logging import RichHandler
 from rich.prompt import Prompt
 
-logger_stream_handle = RichHandler(
-    rich_tracebacks=False,
-    show_path=False,
-    console=Console(soft_wrap=True, stderr=True),
-)
-logger_stream_handle.setLevel(logging.INFO)
-logging.basicConfig(
-    format="%(message)s",
-    handlers=[logger_stream_handle],
-    datefmt="[%X]",
-    level=logging.INFO,
-)
+logging.basicConfig(format="%(name)s - %(levelname)s - %(message)s", level=logging.INFO)
 logger = logging.getLogger("freva-deployment")
 
 RichConsole = Console(markup=True, force_terminal=True)
@@ -80,17 +68,15 @@ class AssetDir:
         try:
             records = distribution.get_metadata("RECORD").splitlines()
         except FileNotFoundError:
-            asset_dir = (
-                Path(distribution.module_path).parent / "freva" / "deployment"
-            )
+            asset_dir = Path(distribution.module_path).parent / "freva" / "deployment"
             if asset_dir.is_dir():
                 return asset_dir
             warnings.warn("Guessing asset dir location, this might fail")
             return Path(sys.exec_prefix) / "freva" / "deployment"
         try:
-            inventory = [
-                f.partition(",")[0] for f in records if "inventory.toml" in f
-            ][0]
+            inventory = [f.partition(",")[0] for f in records if "inventory.toml" in f][
+                0
+            ]
         except IndexError:
             warnings.warn("Guessing asset dir location, this might fail")
             return Path(sys.exec_prefix) / "freva" / "deployment"
@@ -98,10 +84,15 @@ class AssetDir:
         return Path.resolve(asset_path)
 
     @property
-    def asset_dir(self):
-        if self._user_asset_dir.exists():
-            return self._user_asset_dir
-        return self._central_asset_dir
+    def asset_dir(self) -> Path:
+        data_dir = self.get_dirs(False) / "share" / "freva" / "deployment"
+        user_dir = self.get_dirs(True) / "share" / "freva" / "deployment"
+        for path in (data_dir, user_dir):
+            if path.is_dir():
+                return path
+        raise ValueError(
+            "Could not find asset dir, please consider reinstalling the package."
+        )
 
     @property
     def inventory_file(self) -> Path:
@@ -113,7 +104,7 @@ class AssetDir:
         if inventory_file.exists():
             return self._user_config_dir
         self._user_config_dir.mkdir(exist_ok=True, parents=True)
-        shutil.copy(self.inventory_file, inventory_file)
+        shutil.copy(self.asset_dir / "config" / "inventory.toml", inventory_file)
         return self._user_config_dir
 
     @property
@@ -195,11 +186,9 @@ def _create_new_config(inp_file: Path) -> Path:
 
 def load_config(inp_file: str | Path) -> dict[str, Any]:
     """Load the inventory toml file and replace all environment variables."""
-    inp_file = _create_new_config(Path(inp_file).expanduser().absolute())
-    variables = cast(
-        dict[str, str], tomlkit.loads(config_file.read_text())["variables"]
-    )
-    config = tomlkit.loads(inp_file.read_text())
+    inp_file = Path(inp_file).expanduser().absolute()
+    variables = cast(dict[str, str], toml.loads(config_file.read_text())["variables"])
+    config = toml.loads(inp_file.read_text())
     _convert_dict(config, variables, inp_file.parent)
     return config
 

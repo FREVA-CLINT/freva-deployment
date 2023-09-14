@@ -19,6 +19,7 @@ import yaml
 from numpy import sign
 
 from .utils import (
+    AssetDir,
     RichConsole,
     asset_dir,
     config_dir,
@@ -318,7 +319,9 @@ class DeployFactory:
         try:
             return dict(load_config(self._inv_tmpl).items())
         except FileNotFoundError as error:
-            raise FileNotFoundError(f"No such file {self._inv_tmpl}") from error
+            raise FileNotFoundError(
+                f"No such file {self._inv_tmpl}"
+            ) from error
 
     def _check_config(self) -> None:
         sections = []
@@ -328,8 +331,14 @@ class DeployFactory:
                     sections.append(section)
         for section in sections:
             for key, value in self.cfg[section]["config"].items():
-                if not value and not self._empty_ok and not isinstance(value, bool):
-                    raise ValueError(f"{key} in {section} is empty in {self._inv_tmpl}")
+                if (
+                    not value
+                    and not self._empty_ok
+                    and not isinstance(value, bool)
+                ):
+                    raise ValueError(
+                        f"{key} in {section} is empty in {self._inv_tmpl}"
+                    )
 
     @property
     def _empty_ok(self) -> list[str]:
@@ -355,15 +364,21 @@ class DeployFactory:
         num_chars, num_digits, num_punctuations = 20, 4, 4
         num_chars -= num_digits + num_punctuations
         characters = [
-            "".join([random.choice(string.ascii_letters) for i in range(num_chars)]),
+            "".join(
+                [random.choice(string.ascii_letters) for i in range(num_chars)]
+            ),
             "".join([random.choice(string.digits) for i in range(num_digits)]),
-            "".join([random.choice(punctuations) for i in range(num_punctuations)]),
+            "".join(
+                [random.choice(punctuations) for i in range(num_punctuations)]
+            ),
         ]
         str_characters = "".join(characters)
         _db_pass = "".join(random.sample(str_characters, len(str_characters)))
         while _db_pass.startswith("@"):
             # Vault treats values starting with "@" as file names.
-            _db_pass = "".join(random.sample(str_characters, len(str_characters)))
+            _db_pass = "".join(
+                random.sample(str_characters, len(str_characters))
+            )
         self._db_pass = _db_pass
         return self._db_pass
 
@@ -512,6 +527,35 @@ class DeployFactory:
             with dump_file.open("w") as f_obj:
                 f_obj.write("".join(lines))
 
+    def _run(self, verbosity: int = 0, ask_pass: bool = False) -> None:
+        from ansible.executor.playbook_executor import PlaybookExecutor
+        from ansible.inventory.manager import InventoryManager
+        from ansible.parsing.dataloader import DataLoader
+        from ansible.playbook.play import Play
+        from ansible.vars.manager import VariableManager
+
+        loader = DataLoader()
+        inventory = InventoryManager(
+            loader=loader, sources=[str(self.inventory_file)]
+        )
+        variable_manager = VariableManager(loader=loader, inventory=inventory)
+        options = {
+            "verbosity": verbosity,
+            "ask_pass": ask_pass,
+            "become": True,
+            "ask_become_pass": True,
+        }
+        executor = PlaybookExecutor(
+            playbooks=[str(self._playbook_file)],
+            inventory=inventory,
+            variable_manager=variable_manager,
+            loader=loader,
+            options=options,
+        )
+        results = executor.run()
+        stats = executor._tqm._stats
+        print(stats)
+
     def play(
         self,
         server_map: str | None = None,
@@ -536,12 +580,22 @@ class DeployFactory:
         self.create_eval_config()
         with self.inventory_file.open("w") as f_obj:
             f_obj.write(inventory)
+        inventory_str = inventory
+        for passwd in (self.email_password, self.master_pass):
+            if passwd:
+                inventory_str = inventory_str.replace(passwd, "*" * len(passwd))
+        RichConsole.print(inventory, style="bold", markup=True)
         logger.info("Playing the playbooks with ansible")
         RichConsole.print(
             "[b]Note:[/] The [blue]BECOME[/] password refers to the "
             "[blue]sudo[/] password",
             markup=True,
         )
+        # try:
+        #    self._run(ask_pass=ask_pass, verbosity=verbosity)
+        # except KeyboardInterrupt:
+        #    pass
+        # return
         v_string = sign(verbosity) * "-" + verbosity * "v"
         cmd = (
             f"ansible-playbook {v_string} -i {self.inventory_file} "
@@ -549,10 +603,12 @@ class DeployFactory:
         )
         if ask_pass:
             cmd += " --ask-pass"
+        env = os.environ.copy()
+        env["PATH"] += f":{AssetDir.get_dirs(user=True, key='scripts')}"
         try:
             _ = run(
                 shlex.split(cmd),
-                env=os.environ.copy(),
+                env=env,
                 cwd=str(asset_dir),
                 check=True,
             )
