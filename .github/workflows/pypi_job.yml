@@ -26,7 +26,7 @@ jobs:
       -
         name: Building freva-deployment 📦 with flit
         run: flit build
-       -
+      -
         name: publish distribution 📦 to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
