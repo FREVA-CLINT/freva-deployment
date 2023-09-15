@@ -31,7 +31,7 @@ dependencies = [ "appdirs",
              "requests",
 ]
 [project.optional-dependencies]
-docs = [
+doc = [
     "pydata-sphinx-theme",
     "sphinx",
     "sphinx-copybutton",

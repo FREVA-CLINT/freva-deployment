@@ -6,7 +6,7 @@ dependencies:
   - ipython
   - pip
   - pip:
-      - freva-deployment[docs]
+      - freva-deployment[doc]
       - sphinx-execute-code-python3
       - sphinx-rtd-theme
       - sphinx-copybutton
