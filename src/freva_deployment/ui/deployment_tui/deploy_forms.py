@@ -85,9 +85,7 @@ class CoreScreen(BaseForm):
                     max_height=2,
                     value=cfg.get("install", True),
                     editable=True,
-                    name=(
-                        f"{self.num}Install a new Freva anaconda environment?"
-                    ),
+                    name=(f"{self.num}Install a new Freva anaconda environment?"),
                     scroll_exit=True,
                 ),
                 True,
@@ -123,9 +121,7 @@ class CoreScreen(BaseForm):
                 self.add_widget_intelligent(
                     npyscreen.TitleCombo,
                     name=f"{self.num}Workload manger",
-                    value=self.scheduler_index(
-                        cast(str, cfg.get("scheduler_system"))
-                    ),
+                    value=self.scheduler_index(cast(str, cfg.get("scheduler_system"))),
                     values=self.scheduler_systems,
                 ),
                 True,
@@ -208,9 +204,7 @@ class CoreScreen(BaseForm):
                 self.add_widget_intelligent(
                     npyscreen.TitleFilename,
                     name=f"{self.num}Python path on remote machine:",
-                    value=cfg.get(
-                        "ansible_python_interpreter", "/usr/bin/python3"
-                    ),
+                    value=cfg.get("ansible_python_interpreter", "/usr/bin/python3"),
                 ),
                 False,
             ),
@@ -382,9 +376,7 @@ class WebScreen(BaseForm):
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
                     name=f"{self.num}A brief describtion of the project:",
-                    value=cfg.get(
-                        "homepage_heading", "Lorem ipsum dolor sit amet"
-                    ),
+                    value=cfg.get("homepage_heading", "Lorem ipsum dolor sit amet"),
                 ),
                 True,
             ),
@@ -549,9 +541,7 @@ class WebScreen(BaseForm):
             ldap_model=(
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
-                    name=(
-                        f"{self.num}Ldap tools class to be used for authentication."
-                    ),
+                    name=(f"{self.num}Ldap tools class to be used for authentication."),
                     value=cfg.get("ldap_model", "MiklipUserInformation"),
                 ),
                 True,
@@ -582,9 +572,7 @@ class WebScreen(BaseForm):
                 self.add_widget_intelligent(
                     npyscreen.TitleFilename,
                     name=f"{self.num}Pythonpath on remote machine:",
-                    value=cfg.get(
-                        "ansible_python_interpreter", "/usr/bin/python3"
-                    ),
+                    value=cfg.get("ansible_python_interpreter", "/usr/bin/python3"),
                 ),
                 False,
             ),
@@ -696,9 +684,7 @@ class DBScreen(BaseForm):
                 self.add_widget_intelligent(
                     npyscreen.TitleFilename,
                     name=f"{self.num}Pythonpath on remote machine:",
-                    value=cfg.get(
-                        "ansible_python_interpreter", "/usr/bin/python3"
-                    ),
+                    value=cfg.get("ansible_python_interpreter", "/usr/bin/python3"),
                 ),
                 False,
             ),
@@ -805,9 +791,7 @@ class DatabrowserScreen(BaseForm):
                 self.add_widget_intelligent(
                     npyscreen.TitleFilename,
                     name=f"{self.num}Pythonpath on remote machine:",
-                    value=cfg.get(
-                        "ansible_python_interpreter", "/usr/bin/python3"
-                    ),
+                    value=cfg.get("ansible_python_interpreter", "/usr/bin/python3"),
                 ),
                 False,
             ),
@@ -838,18 +822,8 @@ class RunForm(npyscreen.FormMultiPageAction):
 
         self.parentApp.thread_stop.set()
         if not self.project_name.value:
-            npyscreen.notify_confirm(
-                "You have to set a project name", title="ERROR"
-            )
+            npyscreen.notify_confirm("You have to set a project name", title="ERROR")
             return
-        if not self.server_map.value:
-            value = npyscreen.notify_yes_no(
-                "If you don't set a map server value you wont be able "
-                "to start|stop the services. Continue anyway?",
-                title="WARNING",
-            )
-            if not value:
-                return
         missing_form: None | str = self.parentApp.check_missing_config()
         if missing_form:
             self.parentApp.change_form(missing_form)
@@ -863,9 +837,7 @@ class RunForm(npyscreen.FormMultiPageAction):
             self.parentApp.get_save_file(self.inventory_file.value or None)
         )
         for key_type, keyfile in cert_files.items():
-            key_file = Path(
-                get_current_file_dir(save_file.parent, str(keyfile))
-            )
+            key_file = Path(get_current_file_dir(save_file.parent, str(keyfile)))
             for step, deploy_form in self.parentApp._forms.items():
                 if not keyfile or not Path(key_file).is_file():
                     if (
@@ -873,11 +845,11 @@ class RunForm(npyscreen.FormMultiPageAction):
                         and step in self.parentApp.steps
                     ):
                         if keyfile:
-                            msg = f"{key_type} certificate file `{key_file}` must exist."
-                        else:
                             msg = (
-                                f"You must give a {key_type} certificate file."
+                                f"{key_type} certificate file `{key_file}` must exist."
                             )
+                        else:
+                            msg = f"You must give a {key_type} certificate file."
                         npyscreen.notify_confirm(msg, title="ERROR")
                         return
 
@@ -894,7 +866,7 @@ class RunForm(npyscreen.FormMultiPageAction):
             save_file=save_file, write_toml_file=True
         )
         self.parentApp.setup = {
-            "server_map": self.server_map.value,
+            "server_map": self.server_map.value or None,
             "steps": list(set(self.parentApp.steps)),
             "ask_pass": bool(self.use_ssh_pw.value),
             "config_file": str(save_file) or None,
@@ -940,9 +912,7 @@ class RunForm(npyscreen.FormMultiPageAction):
         )
         self.server_map = self.add_widget_intelligent(
             npyscreen.TitleText,
-            name=(
-                f"{self.num}Hostname of the service mapping the freva server arch."
-            ),
+            name=(f"{self.num}Hostname of the service mapping the freva server arch."),
             value=self.parentApp._read_cache("server_map", ""),
         )
         self.public_keyfile = self.add_widget_intelligent(

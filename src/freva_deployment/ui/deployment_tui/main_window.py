@@ -15,13 +15,7 @@ import tomlkit
 from freva_deployment.utils import asset_dir, config_dir, load_config
 
 from .base import BaseForm, VarForm, selectFile
-from .deploy_forms import (
-    CoreScreen,
-    DatabrowserScreen,
-    DBScreen,
-    RunForm,
-    WebScreen,
-)
+from .deploy_forms import CoreScreen, DatabrowserScreen, DBScreen, RunForm, WebScreen
 
 
 class MainApp(npyscreen.NPSAppManaged):

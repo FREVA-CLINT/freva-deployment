@@ -64,7 +64,9 @@ class DeployFactory:
         self.email_password: str = ""
         self._td: TemporaryDirectory = TemporaryDirectory(prefix="inventory")
         self.inventory_file: Path = Path(self._td.name) / "inventory.yaml"
-        self.eval_conf_file: Path = Path(self._td.name) / "evaluation_system.conf"
+        self.eval_conf_file: Path = (
+            Path(self._td.name) / "evaluation_system.conf"
+        )
         self.web_conf_file: Path = Path(self._td.name) / "freva_web.toml"
         self.apache_config: Path = Path(self._td.name) / "freva_web.conf"
         self._db_pass: str = ""
@@ -109,7 +111,9 @@ class DeployFactory:
         self._config_keys.append("vault")
         self.cfg["vault"] = self.cfg["db"].copy()
         self.cfg["vault"]["config"].setdefault("ansible_become_user", "root")
-        self.playbooks["vault"] = self.cfg["db"]["config"].get("vault_playbook")
+        self.playbooks["vault"] = self.cfg["db"]["config"].get(
+            "vault_playbook"
+        )
         if not self.master_pass:
             self.master_pass = get_passwd()
         self.cfg["vault"]["config"]["root_passwd"] = self.master_pass
@@ -130,7 +134,9 @@ class DeployFactory:
         self.cfg["db"]["config"]["passwd"] = self.db_pass
         self.cfg["db"]["config"]["keyfile"] = self.public_key_file
         for key in ("name", "user", "db"):
-            self.cfg["db"]["config"][key] = self.cfg["db"]["config"].get(key) or "freva"
+            self.cfg["db"]["config"][key] = (
+                self.cfg["db"]["config"].get(key) or "freva"
+            )
         db_host = self.cfg["db"]["config"].get("host", "")
         if not db_host:
             self.cfg["db"]["config"]["host"] = host
@@ -147,7 +153,9 @@ class DeployFactory:
         if not self.master_pass:
             self.master_pass = get_passwd()
         self._config_keys.append("databrowser")
-        self.cfg["databrowser"]["config"].setdefault("ansible_become_user", "root")
+        self.cfg["databrowser"]["config"].setdefault(
+            "ansible_become_user", "root"
+        )
         self.cfg["databrowser"]["config"]["root_passwd"] = self.master_pass
         self.cfg["databrowser"]["config"].pop("core", None)
         self.playbooks["databrowser"] = self.cfg["databrowser"]["config"].get(
@@ -159,9 +167,9 @@ class DeployFactory:
             self.cfg["databrowser"]["config"][key] = (
                 self.cfg["databrowser"]["config"].get(key) or default
             )
-        self.cfg["databrowser"]["config"]["email"] = self.cfg["web"]["config"].get(
-            "contacts", ""
-        )
+        self.cfg["databrowser"]["config"]["email"] = self.cfg["web"][
+            "config"
+        ].get("contacts", "")
         if prep_web:
             self._prep_web(False)
 
@@ -169,7 +177,9 @@ class DeployFactory:
         """prepare the core deployment."""
         self._config_keys.append("core")
         self.cfg["core"]["config"].setdefault("ansible_become_user", "")
-        self.playbooks["core"] = self.cfg["core"]["config"].get("core_playbook")
+        self.playbooks["core"] = self.cfg["core"]["config"].get(
+            "core_playbook"
+        )
         self.cfg["core"]["config"]["admins"] = (
             self.cfg["core"]["config"].get("admins") or getuser()
         )
@@ -180,11 +190,15 @@ class DeployFactory:
         if not root_dir:
             self.cfg["core"]["config"]["root_dir"] = install_dir
         preview_path = self.cfg["core"]["config"].get("preview_path", "")
-        base_dir_location = self.cfg["core"]["config"].get("base_dir_location", "")
+        base_dir_location = self.cfg["core"]["config"].get(
+            "base_dir_location", ""
+        )
         scheduler_output_dir = self.cfg["core"]["config"].get(
             "scheduler_output_dir", ""
         )
-        scheduler_system = self.cfg["core"]["config"].get("scheduler_system", "local")
+        scheduler_system = self.cfg["core"]["config"].get(
+            "scheduler_system", "local"
+        )
         if not preview_path:
             if base_dir_location:
                 self.cfg["core"]["config"]["preview_path"] = str(
@@ -195,7 +209,9 @@ class DeployFactory:
         if not scheduler_output_dir:
             scheduler_output_dir = str(Path(base_dir_location) / "share")
         scheduler_output_dir = Path(scheduler_output_dir) / scheduler_system
-        self.cfg["core"]["config"]["scheduler_output_dir"] = str(scheduler_output_dir)
+        self.cfg["core"]["config"]["scheduler_output_dir"] = str(
+            scheduler_output_dir
+        )
         self.cfg["core"]["config"]["keyfile"] = self.public_key_file
         git_exe = self.cfg["core"]["config"].get("git_path")
         self.cfg["core"]["config"]["git_path"] = git_exe or "git"
@@ -272,13 +288,17 @@ class DeployFactory:
         except (FileNotFoundError, IOError, KeyError):
             pass
         try:
-            _webserver_items["IMPRINT"] = _webserver_items["IMPRINT"].split(",")
+            _webserver_items["IMPRINT"] = _webserver_items["IMPRINT"].split(
+                ","
+            )
         except AttributeError:
             pass
         with self.web_conf_file.open("w") as f_obj:
             tomlkit.dump(_webserver_items, f_obj)
         for key in ("core", "web"):
-            self.cfg[key]["config"]["config_toml_file"] = str(self.web_conf_file)
+            self.cfg[key]["config"]["config_toml_file"] = str(
+                self.web_conf_file
+            )
         if not self.master_pass:
             self.master_pass = get_passwd()
         self._prep_vault()
@@ -286,16 +306,18 @@ class DeployFactory:
             email_user, self.email_password = get_email_credentials()
             self.cfg["vault"]["config"]["email_user"] = email_user
             self.cfg["vault"]["config"]["email_password"] = self.email_password
-        self.cfg["vault"]["config"]["ansible_python_interpreter"] = self.cfg["db"][
-            "config"
-        ].get("ansible_python_interpreter", "/usr/bin/python3")
+        self.cfg["vault"]["config"]["ansible_python_interpreter"] = self.cfg[
+            "db"
+        ]["config"].get("ansible_python_interpreter", "/usr/bin/python3")
         self.cfg["web"]["config"]["root_passwd"] = self.master_pass
         self.cfg["web"]["config"]["private_keyfile"] = self.private_key_file
         self.cfg["web"]["config"]["public_keyfile"] = self.public_key_file
         self.cfg["web"]["config"]["chain_keyfile"] = (
             self.chain_key_file or self.public_key_file
         )
-        self.cfg["web"]["config"]["apache_config_file"] = str(self.apache_config)
+        self.cfg["web"]["config"]["apache_config_file"] = str(
+            self.apache_config
+        )
         if ask_pass:
             self._prep_apache_config()
 
@@ -303,7 +325,10 @@ class DeployFactory:
         config = []
         with (Path(asset_dir) / "web" / "freva_web.conf").open() as f_obj:
             for line in f_obj.readlines():
-                if not self.chain_key_file and "SSLCertificateChainFile" in line:
+                if (
+                    not self.chain_key_file
+                    and "SSLCertificateChainFile" in line
+                ):
                     continue
                 config.append(line)
         with open(self.apache_config, "w") as f_obj:
@@ -439,7 +464,10 @@ class DeployFactory:
             self._set_additional_config_values(step, config)
         for step in info:
             for key, value in config[step]["vars"].items():
-                if f"{{{{{key}}}}}" in playbook or f"{{{{ {key} }}}}" in playbook:
+                if (
+                    f"{{{{{key}}}}}" in playbook
+                    or f"{{{{ {key} }}}}" in playbook
+                ):
                     info[step]["vars"][key] = value
         info_str = yaml.dump(json.loads(json.dumps(info)))
         for passwd in (self.email_password, self.master_pass):
@@ -580,11 +608,6 @@ class DeployFactory:
         self.create_eval_config()
         with self.inventory_file.open("w") as f_obj:
             f_obj.write(inventory)
-        inventory_str = inventory
-        for passwd in (self.email_password, self.master_pass):
-            if passwd:
-                inventory_str = inventory_str.replace(passwd, "*" * len(passwd))
-        RichConsole.print(inventory, style="bold", markup=True)
         logger.info("Playing the playbooks with ansible")
         RichConsole.print(
             "[b]Note:[/] The [blue]BECOME[/] password refers to the "

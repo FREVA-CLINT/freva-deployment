@@ -25,7 +25,7 @@ logger_stream_handle = RichHandler(
     console=Console(soft_wrap=True, stderr=True),
 )
 logging.basicConfig(
-    format="%(name)s - %(levelname)s - %(message)s",
+    format="%(name)s - %(message)s",
     level=logging.INFO,
     handlers=[logger_stream_handle],
     datefmt="[%X]",
