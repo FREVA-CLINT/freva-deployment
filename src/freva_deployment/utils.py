@@ -8,16 +8,16 @@ import os
 import re
 import shutil
 import sys
-from pathlib import Path
 import sysconfig
+from pathlib import Path
 from typing import Any, Dict, MutableMapping, NamedTuple, Union, cast
 
 import appdirs
 import requests
+import tomlkit
 from rich.console import Console
 from rich.logging import RichHandler
 from rich.prompt import Prompt
-import tomlkit
 
 logger_stream_handle = RichHandler(
     rich_tracebacks=True,
