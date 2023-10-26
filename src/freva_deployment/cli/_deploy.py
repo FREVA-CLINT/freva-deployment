@@ -54,6 +54,13 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
         "-v", "--verbose", action="count", help="Verbosity level", default=0
     )
     ap.add_argument(
+        "-l",
+        "--local",
+        help="Deploy services on the local machine, debug purpose.",
+        action="store_true",
+        default=False,
+    )
+    ap.add_argument(
         "-V",
         "--version",
         action="version",
@@ -74,7 +81,9 @@ def cli(argv: list[str] | None = None) -> None:
         steps=args.steps,
         config_file=args.config,
     ) as DF:
-        DF.play(server_map, args.ask_pass, args.verbose)
+        DF.play(
+            server_map, args.ask_pass, args.verbose, local_debug=args.local
+        )
 
 
 if __name__ == "__main__":

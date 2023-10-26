@@ -65,6 +65,12 @@ def parse_args(args: list[str]) -> argparse.Namespace:
         help="Path to the default python3 interpreter on the target machine.",
     )
     app.add_argument(
+        "--data-path",
+        default="/opt/freva/server-map",
+        type=Path,
+        help="Path that is used to save consistent data.",
+    )
+    app.add_argument(
         "-v", "--verbose", action="count", help="Verbosity level", default=0
     )
     app.add_argument(
@@ -85,6 +91,7 @@ freva_map:
         port: {port}
         asset_dir: {asset_dir}
         wipe: {wipe}
+        data_path: {data_path}
 """
 
 
@@ -114,6 +121,7 @@ def cli(argv: list[str] | None = None) -> None:
             port=argp.port,
             asset_dir=asset_dir,
             wipe=str(argp.wipe).lower(),
+            data_path=argp.data_path,
         )
         logger.debug(inventory)
         with open(inventory_file.name, "w") as f_obj:

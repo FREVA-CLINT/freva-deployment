@@ -11,7 +11,7 @@ from getpass import getuser
 from pathlib import Path
 from subprocess import run
 from tempfile import TemporaryDirectory
-from typing import Any
+from typing import Any, cast
 from urllib.parse import urlparse
 
 import tomlkit
@@ -60,7 +60,7 @@ class DeployFactory:
         config_file: Path | str | None = None,
     ) -> None:
         self._config_keys: list[str] = []
-        self.master_pass: str = ""
+        self.master_pass: str = "Freva4all!"
         self.email_password: str = ""
         self._td: TemporaryDirectory = TemporaryDirectory(prefix="inventory")
         self.inventory_file: Path = Path(self._td.name) / "inventory.yaml"
@@ -70,7 +70,7 @@ class DeployFactory:
         self.web_conf_file: Path = Path(self._td.name) / "freva_web.toml"
         self.apache_config: Path = Path(self._td.name) / "freva_web.conf"
         self._db_pass: str = ""
-        self._steps = steps or ["services", "core", "web"]
+        self._steps = steps or ["db", "databrowser", "web"]
         self._inv_tmpl = Path(config_file or config_dir / "inventory.toml")
         self._cfg_tmpl = self.aux_dir / "evaluation_system.conf.tmpl"
         self.cfg = self._read_cfg()
@@ -133,6 +133,12 @@ class DeployFactory:
         self.cfg["db"]["config"]["root_passwd"] = self.master_pass
         self.cfg["db"]["config"]["passwd"] = self.db_pass
         self.cfg["db"]["config"]["keyfile"] = self.public_key_file
+        data_path = Path(
+            cast(str, self.cfg["db"]["config"].get("data_path", "/opt/freva"))
+        )
+        self.cfg["db"]["config"]["data_path"] = str(
+            data_path.absolute().expanduser()
+        )
         for key in ("name", "user", "db"):
             self.cfg["db"]["config"][key] = (
                 self.cfg["db"]["config"].get(key) or "freva"
@@ -158,6 +164,17 @@ class DeployFactory:
         )
         self.cfg["databrowser"]["config"]["root_passwd"] = self.master_pass
         self.cfg["databrowser"]["config"].pop("core", None)
+        data_path = Path(
+            cast(
+                str,
+                self.cfg["databrowser"]["config"].get(
+                    "data_path", "/opt/freva"
+                ),
+            )
+        )
+        self.cfg["databrowser"]["config"]["data_path"] = str(
+            data_path.absolute().expanduser()
+        )
         self.playbooks["databrowser"] = self.cfg["databrowser"]["config"].get(
             "databrowser_playbook"
         )
@@ -222,8 +239,6 @@ class DeployFactory:
     def _prep_web(self, ask_pass: bool = True) -> None:
         """prepare the web deployment."""
         self._config_keys.append("web")
-        # if ask_pass:
-        #    self._prep_vault()
         self.playbooks["web"] = self.cfg["web"]["config"].get("web_playbook")
         self.cfg["web"]["config"].setdefault("ansible_become_user", "root")
         self._prep_core()
@@ -232,6 +247,13 @@ class DeployFactory:
             f'{self.cfg["databrowser"]["config"]["databrowser_port"]}'
         )
         self.cfg["web"]["config"]["databrowser_host"] = databrowser_host
+        self.cfg["web"]["config"].setdefault("deploy_web_server", True)
+        data_path = Path(
+            cast(str, self.cfg["web"]["config"].get("data_path", "/opt/freva"))
+        )
+        self.cfg["web"]["config"]["data_path"] = str(
+            data_path.absolute().expanduser()
+        )
         admin = self.cfg["core"]["config"]["admins"]
         if not isinstance(admin, str):
             self.cfg["web"]["config"]["admin"] = admin[0]
@@ -589,6 +611,7 @@ class DeployFactory:
         server_map: str | None = None,
         ask_pass: bool = True,
         verbosity: int = 0,
+        local_debug: bool = False,
     ) -> None:
         """Play the ansible playbook.
 
@@ -603,6 +626,8 @@ class DeployFactory:
             ssh key
         verbosity: int, default: 0
             Verbosity level, default 0
+        local_debug: bool, default: False
+            Run deployment only on local machine, debug mode.
         """
         inventory = self.parse_config()
         self.create_eval_config()
@@ -626,6 +651,8 @@ class DeployFactory:
         )
         if ask_pass:
             cmd += " --ask-pass"
+        if local_debug:
+            cmd += " -c local"
         env = os.environ.copy()
         env["PATH"] += f":{AssetDir.get_dirs(user=True, key='scripts')}"
         try:

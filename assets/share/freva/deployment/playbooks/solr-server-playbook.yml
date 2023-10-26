@@ -9,11 +9,11 @@
         -e NUM_BACKUPS=7
         -e SOLR_HEAP={{solr_mem}}
         --rm
-        -v /opt/freva/{{project_name}}/solr_service:/var/solr/data:z
-        -v /opt/freva/freva-service-config/solr/managed-schema.xml:/opt/solr/managed-schema.xml:z
-        -v /opt/freva/freva-service-config/solr/create_cores.sh:/docker-entrypoint-initdb.d/create_cores.sh:z
-        -v /opt/freva/freva-service-config/solr/synonyms.txt:/opt/solr/synonyms.txt:z
-        -v /opt/freva/freva-service-config/solr/daily_backup.sh:/usr/local/bin/daily_backup:z
+        -v '{{solr_data_path}}/{{project_name}}/solr_service:/var/solr/data:z'
+        -v '{{solr_data_path}}/freva-service-config/solr/managed-schema.xml:/opt/solr/managed-schema.xml:z'
+        -v '{{solr_data_path}}/freva-service-config/solr/create_cores.sh:/docker-entrypoint-initdb.d/create_cores.sh:z'
+        -v '{{solr_data_path}}/freva-service-config/solr/synonyms.txt:/opt/solr/synonyms.txt:z'
+        -v '{{solr_data_path}}/freva-service-config/solr/daily_backup.sh:/usr/local/bin/daily_backup:z'
         -p {{ solr_port }}:8983 -t
         --name {{solr_name}}
         -t solr:latest
@@ -47,7 +47,7 @@
       file:
         state: absent
         force: true
-        path: "/opt/freva/freva-service-config/"
+        path: "{{solr_data_path}}/freva-service-config/"
       become: "{{use_become}}"
     - name: Creating docker network
       shell: >
@@ -57,13 +57,13 @@
       become: "{{use_become}}"
     - name: Cleaning existing directory structure
       file:
-        path: /opt/freva/{{ project_name }}/solr_service
+        path: '{{solr_data_path}}/{{ project_name }}/solr_service'
         state: absent
       when: solr_wipe == true
       become: "{{use_become}}"
     - name: Creating directory structure
       file:
-        path: /opt/freva/{{ project_name }}/solr_service
+        path: '{{solr_data_path}}/{{ project_name }}/solr_service'
         state: directory
         owner: 8983
         group: 8983
@@ -72,7 +72,7 @@
     - name: Getting additional configurations
       git:
         repo: https://github.com/FREVA-CLINT/freva-service-config.git
-        dest: /opt/freva/freva-service-config
+        dest: '{{solr_data_path}}/freva-service-config'
         update: true
       become: "{{use_become}}"
     - name: Copy systemd files

@@ -4,17 +4,17 @@
   vars:
     ansible_python_interpreter: "{{ databrowser_ansible_python_interpreter }}"
     databrowser_name: "{{project_name}}-databrowser"
-    compose_file: /opt/freva/compose_services/{{databrowser_name}}-compose.yml
+    compose_file: '{{databrowser_data_path}}/compose_services/{{databrowser_name}}-compose.yml'
     solr_name: "{{project_name}}-solr"
     mongo_name: "{{project_name}}-mongo"
     solr_volumes:
-      - /opt/freva/{{project_name}}/solr_service:/var/solr/data:z
-      - /opt/freva/freva-service-config/solr/managed-schema.xml:/opt/solr/managed-schema.xml:z
-      - /opt/freva/freva-service-config/solr/create_cores.sh:/docker-entrypoint-initdb.d/create_cores.sh:z
-      - /opt/freva/freva-service-config/solr/synonyms.txt:/opt/solr/synonyms.txt:z
-      - /opt/freva/freva-service-config/solr/daily_backup.sh:/usr/local/bin/daily_backup:z
+      - '{{databrowser_data_path}}/{{project_name}}/solr_service:/var/solr/data:z'
+      - '{{databrowser_data_path}}/freva-service-config/solr/managed-schema.xml:/opt/solr/managed-schema.xml:z'
+      - '{{databrowser_data_path}}/freva-service-config/solr/create_cores.sh:/docker-entrypoint-initdb.d/create_cores.sh:z'
+      - '{{databrowser_data_path}}/freva-service-config/solr/synonyms.txt:/opt/solr/synonyms.txt:z'
+      - '{{databrowser_data_path}}/freva-service-config/solr/daily_backup.sh:/usr/local/bin/daily_backup:z'
     mongo_volumes:
-      - /opt/freva/{{project_name}}/databrowser/stats:/data/db:z
+      - '{{databrowser_data_path}}/{{project_name}}/databrowser/stats:/data/db:z'
     ansible_become_user: "{{ databrowser_ansible_become_user | default('root') }}"
     use_become: "{{ databrowser_ansible_become_user is defined and databrowser_ansible_become_user != '' }}"
   tasks:
@@ -58,20 +58,20 @@
       file:
         state: absent
         force: true
-        path: /opt/freva/freva-service-config/
+        path: '{{databrowser_data_path}}/freva-service-config/'
       become: "{{use_become}}"
     - name: Cleaning existing directory structure
       file:
         path: "{item}"
         state: absent
       with_items:
-        - "/opt/freva/{{ project_name }}/solr_service"
-        - "/opt/freva/{{ project_name }}/databrowser"
+        - "{{databrowser_data_path}}/{{ project_name }}/solr_service"
+        - "{{databrowser_data_path}}/{{ project_name }}/databrowser"
       when: databrowser_wipe == true
       become: "{{use_become}}"
     - name: Creating solr directory structure
       file:
-        path: /opt/freva/{{ project_name }}/solr_service
+        path: '{{databrowser_data_path}}/{{ project_name }}/solr_service'
         state: directory
         owner: 8983
         group: 8983
@@ -79,20 +79,20 @@
       become: "{{use_become}}"
     - name: Creating compose directory structure
       file:
-        path: /opt/freva/compose_services
+        path: '{{databrowser_data_path}}/compose_services'
         state: directory
         recurse: true
       become: "{{use_become}}"
     - name: Creating directory structure
       file:
-        path: /opt/freva/{{ project_name }}/databrowser
+        path: '{{databrowser_data_path}}/{{ project_name }}/databrowser'
         state: directory
         recurse: true
       become: "{{use_become}}"
     - name: Getting additional configurations
       git:
         repo: https://github.com/FREVA-CLINT/freva-service-config.git
-        dest: /opt/freva/freva-service-config
+        dest: '{{databrowser_data_path}}/freva-service-config'
         update: true
       become: "{{use_become}}"
     - name: Copy systemd files

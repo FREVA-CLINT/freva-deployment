@@ -1,4 +1,4 @@
-# This is the "defaut" freva deployment configuration file.
+# This is the "default" freva deployment configuration file.
 #
 #   - The files syntax follows the `toml` markup language (https://toml.io)
 #   - Comments begin with the "#" character
@@ -95,6 +95,10 @@ ansible_become_user = "root"
 ##(Useful for a truely fresh start) (default: False)
 wipe = false
 
+## Set the path where the permanent database data should be stored. By default
+## this is set to /opt/freva/<project_name>/db_service
+data_path = "/opt/freva"
+
 ## In case you want to set a custom path to a ansible playbook,
 ## you can do this here, by default the deployment will use the playbook
 ## located in the user config directory.
@@ -126,6 +130,11 @@ ansible_become_user = "root"
 ##Indicate whether or not to empty any pre-existing folders/docker volumes.
 ##(Useful for a truely fresh start) (default: False)
 wipe = false
+
+## Set the path where the permanent databrowsr data should be stored.
+## By default this is set to /opt/freva
+data_path = "/opt/freva"
+
 ## In case you want to set a custom path to a ansible playbook,
 ## you can do this here, by default the deployment will use the playbook
 ## located in the user config directory.
@@ -215,6 +224,10 @@ project_website = "www.freva.dkrz.de"
 
 ##If you need a different user name you can set it here:
 #ansible_user = "username"
+
+## Set the path where the permanent web data should be stored. By default
+## this is set to /opt/freva
+data_path = "/opt/freva"
 
 ##Set html colors
 main_color = "Tomato"
@@ -319,3 +332,9 @@ web_playbook = ""
 
 ## Set the become (sudo) user name to change to for installing the services
 ansible_become_user = "root"
+
+# Deploy a http reverse proxy. Turn off the deployment (set to false) of an
+# reverse proxy doesn't the user that deploys the web doesn't have access to
+# port 80 and 443 in this case you will have to deploy the reverse proxy
+# yourself.
+deploy_web_server = true

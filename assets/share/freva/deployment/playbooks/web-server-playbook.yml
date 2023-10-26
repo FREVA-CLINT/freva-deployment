@@ -12,12 +12,12 @@
     - name: Deleting existing email secrets
       become: "{{use_become}}"
       shell: >
-        /tmp/docker-or-podman exec -it {{ vault_name }}
+        /tmp/docker-or-podman exec {{ vault_name }}
         vault kv delete kv/email
     - name: Inserting email secrets
       become: "{{use_become}}"
       shell: >
-        /tmp/docker-or-podman exec -it {{ vault_name }}
+        /tmp/docker-or-podman exec {{ vault_name }}
         vault kv put kv/email username={{vault_email_user}}
         password='{{vault_email_password}}'
     - name: Deleting tmporary files
@@ -60,20 +60,20 @@
 
   vars:
     ansible_python_interpreter: "{{ web_ansible_python_interpreter }}"
-    service_dir: /opt/freva/{{project_name}}/web_service
-    compose_file: /opt/freva/compose_services/{{web_name}}-compose.yml
+    service_dir: '{{web_data_path}}/{{project_name}}/web_service'
+    compose_file: '{{web_data_path}}/compose_services/{{web_name}}-compose.yml'
     web_volumes:
       - "{{ core_root_dir }}:{{ core_root_dir }}:ro"
       - "{{ core_scheduler_output_dir}}:{{ core_scheduler_output_dir }}:ro"
-      - "/opt/freva/{{project_name}}/web_service/static:/opt/freva_web/static:z"
+      - "{{web_data_path}}/{{project_name}}/web_service/static:{{web_data_path}}_web/static:z"
       - "{{core_base_dir_location}}:{{core_base_dir_location}}:ro"
     apache_volumes:
-      - "/opt/freva/{{project_name}}/web_service/freva_web.conf:/usr/local/apache2/conf/httpd.conf:z"
-      - "/opt/freva/{{project_name}}/web_service/server-cert.crt:/etc/ssl/certs/server-cert.crt:z"
-      - "/opt/freva/{{project_name}}/web_service/server-key.key:/etc/ssl/private/server-key.key:z"
-      - "/opt/freva/{{project_name}}/web_service/cacert.pem:/etc/ssl/certs/cacert.pem:z"
-      - "/opt/freva/{{project_name}}/web_service/static:/srv/static:z"
-      - "/opt/freva/{{project_name}}/web_service/prepare-httpd:/usr/local/bin/prepare-httpd:z"
+      - "{{web_data_path}}/{{project_name}}/web_service/freva_web.conf:/usr/local/apache2/conf/httpd.conf:z"
+      - "{{web_data_path}}/{{project_name}}/web_service/server-cert.crt:/etc/ssl/certs/server-cert.crt:z"
+      - "{{web_data_path}}/{{project_name}}/web_service/server-key.key:/etc/ssl/private/server-key.key:z"
+      - "{{web_data_path}}/{{project_name}}/web_service/cacert.pem:/etc/ssl/certs/cacert.pem:z"
+      - "{{web_data_path}}/{{project_name}}/web_service/static:/srv/static:z"
+      - "{{web_data_path}}/{{project_name}}/web_service/prepare-httpd:/usr/local/bin/prepare-httpd:z"
       - "{{ core_preview_path }}:/srv/static/preview:z"
     docker_apache_cmd: >
         --rm
@@ -145,11 +145,11 @@
       become: "{{use_become}}"
       copy:
         src: "{{ asset_dir }}/scripts/prepare-httpd"
-        dest: "/opt/freva/{{project_name}}/web_service/prepare-httpd"
+        dest: "{{web_data_path}}/{{project_name}}/web_service/prepare-httpd"
         mode: "0775"
     - name: Creating compose directory structure
       file:
-        path: /opt/freva/compose_services
+        path: '{{web_data_path}}/compose_services'
         state: directory
         recurse: true
       become: "{{use_become}}"

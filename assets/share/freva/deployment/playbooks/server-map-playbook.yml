@@ -4,7 +4,7 @@
   vars:
     docker_cmd: >
         run
-        -v /opt/freva/server-map:/var/freva/:z
+        -v '{{data_path}}:/var/freva/:z'
         --dns 8.8.8.8
         -p {{ port }}:5008
         --name freva-map
@@ -33,7 +33,7 @@
       when: wipe == true
     - name: Cleaning existing directory structure
       file:
-        path: /opt/freva/server-map
+        path: '{{data_path}}'
         state: absent
       when: wipe == true
     - name: Copy systemd files
@@ -45,7 +45,7 @@
       copy: src="{{ asset_dir }}/servers" dest=/tmp
     - name: Creating directory structure
       file:
-        path: /opt/freva/server-map
+        path: '{{data_path}}'
         state: directory
         owner: 9999
         group: 9999
