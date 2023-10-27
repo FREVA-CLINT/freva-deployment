@@ -15,10 +15,10 @@ RUN set -ex &&\
 
 RUN python3 -m ensurepip
 RUN pip3 install --no-cache --upgrade pip setuptools &&\
-    pip3 install requests pyopenssl flask flask_restful gunicorn
+    pip3 install requests pyopenssl fastapi uvicorn
 
 EXPOSE 5002
 VOLUME /vault/file
 CMD /bin/runserver.py &&\
-    gunicorn -w 2 --threads 3 --pythonpath /bin runserver:app \
-    --bind 0.0.0.0:5002 --access-logfile -
+    uvicorn --workers 2 --app-dir /bin runserver:app \
+    --host 0.0.0.0 --port 5002

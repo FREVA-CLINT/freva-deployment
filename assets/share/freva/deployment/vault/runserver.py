@@ -11,10 +11,11 @@ from subprocess import Popen, PIPE, run
 import shlex
 import time
 import threading
-from typing import Any, Literal, List, Optional, TypedDict, cast
+from typing import Any, Dict, Literal, List, Tuple, TypedDict, Union, cast
 
-from flask import Flask
-from flask_restful import Resource, Api
+
+from fastapi import FastAPI, HTTPException
+from fastapi.responses import JSONResponse
 import requests
 
 KeyType = TypedDict("KeyType", {"keys": List[str], "token": str})
@@ -34,15 +35,32 @@ PHRASES = [
     "Blondie! You know what you are? Just a dirty son of a...",
 ]
 
-app = Flask("secret-reader")
-api = Api(app)
+app = FastAPI(
+    title="secret-reader",
+    description="Read information from a vault",
+    version="2023.10.1",
+)
 logging.basicConfig(
     format="%(asctime)s - %(name)s - [%(levelname)s] - %(message)s",
     level=logging.INFO,
     datefmt="%Y-%m-%dT%H:%M:%S%z",
 )
 logger = logging.getLogger("secret-reader")
-app.logger = logger
+
+
+class VaultCore:
+    _token: str = ""
+
+    @property
+    def token(self) -> str:
+        """Get the vault login token."""
+        if not self._token:
+            with ThreadLock:
+                self._token = read_key()["token"]
+        return self._token
+
+
+Vault = VaultCore()
 
 
 def interact_with_vault(
@@ -50,7 +68,7 @@ def interact_with_vault(
     method: Literal["GET", "POST", "PUT", "DELETE"] = "GET",
     loglevel: int = logging.ERROR,
     **kwargs: Any,
-) -> Optional[requests.Response]:
+) -> Dict[str, Any]:
     """Interact with the vault rest api.
 
     Parameters
@@ -72,13 +90,15 @@ def interact_with_vault(
             )
             text = response.text
             if response.status_code >= 200 and response.status_code < 300:
-                return response
+                return cast(Dict[str, Any], response.json())
             break
         except requests.exceptions.ConnectionError:
             logger.critical("Vault not active: sleeping for 1 second")
             time.sleep(1)
+        except json.JSONDecodeError:
+            break
     logger.log(loglevel, text)
-    return None
+    return {}
 
 
 def read_key() -> KeyType:
@@ -102,7 +122,7 @@ def read_key() -> KeyType:
     return auth
 
 
-def unseal(auth: KeyType):
+def unseal(auth: KeyType) -> None:
     """Open the vault.
 
     Parameters
@@ -111,10 +131,7 @@ def unseal(auth: KeyType):
         Dictionary holding the unseal keys and login token
     """
     for key in auth["keys"]:
-        response = interact_with_vault(
-            f"v1/sys/unseal", "PUT", json={"key": key}
-        )
-        data = response.json()
+        data = interact_with_vault("v1/sys/unseal", "PUT", json={"key": key})
         if data.get("sealed", False) is False:
             logger.info("Vault has been successfully unsealed!")
             login(auth["token"])
@@ -137,9 +154,9 @@ def login(token: str) -> None:
     auth_header = {"X-Vault-Token": token, "Content-Type": "application/json"}
     # Make vault commands possible and login from the cmd.
     run(shlex.split(f"vault login {token}"), stderr=PIPE, stdout=PIPE)
-    interact_with_vault(f"v1/sys/health", "GET", headers=auth_header)
+    interact_with_vault("v1/sys/health", "GET", headers=auth_header)
     interact_with_vault(
-        f"v1/sys/mounts/kv",
+        "v1/sys/mounts/kv",
         "PUT",
         loglevel=logging.WARNING,
         headers=auth_header,
@@ -150,7 +167,7 @@ def login(token: str) -> None:
     except (FileNotFoundError, PermissionError):
         return
     interact_with_vault(
-        f"v1/sys/policies/acl/read-eval",
+        "v1/sys/policies/acl/read-eval",
         "PUT",
         loglevel=logging.WARNING,
         headers=auth_header,
@@ -158,12 +175,12 @@ def login(token: str) -> None:
     )
 
 
-def deploy_vault():
+def deploy_vault() -> None:
     """Deploy a new vault if it hasn't been deployed yet."""
     auth = read_key()
     if not auth["keys"]:
-        response = interact_with_vault(
-            f"v1/sys/init",
+        data = interact_with_vault(
+            "v1/sys/init",
             "PUT",
             headers={"Content-Type": "application/json"},
             json={
@@ -171,7 +188,6 @@ def deploy_vault():
                 "secret_threshold": 3,  # Number of keys required to unseal
             },
         )
-        data = response.json()
         auth["keys"] = data.get("keys", [])
         auth["token"] = data.get("token", "")
         KEY_FILE.write_bytes(
@@ -180,99 +196,44 @@ def deploy_vault():
     unseal(auth)
 
 
-class Vault(Resource):
-    _token: str = ""
+@app.get("/vault/data/{public_key}")
+async def read_secret(public_key: str) -> JSONResponse:
+    """Read the secrets from the vault.
 
-    @property
-    def token(self) -> str:
-        """Get the vault login token."""
-        if not self._token:
-            with ThreadLock:
-                self._token = read_key()["token"]
-        return self._token
+    Parameters
+    ----------
+    public_key: str
+        hexdigest representation of the sha512 public key that is stored
+        on the docker container.
 
-    def post(self, entry, public_key):
-        """Post method, for setting a new db_password.
 
-        Parameters:
-        -----------
-        entry: str
-            the new database password
-        public_key: str
-            mysql root password to
-
-        Returns:
-        --------
-            dict: status information
-        """
-        out, status = {}, 400
-        if public_key != os.environ["ROOT_PW"]:
-            return out, status
-        # Get the information from the vault
-        url = f"http://127.0.0.1:8200/v1/kv/data/read-eval"
-        headers = {"X-Vault-Token": self.token}
-        out = (
-            requests.get(url, headers=headers, timeout=3)
-            .json()
-            .get("data", {})
+    Returns
+    -------
+    dict: A key-value paired dictionary containing the secrets.
+    """
+    out = {}
+    status = 400
+    if len(public_key) != 128:  # This is not a checksum of a cert.
+        is_sealed = interact_with_vault("v1/sys/seal-status").get("sealed")
+        vault_status = {True: "sealed", False: "unsealed", None: "down"}[
+            is_sealed
+        ]
+        text = f"But the vault is {vault_status}"
+        raise HTTPException(
+            detail=f"{random.choice(PHRASES)} {text}", status_code=status
         )
-        try:
-            out["data"]["db.passwd"] = entry
-        except KeyError:
-            pass
-        _ = requests.post(url, json=out, headers=headers)
-        return {}, 201
-
-    def get(self, entry, public_key):
-        """Get method, for getting vault information.
-
-        Parameters:
-        -----------
-        entry: str
-            the kind of inormation that is returned, can be
-            key#N : to get the unseal key #N
-            token: to get the login token
-            data: to get the key-value data that is stored in the vault
-        public_key: hashlib.sha512
-            hexdigest representation of the sha512 public key that is stored
-            on the docker container.
-
-        Returns:
-        --------
-            dict: Vault information
-        """
+    # Get the information from the vault
+    req = requests.get(
+        f"{VAULT_ADDR}/v1/kv/data/read-eval",
+        headers={"X-Vault-Token": Vault.token},
+    )
+    try:
+        out = req.json().get("data", {}).get("data", {})
+        status = req.status_code
+    except (json.JSONDecodeError, AttributeError):
         out = {}
-        status = 400
-        if len(public_key) != 128:  # This is not a checksum of a cert.
-            is_sealed = getattr(
-                interact_with_vault(f"v1/sys/seal-status"), "json", lambda: {}
-            )().get("sealed", True)
-            vault_status = {True: "sealdd", False: "unsealed"}[is_sealed]
-            text = f"But the vault is {vault_status}"
-            return f"{random.choice(PHRASES)} {text}", status
-        if entry == "data":
-            # Get the information from the vault
-            req = interact_with_vault(
-                f"v1/kv/data/read-eval",
-                headers={"X-Vault-Token": self.token},
-            )
-        else:
-            req = interact_with_vault(
-                f"v1/kv/data/{entry}",
-                headers={"X-Vault-Token": self.token},
-            )
-        try:
-            out = req.json()["data"]["data"]
-            status = req.status_code
-        except KeyError:
-            out = req.json()
-            status = req.status_code
-        except (json.JSONDecodeError, AttributeError):
-            out = {}
-        return out, status
+    return JSONResponse(content=out, status_code=status)
 
-
-api.add_resource(Vault, "/vault/<entry>/<public_key>")  # Route_3
 
 if __name__ == "__main__":
     Popen(["vault", "server", "-config", "/vault/vault-server-tls.hcl"])
