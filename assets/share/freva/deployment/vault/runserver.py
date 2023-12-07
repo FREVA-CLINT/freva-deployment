@@ -11,7 +11,16 @@ from subprocess import Popen, PIPE, run
 import shlex
 import time
 import threading
-from typing import Any, Dict, Literal, List, Tuple, TypedDict, Union, cast
+from typing import (
+    Any,
+    Dict,
+    Literal,
+    List,
+    Tuple,
+    TypedDict,
+    Union,
+    cast,
+)
 
 
 from fastapi import FastAPI, HTTPException
@@ -34,11 +43,12 @@ PHRASES = [
     "We faced a showdown, and it didn't end well."
     "Blondie! You know what you are? Just a dirty son of a...",
 ]
+__version__ = "2023.10.1"
 
 app = FastAPI(
     title="secret-reader",
     description="Read information from a vault",
-    version="2023.10.1",
+    version=__version__,
 )
 logging.basicConfig(
     format="%(asctime)s - %(name)s - [%(levelname)s] - %(message)s",
@@ -189,7 +199,7 @@ def deploy_vault() -> None:
             },
         )
         auth["keys"] = data.get("keys", [])
-        auth["token"] = data.get("token", "")
+        auth["token"] = data.get("token", data.get("root_token", ""))
         KEY_FILE.write_bytes(
             base64.b64encode(json.dumps(auth).encode("utf-8"))
         )
@@ -238,3 +248,12 @@ async def read_secret(public_key: str) -> JSONResponse:
 if __name__ == "__main__":
     Popen(["vault", "server", "-config", "/vault/vault-server-tls.hcl"])
     deploy_vault()
+    Popen(
+        [
+            "vault",
+            "policy",
+            "write",
+            "eval-policy",
+            "/vault/policy-file.hcl",
+        ]
+    )
