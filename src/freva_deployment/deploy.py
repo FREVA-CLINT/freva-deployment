@@ -232,7 +232,7 @@ class DeployFactory:
                 "No web config section given, please configure the web.config"
             ) from error
         _webserver_items["ALLOWED_HOSTS"].append(self.cfg["web"]["hosts"])
-        _webserver_items["REDIS_HOST"] = "{self.project_name}-web"
+        _webserver_items["REDIS_HOST"] = f"{self.project_name}-web"
         try:
             with Path(_webserver_items["homepage_text"]).open("r") as f_obj:
                 _webserver_items["homepage_text"] = f_obj.read()
