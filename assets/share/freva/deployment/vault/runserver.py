@@ -83,7 +83,7 @@ def interact_with_vault(
 
     Parameters
     ---------
-    url: str
+    endpoint: str
         The vault endpoint.
     method: str, default: GET
         Use a GET, PUT or POST method
@@ -105,7 +105,8 @@ def interact_with_vault(
         except requests.exceptions.ConnectionError:
             logger.critical("Vault not active: sleeping for 1 second")
             time.sleep(1)
-        except json.JSONDecodeError:
+        except Exception as error:
+            text = str(error)
             break
     logger.log(loglevel, text)
     return {}
