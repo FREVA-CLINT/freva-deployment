@@ -306,3 +306,38 @@ git config --global user.email your@email.com
 
 # Advanced: Adjusting the playbook
 Playbook templates and be found the in the `playbooks` directory. You can also add new variables to the playbook if they are present in the `config/inventory` file.
+
+# Contributing to freva-deployment
+
+We welcome contributions from the community! Before you start contributing,
+please follow these steps to set up your development environment.
+Make sure you have the following prerequisites installed:
+
+- Python (>=3.x)
+- Git
+- Make
+
+```console
+git clone https://github.com/FREVA-CLINT/freva-deployment.git
+cd freva-deployment.git
+```
+## Development Workflow
+
+We use a Makefile to manage common development tasks. Here are some useful
+commands:
+
+
+1. To install in development mode use:
+```console
+make
+```
+
+2. To reformat and do type checking:
+```console
+make lint
+```
+
+3. Generate the documentation:
+```console
+make docs
+```

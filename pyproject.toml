@@ -55,6 +55,7 @@ deploy-freva-map = "freva_deployment.cli:server_map"
 freva-service = "freva_deployment.cli:service"
 freva-migrate = "freva_deployment.cli:migrate"
 deploy-freva = "freva_deployment.ui.deployment_tui:tui"
+install_script = "freva_deployment:download_auxiliry_data"
 
 
 [tool.flit.sdist]

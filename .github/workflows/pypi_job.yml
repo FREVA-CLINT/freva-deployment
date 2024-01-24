@@ -19,7 +19,7 @@ jobs:
         with:
           python-version: "3.x"
       - name: Adding the evaluation config file
-        run: wget https://raw.githubusercontent.com/FREVA-CLINT/freva/main/assets/evaluation_system.conf -O assets/share/freva/deployment/config/evaluation_system.conf.tmpl
+        run: python src/freva_deployment/__init__.py
       -
         name: Install flit
         run: python -m pip install flit
