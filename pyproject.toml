@@ -1,5 +1,5 @@
 [build-system]
-requires = ["flit_core >=3.2,<4"]
+requires = ["flit_core >=3.2"]
 build-backend = "flit_core.buildapi"
 
 [project]
@@ -18,7 +18,7 @@ classifiers = [
 ]
 dynamic = ["version"]
 description = "Deployment of the Free Evaluation Framework Freva"
-requires-python = ">=3.7"
+requires-python = ">=3.8"
 dependencies = [ "appdirs",
              "ansible>=2.10",
              "npyscreen",
@@ -45,8 +45,8 @@ test = ["mypy", "black", "flit", "isort", "types-toml", "types-PyMySQL"]
 
 [project.urls]
 Documentation = "https://freva-deployment.readthedocs.io/en/latest/"
-Issues = "https://github.com/FREVA-CLINT/freva/issues"
-Source = "https://github.com/FREVA-CLINT/freva"
+Issues = "https://github.com/FREVA-CLINT/freva-deployment/issues"
+Source = "https://github.com/FREVA-CLINT/freva-deployment"
 Home = "https://freva-deployment.readthedocs.io/en/latest"
 
 [project.scripts]
