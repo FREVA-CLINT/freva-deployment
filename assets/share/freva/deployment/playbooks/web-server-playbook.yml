@@ -88,7 +88,7 @@
         -e GID=$(id -g {{ansible_user}})
         --name "{{project_name}}-httpd"
         --security-opt label=disable
-        -e FREVA_HOST={{web_server_name}} -p 80:80 -p 443:443
+        -e FREVA_HOST="{{web_server_name}}" -p 80:80 -p 443:443
         httpd:latest /usr/local/bin/prepare-httpd
     redis_name: "{{ project_name }}-redis"
     apache_name: "{{project_name}}-httpd"
