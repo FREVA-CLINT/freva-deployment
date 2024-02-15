@@ -279,13 +279,8 @@ class WebScreen(BaseForm):
             data_path=(
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
-                    name=(
-                        f"{self.num}Set the path where the permanent web "
-                        "data should be stored"
-                    ),
-                    value=str(
-                        Path(cast(str, cfg.get("data_path", "/opt/freva")))
-                    ),
+                    name=f"{self.num}Parent directory for any permanent data:",
+                    value=cast(str, cfg.get("data_path", "/opt/freva")),
                 ),
                 True,
             ),
@@ -687,12 +682,9 @@ class DBScreen(BaseForm):
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
                     name=(
-                        f"{self.num}Set the path where the permanent "
-                        "database data should be stored"
+                        f"{self.num}Parent directory for any permanent data:"
                     ),
-                    value=str(
-                        Path(cast(str, cfg.get("data_path", "/opt/freva")))
-                    ),
+                    value=cast(str, cfg.get("data_path", "/opt/freva")),
                 ),
                 True,
             ),
@@ -819,13 +811,8 @@ class DatabrowserScreen(BaseForm):
             data_path=(
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
-                    name=(
-                        f"{self.num}Set the path where the permanent "
-                        "databrowser data should be stored"
-                    ),
-                    value=str(
-                        Path(cast(str, cfg.get("data_path", "/opt/freva")))
-                    ),
+                    name=f"{self.num}Parent directory for any permanent data:",
+                    value=cast(str, cfg.get("data_path", "/opt/freva")),
                 ),
                 True,
             ),
@@ -958,9 +945,9 @@ class RunForm(npyscreen.FormMultiPageAction):
 
     def create(self) -> None:
         """Custom definitions executed when the from gets created."""
-        self.how_exited_handers[
-            npyscreen.wgwidget.EXITED_ESCAPE
-        ] = self.parentApp.exit_application
+        self.how_exited_handers[npyscreen.wgwidget.EXITED_ESCAPE] = (
+            self.parentApp.exit_application
+        )
         self._add_widgets()
 
     def _add_widgets(self) -> None:
