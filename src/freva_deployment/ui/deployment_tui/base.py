@@ -82,7 +82,9 @@ def selectFile(starting_value: str = "", *args, **keywords):
     F.set_colors()
     F.wCommand.show_bold = True
     if starting_value:
-        if not os.path.exists(os.path.abspath(os.path.expanduser(starting_value))):
+        if not os.path.exists(
+            os.path.abspath(os.path.expanduser(starting_value))
+        ):
             F.value = os.getcwd()
         else:
             F.value = starting_value
@@ -225,7 +227,9 @@ class BaseForm(npyscreen.FormMultiPageWithMenus, npyscreen.FormWithMenus):
 
     def clear_cache(self):
         """Clear the app cache."""
-        with open(self.parentApp.cache_dir / "freva_deployment.json", "w") as f:
+        with open(
+            self.parentApp.cache_dir / "freva_deployment.json", "w"
+        ) as f:
             json.dump({}, f, indent=3)
         self.parentApp.reset()
 
@@ -239,9 +243,9 @@ class BaseForm(npyscreen.FormMultiPageWithMenus, npyscreen.FormWithMenus):
 
     def create(self) -> None:
         """Setup the form."""
-        self.how_exited_handers[
-            npyscreen.wgwidget.EXITED_ESCAPE
-        ] = self.parentApp.exit_application
+        self.how_exited_handers[npyscreen.wgwidget.EXITED_ESCAPE] = (
+            self.parentApp.exit_application
+        )
         self.add_handlers({"^O": self.parentApp.load_dialog})
         self.add_handlers({"^S": self.parentApp.save_dialog})
         self.add_handlers({"^K": self.previews_form})
@@ -267,7 +271,13 @@ class BaseForm(npyscreen.FormMultiPageWithMenus, npyscreen.FormWithMenus):
                 ("Core Deployment", self._change_form, "c", "c", ("MAIN",)),
                 ("Web Deployment", self._change_form, "w", "w", ("SECOND",)),
                 ("DB Deployment", self._change_form, "d", "d", ("THIRD",)),
-                ("Solr Deployment", self._change_form, "s", "s", ("FOURTH",)),
+                (
+                    "Databrowser Deployment",
+                    self._change_form,
+                    "s",
+                    "s",
+                    ("FOURTH",),
+                ),
                 ("Run Deployment", self.run_deployment, "^R"),
             ]
         )

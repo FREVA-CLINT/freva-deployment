@@ -1,8 +1,8 @@
 """Collection of utils for deployment."""
+
 from __future__ import annotations
 
 import hashlib
-import json
 import logging
 import os
 import re
@@ -66,8 +66,12 @@ class AssetDir:
     this_module = "freva_deployment"
 
     def __init__(self):
-        self._user_asset_dir = Path(appdirs.user_data_dir()) / "freva" / "deployment"
-        self._user_config_dir = Path(appdirs.user_config_dir()) / "freva" / "deployment"
+        self._user_asset_dir = (
+            Path(appdirs.user_data_dir()) / "freva" / "deployment"
+        )
+        self._user_config_dir = (
+            Path(appdirs.user_config_dir()) / "freva" / "deployment"
+        )
 
     @staticmethod
     def get_dirs(user: bool = True, key: str = "data") -> Path:
@@ -112,7 +116,9 @@ class AssetDir:
             inventory_file.unlink()
         except FileNotFoundError:
             pass
-        shutil.copy2(self.asset_dir / "config" / "inventory.toml", inventory_file)
+        shutil.copy2(
+            self.asset_dir / "config" / "inventory.toml", inventory_file
+        )
         return self._user_config_dir
 
     @property
@@ -180,12 +186,14 @@ def _create_new_config(inp_file: Path) -> Path:
         config["databrowser"] = config.pop("solr")
         for key in ("port", "mem"):
             if key in config["databrowser"]["config"]:
-                config["databrowser"]["config"][f"solr_{key}"] = config["databrowser"][
-                    "config"
-                ].pop(key)
+                config["databrowser"]["config"][f"solr_{key}"] = config[
+                    "databrowser"
+                ]["config"].pop(key)
     _update_config(config_tmpl, config)
     if create_backup:
-        inp_file.with_suffix(inp_file.suffix + ".bck").write_text(inp_file.read_text())
+        inp_file.with_suffix(inp_file.suffix + ".bck").write_text(
+            inp_file.read_text()
+        )
     inp_file.write_text(tomlkit.dumps(config_tmpl))
     return inp_file
 
@@ -201,63 +209,14 @@ def load_config(inp_file: str | Path) -> dict[str, Any]:
     return config
 
 
-def guess_map_server(
-    inp_server: str | None, default_port: int = 6111, mandatory: bool = True
-) -> str:
-    """Try to get the server name mapping the freva infrastructure.
-
-    Parameters
-    ----------
-    inp_server: str | None
-        Input server name, if None given, the code tries to read the
-        the server name from a previous deployment setup.
-    default_port: int, default: 6111
-        The port to connect to
-    mandatory: bool, default: True
-        If mandatory is set and no server could be found an error is risen.
-
-    Returns
-    -------
-    str: hostname of the server that runs the server map service
-
-    Raises
-    ------
-    ValueError: If no server could be found a ValueError is raised.
-    """
-    inp_server = inp_server or ""
-    if inp_server:
-        host_name, _, port = inp_server.partition(":")
-        port = port or str(default_port)
-        return f"{host_name}:{port}"
-    cache_dir = Path(appdirs.user_cache_dir()) / "freva-deployment"
-    try:
-        with (cache_dir / "freva_deployment.json").open() as f_obj:
-            inp_server = cast(str, json.load(f_obj)["server_map"])
-            host_name, _, port = inp_server.partition(":")
-            port = port or str(default_port)
-            return f"{host_name}:{port}"
-    except (
-        FileNotFoundError,
-        IOError,
-        ValueError,
-        KeyError,
-        json.JSONDecodeError,
-    ):
-        pass
-    if mandatory:
-        raise ValueError(
-            "You have to set the hostname to the services mapping "
-            "the freva infrastructure using the --server-map flag."
-        )
-    return ""
-
-
 def set_log_level(verbosity: int) -> None:
     """Set the log level of the logger."""
     logger.setLevel(max(logging.INFO - 10 * verbosity, logging.DEBUG))
 
 
-def get_setup_for_service(service: str, setups: list[ServiceInfo]) -> tuple[str, str]:
+def get_setup_for_service(
+    service: str, setups: list[ServiceInfo]
+) -> tuple[str, str]:
     """Get the setup of a service configuration."""
     for setup in setups:
         if setup.name == service:
@@ -270,7 +229,9 @@ def read_db_credentials(
 ) -> dict[str, str]:
     """Read database config."""
     with cert_file.open() as f_obj:
-        key = "".join([k.strip() for k in f_obj.readlines() if not k.startswith("-")])
+        key = "".join(
+            [k.strip() for k in f_obj.readlines() if not k.startswith("-")]
+        )
         sha = hashlib.sha512(key.encode()).hexdigest()
     url = f"http://{db_host}:{port}/vault/data/{sha}"
     return requests.get(url).json()
@@ -305,36 +266,6 @@ def download_server_map(
     return info
 
 
-def upload_server_map(
-    server_map: str,
-    project_name: str,
-    deployment_setup: dict[str, dict[str, str]],
-) -> None:
-    """Upload server information to service that stores server archtiecture.
-
-    Parameters
-    ----------
-    server_map: str
-        The hostname holding the server archtiecture information.
-    project_name: str
-        Name of the freva project
-    deployment_setup: dict[str, str]
-        Server names for each deployed service
-    """
-    _upload_data: dict[str, dict[str, str]] = {}
-    for service, config in deployment_setup.items():
-        _upload_data[service] = config
-    host, _, port = server_map.partition(":")
-    port = port or "6111"
-    req_data = dict(config=tomlkit.dumps(_upload_data))
-    logger.debug("Uploading %s", req_data)
-    req = requests.put(f"http://{host}:{port}/{project_name}", data=req_data)
-    if req.status_code == 201:
-        logger.info("Server information updated at %s", host)
-    else:
-        logger.error("Could not update server information %s", req.json())
-
-
 def get_email_credentials() -> tuple[str, str]:
     """Read login credentials for email server.
 
@@ -350,7 +281,9 @@ def get_email_credentials() -> tuple[str, str]:
     )
     RichConsole.print(msg)
     username = Prompt.ask("[green b]Username[/] for mail server")
-    password = Prompt.ask("[green b]Password[/] for mail server", password=True)
+    password = Prompt.ask(
+        "[green b]Password[/] for mail server", password=True
+    )
     return username, password
 
 
@@ -385,7 +318,9 @@ def _create_passwd(min_characters: int, msg: str = "") -> str:
         if not re.search(check, master_pass):
             is_ok = False
             break
-    is_safe: bool = len([True for c in "[_@$#$%^&*-!]" if c in master_pass]) > 0
+    is_safe: bool = (
+        len([True for c in "[_@$#$%^&*-!]" if c in master_pass]) > 0
+    )
     if is_ok is False or is_safe is False:
         raise ValueError(
             (
@@ -395,7 +330,9 @@ def _create_passwd(min_characters: int, msg: str = "") -> str:
                 "- have at least one special special character."
             )
         )
-    master_pass_2 = Prompt.ask("[bold green]re-enter[/] master password", password=True)
+    master_pass_2 = Prompt.ask(
+        "[bold green]re-enter[/] master password", password=True
+    )
     if master_pass != master_pass_2:
         raise ValueError("Passwords do not match")
     return master_pass

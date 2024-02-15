@@ -1,5 +1,6 @@
 """The Freva deployment Text User Interface (TUI) helps to configure a
 deployment setup for a new instance of freva."""
+
 from __future__ import annotations
 
 import json
@@ -181,6 +182,7 @@ class MainApp(npyscreen.NPSAppManaged):
                 title="Error",
                 message=f"Couldn't save config:\n{error}",
             )
+            raise
         return None
 
     def get_save_file(self, save_file: Path | None = None) -> str:
@@ -204,7 +206,6 @@ class MainApp(npyscreen.NPSAppManaged):
             if value and "cfd" not in value.lower():
                 cert_files[key] = str(Path(value).expanduser().absolute())
         project_name = self._setup_form.project_name.value
-        server_map = self._setup_form.server_map.value
         ssh_pw = self._setup_form.use_ssh_pw.value
         if isinstance(ssh_pw, list):
             ssh_pw = bool(ssh_pw[0])
@@ -214,7 +215,6 @@ class MainApp(npyscreen.NPSAppManaged):
             "save_file": self.get_save_file(save_file),
             "steps": self.steps,
             "ssh_pw": ssh_pw,
-            "server_map": server_map,
             "config": self.config,
         }
         with open(self.cache_dir / "freva_deployment.json", "w") as f:
@@ -232,6 +232,7 @@ class MainApp(npyscreen.NPSAppManaged):
         for step, settings in self.config.items():
             if step in ("certificates", "project_name"):
                 continue
+            raise ValueError(config_tmpl.keys())
             config_tmpl[step]["hosts"] = settings["hosts"]
             for key, config in settings["config"].items():
                 config_tmpl[step]["config"][key] = config
