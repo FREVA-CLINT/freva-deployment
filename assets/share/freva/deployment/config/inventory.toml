@@ -5,27 +5,27 @@
 #   - Blank lines are ignored
 #   - Groups of hosts are delimited by [header] elements
 #   - The groups define different deployment steps
-#   - Additional configuration for each group is set in the confg section
+#   - Additional configuration for each group is set in the config section
 #     of each header -> [header.config]
-#   - You can enter hostnames or ip addresses
-#   - A hostname/ip can be a member of multiple groups
+#   - You can enter host names or IP addresses
+#   - A host name/IP can be a member of multiple groups
 
 
 ## The first part of this configuration defines general configuration that
 ## is common among all deployment steps.
 
-# The the project name that should be used for this freva instance
+# The project name that should be used for this freva instance
 # NOTE: this key has to be the first in the file
-project_name = ""
+project_name = "freva"
 
-## Set the path to the SSL certfificate files that is used to make password
-## queries to the vault server or used as web certfificates.
+## Set the path to the SSL certificate files that is used to make password
+## queries to the vault server or used as web certificates.
 [certificates]
 
-## Path to the public keyfile
+## Path to the public key file
 public_keyfile = ""
 
-## Path to the private keyfile
+## Path to the private key file
 privat_keyfile = ""
 
 ## Path to the chain file
@@ -34,8 +34,8 @@ chain_keyfile = ""
 
 
 [web]
-# Set the hostnames where all services web ui will be deployed
-hosts = ""
+# Set the host names where all services web UI will be deployed
+hosts = "localhost"
 
 # If you have multiple hosts following a pattern you can specify
 # them like this:
@@ -50,16 +50,16 @@ hosts = ""
 
 ## hosts = "db-[99:101]-node.example.com"
 [databrowser]
-## Set the hostnames running the databrowser service
-hosts = ""
+## Set the host names running the databrowser service
+hosts = "localhost"
 
 [db]
-## Set the hostnames running the mariadb service
-hosts = ""
+## Set the host names running the mariadb service
+hosts = "localhost"
 
 [core]
-### Set the hostnames where the command line interface of freva will be installed
-hosts = ""
+### Set the host names where the command line interface of freva will be installed
+hosts = "localhost"
 
 
 ### CONFIGURATION VARIABLES
@@ -70,29 +70,26 @@ hosts = ""
 
 ## Config variables for the database service
 port = 3306
-user = ""
-db = ""
+user = "freva"
+db = "frevadb"
 
-##If you need a different user name you can set it here:
-#ansible_user = "username"
+##If you need a different user name you can set it here (defaults to current user):
+ansible_user = ""
 
-## You can set the db_host seperately, if none is given (default)
-## the one from the hostsnames above are taken
+## You can set the db_host separately, if none is given (default)
+## the one from the hosts names above are taken
 
 db_host = ""
 
 ## Set the become (sudo) user name to change to for installing the services
+## leave blank to utilise a non privileged user based installation
 ansible_become_user = "root"
 
 ## Ansible needs a python3 interpreter, which can be set for custom python3 instances
-#ansible_python_interpreter = ""
-
-##If you need a different user name you can set it here:
-
-#ansible_python_interpreter="/usr/bin/python3"
+ansible_python_interpreter = ""
 
 ##Indicate whether or not to empty any pre-existing folders/docker volumes.
-##(Useful for a truely fresh start) (default: False)
+##(Useful for a truly fresh start) (default: False)
 wipe = false
 
 ## Set the path where the permanent database data should be stored. By default
@@ -108,30 +105,28 @@ db_playbook = ""
 vault_playbook = ""
 
 [databrowser.config]
-## Config variables for the solr service
-solr_port = 8983
-
-# Set the memory for the solr server
+# Set the memory for the solr server (solr is the search engine in the background)
 solr_mem = "4g"
 
 # Set the port the databrowser should be running on
 databrowser_port = 7777
 
 ## Set the become (sudo) user name to change to for installing the services
+## leave blank to utilise a non privileged user based installation
 ansible_become_user = "root"
 
 ## Ansible needs a python3 interpreter, which can be set for custom python3 instances
 
-#ansible_python_interpreter = ""
+ansible_python_interpreter = ""
 
-## If you need a different user name you can set it here:
-#ansible_user = "username"
+## If you need a different user name you can set it here (default to current user):
+ansible_user = ""
 
 ##Indicate whether or not to empty any pre-existing folders/docker volumes.
-##(Useful for a truely fresh start) (default: False)
+##(Useful for a truly fresh start) (default: False)
 wipe = false
 
-## Set the path where the permanent databrowsr data should be stored.
+## Set the path where the permanent databrowser data should be stored.
 ## By default this is set to /opt/freva
 data_path = "/opt/freva"
 
@@ -150,14 +145,16 @@ databrowser_playbook = ""
 admins = ""
 
 ## The path where the core should be installed
-install_dir=""
+install_dir="~/freva-env"
 
 ## Set the path to any existing conda executable on the target machine,
-## if not existing (default) a tmporary conda distribution will be downloaded
+## if not existing (default) a temporary conda distribution will be downloaded
 conda_exec_path=""
 
-## The directory where the project configuration files will be stored, leave
-## blank to use the same directory as `install_dir`
+## The directory where the project configuration files will be stored.
+## This can be useful if you want to set up multiple freva instances with
+## the same software stack. leave blank to use the same directory as
+## `install_dir`
 root_dir = ""
 
 ## If you which not to install a core instance but only configure one set the
@@ -166,7 +163,8 @@ root_dir = ""
 ## uses this central instance
 install = true
 
-## The directory where the user specific output will be stored
+## The directory where the user specific output will be stored,
+## if left blank then it defaults to `root_dir/work`
 base_dir_location = ""
 
 ## Set the directory holding the user content, like plots, for the web user
@@ -179,33 +177,39 @@ preview_path = ""
 ## "local", "slurm", "pbs", "lfs", "moab", "oar", "sge"
 scheduler_system = "local"
 
-## Set the path to the directory that containes the stdout of the plugings,
-## this directory must be accessible to the web ui. The workload manager
+## Set the path to the directory that contains the stdout of the plugins,
+## this directory must be accessible to the web UI. The workload manager
 ## will write the stdout into this directory. Defaults to ${base_dir_location}/share
 scheduler_output_dir = ""
 
-# Set the target architecutre of the system where the backend will be installed
+# Set the target architecture of the system where the backend will be installed
 # to. You can choose from the following options:
 # Linux-x86_64 (default), Linux-aarch64, Linux-ppc64le, Linux-s390x, MacOSX-x86_64
 arch = "Linux-x86_64"
 
 ## If you need to install the core or its configuration as a different user you can
-## set the ansible_become_user variable, this will install the the core as a
-## different user
-# ansible_become_user = "user_name"
+## set the ansible_become_user variable, this will install the core as a
+## different user. Leave blank for if not needed.
+ansible_become_user = ""
 
-##If you need a different user name you can set it here:
-#ansible_user = "username"
+##If you need a different user name you can set it here (defaults to current user):
+ansible_user = ""
 
 ## Ansible needs a python3 interpreter, which can be set for custom python3 instances
-#ansible_python_interpreter = ""
+ansible_python_interpreter = ""
 
-## The core deployment needs git, if git is not in the default PATH vraiable
+## The core deployment needs git, if git is not in the default PATH variable
 ## you can set the path to the git executable
-#git_path = ""
+git_path = "/usr/bin/git"
+
+## If you want to set special group rights for freva configuration files
+## you can set the admin_group variable. If `admin_group` is set then config
+## files and directories in the `base_dir_location` are only writable to
+## `admin_group`
+admin_grup = ""
 
 ##Indicate whether or not to empty any pre-existing folders/docker volumes.
-##(Useful for a truely fresh start) (default: False)
+##(Useful for a truly fresh start) (default: False)
 wipe = false
 
 ## In case you want to set a custom path to a ansible playbook,
@@ -220,10 +224,10 @@ core_playbook = ""
 project_website = "www.freva.dkrz.de"
 
 ## Ansible needs a python3 interpreter, which can be set for custom python3 instances
-#ansible_python_interpreter = ""
+ansible_python_interpreter = ""
 
-##If you need a different user name you can set it here:
-#ansible_user = "username"
+##If you need a different user name you can set it here (defaults to current user):
+ansible_user = ""
 
 ## Set the path where the permanent web data should be stored. By default
 ## this is set to /opt/freva
@@ -238,13 +242,14 @@ hover_color = "#d0513a"
 about_us_text = ""
 
 ## Set the path to the institution logo, this should be the path to the logo
-## as seen by the target system
-institution_logo = "/path/to/logo/on/target/machine"
+## seen by the target system - make sure that this path exists on the target
+## machine
+institution_logo = ""
 
-## Set a an email addresses acting a a contact point for users
+## Set an email addresses acting as contact point for users
 contacts = ""
 
-## Set the smpt email server that will be used to send emails to contacts via the web ui
+## Set the smpt email server that will be used to send emails to contacts via the web UI
 email_host = ""
 
 ## Now set postal address
@@ -290,7 +295,7 @@ ldap_last_name_field = "givenname"
 ## Set ldap first name search key
 ldap_first_name_field = "sn"
 
-## Set ldap email earch key
+## Set ldap email search key
 ldap_email_name_field = "mail"
 
 ## Set the ldap group class name
@@ -331,6 +336,7 @@ menu_entries = [["Data-Browser", "solr:data_browser","browser_menu"],
 web_playbook = ""
 
 ## Set the become (sudo) user name to change to for installing the services
+## leave blank to utilise a non privileged user based installation
 ansible_become_user = "root"
 
 # Deploy a http reverse proxy. Turn off the deployment (set to false) of an
