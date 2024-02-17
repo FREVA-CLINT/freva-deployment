@@ -1,4 +1,5 @@
 """Command line interface for the deployment."""
+
 from __future__ import annotations
 
 import argparse
@@ -8,7 +9,7 @@ from pathlib import Path
 from freva_deployment import __version__
 
 from ..deploy import DeployFactory
-from ..utils import config_dir, guess_map_server, set_log_level
+from ..utils import config_dir, set_log_level
 
 
 def parse_args(argv: list[str] | None) -> argparse.Namespace:
@@ -18,16 +19,6 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
         prog="deploy-freva-cmd",
         description="Deploy freva and its services on different machines.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-    )
-    ap.add_argument(
-        "--server-map",
-        type=str,
-        default=None,
-        help=(
-            "Hostname of the service mapping the freva server "
-            "archtiecture, Note: you can create a server map by "
-            "running the deploy-freva-map command"
-        ),
     )
     ap.add_argument(
         "--config",
@@ -72,18 +63,11 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
 def cli(argv: list[str] | None = None) -> None:
     """Run the command line interface."""
     args = parse_args(argv)
-    if args.server_map:
-        server_map = guess_map_server(args.server_map, mandatory=False)
-    else:
-        server_map = ""
     set_log_level(args.verbose)
     with DeployFactory(
-        steps=args.steps,
-        config_file=args.config,
+        steps=args.steps, config_file=args.config, local_debug=args.local
     ) as DF:
-        DF.play(
-            server_map, args.ask_pass, args.verbose, local_debug=args.local
-        )
+        DF.play(args.ask_pass, args.verbose)
 
 
 if __name__ == "__main__":
