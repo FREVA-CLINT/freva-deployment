@@ -3,6 +3,7 @@
 
   vars:
     ansible_python_interpreter: "{{ core_ansible_python_interpreter }}"
+    conda_bin: "{{core_install_dir}}/bin"
     ansible_become_user: >
         "{{ core_ansible_become_user
         if core_ansible_become_user is defined else 'root' }}"
@@ -87,17 +88,26 @@
         src: "{{ core_dump }}"
         dest: /tmp/evaluation_system/evaluation_system.conf
       become: "{{use_become}}"
-    - name: Deploying evaluation_system
-      shell:
-        cmd: $PYTHON3 deploy.py {{ core_install_dir }} -s --arch {{core_arch}} --packages freva
+    - name: Getting status of the conda env
+      stat:
+        path: "{{ core_install_dir }}/bin/freva"
+      register: freva_path
+    - name: Deploying freva
+      command:
+        cmd: $PYTHON3 deploy.py {{core_install_dir}} --arch {{core_arch}} --packages freva
         chdir: /tmp/evaluation_system
+        creates: "{{core_install_dir}}/bin/freva"
       environment:
-        CONDA_EXEC_PATH: "{{ conda_exec_path }}"
-        PYTHON3: "{{ ansible_python_interpreter }}"
-        PYTHON_VERSION: ""
-        EVALUATION_SYSTEM_CONFIG_FILE: "/tmp/evaluation_system/evaluation_system.conf"
-      when: (core_install is true)
+        PYTHON3: '{{ansible_python_interpreter}}'
+        EVALUATION_SYSTEM_CONFIG_FILE: /tmp/evaluation_system/evaluation_system.conf
+        PYTHON_VERSION: "{{core_python_version}}"
       become: "{{use_become}}"
+    - name: Updating existing freva
+      command:
+        cmd: ./conda update -p {{core_install_dir}} -c conda-forge freva
+        chdir: "{{core_install_dir}}/bin"
+      become: "{{use_become}}"
+      when: freva_path.stat.exists
     - name: Inserting evaluation_sytem.conf file with admin group
       copy:
         src: "{{ core_dump }}"
@@ -107,27 +117,32 @@
       become: "{{use_become}}"
       when: (eval_conf.stat.exists != true and core_admin_group is defined)
     - name: Installing additional python packages
-      shell:
+      command:
         cmd: python -m pip install "{{item}}"
       environment:
-        PATH: "{{core_install_dir}}/bin"
+        PATH: "{{conda_bin}}"
       with_items:
         - "git+https://gitlab.dkrz.de/k204230/install-kernelspec.git"
       become: "{{use_become}}"
+    - name: Getting status of drs_config.toml file
+      stat:
+        path: "{{ core_root_dir }}/freva/drs_config.toml"
+      register: drs_path
     - name: Inserting drs_config.toml file
       copy:
         src: "/tmp/evaluation_system/assets/drs_config.toml"
         dest: "{{ core_root_dir }}/freva/drs_config.toml"
         remote_src: true
+      when: not drs_path.stat.exists
       become: "{{use_become}}"
     - name: Configuring evaluation_system
-      shell:
+      command:
         cmd: $PYTHON3 deploy.py {{ core_install_dir }} -s --no-conda
         chdir: /tmp/evaluation_system
       environment:
         PYTHON3: "{{ ansible_python_interpreter }}"
         EVALUATION_SYSTEM_CONFIG_FILE: "{{ core_root_dir }}/freva/evaluation_system.conf"
-        PYTHON_VERSION: ""
+        PYTHON_VERSION: "{{core_python_version}}"
       become: "{{use_become}}"
     - name: Copying Public key file
       copy:
