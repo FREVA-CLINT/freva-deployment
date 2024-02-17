@@ -16,7 +16,7 @@ services:
 {% endfor %}
     tty: true
     ports:
-      - {{databrowser_solr_port}}:8983
+      - 8983:8983
 
   {{mongo_name}}:
     image: mongo:latest
@@ -26,7 +26,7 @@ services:
       - {{databrowser_name}}
     environment:
       - MONGO_INITDB_ROOT_USERNAME=mongo
-      - MONGO_INITDB_ROOT_PASSWORD={{ root_passwd}}
+      - MONGO_INITDB_ROOT_PASSWORD={{root_passwd}}
       - MONGO_INITDB_DATABASE=search_stats
     volumes:
 {% for volume in mongo_volumes %}
@@ -45,7 +45,7 @@ services:
       - SOLR_CORE=files
       - SOLR_HOST={{solr_name}}:8983
       - MONGO_HOST={{mongo_name}}:27017
-      - MONGO_PASSWORD={{ root_passwd}}
+      - MONGO_PASSWORD={{root_passwd}}
       - MONGO_DB=search_stats
       - MONGO_USER=mongo
     ports:
