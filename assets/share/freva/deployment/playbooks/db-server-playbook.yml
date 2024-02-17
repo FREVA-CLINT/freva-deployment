@@ -66,7 +66,6 @@
         systemctl disable {{db_name}};
         systemctl reset-failed;
         /tmp/docker-or-podman rm {{db_name}};
-        /tmp/docker-or-podman rmi -f mariadb;
         echo 0
       become: "{{use_become}}"
       ignore_errors: true
@@ -90,7 +89,7 @@
         state: absent
       become: "{{use_become}}"
       when: db_wipe == true
-    - name: Creating directory structure
+    - name: Creating directory structure (root)
       file:
         path: '{{db_data_path}}/{{ project_name }}/db_service'
         state: directory
@@ -98,6 +97,14 @@
         group: 999
         owner: 999
       become: "{{use_become}}"
+      when: use_become == true
+    - name: Creating directory structure (user)
+      file:
+        path: '{{db_data_path}}/{{ project_name }}/db_service'
+        state: directory
+        recurse: true
+      become: "{{use_become}}"
+      when: use_become == false
     - name: Copying auxillary files to target machine
       become: "{{use_become}}"
       copy: src="{{ asset_dir }}/db_service/reset_root_pw.sh" dest=/tmp/

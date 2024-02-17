@@ -38,8 +38,6 @@
         systemctl disable {{solr_name}} {{mongo_name}} {{databrowser_name}};
         systemctl reset-failed;
         /tmp/docker-or-podman rm {{solr_name}} {{mongo_name}} {{databrowser_name}};
-        /tmp/docker-or-podman rmi -f {{solr_name}} {{mongo_name}} {{databrowser_name}};
-        /tmp/docker-or-podman rmi -f solr mongo ghcr.io/freva-clint/databrowserapi;
         exit 0
       ignore_errors: true
     - pause: seconds=5
@@ -69,7 +67,7 @@
         - "{{databrowser_data_path}}/{{ project_name }}/databrowser"
       when: databrowser_wipe == true
       become: "{{use_become}}"
-    - name: Creating solr directory structure
+    - name: Creating solr directory structure (root)
       file:
         path: '{{databrowser_data_path}}/{{ project_name }}/solr_service'
         state: directory
@@ -77,6 +75,14 @@
         group: 8983
         recurse: true
       become: "{{use_become}}"
+      when: use_become == true
+    - name: Creating solr directory structure (user)
+      file:
+        path: '{{databrowser_data_path}}/{{ project_name }}/solr_service'
+        state: directory
+        recurse: true
+      become: "{{use_become}}"
+      when: use_become == false
     - name: Creating compose directory structure
       file:
         path: '{{databrowser_data_path}}/compose_services'
@@ -100,7 +106,6 @@
         src: "{{ asset_dir }}/scripts/create_systemd.py"
         dest: /tmp/create_systemd.py
         mode: "0755"
-      become: "{{use_become}}"
     - name: Pulling container
       shell:
         cmd: /tmp/docker-or-podman pull {{item}}
