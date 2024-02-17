@@ -221,9 +221,8 @@ class MainApp(npyscreen.NPSAppManaged):
             json.dump({k: v for (k, v) in config.items()}, f, indent=3)
         if write_toml_file is False:
             return None
+
         try:
-            config_tmpl = load_config(self.save_file)
-        except FileNotFoundError:
             config_tmpl = load_config(asset_dir / "config" / "inventory.toml")
         except Exception:
             config_tmpl = self.config
@@ -232,7 +231,6 @@ class MainApp(npyscreen.NPSAppManaged):
         for step, settings in self.config.items():
             if step in ("certificates", "project_name"):
                 continue
-            raise ValueError(config_tmpl.keys())
             config_tmpl[step]["hosts"] = settings["hosts"]
             for key, config in settings["config"].items():
                 config_tmpl[step]["config"][key] = config
