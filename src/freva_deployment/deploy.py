@@ -67,7 +67,7 @@ class DeployFactory:
     ) -> None:
         self.local_debug = local_debug
         self._config_keys: list[str] = []
-        self.master_pass: str = "Freva4all!"
+        self.master_pass: str = os.environ.get("MASTER_PASSWD", "") or ""
         self.email_password: str = ""
         self._td: TemporaryDirectory = TemporaryDirectory(prefix="inventory")
         self.inventory_file: Path = Path(self._td.name) / "inventory.yaml"

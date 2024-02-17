@@ -273,17 +273,21 @@ def get_email_credentials() -> tuple[str, str]:
     =======
     tuple: username and password
     """
-
+    username = os.environ.get("EMAIL_USER", "") or ""
+    password = os.environ.get("EMAIL_PASSWD", "") or ""
     msg = (
         "\nThe web will need login credentials to connect to the [b green]mail server [/]"
         "that has been set up.\nYou should now enter your [it]login credentials[/].\n"
         "[b]Note:[/]These credentials will be securely stored in an encrypted vault\n"
     )
-    RichConsole.print(msg)
-    username = Prompt.ask("[green b]Username[/] for mail server")
-    password = Prompt.ask(
-        "[green b]Password[/] for mail server", password=True
-    )
+    if not username or not password:
+        RichConsole.print(msg)
+        if not username:
+            username = Prompt.ask("[green b]Username[/] for mail server")
+        if not password:
+            password = Prompt.ask(
+                "[green b]Password[/] for mail server", password=True
+            )
     return username, password
 
 
