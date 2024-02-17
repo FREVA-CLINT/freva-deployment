@@ -4,6 +4,7 @@
 
 import abc
 import argparse
+import shlex
 import shutil
 import subprocess
 import sys
@@ -65,12 +66,25 @@ class CommandFactory(metaclass=abc.ABCMeta):
         container_cmd = Path(self.get_container_cmd()).name
         command = shutil.which(f"{container_cmd}-compose")
         if not command:
-            txt = (
-                f"{container_cmd} is available but not {container_cmd}-compose"
-                " which should be installed on the system."
+            install_cmd = f"python3 -m pip install {container_cmd}-compose"
+            try:
+                subprocess.run(
+                    shlex.split(install_cmd),
+                    check=True,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                )
+            except subprocess.CalledProcessError:
+                txt = (
+                    f"{container_cmd} is available but not {container_cmd}-compose"
+                    " which should be installed on the system."
+                )
+                print(txt, file=sys.stderr)
+                raise ValueError(txt)
+            command = (
+                shutil.which(f"{container_cmd}-compose")
+                or f"{container_cmd}-compose"
             )
-            print(txt, file=sys.stderr)
-            raise ValueError(txt)
         _args = self._kwargs_to_list(**kwargs)
         return [command] + _args + list(args)
 
