@@ -1,14 +1,13 @@
 """Command line interfaces."""
+
 from __future__ import annotations
 
 import importlib
 
 from ._deploy import cli as deploy
 from ._migrate import cli as migrate
-from ._server_map import cli as server_map
-from ._service import cli as service
 
-__all__ = ["deploy", "service", "migrate", "server_map"]
+__all__ = ["deploy", "migrate"]
 
 
 def __getattr__(name):
