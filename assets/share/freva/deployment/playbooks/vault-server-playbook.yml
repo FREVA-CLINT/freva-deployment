@@ -32,13 +32,12 @@
         systemctl stop {{vault_name}};
         systemctl disable {{vault_name}};
         /tmp/docker-or-podman rm {{vault_name}};
-        # /tmp/docker-or-podman rmi -f {{vault_name}} ghcr.io/freva-clint/freva-deployment/vault;
         exit 0
       ignore_errors: true
       become: "{{use_become}}"
-    # - name: Pulling container
-    #  become: "{{use_become}}"
-    #  shell: /tmp/docker-or-podman pull ghcr.io/freva-clint/freva-deployment/vault:latest
+    - name: Pulling container
+      become: "{{use_become}}"
+      shell: /tmp/docker-or-podman pull ghcr.io/freva-clint/freva-deployment/vault:latest
     - name: Copying auxillary files to target machine
       copy: src="{{ asset_dir }}/vault" dest=/tmp
     - name: Copying systemd files

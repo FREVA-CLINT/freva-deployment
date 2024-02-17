@@ -49,12 +49,17 @@
         recurse: true
       become: "{{use_become}}"
       when: core_admin_group is not defined
+    - name: Checking if a web config already exists
+      stat:
+        path: "{{ core_root_dir }}/freva/web/freva_web_conf.toml"
+      register: web_config
     - name: Adding freva web config to the core structure
       copy:
         src: "{{ core_config_toml_file }}"
         dest: "{{ core_root_dir }}/freva/web/freva_web_conf.toml"
         mode: "2775"
       become: "{{use_become}}"
+      when: not web_config.stat.exists
 
 - hosts: web
 
@@ -127,7 +132,6 @@
         systemctl reset-failed;
         /tmp/docker-or-podman stop {{web_name}} {{apache_name}} {{redis_name}};
         /tmp/docker-or-podman rm {{web_name}} {{redis_name}} {{apache_name}};
-        /tmp/docker-or-podman rmi -f docker.io/redis ghcr.io/freva-clint/freva-web docker.io/httpd;
         echo 0
       ignore_errors: true
       become: "{{use_become}}"
@@ -195,7 +199,6 @@
       become: "{{use_become}}"
       shell: systemctl restart {{item}}
       with_items:
-        - "{{apache_name}}"
         - "{{web_name}}"
       when: systemctl.stat.exists == true
     - name: Deleting tmporary files
