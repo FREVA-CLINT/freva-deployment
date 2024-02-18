@@ -67,22 +67,14 @@
         - "{{databrowser_data_path}}/{{ project_name }}/databrowser"
       when: databrowser_wipe == true
       become: "{{use_become}}"
-    - name: Creating solr directory structure (root)
+    - name: Creating solr directory structure
       file:
         path: '{{databrowser_data_path}}/{{ project_name }}/solr_service'
         state: directory
-        owner: 8983
-        group: 8983
+        owner: "{{ '8983' if databrowser_ansible_become_user == 'root' else omit }}"
+        group: "{{ '8983' if databrowser_ansible_become_user == 'root' else omit }}"
         recurse: true
       become: "{{use_become}}"
-      when: use_become == true
-    - name: Creating solr directory structure (user)
-      file:
-        path: '{{databrowser_data_path}}/{{ project_name }}/solr_service'
-        state: directory
-        recurse: true
-      become: "{{use_become}}"
-      when: use_become == false
     - name: Creating compose directory structure
       file:
         path: '{{databrowser_data_path}}/compose_services'

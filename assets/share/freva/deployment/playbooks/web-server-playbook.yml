@@ -33,22 +33,13 @@
     ansible_become_user: "{{ core_ansible_become_user if core_ansible_become_user is defined else 'root' }}"
     use_become: "{{ core_ansible_become_user is defined and core_ansible_become_user != '' }}"
   tasks:
-    - name: Creating share directory with admin group
+    - name: Creating share directory
       file:
         path: "{{core_root_dir}}/freva/web"
         state: directory
-        mode: "2775"
-        group: "{{core_admin_group}}"
+        mode: "{{ '2775' if core_admin_group is defined else '2755' }}"
+        group: "{{ core_admin_group if core_admin_group is defined else omit }}"
       become: "{{use_become}}"
-      when: core_admin_group is defined
-    - name: Creating share directory without admin group
-      file:
-        path: "{{core_root_dir}}/freva/web"
-        state: directory
-        mode: "2775"
-        recurse: true
-      become: "{{use_become}}"
-      when: core_admin_group is not defined
     - name: Checking if a web config already exists
       stat:
         path: "{{ core_root_dir }}/freva/web/freva_web_conf.toml"
@@ -57,7 +48,8 @@
       copy:
         src: "{{ core_config_toml_file }}"
         dest: "{{ core_root_dir }}/freva/web/freva_web_conf.toml"
-        mode: "2775"
+        mode: "{{ '2664' if core_admin_group is defined else '2644' }}"
+        group: "{{ core_admin_group if core_admin_group is defined else omit}}"
       become: "{{use_become}}"
       when: not web_config.stat.exists
 
@@ -199,9 +191,12 @@
     - pause: seconds=15
     - name: Restarting services
       become: "{{use_become}}"
-      shell: systemctl restart {{item}}
-      with_items:
-        - "{{web_name}}"
+      shell: >
+         {% if use_become == true and web_ansible_become_user == 'root' %}
+            systemctl restart {{ web_name }}
+          {% else %}
+            systemctl --user restart {{ web_name }}
+         {% endif %}
       when: systemctl.stat.exists == true
     - name: Deleting tmporary files
       file:

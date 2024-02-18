@@ -28,27 +28,16 @@
       file:
         path: "{{ core_root_dir }}"
         state: directory
-    - name: Creating directory structure with admin group
+    - name: Creating directory structure
       file:
         path: "{{ item }}"
         state: directory
-        mode: "2775"
-        group: "{{core_admin_group}}"
+        mode: "{{ '2775' if core_admin_group is defined else '2755' }}"
+        group: "{{ core_admin_group if core_admin_group is defined else omit}}"
       with_items:
         - "{{ core_root_dir }}/freva/"
         - "{{ core_root_dir }}/plugins/"
       become: "{{use_become}}"
-      when: core_admin_group is defined
-    - name: Creating directory structure without admin group
-      file:
-        path: "{{ item }}"
-        state: directory
-        mode: "2775"
-      with_items:
-        - "{{ core_root_dir }}/freva/"
-        - "{{ core_root_dir }}/plugins/"
-      become: "{{use_become}}"
-      when: core_admin_group is not defined
     - name: Creating user work directory
       file:
         path: "{{core_base_dir_location}}"
@@ -77,12 +66,13 @@
       stat:
         path: "{{ core_root_dir }}/freva/evaluation_system.conf"
       register: eval_conf
-    - name: Inserting evaluation_sytem.conf file without admin group
+    - name: Inserting evaluation_sytem.conf file
       copy:
         src: "{{ core_dump }}"
         dest: "{{ core_root_dir }}/freva/evaluation_system.conf"
-        mode: "1644"
-      when: (eval_conf.stat.exists != true and core_admin_group is not defined)
+        mode: "{{ '2664' if core_admin_group is defined else '2644' }}"
+        group: "{{ core_admin_group if core_admin_group is defined else omit}}"
+      when: (eval_conf.stat.exists != true)
     - name: Inserting evaluation_system.config file to temp location
       copy:
         src: "{{ core_dump }}"
@@ -108,14 +98,6 @@
         chdir: "{{core_install_dir}}/bin"
       become: "{{use_become}}"
       when: freva_path.stat.exists
-    - name: Inserting evaluation_sytem.conf file with admin group
-      copy:
-        src: "{{ core_dump }}"
-        dest: "{{ core_root_dir }}/freva/evaluation_system.conf"
-        mode: "1664"
-        group: "{{core_admin_group}}"
-      become: "{{use_become}}"
-      when: (eval_conf.stat.exists != true and core_admin_group is defined)
     - name: Installing additional python packages
       command:
         cmd: python -m pip install "{{item}}"
@@ -133,6 +115,8 @@
         src: "/tmp/evaluation_system/assets/drs_config.toml"
         dest: "{{ core_root_dir }}/freva/drs_config.toml"
         remote_src: true
+        group: "{{ core_admin_group if core_admin_group is defined else omit}}"
+        mode: "{{ '2664' if core_admin_group is defined else '2644' }}"
       when: not drs_path.stat.exists
       become: "{{use_become}}"
     - name: Configuring evaluation_system
@@ -148,7 +132,8 @@
       copy:
         src: "{{ core_keyfile }}"
         dest: "{{ core_root_dir }}/freva/{{ project_name }}.crt"
-        mode: "2644"
+        mode: "{{ '2664' if core_admin_group is defined else '2644' }}"
+        group: "{{ core_admin_group if core_admin_group is defined else omit}}"
       become: "{{use_become}}"
     - name: Deleting temporary files
       file:
