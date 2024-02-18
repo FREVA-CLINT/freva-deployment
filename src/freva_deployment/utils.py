@@ -237,15 +237,18 @@ def read_db_credentials(
     return requests.get(url).json()
 
 
-def get_email_credentials() -> tuple[str, str]:
+def get_email_credentials(read_from_env: bool = False) -> tuple[str, str]:
     """Read login credentials for email server.
 
     Returns
     =======
     tuple: username and password
     """
-    username = os.environ.get("EMAIL_USER", "") or ""
-    password = os.environ.get("EMAIL_PASSWD", "") or ""
+    username: str = ""
+    password: str = ""
+    if read_from_env:
+        username = os.environ.get("EMAIL_USER", "") or ""
+        password = os.environ.get("EMAIL_PASSWD", "") or ""
     msg = (
         "\nThe web will need login credentials to connect to the [b green]mail server [/]"
         "that has been set up.\nYou should now enter your [it]login credentials[/].\n"
