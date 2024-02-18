@@ -322,7 +322,20 @@ Make sure you have the following prerequisites installed:
 ```console
 git clone https://github.com/FREVA-CLINT/freva-deployment.git
 cd freva-deployment.git
+make
 ```
+
+The deployment routine is supposed to interact with the user - this can
+can be asking for user names or passwords. To avoid such interaction you can
+set the following environment variables.
+
+- `MASTER_PASSWD`: the admin/root password for all services (db, web etc)
+- `EMAIL_USER`: the user name for email server login credentials
+- `EMAIL_PASSWD`: the password for email server login credentials
+
+These environment variables have only an effect when the deployment is
+applied in debug or local mode using the `-l` flag.
+
 ## Development Workflow
 
 We use a Makefile to manage common development tasks. Here are some useful
