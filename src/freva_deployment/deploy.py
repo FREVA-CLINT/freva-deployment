@@ -19,8 +19,9 @@ import tomlkit
 import yaml
 from numpy import sign
 
-from .keys import RandomKeys
+from freva_deployment import FREVA_PYTHON_VERSION
 
+from .keys import RandomKeys
 from .utils import (
     AssetDir,
     RichConsole,
@@ -31,7 +32,6 @@ from .utils import (
     load_config,
     logger,
 )
-from freva_deployment import FREVA_PYTHON_VERSION
 
 
 class DeployFactory:

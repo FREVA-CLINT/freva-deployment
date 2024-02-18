@@ -6,11 +6,11 @@ from tempfile import TemporaryDirectory
 from typing import Optional
 
 from cryptography import x509
-from cryptography.hazmat.primitives import serialization, hashes
-from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.backends import default_backend
-from cryptography.x509.oid import NameOID
+from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.x509 import Name, NameAttribute
+from cryptography.x509.oid import NameOID
 
 
 class RandomKeys:
@@ -127,7 +127,7 @@ class RandomKeys:
                     [x509.NameAttribute(NameOID.COMMON_NAME, self.common_name)]
                 )
             )
-            .sign(private_key, hashes.SHA256(), default_backend())
+            .sign(private_key, hashes.SHA256(), default_backend())  # type: ignore
         )
 
         certificate = (
@@ -140,7 +140,7 @@ class RandomKeys:
             .not_valid_after(
                 datetime.datetime.utcnow() + datetime.timedelta(days=365)
             )
-            .sign(private_key, hashes.SHA256(), default_backend())
+            .sign(private_key, hashes.SHA256(), default_backend())  # type: ignore
         )
 
         return certificate

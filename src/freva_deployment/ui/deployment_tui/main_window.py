@@ -183,7 +183,6 @@ class MainApp(npyscreen.NPSAppManaged):
                 message=f"Couldn't save config:\n{error}",
             )
             raise
-        return None
 
     def get_save_file(self, save_file: Path | None = None) -> str:
         """Get the name of the file where the config should be stored to."""
