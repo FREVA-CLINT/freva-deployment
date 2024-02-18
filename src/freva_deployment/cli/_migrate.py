@@ -19,7 +19,6 @@ import toml
 from freva_deployment import __version__
 
 from ..utils import (
-    download_server_map,
     get_setup_for_service,
     logger,
     read_db_credentials,

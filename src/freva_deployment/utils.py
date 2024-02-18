@@ -237,35 +237,6 @@ def read_db_credentials(
     return requests.get(url).json()
 
 
-def download_server_map(
-    server_map,
-) -> dict[str, list[ServiceInfo]]:
-    """Download server information from the service that stores the server arch.
-
-    Parameters
-    ----------
-    server_map: str,
-        The hostname holding the server archtiecture information.
-    Returns
-    -------
-    dict[str, list[NamedTuple("service", [("name", str), ("python_path", str),
-                                     ("hosts", str)])]]
-    """
-    info: dict[str, list[ServiceInfo]] = {}
-    host, _, port = server_map.partition(":")
-    port = port or "6111"
-    req = requests.get(f"http://{host}:{port}")
-    if req.status_code != 200:
-        logger.error(req.json())
-        return {}
-    for proj, conf in req.json().items():
-        info[cast(str, proj)] = [
-            ServiceInfo(name=s, python_path=c[0], hosts=c[-1])
-            for (s, c) in conf.items()
-        ]
-    return info
-
-
 def get_email_credentials() -> tuple[str, str]:
     """Read login credentials for email server.
 
@@ -303,9 +274,8 @@ def get_passwd(min_characters: int = 8) -> str:
     =======
     str: The password
     """
-    logger.info("Creating Password")
+    logger.debug("Creating Password")
     msg = ""
-    RichConsole
     while True:
         try:
             return _create_passwd(min_characters, msg)
