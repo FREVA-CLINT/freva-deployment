@@ -174,11 +174,13 @@
     - name: Pulling containers
       become: "{{use_become}}"
       shell:
-        cmd: /tmp/docker-or-podman pull {{item}}
-      with_items:
-        - "docker.io/redis:latest"
-        - "docker.io/httpd:latest"
-        - "ghcr.io/freva-clint/freva-web"
+        cmd: /tmp/docker-or-podman pull {{ item.image }}
+      loop:
+        - {image: "docker.io/redis:latest", pull: true}
+        - {image: "ghcr.io/freva-clint/freva-web", pull: true}
+        - image: "docker.io/httpd:latest"
+          pull: "{{ web_deploy_web_server | default(false) | bool }}"
+      when: item.pull == true
     - name: Copying systemd files
       copy:
         src: "{{ asset_dir }}/scripts/create_systemd.py"

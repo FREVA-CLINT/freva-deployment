@@ -1,6 +1,6 @@
 version: '3'
 services:
-
+{% if web_deploy_web_server %}
   {{apache_name}}:
     image: httpd:latest
     container_name: {{apache_name}}
@@ -21,7 +21,7 @@ services:
     ports:
       - 80:80
       - 443:443
-
+{% endif %}
   {{redis_name}}:
     image: redis
     networks:
