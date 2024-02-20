@@ -267,12 +267,12 @@ homepage_heading = "Short description of the project."
 institution_name = "Freva"
 
 ## Set the slurm scheduler host
-scheduler_host = ["levante.dkrz.de"]
+scheduler_host = ["localhost"]
 
 ## Settings for ldap
 
 ## Ldap server name(s)
-auth_ldap_server_uri = "ldap://idm-dmz.dkrz.de"
+auth_ldap_server_uri = ""
 
 ## Set the group that will be allowed to log on
 allowed_group = "test_group"
