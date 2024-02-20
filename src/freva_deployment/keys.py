@@ -68,9 +68,7 @@ class RandomKeys:
         Returns:
             str: The filename of the private key file.
         """
-        temp_file = (Path(self._temp_dir.name) / self.base_name).with_suffix(
-            ".key"
-        )
+        temp_file = (Path(self._temp_dir.name) / self.base_name).with_suffix(".key")
         if not temp_file.is_file():
             temp_file.write_bytes(self.private_key_pem)
         return str(temp_file)
@@ -83,9 +81,7 @@ class RandomKeys:
         Returns:
             str: The filename of the public key file.
         """
-        temp_file = (Path(self._temp_dir.name) / self.base_name).with_suffix(
-            ".crt"
-        )
+        temp_file = (Path(self._temp_dir.name) / self.base_name).with_suffix(".crt")
         if not temp_file.is_file():
             temp_file.write_bytes(self.public_key_pem)
         return str(temp_file)
@@ -98,9 +94,7 @@ class RandomKeys:
         Returns:
             str: The filename of the certificate chain file.
         """
-        temp_file = (Path(self._temp_dir.name) / self.base_name).with_suffix(
-            ".pem"
-        )
+        temp_file = (Path(self._temp_dir.name) / self.base_name).with_suffix(".pem")
         if not temp_file.is_file():
             temp_file.write_bytes(self.certificate_chain)
         return str(temp_file)
@@ -116,11 +110,9 @@ class RandomKeys:
         csr = (
             x509.CertificateSigningRequestBuilder()
             .subject_name(
-                x509.Name(
-                    [x509.NameAttribute(NameOID.COMMON_NAME, self.common_name)]
-                )
+                x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, self.common_name)])
             )
-            .sign(self._private_key, hashes.SHA256(), default_backend())  # type: ignore
+            .sign(self._private_key, hashes.SHA256(), default_backend())
         )
 
         certificate = (
@@ -131,10 +123,9 @@ class RandomKeys:
             .serial_number(x509.random_serial_number())
             .not_valid_before(datetime.datetime.now(datetime.UTC))
             .not_valid_after(
-                datetime.datetime.now(datetime.UTC)
-                + datetime.timedelta(days=365)
+                datetime.datetime.now(datetime.UTC) + datetime.timedelta(days=365)
             )
-            .sign(self._private_key, hashes.SHA256(), default_backend())  # type: ignore
+            .sign(self._private_key, hashes.SHA256(), default_backend())
         )
 
         return certificate

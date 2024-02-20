@@ -2,16 +2,16 @@
 
 from __future__ import annotations
 
-from copy import deepcopy
 import json
 import os
 import random
 import shlex
 import string
-from socket import gethostbyname, gethostname
 import sys
+from copy import deepcopy
 from getpass import getuser
 from pathlib import Path
+from socket import gethostbyname, gethostname
 from subprocess import CalledProcessError, run
 from tempfile import TemporaryDirectory
 from typing import Any, cast
