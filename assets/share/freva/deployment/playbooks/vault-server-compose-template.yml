@@ -9,8 +9,12 @@ services:
     dns:
       - 8.8.8.8
       - 8.8.4.4
+{% if debug %}
+    network_mode: host
+{% else %}
     networks:
       - {{vault_name}}
+{% endif %}
     environment:
       - ROOT_PW={{ root_passwd }}
     volumes:
@@ -23,5 +27,9 @@ services:
       - 5002:5002
 
 networks:
-  {{vault_name}}:
+{%if debug %}
+  hostnet:
+    driver: host
+{% else %}
     driver: bridge
+{% endif %}

@@ -117,13 +117,15 @@
     - name: Creating systemd services
       shell: |
         /tmp/create_systemd.py {{databrowser_name}} compose --enable --project-name {{databrowser_name}} -f {{compose_file}} up --remove-orphans
+      environment:
+        DEBUG: '{{ debug }}'
       when: systemctl.stat.exists == true
       become: "{{use_become}}"
     - pause: seconds=3
     - name: Creating cron jobs
       shell: >
         sh /tmp/solr_service/create_cron.sh "{{ solr_name }}" "{{databrowser_email}}"
-      when: systemctl.stat.exists == true
+      when: cron.stat.exists == true and debug == false
       become: "{{use_become}}"
     - name: Deleting tmporary files
       file:

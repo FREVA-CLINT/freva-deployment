@@ -94,10 +94,21 @@
       become: "{{use_become}}"
     - name: Updating existing freva
       command:
-        cmd: ./conda update -p {{core_install_dir}} -c conda-forge freva
-        chdir: "{{core_install_dir}}/bin"
+        cmd: conda update -p {{core_install_dir}} -c conda-forge freva
+      environment:
+        PATH: "{{conda_bin}}"
+        EVALUATION_SYSTEM_CONFIG_FILE: "{{ core_root_dir }}/freva/evaluation_system.conf"
       become: "{{use_become}}"
       when: freva_path.stat.exists
+    - name: Inserting evaluation_system.conf file
+      copy:
+        src: /tmp/evaluation_system/evaluation_system.conf
+        dest: "{{ core_root_dir }}/freva/evaluation_system.conf"
+        remote_src: true
+        group: "{{ core_admin_group if core_admin_group is defined else omit}}"
+        mode: "{{ '2664' if core_admin_group is defined else '2644' }}"
+      become: "{{use_become}}"
+      when: not freva_path.stat.exists
     - name: Installing additional python packages
       command:
         cmd: python -m pip install "{{item}}"

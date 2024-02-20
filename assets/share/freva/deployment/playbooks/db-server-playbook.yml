@@ -12,14 +12,9 @@
     docker_cmd: >
         --network {{ project_name }} -v
         {{db_data_path}}/{{project_name}}/db_service:/var/lib/mysql:z
-        -e HOST={{ db_host }}
-        -e NUM_BACKUPS=7
-        -e PROJECT={{ project_name }}
         -e MYSQL_USER={{db_user}}
         -e MYSQL_PASSWORD='{{db_passwd}}'
         -e MYSQL_DATABASE={{db}}
-        -e BACKUP_DIR=/var/lib/mysql/backup
-        -p {{ db_port }}:3306
         -v '{{db_data_path}}/freva-service-config/mysql/create_tables.sql:/docker-entrypoint-initdb.d/002_create_tables.sql:z'
         -v '{{db_data_path}}/freva-service-config/mysql/daily_backup.sh:/usr/local/bin/daily_backup:z'
         --rm
@@ -29,15 +24,9 @@
     skip_tables_cmd: >
         --network {{ project_name }} -v
         '{{db_data_path}}/{{project_name}}/db_service:/var/lib/mysql:z'
-        -e HOST={{ db_host }}
-        -e NUM_BACKUPS=7
-        -e PROJECT={{ project_name }}
         -e MYSQL_USER={{db_user}}
         -e MYSQL_PASSWORD='{{db_passwd}}'
         -e MYSQL_DATABASE={{db}}
-        -e BACKUP_DIR=/var/lib/mysql/backup
-        -p {{ db_port }}:3306
-        -e MYSQL_ROOT_PASSWORD={{ root_passwd }}
         --name {{db_name}}
         -v '{{db_data_path}}/freva-service-config/mysql/create_tables.sql:/docker-entrypoint-initdb.d/002_create_tables.sql:z'
         -v '{{db_data_path}}/freva-service-config/mysql/daily_backup.sh:/usr/local/bin/daily_backup:z'
@@ -127,9 +116,11 @@
       become: "{{use_become}}"
       shell: /tmp/docker-or-podman run -d {{skip_tables_cmd}}
     - pause: seconds=2
-    - name: Resetting the root password
+    - name: Resetting the root password and creating potentially missing tables.
       become: "{{use_become}}"
-      shell: /tmp/docker-or-podman exec {{db_name}} bash /tmp/reset_root_pw.sh
+      shell: |
+        /tmp/docker-or-podman exec {{db_name}} bash /tmp/reset_root_pw.sh
+        /tmp/docker-or-podman exec {{db_name}} /bin/sh -c 'mariadb -u root {{db}} < /docker-entrypoint-initdb.d/002_create_tables.sql'
     - name: Deleting temp. container
       become: "{{use_become}}"
       shell: |
@@ -149,16 +140,14 @@
       become: "{{use_become}}"
       shell: |
         /tmp/create_systemd.py {{db_name}} compose --enable --project-name {{db_name}} -f {{compose_file}} up --remove-orphans
+      environment:
+        DEBUG: '{{ debug }}'
       when: systemctl.stat.exists == true
     - name: Creating cron jobs
       become: "{{use_become}}"
       shell: sh /tmp/create_cron.sh "{{ db_name }}" "{{db_email}}"
-      when: cron.stat.exists == true
+      when: cron.stat.exists == true and debug == false
     - pause: seconds=5
-    - name: Creating potentially missing tables
-      become: "{{use_become}}"
-      shell: |
-        /tmp/docker-or-podman exec {{db_name}} /bin/sh -c 'mariadb -u root -p{{root_passwd}} {{db}} < /docker-entrypoint-initdb.d/002_create_tables.sql'
     - name: Deleting auxillary files
       become: "{{use_become}}"
       file:

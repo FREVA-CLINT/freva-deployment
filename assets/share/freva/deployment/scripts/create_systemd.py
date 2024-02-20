@@ -39,7 +39,10 @@ def parse_args() -> Tuple[str, str, List[str], bool]:
     )
     app.add_argument("--requires", type=str, nargs="+", default=[])
     args, other = app.parse_known_args()
-    return " ".join(other), args.name, args.requires, args.enable
+    enable = args.enable
+    if os.environ.get("DEBUG", "false").lower() == "true":
+        enable = False
+    return " ".join(other), args.name, args.requires, enable
 
 
 def _parse_dict(tmp_dict: Dict[str, Dict[str, str]]) -> str:

@@ -28,17 +28,16 @@ class RandomKeys:
         self.common_name = common_name
         self._private_key_pem: Optional[bytes] = None
         self._public_key_pem: Optional[bytes] = None
+        self._private_key = rsa.generate_private_key(
+            public_exponent=65537, key_size=2048, backend=default_backend()
+        )
         self._temp_dir = TemporaryDirectory("random_keys")
 
     @property
     def private_key_pem(self) -> bytes:
         """Create a new private key pem if it doesn't exist."""
         if self._private_key_pem is None:
-            private_key = rsa.generate_private_key(
-                public_exponent=65537, key_size=2048, backend=default_backend()
-            )
-
-            self._private_key_pem = private_key.private_bytes(
+            self._private_key_pem = self._private_key.private_bytes(
                 encoding=serialization.Encoding.PEM,
                 format=serialization.PrivateFormat.PKCS8,
                 encryption_algorithm=serialization.NoEncryption(),
@@ -54,10 +53,7 @@ class RandomKeys:
             bytes: The public key (PEM format).
         """
         if self._public_key_pem is None:
-            private_key = serialization.load_pem_private_key(
-                self.private_key_pem, password=None, backend=default_backend()
-            )
-            public_key = private_key.public_key()
+            public_key = self._private_key.public_key()
             self._public_key_pem = public_key.public_bytes(
                 encoding=serialization.Encoding.PEM,
                 format=serialization.PublicFormat.SubjectPublicKeyInfo,
@@ -117,9 +113,6 @@ class RandomKeys:
         -------
             x509.Certificate: The self-signed certificate.
         """
-        private_key = serialization.load_pem_private_key(
-            self.private_key_pem, password=None, backend=default_backend()
-        )
         csr = (
             x509.CertificateSigningRequestBuilder()
             .subject_name(
@@ -127,7 +120,7 @@ class RandomKeys:
                     [x509.NameAttribute(NameOID.COMMON_NAME, self.common_name)]
                 )
             )
-            .sign(private_key, hashes.SHA256(), default_backend())  # type: ignore
+            .sign(self._private_key, hashes.SHA256(), default_backend())  # type: ignore
         )
 
         certificate = (
@@ -136,11 +129,12 @@ class RandomKeys:
             .issuer_name(csr.subject)
             .public_key(csr.public_key())
             .serial_number(x509.random_serial_number())
-            .not_valid_before(datetime.datetime.utcnow())
+            .not_valid_before(datetime.datetime.now(datetime.UTC))
             .not_valid_after(
-                datetime.datetime.utcnow() + datetime.timedelta(days=365)
+                datetime.datetime.now(datetime.UTC)
+                + datetime.timedelta(days=365)
             )
-            .sign(private_key, hashes.SHA256(), default_backend())  # type: ignore
+            .sign(self._private_key, hashes.SHA256(), default_backend())  # type: ignore
         )
 
         return certificate
@@ -151,3 +145,15 @@ class RandomKeys:
         certificate = self.create_self_signed_cert()
         certificate_pem = certificate.public_bytes(serialization.Encoding.PEM)
         return self.public_key_pem + certificate_pem
+
+
+if __name__ == "__main__":
+    # Create an instance of RandomKeys
+    keys = RandomKeys()
+
+    # Output the public key
+    print("Public Key:")
+    print(keys.public_key_pem.decode())
+    # Output the certificate chain
+    print("\nCertificate Chain:")
+    print(keys.certificate_chain.decode())

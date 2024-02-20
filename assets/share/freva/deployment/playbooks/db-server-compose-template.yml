@@ -3,8 +3,12 @@ services:
   {{db_name}}:
     image: mariadb:latest
     hostname: {{db_name}}
+{% if debug %}
+    network_mode: host
+{% else %}
     networks:
       - {{db_name}}
+{% endif %}
     environment:
       - ROOT_PW={{ root_passwd }}
       - HOST={{ db_host }}
@@ -25,5 +29,10 @@ services:
       - {{db_port}}:3306
 
 networks:
-  {{db_name}}:
-    driver: bridge
+{% if debug %}
+    hostnet:
+      diver: host
+{% else %}
+    {{db_name}}:
+      driver: bridge
+{% endif %}

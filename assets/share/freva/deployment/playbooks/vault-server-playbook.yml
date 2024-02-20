@@ -2,7 +2,7 @@
 - hosts: vault
 
   vars:
-    ansible_python_interpreter: "{{ db_ansible_python_interpreter }}"
+    ansible_python_interpreter: "{{ vault_ansible_python_interpreter }}"
     continer_name: "{{ vault_name }}"
     compose_file: "{{vault_data_path}}/compose_services/{{vault_name}}-compose.yml"
     vault_volumes:
@@ -73,6 +73,8 @@
       become: "{{use_become}}"
       shell: |
         /tmp/create_systemd.py {{vault_name}} compose --enable --project-name {{vault_name}} -f {{compose_file}} up --remove-orphans
+      environment:
+        DEBUG: '{{ debug }}'
       when: systemctl.stat.exists == true
     - pause: seconds=20
     - name: Deleting existing infrastructure
@@ -83,10 +85,10 @@
       shell: >
         /tmp/docker-or-podman exec {{ vault_name }}
         vault kv put kv/read-eval db.container={{ vault_name }}
-        db.host={{ vault_host }}
-        db.port={{ db_port }}
+        db.host={{ vault_db_host }}
+        db.port={{ vault_db_port }}
         db.passwd='{{ vault_passwd }}'
-        db.user={{ db_user }}
+        db.user={{ vault_db_user }}
         db.db={{ vault_db }}
       become: "{{use_become}}"
     - name: Deleting auxillary files

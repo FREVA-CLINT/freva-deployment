@@ -62,7 +62,7 @@
     web_volumes:
       - "{{ core_root_dir }}:{{ core_root_dir }}:ro"
       - "{{ core_scheduler_output_dir}}:{{ core_scheduler_output_dir }}:ro"
-      - "{{web_data_path}}/{{project_name}}/web_service/static:{{web_data_path}}_web/static:z"
+      - "{{web_data_path}}/{{project_name}}/web_service/static:/opt/freva_web/static:z"
       - "{{core_base_dir_location}}:{{core_base_dir_location}}:ro"
     apache_volumes:
       - "{{web_data_path}}/{{project_name}}/web_service/freva_web.conf:/usr/local/apache2/conf/httpd.conf:z"
@@ -72,20 +72,13 @@
       - "{{web_data_path}}/{{project_name}}/web_service/static:/srv/static:z"
       - "{{web_data_path}}/{{project_name}}/web_service/prepare-httpd:/usr/local/bin/prepare-httpd:z"
       - "{{ core_preview_path }}:/srv/static/preview:z"
-    docker_apache_cmd: >
-        --rm
-        -e SCHEDULER_DIR={{core_scheduler_output_dir}}
-        -e UID=$(id -u {{ansible_user}})
-        -e GID=$(id -g {{ansible_user}})
-        --name "{{project_name}}-httpd"
-        --security-opt label=disable
-        -e DATABROWSER_HOST={{web_databrowser_host}}
-        -e FREVA_HOST={{web_server_name}} -p 80:80 -p 443:443
-        httpd:latest /usr/local/bin/prepare-httpd
     redis_name: "{{ project_name }}-redis"
     apache_name: "{{project_name}}-httpd"
     web_name: "{{project_name}}-web"
     use_become: "{{ web_ansible_become_user is defined and web_ansible_become_user != '' }}"
+    ansible_become_user: "{{ web_ansible_become_user if web_ansible_become_user is defined else 'root' }}"
+    web_port_httpd: "{{ '80' if web_ansible_become_user == 'root' else '9080' }}"
+    web_port_httpsd: "{{ '443' if web_ansible_become_user == 'root' else '9443' }}"
   tasks:
     - name: Get UID
       command: id -u {{ ansible_user }}
@@ -166,13 +159,11 @@
     - name: Pulling containers
       become: "{{use_become}}"
       shell:
-        cmd: /tmp/docker-or-podman pull {{ item.image }}
-      loop:
-        - {image: "docker.io/redis:latest", pull: true}
-        - {image: "ghcr.io/freva-clint/freva-web", pull: true}
-        - image: "docker.io/httpd:latest"
-          pull: "{{ web_deploy_web_server | default(false) | bool }}"
-      when: item.pull == true
+        cmd: /tmp/docker-or-podman pull {{ item }}
+      with_items:
+        - "docker.io/redis:latest"
+        - "ghcr.io/freva-clint/freva-web"
+        - "docker.io/httpd:latest"
     - name: Copying systemd files
       copy:
         src: "{{ asset_dir }}/scripts/create_systemd.py"
@@ -187,12 +178,14 @@
       become: "{{use_become}}"
       shell: |
         /tmp/create_systemd.py {{web_name}} compose --enable --project-name {{web_name}} -f {{compose_file}} up --remove-orphans
+      environment:
+        DEBUG: '{{ debug }}'
       when: systemctl.stat.exists == true
     - pause: seconds=15
     - name: Restarting services
       become: "{{use_become}}"
       shell: >
-         {% if use_become == true and web_ansible_become_user == 'root' %}
+         {% if use_become == true and ansible_become_user == 'root' %}
             systemctl restart {{ web_name }}
           {% else %}
             systemctl --user restart {{ web_name }}
@@ -206,3 +199,12 @@
         - /tmp/{{project_name}}_web
         - /tmp/create_systemd.py
         - /tmp/docker-or-podman
+    - name: Display message about Apache HTTPD ports
+      debug:
+        msg: >
+          Apache HTTPD is deployed on port {{ web_port_httpd }} instead of 80
+          and {{ web_port_httpsd }} instead of 443.
+          Since you are not running as root, consider setting up a reverse proxy
+          to forward connections from port 80 and 443 to ports {{ web_port_httpd }}
+          and {{ web_port_httpsd }} respectively.
+      when: ansible_become_user != 'root'
