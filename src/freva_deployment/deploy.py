@@ -19,7 +19,6 @@ from urllib.parse import urlparse
 
 import tomlkit
 import yaml
-from numpy import sign
 
 from freva_deployment import FREVA_PYTHON_VERSION
 
@@ -741,7 +740,9 @@ class DeployFactory:
         #    pass
         # return
         logger.debug(self.playbooks)
-        v_string = sign(verbosity) * "-" + verbosity * "v"
+        v_string: str = ""
+        if verbosity > 0:
+            v_string += "-" + verbosity * "v"
         cmd = (
             f"ansible-playbook {v_string} -i {self.inventory_file} "
             f"{self._playbook_file} --ask-become-pass"

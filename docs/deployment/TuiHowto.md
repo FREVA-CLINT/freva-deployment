@@ -2,10 +2,10 @@
 We have create a simple text user interface (tui) that helps you setting up a
 Freva instance at your institution. At this stage the documentation assumes that
 you have installed the necessary server infrastructure and pre-requisites.
-Please refer to the [installation](Installation.html) and [configuration section](Configuration.html)
+Please refer to the [installation](Installation) and [configuration section](Configure)
 for more details.
 
-After [Installation](Installation.html) the command `deploy-freva` will open
+After [Installation](Installation) the command `deploy-freva` will open
 the tui. The tui is organized in five different screens. The first four screens
 are used to configure the services (core, solr, database, web) the last screen
 (run screen) configures variables that are common amongst all services.
@@ -43,7 +43,7 @@ box is *un*ticked - tick/untick using the `<SPACE>` key - the deployment will
 skip the core installation on the HPC system. The following explains the
 essential setup steps:
 
-![](tui_core.png)
+![](_static/tui_core.png)
 
 1. The host name(s) where the core installation is executed. You can use all
    [multi host patterns](https://docs.ansible.com/ansible/latest/user_guide/intro_patterns.html#common-patterns)
@@ -109,7 +109,7 @@ deployment. If this box is *un*ticked - tick/untick using the `<SPACE>` key -
 the deployment will skip the web ui setup entirely. The following explains the
 essential setup steps:
 
-![](tui_web.png)
+![](_static/tui_web.png)
 
 1. The host name where the web ui should be installed. This should be a single
    host name.
@@ -198,20 +198,20 @@ vault service that gets deployed when setting up the database.
 
 
 
-## Solr server setup
-The third screen configures the setup apache solr serch server. At the top of
+## Databrowser server setup
+The third screen configures the setup databrowser server. At the top of
 the screen you'll see a tick box, which indicates whether or not this step is
 used for deployment. If this box is *un*ticked - tick/untick using the
-`<SPACE>` key - the deployment will skip the setup of solr entirely. The
+`<SPACE>` key - the deployment will skip the setup of databrowser entirely. The
 following explains the essential setup steps:
 
-![](tui_solr.png)
+![](_static/tui_solr.png)
 
 1. The host name where the solr server should be installed. This should be a single
    host name.
-2. Tick this box (`<SPACE>`) if you want to delete any pre existing solr data.
-3. Select how much memory you want to allocate for the solr server process.
-4. Select the port the solr server is running on.
+2. Tick this box (`<SPACE>`) if you want to delete any pre existing databrowser data.
+3. Select how much memory you want to allocate for the databrowser server process.
+4. Select the port the databrowser server is running on.
 5. If you want to customise the installation process you can set the path
    to a custom ansible playbook here. If this is set then the deployment
    will use this playbook instead of the default playbook that ships with
@@ -222,13 +222,11 @@ following explains the essential setup steps:
    binary is not part of the `$PATH` variable.
 8. Set the login user name for the remote machine.
 
-### Notes on the solr setup
-Although still configurable, the name of the solr core (files) might be
-fixed in the future. Therefore we recommend using the default value. Any
-existing solr data is *not* overridden if you deploy
-a new solr server and do not chose to delete any pre existing data. The
-solr core data will be saved to `/opt/freva/<project_name>/solr_service/`
-on the host name the solr server is running on.
+### Notes on the databrowser setup
+Any existing data is *not* overridden if you deploy
+a new server and do not chose to delete any pre existing data. The
+data will be saved to `/opt/freva/<project_name>/databrowser_service/`
+on the host name the databrowser server is running on.
 
 
 ## Database server setup
@@ -238,7 +236,7 @@ used for deployment. If this box is *un*ticked - tick/untick using the
 `<SPACE>` key - the deployment will skip the setup of the database entirely. The
 following explains the essential setup steps:
 
-![](tui_db.png)
+![](_static/tui_db.png)
 
 1. The host name where the database server should be installed. This should be a single
    host name.
@@ -275,7 +273,7 @@ configuration that is common among the above described steps. You can enter this
 screen by pressing the `CTRL+r` key combination. The following options are
 available:
 
-![](tui_run.png)
+![](_static/tui_run.png)
 
 1. Set a unique project name for this specific Freva instance, for example
    `clex-ces`.

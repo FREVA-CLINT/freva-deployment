@@ -3,16 +3,12 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to freva admin documentation!
-=====================================
+The freva admin documentation!
+==============================
 
-.. image:: freva_flowchart-new.jpg
+.. image:: architecture/_static/freva_flowchart-new.jpg
    :width: 320
    :align: center
-
-.. note::
-
-    Please check :ref:`whatsnew` for any update announcments.
 
 
 
@@ -52,20 +48,30 @@ components of Freva work with each other is introduced. This is followed by a
 documentation on how to install the Freva deployment software. After this section
 basic deployment setup and servicing Freva will be introduced.
 
-.. toctree::
-   :maxdepth: 3
-   :caption: Contents:
+.. note::
 
-   Architecture
-   Folders
-   Installation
-   Configure
-   AfterDeployment
-   Services
-   TuiHowto
-   Transition
-   LegalNotes
-   modules
+    Please check :ref:`whatsnew` for any update announcments.
+
+
+
+
+.. toctree::
+   :maxdepth: 2
+
+   architecture/index
+
+.. toctree::
+   :maxdepth: 2
+
+   deployment/index
+.. toctree::
+   :maxdepth: 2
+
+   after-deployment/index
+
+.. toctree::
+   :maxdepth: 1
+
    whatsnew
 
 Contributing to freva-deployment

@@ -1,64 +1,4 @@
-# Appendix II: Transitioning guide
-
-The following serves as a guide to transition an existing Freva instance
-(within the python*2* frame work) to the new (python*3* based) version.
-
-
-## Transition to new Database
-We have created a small command line interface (`freva-migrate`) that
-helps migrating content of an existing Freva framework to the new one.
-The `freva-migrate` command has currently one sub commands:
-
-The new system has witnessed small changes to the database structure. The `database`
-sub-command of the `freva-migrate` command helps to transition to this new
-database structure. To migrate a database of an old installation of the Freva
-system to a freshly deployed Freva instance use the following command:
-
-```
-usage: freva-migrate database [-h] [--old-port OLD_PORT] [--old-db OLD_DB] [--old-pw OLD_PW] [--old-user OLD_USER]
-                              new_hostname old_hostname cert-file
-
-Freva database migration
-
-positional arguments:
-  new_hostname         The hostname where the new database is deployed.
-  old_hostname         Hostname of the old database.
-  cert-file            Path to the public certificate file.
-
-options:
-  -h, --help           show this help message and exit
-  --old-port OLD_PORT  The port where the old database server is running on. (default: 3306)
-  --old-db OLD_DB      The name of the old database (default: evaluationsystem)
-  --old-pw OLD_PW      The passowrd to the old database (default: None)
-  --old-user OLD_USER  The old database user (default: evaluationsystem)
-```
-
-The `cert-file` positional argument refers to the public certificate file that was
-created during the deployment process and is needed to establish a connection to
-the new database (via the vault). You can either use the one that has been
-saved by the deployment or use it from the freva config directory. By default
-the certificate file resides within `freva` path of the deployment `root_dir`
-for example `/mnt/project/freva/project.crt`. Also don't forget to set the domain
-name for your institution as a unique identifier.
-
-After the command has been applied the new database with its "old" content from
-the previous Freva instance will be ready for use.
-
-
-## Transition to new DRS Config
-
-In the old version the DRS (Date Reference Syntax) File configuration,
-that is the definitions of dataset metadata, was hard coded into the module
-`evaluation_system.model.file`. In the new version this configuration
-is saved in a designated [toml](https://toml.io/en/) file (drs_config.toml).
-The ingestion of data is done by the new `freva-ingest` software, which is
-written in rust. More information on this configuration and usage of the
-ingestion software can be found on the
-[README](https://gitlab.dkrz.de/freva/freva-ingest).
-
-
-
-## Transitioning of the Plugins
+# Transitioning of the Plugins
 
 The Freva plugins are an essential part of Freva.
 Most likely the transitioning from the old python2 to the new python3 based
@@ -77,7 +17,7 @@ These are the disadvantages of this method:
 - an anaconda environment file has to be created for each plugin.
 
 
-### Transitioning steps:
+## Transitioning steps:
 
 There are multiple ways of how you can get your old plugin back to the new
 Freva system. We do recommend a deployment strategy involving conda.
@@ -90,7 +30,7 @@ to life in the new Freva system. We will also discuss alternatives
 to using conda. Regardless of choice on using conda or not the first two
 steps will be necessary.
 
-#### Common steps:
+### Common steps:
 
 1. clone the repository of a plugin, change into the directory and create a new branch.
 
@@ -103,7 +43,7 @@ Most certainly, the plugin manager will output a warning that the plugin could
 not be loaded. If it does, change the plugin accordingly to make the
 warning messages go away.
 
-#### a. Using conda:
+### a. Using conda:
 As mentioned above this step has the advantage that you increase the reproducibility
 of your plugin. Transitioning your plugin to other institutions is also easy
 because all libraries are encapsulated from the host system and hence independent.
@@ -122,20 +62,20 @@ While not strictly necessary it is a good idea to familiarise yourself with
 
 8. Format the plugin using black: `black -t py310 path_to_plugin.py`
 
-#### b. Using the environment of freva
+### b. Using the environment of freva
 If your plugin doesn't need many libraries you can simply try to use everything
 the comes with freva. This is the easiest way as you don't have to do anything.
 Simply try to execute all commands that come with your plugin and see what
 happens.
 
-#### c. Using software of the host system
+### c. Using software of the host system
 You can also make use of the software installed on the host system. For
 example via spack. Many HPC systems offer the `module` command. Using this
 approach will result in a plugin that is tailored around the current host system
 you are using. Future updates may break usage and you defiantly won't be able
 to use your plugin at other institutions.
 
-### Transitioning `python2` plugins
+## Transitioning `python2` plugins
 Python plugins (especially python2) need special care. The recommended strategy
 is to convert the plugin content to python3. If this is not possible an anaconda
 python2 environment should be created.
@@ -228,7 +168,7 @@ If you want to use the json file in a bash script you must install the `jq`
 json parser. Simply add `jq` to your `plugin-env.yml` file and read the
 [docs of jq](https://stedolan.github.io/jq/tutorial/).
 
-### After conda deployment: Increasing reproducibility of your plugin
+## After conda deployment: Increasing reproducibility of your plugin
 If you have successfully deployed your plugin environment using conda you
 can increase the reproducibility by "freezing" all packages that have
 been installed by conda. This will increase the reproducibility of your package
@@ -249,7 +189,7 @@ conda env create --prefix ./plugin_env -f spec-file.txt --force
 ```
 And you're done.
 
-### Problem: conda doesn't finish resolving dependencies
+## Problem: conda doesn't finish resolving dependencies
 Sometimes conda is unable/won't finish to solve all dependencies. You have a
 couple of options in that case. First you can try replacing the `conda` command
 by `mamba` in your Makefile. `mamba` is written in C and comes with a

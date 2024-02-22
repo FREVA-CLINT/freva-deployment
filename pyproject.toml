@@ -40,6 +40,12 @@ doc = [
     "sphinx_rtd_theme",
     "ipython",
     "sphinxcontrib_github_alt",
+    "sphinx_sitemap",
+    "sphinx_favicon",
+    "sphinx_togglebutton",
+    "myst-parser",
+    "sphinx-design",
+    "linkify",
 ]
 test = ["mypy", "black", "flit", "isort", "types-toml", "types-PyMySQL"]
 
