@@ -1,5 +1,5 @@
-Freva structure overview
-========================
+Freva from an admin perspective
+===============================
 
 This chapter gives an overview of how freva works and a working freva deployment
 is configured. Read the section in this chapter carefully to understand

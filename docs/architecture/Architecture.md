@@ -1,4 +1,4 @@
-# Deployment Architecture
+# Freva Architecture
 
 
 The Free evaluation system framework (Freva) consists of three basic parts:

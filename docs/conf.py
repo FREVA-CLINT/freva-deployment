@@ -39,11 +39,9 @@ extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.intersphinx",
     "sphinx.ext.napoleon",
-    "nbsphinx",
     "recommonmark",
-    "sphinx.ext.viewcode",
-    "sphinxcontrib_github_alt",
     "sphinx_copybutton",
+    "sphinx_togglebutton",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
