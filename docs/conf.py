@@ -88,12 +88,15 @@ html_theme_options = {
             "name": "GitHub",
             "url": "https://github.com/FREVA-CLINT/freva-deployment",
             "icon": "fa-brands fa-github",
-        }
+        },
+        {
+            "name": "PyPI",
+            "url": "https://pypi.org/project/freva-deployment",
+            "icon": "fa-custom fa-pypi",
+        },
     ],
     # "navbar_start": [],  # Remove navigation links from the top bar
-    "navbar_center": [
-        "navbar-nav"
-    ],  # Add navigation links to the left sidebar
+    "navbar_center": ["navbar-nav"],  # Add navigation links to the left sidebar
     "collapse_navigation": False,
     "navigation_depth": 4,
     "navbar_align": "left",

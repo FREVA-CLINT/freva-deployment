@@ -1,10 +1,14 @@
 Freva Architecture and Configuration Guide
 ===========================================
-Welcome to the Freva Architecture and Configuration Guide, where we explore
-the foundational components of Freva and how to configure them for optimal
-performance. This chapter serves as a resource for
-understanding the architectural layout of Freva and the essential
-configurations required for its operation.
+This chapter explores the foundational components of Freva and how to
+configure them. It serves as a resource for understanding the architectural
+layout of Freva and the essential configurations required for its operation.
+
+.. image:: _static/freva_flowchart-new.jpg
+   :width: 320
+   :class: floating
+   :align: center
+
 
 **Freva's Architecture:** In this section, delves into the
 core components that constitute the architecture of Freva.
@@ -34,11 +38,6 @@ service. By familiarizing yourself with DRS configuration, you can enrich
 the metadata associated with datasets and improve discoverability within
 Freva's filesystem, empowering users to leverage its resources more
 effectively.
-
-
-.. image:: _static/freva_flowchart-new.jpg
-   :width: 320
-   :align: center
 
 
 
