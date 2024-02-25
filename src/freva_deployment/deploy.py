@@ -17,9 +17,9 @@ from tempfile import TemporaryDirectory
 from typing import Any, cast
 from urllib.parse import urlparse
 
-from rich import print
 import tomlkit
 import yaml
+from rich import print
 
 from freva_deployment import FREVA_PYTHON_VERSION
 
