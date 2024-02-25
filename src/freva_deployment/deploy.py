@@ -17,6 +17,7 @@ from tempfile import TemporaryDirectory
 from typing import Any, cast
 from urllib.parse import urlparse
 
+from rich import print
 import tomlkit
 import yaml
 
@@ -706,7 +707,10 @@ class DeployFactory:
         try:
             self._play(ask_pass=ask_pass, verbosity=verbosity)
         except KeyboardInterrupt:
-            raise SystemExit("[ERROR]: User interrupted execution")
+            print(
+                " [red][ERROR]: User interrupted execution[/]", file=sys.stderr
+            )
+            raise SystemExit(130)
 
     def _play(
         self,
