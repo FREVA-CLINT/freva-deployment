@@ -40,8 +40,8 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
         "--steps",
         type=str,
         nargs="+",
-        default=["db", "solr", "web", "core"],
-        choices=["web", "core", "db", "solr"],
+        default=["db", "databrowser", "web", "core"],
+        choices=["web", "core", "db", "databrowser"],
         help="The services/code stack to be deployed",
     )
     ap.add_argument(

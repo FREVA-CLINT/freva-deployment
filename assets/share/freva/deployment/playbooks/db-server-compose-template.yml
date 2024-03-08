@@ -1,0 +1,29 @@
+version: '3'
+services:
+  {{db_name}}:
+    image: mariadb:latest
+    hostname: {{db_name}}
+    networks:
+      - {{db_name}}
+    environment:
+      - ROOT_PW={{ root_passwd }}
+      - HOST={{ db_host }}
+      - NUM_BACKUPS=7
+      - PROJECT={{ project_name }}
+      - MYSQL_USER={{db_user}}
+      - MYSQL_PASSWORD={{db_passwd}}
+      - MYSQL_DATABASE={{db}}
+      - MYSQL_ROOT_PASSWORD={{ root_passwd }}
+      - BACKUP_DIR=/var/lib/mysql/backup
+    volumes:
+{% for volume in db_volumes %}
+      - {{volume}}
+{% endfor %}
+    container_name: {{db_name}}
+    tty: true
+    ports:
+      - {{db_port}}:3306
+
+networks:
+  {{db_name}}:
+    driver: bridge

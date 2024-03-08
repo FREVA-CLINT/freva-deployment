@@ -10,16 +10,25 @@ import shutil
 import sys
 import sysconfig
 from pathlib import Path
-from typing import Any, NamedTuple, cast
+from typing import Any, Dict, MutableMapping, NamedTuple, Union, cast
 
 import appdirs
 import requests
-import toml
+import tomlkit
 from rich.console import Console
+from rich.logging import RichHandler
 from rich.prompt import Prompt
 
+logger_stream_handle = RichHandler(
+    rich_tracebacks=True,
+    show_path=False,
+    console=Console(soft_wrap=True, stderr=True),
+)
 logging.basicConfig(
-    format="%(name)s - %(levelname)s - %(message)s", level=logging.INFO
+    format="%(name)s - %(message)s",
+    level=logging.INFO,
+    handlers=[logger_stream_handle],
+    datefmt="[%X]",
 )
 logger = logging.getLogger("freva-deployment")
 
@@ -43,6 +52,7 @@ password_prompt = (
     "[green]Choose[/] a [b]master password[/], this password will be used to:\n"
     "- create the [magenta]mysql root[/] password\n"
     "- set the [magenta]django admin[/] web password\n"
+    "- set the [magenta]mongo db[/] user password\n"
     "[b]Note:[/] Ideally this password can be shared amongst other [i]admins[/].\n"
     "[b][green]choose[/] master password[/]"
 )
@@ -91,6 +101,10 @@ class AssetDir:
         raise ValueError(
             "Could not find asset dir, please consider reinstalling the package."
         )
+
+    @property
+    def inventory_file(self) -> Path:
+        return self.asset_dir / "config" / "inventory.toml"
 
     @property
     def config_dir(self):
@@ -148,13 +162,49 @@ def _convert_dict(
             inp_dict[key] = get_current_file_dir(cfd, value)
 
 
+def _update_config(
+    new_config: MutableMapping[str, Any], old_config: MutableMapping[str, Any]
+) -> None:
+    for key, value in old_config.items():
+        if key in new_config and isinstance(value, dict):
+            _update_config(new_config[key], old_config[key])
+        else:
+            new_config[key] = value
+
+
+def _create_new_config(inp_file: Path) -> Path:
+    """Update any old configuration file to a newer version."""
+    config = cast(
+        Dict[str, Dict[str, Dict[str, Union[str, float, int, bool]]]],
+        tomlkit.loads(inp_file.read_text()),
+    )
+    create_backup = False
+    config_tmpl = tomlkit.loads(AD.inventory_file.read_text())
+    # Legacy solr:
+    if "solr" in config:
+        create_backup = True
+        config["databrowser"] = config.pop("solr")
+        for key in ("port", "mem"):
+            if key in config["databrowser"]["config"]:
+                config["databrowser"]["config"][f"solr_{key}"] = config[
+                    "databrowser"
+                ]["config"].pop(key)
+    _update_config(config_tmpl, config)
+    if create_backup:
+        inp_file.with_suffix(inp_file.suffix + ".bck").write_text(
+            inp_file.read_text()
+        )
+    inp_file.write_text(tomlkit.dumps(config_tmpl))
+    return inp_file
+
+
 def load_config(inp_file: str | Path) -> dict[str, Any]:
     """Load the inventory toml file and replace all environment variables."""
     inp_file = Path(inp_file).expanduser().absolute()
     variables = cast(
-        dict[str, str], toml.loads(config_file.read_text())["variables"]
+        dict[str, str], tomlkit.loads(config_file.read_text())["variables"]
     )
-    config = toml.loads(inp_file.read_text())
+    config = tomlkit.loads(inp_file.read_text())
     _convert_dict(config, variables, inp_file.parent)
     return config
 
@@ -288,7 +338,7 @@ def upload_server_map(
         _upload_data[service] = config
     host, _, port = server_map.partition(":")
     port = port or "6111"
-    req_data = dict(config=toml.dumps(_upload_data))
+    req_data = dict(config=tomlkit.dumps(_upload_data))
     logger.debug("Uploading %s", req_data)
     req = requests.put(f"http://{host}:{port}/{project_name}", data=req_data)
     if req.status_code == 201:

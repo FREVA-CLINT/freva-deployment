@@ -15,8 +15,9 @@ SYSTEMD_TMPL = dict(
     Service=dict(
         TimeoutStartSec="35s",
         TimeoutStopSec="35s",
-        ExecStartPre="{delete_command}",
+        ExecStartPre='/bin/sh -c "{delete_command}"',
         ExecStart='/bin/sh -c "{container_cmd} {container_args}"',
+        ExecStop='/bin/sh -c "{delete_command}"',
         Restart="no",
     ),
     Install=dict(WantedBy="default.target"),
@@ -86,12 +87,11 @@ def get_container_cmd(args: str) -> Tuple[str, str]:
         cmd,
         check=True,
         stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
         env=env,
     )
     out = res.stdout.decode().split()
     if out:
-        return out[0], " ".join(out[1:]).replace("%", "%%")
+        return out[0], " ".join(out[1:])
     return "", ""
 
 
@@ -100,7 +100,17 @@ def create_unit(
 ) -> None:
     """Create the systemd unit."""
     container_cmd, container_args = get_container_cmd(args)
-    _, delete_command = get_container_cmd("rm -f {}".format(unit))
+    cmd = args.split()
+    if "compose" in cmd and "up" in cmd:
+        new_cmd = []
+        for word in cmd:
+            if word == "up":
+                new_cmd.append("down")
+            elif word not in ("-d", "--detach"):
+                new_cmd.append(word)
+        _, delete_command = get_container_cmd(" ".join(new_cmd))
+    else:
+        _, delete_command = get_container_cmd("rm -f {}".format(unit))
     if delete_command:
         delete_command = "{} {}".format(container_cmd, delete_command)
     else:
@@ -114,9 +124,10 @@ def create_unit(
             container_args=container_args,
             unit=unit,
         )
-    SYSTEMD_TMPL["Service"]["ExecStartPre"] = SYSTEMD_TMPL["Service"][
-        "ExecStartPre"
-    ].format(delete_command=delete_command)
+    for key in ("ExecStartPre", "ExecStop"):
+        SYSTEMD_TMPL["Service"][key] = SYSTEMD_TMPL["Service"][key].format(
+            delete_command=delete_command
+        )
     for service in requires:
         for key in ("After", "Requires"):
             try:

@@ -1,6 +1,7 @@
 """Module to run the freva deployment."""
 from __future__ import annotations
 
+import json
 import os
 import random
 import shlex
@@ -46,11 +47,11 @@ class DeployFactory:
     --------
 
     >>> from freva_deployment import DeployFactory as DF
-    >>> deploy = DF(steps=["solr"])
+    >>> deploy = DF(steps=["databrowser"])
     >>> deploy.play(ask_pass=True)
     """
 
-    step_order: tuple[str, ...] = ("vault", "db", "solr", "core", "web")
+    step_order: tuple[str, ...] = ("vault", "db", "databrowser", "core", "web")
     _steps_with_cert: tuple[str, ...] = ("db", "vault", "core", "web")
 
     def __init__(
@@ -145,22 +146,32 @@ class DeployFactory:
         )
         self.playbooks["db"] = self.cfg["db"]["config"].get("db_playbook")
         self._prep_vault()
+        self._prep_web(False)
 
-    def _prep_solr(self) -> None:
-        """prepare the apache solr service."""
-        self._config_keys.append("solr")
-        self.cfg["solr"]["config"].setdefault("ansible_become_user", "root")
-        self.cfg["solr"]["config"].pop("core", None)
-        self.playbooks["solr"] = self.cfg["solr"]["config"].get(
-            "solr_playbook"
+    def _prep_databrowser(self, prep_web=True) -> None:
+        """prepare the databrowser service."""
+        if not self.master_pass:
+            self.master_pass = get_passwd()
+        self._config_keys.append("databrowser")
+        self.cfg["databrowser"]["config"].setdefault(
+            "ansible_become_user", "root"
         )
-        for key, default in dict(mem="4g", port=8983).items():
-            self.cfg["solr"]["config"][key] = (
-                self.cfg["solr"]["config"].get(key) or default
+        self.cfg["databrowser"]["config"]["root_passwd"] = self.master_pass
+        self.cfg["databrowser"]["config"].pop("core", None)
+        self.playbooks["databrowser"] = self.cfg["databrowser"]["config"].get(
+            "databrowser_playbook"
+        )
+        for key, default in dict(
+            solr_mem="4g", solr_port=8983, databrowser_port=7777
+        ).items():
+            self.cfg["databrowser"]["config"][key] = (
+                self.cfg["databrowser"]["config"].get(key) or default
             )
-        self.cfg["solr"]["config"]["email"] = self.cfg["web"]["config"].get(
-            "contacts", ""
-        )
+        self.cfg["databrowser"]["config"]["email"] = self.cfg["web"][
+            "config"
+        ].get("contacts", "")
+        if prep_web:
+            self._prep_web(False)
 
     def _prep_core(self) -> None:
         """prepare the core deployment."""
@@ -208,12 +219,19 @@ class DeployFactory:
             "git_url"
         ] = "https://github.com/FREVA-CLINT/freva.git"
 
-    def _prep_web(self) -> None:
+    def _prep_web(self, ask_pass: bool = True) -> None:
         """prepare the web deployment."""
         self._config_keys.append("web")
+        # if ask_pass:
+        #    self._prep_vault()
         self.playbooks["web"] = self.cfg["web"]["config"].get("web_playbook")
         self.cfg["web"]["config"].setdefault("ansible_become_user", "root")
         self._prep_core()
+        databrowser_host = (
+            f'{self.cfg["databrowser"]["hosts"]}:'
+            f'{self.cfg["databrowser"]["config"]["databrowser_port"]}'
+        )
+        self.cfg["web"]["config"]["databrowser_host"] = databrowser_host
         admin = self.cfg["core"]["config"]["admins"]
         if not isinstance(admin, str):
             self.cfg["web"]["config"]["admin"] = admin[0]
@@ -283,13 +301,14 @@ class DeployFactory:
             )
         if not self.master_pass:
             self.master_pass = get_passwd()
-        email_user, self.email_password = get_email_credentials()
         self._prep_vault()
+        if ask_pass:
+            email_user, self.email_password = get_email_credentials()
+            self.cfg["vault"]["config"]["email_user"] = email_user
+            self.cfg["vault"]["config"]["email_password"] = self.email_password
         self.cfg["vault"]["config"]["ansible_python_interpreter"] = self.cfg[
             "db"
         ]["config"].get("ansible_python_interpreter", "/usr/bin/python3")
-        self.cfg["vault"]["config"]["email_user"] = email_user
-        self.cfg["vault"]["config"]["email_password"] = self.email_password
         self.cfg["web"]["config"]["root_passwd"] = self.master_pass
         self.cfg["web"]["config"]["private_keyfile"] = self.private_key_file
         self.cfg["web"]["config"]["public_keyfile"] = self.public_key_file
@@ -299,7 +318,8 @@ class DeployFactory:
         self.cfg["web"]["config"]["apache_config_file"] = str(
             self.apache_config
         )
-        self._prep_apache_config()
+        if ask_pass:
+            self._prep_apache_config()
 
     def _prep_apache_config(self):
         config = []
@@ -322,7 +342,7 @@ class DeployFactory:
 
     def _read_cfg(self) -> dict[str, Any]:
         try:
-            return dict(load_config(self._inv_tmpl))
+            return dict(load_config(self._inv_tmpl).items())
         except FileNotFoundError as error:
             raise FileNotFoundError(
                 f"No such file {self._inv_tmpl}"
@@ -423,15 +443,18 @@ class DeployFactory:
 
     def parse_config(self) -> str:
         """Create config files for anisble and evaluation_system.conf."""
+        playbook = self.create_playbooks()
         logger.info("Parsing configurations")
         self._check_config()
         config: dict[str, dict[str, dict[str, str | int | bool]]] = {}
+        info: dict[str, dict[str, dict[str, str | int | bool]]] = {}
         for step in set(self._config_keys):
-            config[step] = {}
+            config[step], info[step] = {}, {}
             config[step]["hosts"] = self.cfg[step]["hosts"]
-            config[step]["vars"] = {}
+            info[step]["hosts"] = self.cfg[step]["hosts"]
+            config[step]["vars"], info[step]["vars"] = {}, {}
             for key, value in self.cfg[step]["config"].items():
-                if key in ("root_passwd",):
+                if key in ("root_passwd",) or key.startswith(step):
                     new_key = key
                 else:
                     new_key = f"{step}_{key}"
@@ -439,7 +462,19 @@ class DeployFactory:
             config[step]["vars"]["project_name"] = self.project_name
             # Add additional keys
             self._set_additional_config_values(step, config)
-        return yaml.dump(config)
+        for step in info:
+            for key, value in config[step]["vars"].items():
+                if (
+                    f"{{{{{key}}}}}" in playbook
+                    or f"{{{{ {key} }}}}" in playbook
+                ):
+                    info[step]["vars"][key] = value
+        info_str = yaml.dump(json.loads(json.dumps(info)))
+        for passwd in (self.email_password, self.master_pass):
+            if passwd:
+                info_str = info_str.replace(passwd, "*" * len(passwd))
+        RichConsole.print(info_str, style="bold", markup=True)
+        return yaml.dump(json.loads(json.dumps(config)))
 
     @property
     def _playbook_file(self) -> Path:
@@ -470,7 +505,7 @@ class DeployFactory:
                 steps.append("vault")
         return [s for s in self.step_order if s in steps]
 
-    def create_playbooks(self):
+    def create_playbooks(self) -> str:
         """Create the ansible playbook form all steps."""
         logger.info("Creating Ansible playbooks")
         playbook = []
@@ -482,8 +517,9 @@ class DeployFactory:
             )
             with Path(playbook_file).open() as f_obj:
                 playbook += yaml.safe_load(f_obj)
-        with self._playbook_file.open("w") as f_obj:
-            yaml.dump(playbook, f_obj)
+        with self._playbook_file.open("w") as stream:
+            yaml.dump(playbook, stream)
+        return self._playbook_file.read_text()
 
     def create_eval_config(self) -> None:
         """Create and dump the evaluation_systme.config."""
@@ -508,7 +544,7 @@ class DeployFactory:
                         cfg = self.cfg[key]["config"].get(value, "")
                         if cfg:
                             lines[num] = f"{value}={cfg}\n"
-                for step in ("solr", "db"):
+                for step in ("databrowser", "db"):
                     cfg = self.cfg[step]["config"].get("port", "")
                     if line.startswith(f"{step}.port"):
                         lines[num] = f"{step}.port={cfg}\n"
@@ -568,18 +604,10 @@ class DeployFactory:
         verbosity: int, default: 0
             Verbosity level, default 0
         """
-        self.create_playbooks()
         inventory = self.parse_config()
         self.create_eval_config()
         with self.inventory_file.open("w") as f_obj:
             f_obj.write(inventory)
-        inventory_str = inventory
-        for passwd in (self.email_password, self.master_pass):
-            if passwd:
-                inventory_str = inventory_str.replace(
-                    passwd, "*" * len(passwd)
-                )
-        RichConsole.print(inventory, style="bold", markup=True)
         logger.info("Playing the playbooks with ansible")
         RichConsole.print(
             "[b]Note:[/] The [blue]BECOME[/] password refers to the "

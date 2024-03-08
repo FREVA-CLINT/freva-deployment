@@ -1,0 +1,151 @@
+---
+- hosts: databrowser
+
+  vars:
+    ansible_python_interpreter: "{{ databrowser_ansible_python_interpreter }}"
+    databrowser_name: "{{project_name}}-databrowser"
+    compose_file: /opt/freva/compose_services/{{databrowser_name}}-compose.yml
+    solr_name: "{{project_name}}-solr"
+    mongo_name: "{{project_name}}-mongo"
+    solr_volumes:
+      - /opt/freva/{{project_name}}/solr_service:/var/solr/data:z
+      - /opt/freva/freva-service-config/solr/managed-schema.xml:/opt/solr/managed-schema.xml:z
+      - /opt/freva/freva-service-config/solr/create_cores.sh:/docker-entrypoint-initdb.d/create_cores.sh:z
+      - /opt/freva/freva-service-config/solr/synonyms.txt:/opt/solr/synonyms.txt:z
+      - /opt/freva/freva-service-config/solr/daily_backup.sh:/usr/local/bin/daily_backup:z
+    mongo_volumes:
+      - /opt/freva/{{project_name}}/databrowser/stats:/data/db:z
+    ansible_become_user: "{{ databrowser_ansible_become_user | default('root') }}"
+    use_become: "{{ databrowser_ansible_become_user is defined and databrowser_ansible_become_user != '' }}"
+  tasks:
+    - name: Copying docker/podman wrapper script
+      copy:
+        src: "{{ asset_dir }}/scripts/docker-or-podman"
+        dest: /tmp/docker-or-podman
+        mode: "0775"
+    - name: Registering systemctl path
+      stat:
+        path: /usr/bin/systemctl
+      register: systemctl
+    - name: Registering anacron path
+      stat:
+        path: /etc/cron.daily
+      register: cron
+    - name: Stopping services and deleting existing containers
+      become: "{{use_become}}"
+      shell: >
+        systemctl stop {{solr_name}} {{mongo_name}} {{databrowser_name}};
+        systemctl disable {{solr_name}} {{mongo_name}} {{databrowser_name}};
+        systemctl reset-failed;
+        /tmp/docker-or-podman rm {{solr_name}} {{mongo_name}} {{databrowser_name}};
+        /tmp/docker-or-podman rmi -f {{solr_name}} {{mongo_name}} {{databrowser_name}};
+        /tmp/docker-or-podman rmi -f solr mongo ghcr.io/freva-clint/databrowserapi;
+        exit 0
+      ignore_errors: true
+    - pause: seconds=5
+    - name: Deleting old systemd structure
+      file:
+        state: absent
+        path: "/etc/systemd/system/{{item}}.service"
+        force: true
+      with_items:
+        - "{{solr_name}}"
+        - "{{mongo_name}}"
+        - "{{databrowser_name}}"
+      become: "{{use_become}}"
+      when: systemctl.stat.exists == true
+    - name: Deleting config file
+      file:
+        state: absent
+        force: true
+        path: /opt/freva/freva-service-config/
+      become: "{{use_become}}"
+    - name: Cleaning existing directory structure
+      file:
+        path: "{item}"
+        state: absent
+      with_items:
+        - "/opt/freva/{{ project_name }}/solr_service"
+        - "/opt/freva/{{ project_name }}/databrowser"
+      when: databrowser_wipe == true
+      become: "{{use_become}}"
+    - name: Creating solr directory structure
+      file:
+        path: /opt/freva/{{ project_name }}/solr_service
+        state: directory
+        owner: 8983
+        group: 8983
+        recurse: true
+      become: "{{use_become}}"
+    - name: Creating compose directory structure
+      file:
+        path: /opt/freva/compose_services
+        state: directory
+        recurse: true
+      become: "{{use_become}}"
+    - name: Creating directory structure
+      file:
+        path: /opt/freva/{{ project_name }}/databrowser
+        state: directory
+        recurse: true
+      become: "{{use_become}}"
+    - name: Getting additional configurations
+      git:
+        repo: https://github.com/FREVA-CLINT/freva-service-config.git
+        dest: /opt/freva/freva-service-config
+        update: true
+      become: "{{use_become}}"
+    - name: Copy systemd files
+      copy:
+        src: "{{ asset_dir }}/scripts/create_systemd.py"
+        dest: /tmp/create_systemd.py
+        mode: "0755"
+      become: "{{use_become}}"
+    - name: Pulling container
+      shell:
+        cmd: /tmp/docker-or-podman pull {{item}}
+      become: "{{use_become}}"
+      with_items:
+        - "docker.io/solr:latest"
+        - "docker.io/mongo:latest"
+        - "ghcr.io/freva-clint/databrowserapi:latest"
+    - name: Copy cron create script to target machine
+      copy: src="{{ asset_dir }}/scripts/create_cron.sh" dest=/tmp/solr_service/
+      become: "{{use_become}}"
+    - name: Creating compose file
+      become: "{{use_become}}"
+      template:
+        src: "{{ asset_dir }}/playbooks/databrowser-server-compose-template.yml"
+        dest: "{{compose_file}}"
+    - name: Creating systemd services
+      shell: |
+        /tmp/create_systemd.py {{databrowser_name}} compose --enable --project-name {{databrowser_name}} -f {{compose_file}} up --remove-orphans
+      when: systemctl.stat.exists == true
+      become: "{{use_become}}"
+    - pause: seconds=3
+    - name: Creating cron jobs
+      shell: >
+        sh /tmp/solr_service/create_cron.sh "{{ solr_name }}" "{{databrowser_email}}"
+      when: systemctl.stat.exists == true
+      become: "{{use_become}}"
+    - name: Deleting tmporary files
+      file:
+        path: "{{item}}"
+        state: absent
+      with_items:
+        - /tmp/docker-or-podman
+        - /tmp/create_systemd.py
+        - /tmp/solr_service
+      become: "{{use_become}}"
+- hosts: web
+  vars:
+    use_become: "{{ web_ansible_become_user is defined and web_ansible_become_user != '' }}"
+  tasks:
+    - name: Registering systemctl path
+      stat:
+        path: /usr/bin/systemctl
+      register: systemctl
+    - name: Restarting web container
+      shell: systemctl restart {{web_name}}; echo 0
+      become: "{{use_become}}"
+      when: systemctl.stat.exists == true

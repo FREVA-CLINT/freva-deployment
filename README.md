@@ -9,9 +9,9 @@ environments. The general strategy is to split the deployment into
 - Deploy a Hashicorp Vault service for storing and retrieving passwords
   and other sensitive data via docker
   (this step get automatically activated once the MariaDB service is set)
-- Deploy Apache Solr service via docker
+- Deploy [Databrowser API](https://github.com/FREVA-CLINT/databrowserAPI) service via docker
 - Deploy command line interface backend ([evaluation_system](https://github.com/FREVA-CLINT/freva))
-- Deploy web front end ([freva_web](https://gitlab.dkrz.de/freva/freva_web))
+- Deploy web front end ([freva_web](https://github.com/FREVA-CLINT/freva-web))
 
 
 > **_Note:_** A vault server is auto deployed once the mariadb server is deployed.
@@ -96,13 +96,15 @@ export PATH=$PATH:$HOME/.local/bin
 ```
 
 
-## Installing docker/podman and sudo access to the service servers
-Since the services of MariaDB, Apache Solr and Apache web will be deployed on
-docker container images, docker needs to be available on the target servers.
-Usually installing and running docker requires *root* privileges.
-Hence, on the servers that will be running docker you will need root access.
-There exist an option to install and run docker without root,
-information on a root-less docker option
+## Installing docker-compose/podman-compose and sudo access to the service servers
+Because the services of MariaDB, DatabrowserAPI and Apache httpd will be deployed
+on docker container images, docker needs to be available on the target servers.
+Since version *v2309.0.0* of the deployment the containers are set up
+using `doker-compose`. Hence `docker-compose` (or `podman-compose`) has to be
+installed on the host systems. Usually installing and running docker
+requires *root* privileges. Hence, on the servers that will be running docker
+you will need root access. There exists an option to install and run docker
+without root, information on a root-less docker option
 can be found [on the docker docs](https://docs.docker.com/engine/security/rootless/)
 > **_Note:_** Some systems use `podman` instead of `docker`. The deployment
 routine is able to distinguish and use the right service.
