@@ -9,7 +9,7 @@ A complete Freva instance will need the following services:
 ## Setting the python and git path
 Some systems do not have access to python3.4+ (/usr/bin/python3) or git by default.
 In such cases you can overwrite the `ansible_python_interpreter` in the inventory
-settings of the server section to point ansible to a custom `python3` bindary. For example
+settings of the server section to point ansible to a custom `python3` binary. For example
 
 ```
 ansible_python_interpreter=/sw/spack-rhel6/miniforge3-4.9.2-3-Linux-x86_64-pwdbqi/bin/python3

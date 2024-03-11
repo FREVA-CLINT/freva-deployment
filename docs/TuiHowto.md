@@ -199,7 +199,7 @@ vault service that gets deployed when setting up the database.
 
 
 ## Solr server setup
-The third screen configures the setup apache solr serch server. At the top of
+The third screen configures the setup apache solr search server. At the top of
 the screen you'll see a tick box, which indicates whether or not this step is
 used for deployment. If this box is *un*ticked - tick/untick using the
 `<SPACE>` key - the deployment will skip the setup of solr entirely. The

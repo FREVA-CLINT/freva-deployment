@@ -27,7 +27,7 @@ from ..utils import (
 
 
 def parse_args(args: list[str]) -> argparse.Namespace:
-    """Consturct command line argument parser."""
+    """Construct command line argument parser."""
     app = argparse.ArgumentParser(
         prog="freva-service",
         description="Interact with installed freva services.",
@@ -52,7 +52,7 @@ def parse_args(args: list[str]) -> argparse.Namespace:
         default=None,
         help=(
             "Hostname of the service mapping the freva server "
-            "archtiecture, Note: you can create a server map by "
+            "architecture, Note: you can create a server map by "
             "running the deploy-freva-map command"
         ),
     )

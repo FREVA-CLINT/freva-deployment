@@ -37,7 +37,7 @@
         -v /root/freva-service-config/mysql/daily_backup.sh:/usr/local/bin/daily_backup:z
         -v /tmp/reset_root_pw.sh:/tmp/reset_root_pw.sh:z
         -t docker.io/mariadb:latest mariadbd-safe --skip-grant-tables
-    continer_name: "{{ db_name }}"
+    container_name: "{{ db_name }}"
     vault_name: "{{project_name}}-vault"
     use_become: "{{ db_ansible_become_user is defined and db_ansible_become_user != '' }}"
   tasks:

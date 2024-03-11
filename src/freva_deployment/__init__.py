@@ -11,7 +11,7 @@ AVAILABLE_CONDA_ARCHS = [
 ]
 
 
-def download_auxiliry_data():
+def download_auxiliary_data():
     """Download any data that needs to be downloaded."""
 
     def reporthook(count, block_size, total_size):
@@ -39,4 +39,4 @@ def download_auxiliry_data():
 
 
 if __name__ == "__main__":
-    download_auxiliry_data()
+    download_auxiliary_data()

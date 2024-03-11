@@ -32,7 +32,7 @@ project_website=
 # of the python environment
 root_dir=
 #
-# The location of the work direcotry for is user specific data
+# The location of the work directory for is user specific data
 base_dir_location=${root_dir}/freva_output
 #
 

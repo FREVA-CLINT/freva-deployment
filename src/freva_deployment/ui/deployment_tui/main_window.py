@@ -51,7 +51,7 @@ class MainApp(npyscreen.NPSAppManaged):
         self.config = cast(Dict[str, Any], self._read_cache("config", {}))
         for step in self._steps_lookup.keys():
             self.config.setdefault(step, {"hosts": "", "config": {}})
-        self._add_froms()
+        self._add_forms()
 
     def reset(self) -> None:
         npyscreen.blank_terminal()
@@ -63,7 +63,7 @@ class MainApp(npyscreen.NPSAppManaged):
         self._save_thread.daemon = True
         self._save_thread.start()
 
-    def _add_froms(self) -> None:
+    def _add_forms(self) -> None:
         """Add forms to edit the deploy steps to the main window."""
         self._forms["core"] = self.addForm(
             "MAIN",
@@ -122,10 +122,10 @@ class MainApp(npyscreen.NPSAppManaged):
                 pass
 
     def save_dialog(self, *args, **kwargs) -> None:
-        """Create a dialoge that allows for saving the config file."""
+        """Create a dialog that allows for saving the config file."""
 
         the_selected_file = selectFile(
-            select_dir=False, must_exist=False, file_extentions=[".toml"]
+            select_dir=False, must_exist=False, file_extensions=[".toml"]
         )
         if the_selected_file:
             the_selected_file = Path(the_selected_file).with_suffix(".toml")
@@ -145,14 +145,14 @@ class MainApp(npyscreen.NPSAppManaged):
         self.resetHistory()
         self.editing = True
         self.switchFormNow()
-        self._add_froms()
+        self._add_forms()
         self._setup_form.inventory_file.value = config_file
 
     def load_dialog(self, *args, **kwargs) -> None:
-        """Create a dialoge that allows for loading a config file."""
+        """Create a dialog that allows for loading a config file."""
 
         the_selected_file = selectFile(
-            select_dir=False, must_exist=True, file_extentions=[".toml"]
+            select_dir=False, must_exist=True, file_extensions=[".toml"]
         )
         if the_selected_file:
             self._update_config(the_selected_file)

@@ -1,11 +1,11 @@
-# This is the "defaut" freva deployment configuration file.
+# This is the "default" freva deployment configuration file.
 #
 #   - The files syntax follows the `toml` markup language (https://toml.io)
 #   - Comments begin with the "#" character
 #   - Blank lines are ignored
 #   - Groups of hosts are delimited by [header] elements
 #   - The groups define different deployment steps
-#   - Additional configuration for each group is set in the confg section
+#   - Additional configuration for each group is set in the config section
 #     of each header -> [header.config]
 #   - You can enter hostnames or ip addresses
 #   - A hostname/ip can be a member of multiple groups
@@ -18,8 +18,8 @@
 # NOTE: this key has to be the first in the file
 project_name = ""
 
-## Set the path to the SSL certfificate files that is used to make password
-## queries to the vault server or used as web certfificates.
+## Set the path to the SSL certificate files that is used to make password
+## queries to the vault server or used as web certificates.
 [certificates]
 
 ## Path to the public keyfile
@@ -76,7 +76,7 @@ db = ""
 ##If you need a different user name you can set it here:
 #ansible_user = "username"
 
-## You can set the db_host seperately, if none is given (default)
+## You can set the db_host separately, if none is given (default)
 ## the one from the hostsnames above are taken
 
 db_host = ""
@@ -92,7 +92,7 @@ ansible_become_user = "root"
 #ansible_python_interpreter="/usr/bin/python3"
 
 ##Indicate whether or not to empty any pre-existing folders/docker volumes.
-##(Useful for a truely fresh start) (default: False)
+##(Useful for a truly fresh start) (default: False)
 wipe = false
 
 ## In case you want to set a custom path to a ansible playbook,
@@ -121,7 +121,7 @@ ansible_become_user = "root"
 #ansible_user = "username"
 
 ##Indicate whether or not to empty any pre-existing folders/docker volumes.
-##(Useful for a truely fresh start) (default: False)
+##(Useful for a truly fresh start) (default: False)
 wipe = false
 ## In case you want to set a custom path to a ansible playbook,
 ## you can do this here, by default the deployment will use the playbook
@@ -141,7 +141,7 @@ admins = ""
 install_dir=""
 
 ## Set the path to any existing conda executable on the target machine,
-## if not existing (default) a tmporary conda distribution will be downloaded
+## if not existing (default) a temporary conda distribution will be downloaded
 conda_exec_path=""
 
 ## The directory where the project configuration files will be stored, leave
@@ -167,12 +167,12 @@ preview_path = ""
 ## "local", "slurm", "pbs", "lfs", "moab", "oar", "sge"
 scheduler_system = "local"
 
-## Set the path to the directory that containes the stdout of the plugings,
+## Set the path to the directory that contains the stdout of the plugins,
 ## this directory must be accessible to the web ui. The workload manager
 ## will write the stdout into this directory. Defaults to ${base_dir_location}/share
 scheduler_output_dir = ""
 
-# Set the target architecutre of the system where the backend will be installed
+# Set the target architecture of the system where the backend will be installed
 # to. You can choose from the following options:
 # Linux-x86_64 (default), Linux-aarch64, Linux-ppc64le, Linux-s390x, MacOSX-x86_64
 arch = "Linux-x86_64"
@@ -188,12 +188,12 @@ arch = "Linux-x86_64"
 ## Ansible needs a python3 interpreter, which can be set for custom python3 instances
 #ansible_python_interpreter = ""
 
-## The core deployment needs git, if git is not in the default PATH vraiable
+## The core deployment needs git, if git is not in the default PATH variable
 ## you can set the path to the git executable
 #git_path = ""
 
 ##Indicate whether or not to empty any pre-existing folders/docker volumes.
-##(Useful for a truely fresh start) (default: False)
+##(Useful for a truly fresh start) (default: False)
 wipe = false
 
 ## In case you want to set a custom path to a ansible playbook,
@@ -274,7 +274,7 @@ ldap_last_name_field = "givenname"
 ## Set ldap first name search key
 ldap_first_name_field = "sn"
 
-## Set ldap email earch key
+## Set ldap email search key
 ldap_email_name_field = "mail"
 
 ## Set the ldap group class name

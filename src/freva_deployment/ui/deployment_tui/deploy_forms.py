@@ -129,7 +129,7 @@ class CoreScreen(BaseForm):
             scheduler_output_dir=(
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
-                    name=f"{self.num}Ouput dir. of the scheduler system, "
+                    name=f"{self.num}Output dir. of the scheduler system, "
                     "${base_dir_location}/share",
                     value=cfg.get("scheduler_output_dir", ""),
                 ),
@@ -375,7 +375,7 @@ class WebScreen(BaseForm):
             homepage_heading=(
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
-                    name=f"{self.num}A brief describtion of the project:",
+                    name=f"{self.num}A brief description of the project:",
                     value=cfg.get("homepage_heading", "Lorem ipsum dolor sit amet"),
                 ),
                 True,

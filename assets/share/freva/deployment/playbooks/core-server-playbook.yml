@@ -17,7 +17,7 @@
       file:
         state: absent
         path: /tmp/evaluation_system
-    - name: Cloning the evluation_system reposiotry
+    - name: Cloning the evaluation_system repository
       git:
         repo: "{{ core_git_url }}"
         dest: /tmp/evaluation_system
@@ -72,11 +72,11 @@
       when: core_preview_path | length != 0
       become: "{{use_become}}"
       ignore_errors: true
-    - name: Registering evaluation_sytem path
+    - name: Registering evaluation_system path
       stat:
         path: "{{ core_root_dir }}/freva/evaluation_system.conf"
       register: eval_conf
-    - name: Inserting evaluation_sytem.conf file without admin group
+    - name: Inserting evaluation_system.conf file without admin group
       copy:
         src: "{{ core_dump }}"
         dest: "{{ core_root_dir }}/freva/evaluation_system.conf"
@@ -98,7 +98,7 @@
         EVALUATION_SYSTEM_CONFIG_FILE: "/tmp/evaluation_system/evaluation_system.conf"
       when: (core_install is true)
       become: "{{use_become}}"
-    - name: Inserting evaluation_sytem.conf file with admin group
+    - name: Inserting evaluation_system.conf file with admin group
       copy:
         src: "{{ core_dump }}"
         dest: "{{ core_root_dir }}/freva/evaluation_system.conf"

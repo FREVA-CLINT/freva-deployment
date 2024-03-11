@@ -20,7 +20,7 @@
         /tmp/docker-or-podman exec -it {{ vault_name }}
         vault kv put kv/email username={{vault_email_user}}
         password='{{vault_email_password}}'
-    - name: Deleting tmporary files
+    - name: Deleting temporary files
       file:
         path: "{{item}}"
         state: absent
@@ -188,7 +188,7 @@
         - "{{apache_name}}"
         - "{{web_name}}"
       when: systemctl.stat.exists == true
-    - name: Deleting tmporary files
+    - name: Deleting temporary files
       file:
         path: "{{item}}"
         state: absent

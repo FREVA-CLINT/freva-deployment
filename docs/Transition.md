@@ -29,7 +29,7 @@ options:
   -h, --help           show this help message and exit
   --old-port OLD_PORT  The port where the old database server is running on. (default: 3306)
   --old-db OLD_DB      The name of the old database (default: evaluationsystem)
-  --old-pw OLD_PW      The passowrd to the old database (default: None)
+  --old-pw OLD_PW      The password to the old database (default: None)
   --old-user OLD_USER  The old database user (default: evaluationsystem)
 ```
 
@@ -51,10 +51,10 @@ In the old version the DRS (Date Reference Syntax) File configuration,
 that is the definitions of dataset metadata, was hard coded into the module
 `evaluation_system.model.file`. In the new version this configuration
 is saved in a designated [toml](https://toml.io/en/) file (drs_config.toml).
-The ingestion of data is done by the new `freva-ingest` software, which is
-written in rust. More information on this configuration and usage of the
+The ingestion of data is done by the new `data-crawler` software, also written in python.
+More information on this configuration and usage of the
 ingestion software can be found on the
-[README](https://gitlab.dkrz.de/freva/freva-ingest).
+[README](https://freva.gitlab-pages.dkrz.de/metadata-crawler-source/).
 
 
 
@@ -140,7 +140,7 @@ Python plugins (especially python2) need special care. The recommended strategy
 is to convert the plugin content to python3. If this is not possible an anaconda
 python2 environment should be created.
 
-If in the original plugin the plugin code is directly executed in the `run_rool`
+If in the original plugin the plugin code is directly executed in the `run_tool`
 method (formerly named `runTool`) this code has to be split from the new `run_tool` method. The
 transition strategy is gathering the essential information in a `json` file that
 is passed to the actual core part of the plugin. The code below shows a simple

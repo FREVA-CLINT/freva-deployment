@@ -26,7 +26,7 @@ class ServerBaseClass:
 
     @property
     def server_info_file(self) -> Path:
-        """Path to the filename holding the server infromation."""
+        """Path to the filename holding the server information."""
         return Path(os.environ["SERVER_FILE"])
 
     def update_server_information(self) -> None:
@@ -131,19 +131,19 @@ class ServerEntry(ServerBaseClass, Resource):
 
 
 class ServerStaus(Resource):
-    """Get and set the staus of services."""
+    """Get and set the status of services."""
 
     service_status: dict[str, dict[str, dict[str, str]]] = {}
 
     def get(self, project: str, service: str) -> tuple[dict[str, str], int]:
-        """Get method for retreivng the service status.
+        """Get method for retrieving the service status.
 
         Parameters
         ----------
         project: str
             The freva project name which is updated.
         service: str
-            Name of the service which status is retreived
+            Name of the service which status is retrieved
         """
         try:
             return self.service_status[project][service], 200

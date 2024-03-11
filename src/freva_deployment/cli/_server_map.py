@@ -20,7 +20,7 @@ from ..utils import asset_dir, logger
 
 
 def parse_args(args: list[str]) -> argparse.Namespace:
-    """Consturct command line argument parser."""
+    """Construct command line argument parser."""
     app = argparse.ArgumentParser(
         prog="deploy-freva-map",
         description="Create service that maps the freva server architecture.",

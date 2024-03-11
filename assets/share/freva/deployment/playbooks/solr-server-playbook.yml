@@ -3,7 +3,7 @@
 
   vars:
     ansible_python_interpreter: "{{ solr_ansible_python_interpreter }}"
-    continer_name: "{{ solr_name }}"
+    container_name: "{{ solr_name }}"
     docker_cmd: >
         -e CORE=files
         -e NUM_BACKUPS=7
@@ -97,7 +97,7 @@
         sh /tmp/solr_service/create_cron.sh "{{ solr_name }}" "{{solr_email}}"
       when: systemctl.stat.exists == true
       become: "{{use_become}}"
-    - name: Deleting tmporary files
+    - name: Deleting temporary files
       file:
         path: "{{item}}"
         state: absent

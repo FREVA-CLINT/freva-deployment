@@ -24,7 +24,7 @@ SYSTEMD_TMPL = dict(
 
 
 def parse_args() -> Tuple[str, str, List[str], bool]:
-    """Parse the commandline arguments."""
+    """Parse the command-line arguments."""
 
     app = argparse.ArgumentParser(
         prog=sys.argv[0], description="Create a new systemd unit."

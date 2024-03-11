@@ -56,14 +56,14 @@ class CommandFactory(metaclass=abc.ABCMeta):
 
         Parameters
         ----------
-        sub_commnds: str
+        sub_command: str
             The sub command that is passed to the container command.
         *flags: str
             Additional command line arguments passed to the container command.
 
         Returns
         -------
-        list[str]: Constructed command line arguemnts.
+        list[str]: Constructed command line arguments.
         """
         return [self.get_container_cmd(), sub_command] + list(flags)
 
@@ -100,7 +100,7 @@ class CommandFactory(metaclass=abc.ABCMeta):
 
         Returns
         -------
-        list[str]: Constructed commmand line arguments.
+        list[str]: Constructed command line arguments.
         """
 
         cli_command = [self.get_container_cmd(), "pull"]
@@ -118,7 +118,7 @@ class CommandFactory(metaclass=abc.ABCMeta):
 
         Returns
         -------
-        list[str]: Constructed commmand line arguments.
+        list[str]: Constructed command line arguments.
         """
 
         cli_command = [self.get_container_cmd(), sub_command, "-f"]
@@ -145,7 +145,7 @@ class CommandFactory(metaclass=abc.ABCMeta):
 
         Returns
         -------
-        list[str]: Constructed commmand line arguments.
+        list[str]: Constructed command line arguments.
         """
 
         cli_command = [self.get_container_cmd(), sub_command]
@@ -201,7 +201,7 @@ class Apptainer(CommandFactory):
 
         Returns
         -------
-        list[str]: Constructed commmand line arguments.
+        list[str]: Constructed command line arguments.
         """
         cli_command = [self.get_container_cmd(), "pull", "-F"]
         return cli_command + self.images
@@ -218,7 +218,7 @@ class Apptainer(CommandFactory):
 
         Returns
         -------
-        list[str]: Constructed commmand line arguments.
+        list[str]: Constructed command line arguments.
         """
 
         if sub_command == "rmi":
@@ -323,7 +323,7 @@ def parse_args() -> List[str]:
     """Construct a command line argument parser."""
 
     parser = argparse.ArgumentParser(
-        prog=sys.argv[0], description="Container wrapper programm"
+        prog=sys.argv[0], description="Container wrapper program"
     )
     parser.add_argument(
         "-p",

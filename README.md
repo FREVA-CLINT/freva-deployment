@@ -5,13 +5,14 @@
 The code in this repository is used to deploy freva in different computing
 environments. The general strategy is to split the deployment into
 4 different steps, these are :
+
 - Deploy MariaDB service via docker
 - Deploy a Hashicorp Vault service for storing and retrieving passwords
   and other sensitive data via docker
   (this step get automatically activated once the MariaDB service is set)
 - Deploy Apache Solr service via docker
 - Deploy command line interface backend ([evaluation_system](https://github.com/FREVA-CLINT/freva))
-- Deploy web front end ([freva_web](https://gitlab.dkrz.de/freva/freva_web))
+- Deploy web front end ([freva_web](https://github.com/FREVA-CLINT/freva-web))
 
 
 > **_Note:_** A vault server is auto deployed once the mariadb server is deployed.
@@ -21,7 +22,7 @@ used to open the vault. This public key will be saved in the `evaluation_system`
 backend root directory. Only if saved this key and the key in the vault match,
 secrets can be retrieved. Therefore it might be a good idea to deploy,
 the mariadb server (and with it the vault) and the `evaluation_system`
-backend togehter.
+backend together.
 
 On *CentOS* python SELinux libraries need to be installed. If you choose to
 install ansible via the `install_ansible` you'll have to use `conda` to
@@ -31,9 +32,9 @@ For example : `conda install -c conda-forge  libselinux-cos7-x86_64`
 # Pre-Requisites
 The main work will be done by
 [ansible](https://docs.ansible.com/ansible/latest/index.html), hence some level
-of familiarity with ansible is advantagous. Since we are using ansible we can
+of familiarity with ansible is advantageous. Since we are using ansible we can
 use this deployment routine from a workstation computer (like a Mac-book).
-You do not need to run the depoyment on the machines where things get installed.
+You do not need to run the deployment on the machines where things get installed.
 The only requirement is that you have to setup ansible and you can establish
 ssh connections to the servers.
 ### Preparation on windows based system (without wsl).
@@ -41,7 +42,7 @@ Currently ansible is not natively available on windows based systems. You can us
 the unix runtime environment [cygwin](https://www.cygwin.com) to download
 and install the needed software. Just follow the steps listed on the web page
 to setup cygwin on your windows system. In order to be able to install the
-freva deployment programm you'll first need to install the following packages
+freva deployment program you'll first need to install the following packages
 via cygwin:
 
 - python3
@@ -79,6 +80,7 @@ python3 -m pip install libselinux-python3
 
 ## Commands after installation:
 The `pip install` command will create *four* different commands:
+
 - `deploy-freva-map`: To setup a service that keeps track of all deployed
    freva instances and their services.
 - `deploy-freva`: Text user interface to configure and run the deployment.
@@ -209,7 +211,7 @@ Deploy freva and its services on different machines.
 options:
   -h, --help            show this help message and exit
   --server-map SERVER_MAP
-                        Hostname of the service mapping the freva server archtiecture, Note: you can create a server map by running
+                        Hostname of the service mapping the freva server architecture, Note: you can create a server map by running
                         the deploy-freva-map command (default: None)
   --config CONFIG, -c CONFIG
                         Path to ansible inventory file. (default: /home/wilfred/.config/freva/deployment/inventory.toml)
@@ -242,7 +244,7 @@ positional arguments:
 options:
   -h, --help            show this help message and exit
   --server-map SERVER_MAP
-                        Hostname of the service mapping the freva server archtiecture, Note: you can create a server map by running
+                        Hostname of the service mapping the freva server architecture, Note: you can create a server map by running
                         the deploy-freva-map command (default: None)
   --services {web,db,solr} [{web,db,solr} ...]
                         The services to be started|stopped|restarted|checked (default: ['solr', 'db', 'web'])

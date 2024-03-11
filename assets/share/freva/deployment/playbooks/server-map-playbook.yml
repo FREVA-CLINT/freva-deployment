@@ -23,7 +23,7 @@
       shell: systemctl stop freva-map; systemctl stop freva-map; echo 0
       when: wipe == true
     - pause: seconds=2
-    - name: Deleting existing contianer
+    - name: Deleting existing container
       shell: >
         /tmp/docker-or-podman stop freva-map;
         /tmp/docker-or-podman rm freva-map;

@@ -3,7 +3,7 @@
 
   vars:
     ansible_python_interpreter: "{{ db_ansible_python_interpreter }}"
-    continer_name: "{{ vault_name }}"
+    container_name: "{{ vault_name }}"
     docker_cmd: >
         --net {{ project_name }} --cap-add=IPC_LOCK
         --dns 8.8.8.8
@@ -29,7 +29,7 @@
       stat:
         path: /usr/bin/systemctl
       register: vault_volume
-    - name: Set vault valume path
+    - name: Set vault volume path
       set_fact:
         exists: vault_volume.stat.exists
     - name: Stopping services and deleting existing containers

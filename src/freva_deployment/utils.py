@@ -30,10 +30,10 @@ config_text = """
 [general]
 [variables]
 ### you can set here different *global* variables that are
-### evaluatated in the deployment configurations. For example
+### evaluated in the deployment configurations. For example
 ### if you set here the variable USER = "foo" then you can
 ### use the this defined variable in the inventory file to
-### set the ansible user: anisble_user="${USER}"
+### set the ansible user: ansible_user="${USER}"
 
 # USER="myusername"
 # USER_GROUP = "myusergroup"
@@ -246,7 +246,7 @@ def download_server_map(
     Parameters
     ----------
     server_map: str,
-        The hostname holding the server archtiecture information.
+        The hostname holding the server architecture information.
     Returns
     -------
     dict[str, list[NamedTuple("service", [("name", str), ("python_path", str),
@@ -272,12 +272,12 @@ def upload_server_map(
     project_name: str,
     deployment_setup: dict[str, dict[str, str]],
 ) -> None:
-    """Upload server information to service that stores server archtiecture.
+    """Upload server information to service that stores server architecture.
 
     Parameters
     ----------
     server_map: str
-        The hostname holding the server archtiecture information.
+        The hostname holding the server architecture information.
     project_name: str
         Name of the freva project
     deployment_setup: dict[str, str]
@@ -319,12 +319,12 @@ def get_email_credentials() -> tuple[str, str]:
 
 
 def get_passwd(min_characters: int = 8) -> str:
-    """Create a secure pasword.
+    """Create a secure password.
 
     Parameters
     ==========
     min_characters:
-        The minimum lenght of the password (default 8)
+        The minimum length of the password (default 8)
 
     Returns
     =======

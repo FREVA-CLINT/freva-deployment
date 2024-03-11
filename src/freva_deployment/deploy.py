@@ -422,7 +422,7 @@ class DeployFactory:
             config[step]["vars"][f"{step}_dump"] = str(dump_file)
 
     def parse_config(self) -> str:
-        """Create config files for anisble and evaluation_system.conf."""
+        """Create config files for ansible and evaluation_system.conf."""
         logger.info("Parsing configurations")
         self._check_config()
         config: dict[str, dict[str, dict[str, str | int | bool]]] = {}
@@ -447,7 +447,7 @@ class DeployFactory:
 
     @property
     def python_prefix(self) -> Path:
-        """Get the path of the new conda evnironment."""
+        """Get the path of the new conda environment."""
         return Path(sys.exec_prefix) / "bin" / "python3"
 
     @property
@@ -462,7 +462,7 @@ class DeployFactory:
 
     @property
     def steps(self) -> list[str]:
-        """Set all the deploment steps."""
+        """Set all the deployment steps."""
         steps = []
         for step in self._steps:
             steps.append(step)
@@ -486,7 +486,7 @@ class DeployFactory:
             yaml.dump(playbook, f_obj)
 
     def create_eval_config(self) -> None:
-        """Create and dump the evaluation_systme.config."""
+        """Create and dump the evaluation_system.config."""
         logger.info("Creating evaluation_system.conf")
         keys = (
             ("core", "admins"),
@@ -563,7 +563,7 @@ class DeployFactory:
             infrastructure, if None given (default) no new deployed services
             are added.
         ask_pass: bool, default: True
-            Instruct Ansible to ask for the ssh passord instead of using a
+            Instruct Ansible to ask for the ssh password instead of using a
             ssh key
         verbosity: int, default: 0
             Verbosity level, default 0

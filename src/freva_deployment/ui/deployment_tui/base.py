@@ -19,18 +19,18 @@ logger: logging.Logger = logging.getLogger("deploy-freva-tui")
 class FileSelector(npyscreen.FileSelector):
     """FileSelector widget that allows for filtering file extensions."""
 
-    file_extentions: list[str]
+    file_extensions: list[str]
     """List of allowed file extensions."""
     value: str
     """The value of this file selector."""
 
     def __init__(
-        self, *args, file_extentions: str | list[str] = [".toml"], **kwargs
+        self, *args, file_extensions: str | list[str] = [".toml"], **kwargs
     ) -> None:
-        if isinstance(file_extentions, str):
-            self.file_extentions = [file_extentions]
+        if isinstance(file_extensions, str):
+            self.file_extensions = [file_extensions]
         else:
-            self.file_extentions = file_extentions
+            self.file_extensions = file_extensions
         super().__init__(*args, **kwargs)
         self.how_exited_handers[npyscreen.wgwidget.EXITED_ESCAPE] = self.exit
 
@@ -59,7 +59,7 @@ class FileSelector(npyscreen.FileSelector):
                 if not rel_path.startswith("."):
                     if fn.is_dir():
                         dir_list.append(str(fn) + os.sep)
-                    elif fn.suffix in self.file_extentions:
+                    elif fn.suffix in self.file_extensions:
                         file_list.append(str(fn))
         except OSError:
             npyscreen.notify_wait(
@@ -99,7 +99,7 @@ class BaseForm(npyscreen.FormMultiPageWithMenus, npyscreen.FormWithMenus):
 
     _num: int = 0
     input_fields: dict[str, tuple[npyscreen.TitleText, bool]] = {}
-    """Dictionary of input fileds: the key of the dictionary represents the name
+    """Dictionary of input fields: the key of the dictionary represents the name
        of the key in the in config toml input files. Values represent a tuple of
        npysceen types that display the input information on this key to the
        user and a boolean indicating whether or not this variable is mandatory.

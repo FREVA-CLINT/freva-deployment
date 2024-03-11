@@ -12,7 +12,7 @@ from ..utils import config_dir, guess_map_server, set_log_level
 
 
 def parse_args(argv: list[str] | None) -> argparse.Namespace:
-    """Consturct command line argument parser."""
+    """Construct command line argument parser."""
 
     ap = argparse.ArgumentParser(
         prog="deploy-freva-cmd",
@@ -25,7 +25,7 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
         default=None,
         help=(
             "Hostname of the service mapping the freva server "
-            "archtiecture, Note: you can create a server map by "
+            "architecture, Note: you can create a server map by "
             "running the deploy-freva-map command"
         ),
     )

@@ -62,7 +62,7 @@ def exec_command(
 
 
 def execute_script_and_get_config(python_bin: Path, template: str) -> str:
-    """Execute a python2 template and read it's ouput."""
+    """Execute a python2 template and read it's output."""
     logger.debug("Working on %s", python_bin)
     python_path = python_bin.parents[3] / "freva" / "src"
     with TemporaryDirectory() as temp_dir:
@@ -120,7 +120,7 @@ def _migrate_db(parser: argparse.Namespace) -> None:
     db_host = parser.new_hostname
     mysqldump = shutil.which("mysqldump")
     if mysqldump is None:
-        logger.error("myslqdump not found, to continue isntall mysqldump")
+        logger.error("myslqdump not found, to continue install mysqldump")
         return
     new_db_cfg = read_db_credentials(parser.cert_file, db_host)
     with NamedTemporaryFile(suffix=".sql") as temp_file:
@@ -213,7 +213,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         "--old-pw",
         type=str,
         default=None,
-        help="The passowrd to the old database",
+        help="The password to the old database",
     )
     db_parser.add_argument(
         "--old-user",
