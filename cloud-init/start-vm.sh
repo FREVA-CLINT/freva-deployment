@@ -86,7 +86,7 @@ start () {
     kill_vm
     local img_file=$(prepare)
     echo $img_file
-    python3 -m http.server --directory temp &
+    python3 -m http.server $PORT --directory temp &
     echo $! > temp/httpd.pid
     qemu-system-x86_64                                              \
         -name freva-deployment                                      \
@@ -98,7 +98,7 @@ start () {
         -nographic                                                  \
         -hda $img_file                                              \
         -async-teardown                                             \
-        -smbios type=1,serial=ds='nocloud;s=http://10.0.2.2:8000' &> temp/vm.log &
+        -smbios type=1,serial=ds="nocloud;s=http://10.0.2.2:$PORT" &> temp/vm.log &
     echo $! > temp/vm.pid
     tail -f temp/vm.log |grep -v 'freva login:'
     kill_vm
