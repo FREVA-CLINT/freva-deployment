@@ -79,17 +79,6 @@ class CoreScreen(BaseForm):
                 ),
                 True,
             ),
-            install=(
-                self.add_widget_intelligent(
-                    npyscreen.RoundCheckBox,
-                    max_height=2,
-                    value=cfg.get("install", True),
-                    editable=True,
-                    name=(f"{self.num}Install a new Freva anaconda environment?"),
-                    scroll_exit=True,
-                ),
-                True,
-            ),
             root_dir=(
                 self.add_widget_intelligent(
                     npyscreen.TitleFilename,
@@ -121,7 +110,9 @@ class CoreScreen(BaseForm):
                 self.add_widget_intelligent(
                     npyscreen.TitleCombo,
                     name=f"{self.num}Workload manger",
-                    value=self.scheduler_index(cast(str, cfg.get("scheduler_system"))),
+                    value=self.scheduler_index(
+                        cast(str, cfg.get("scheduler_system"))
+                    ),
                     values=self.scheduler_systems,
                 ),
                 True,
@@ -204,7 +195,9 @@ class CoreScreen(BaseForm):
                 self.add_widget_intelligent(
                     npyscreen.TitleFilename,
                     name=f"{self.num}Python path on remote machine:",
-                    value=cfg.get("ansible_python_interpreter", "/usr/bin/python3"),
+                    value=cfg.get(
+                        "ansible_python_interpreter", "/usr/bin/python3"
+                    ),
                 ),
                 False,
             ),
@@ -231,7 +224,7 @@ class WebScreen(BaseForm):
     """Form for the web deployment configuration."""
 
     step: str = "web"
-    certificates: list[str] = ["public", "private", "chain"]
+    certificates: list[str] = ["public", "private"]
     """The type of certificate files this step needs."""
 
     def get_index(self, choices: list[str], key: str):
@@ -249,19 +242,7 @@ class WebScreen(BaseForm):
             if key in cfg and isinstance(cfg[key], str):
                 value = cast(str, cfg[key])
                 cfg[key] = [v.strip() for v in value.split(",") if v.strip()]
-                logger.warning(key, cfg[key])
         self.input_fields: dict[str, tuple[npyscreen.TitleText, bool]] = dict(
-            deploy_web_server=(
-                self.add_widget_intelligent(
-                    npyscreen.RoundCheckBox,
-                    max_height=2,
-                    value=cfg.get("deployed_web_server", True),
-                    editable=True,
-                    name=(f"{self.num}Set up the http reverse proxy server?"),
-                    scroll_exit=True,
-                ),
-                True,
-            ),
             hosts=(
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
@@ -395,7 +376,9 @@ class WebScreen(BaseForm):
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
                     name=f"{self.num}A brief describtion of the project:",
-                    value=cfg.get("homepage_heading", "Lorem ipsum dolor sit amet"),
+                    value=cfg.get(
+                        "homepage_heading", "Lorem ipsum dolor sit amet"
+                    ),
                 ),
                 True,
             ),
@@ -560,7 +543,9 @@ class WebScreen(BaseForm):
             ldap_model=(
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
-                    name=(f"{self.num}Ldap tools class to be used for authentication."),
+                    name=(
+                        f"{self.num}Ldap tools class to be used for authentication."
+                    ),
                     value=cfg.get("ldap_model", "MiklipUserInformation"),
                 ),
                 True,
@@ -581,7 +566,7 @@ class WebScreen(BaseForm):
                     npyscreen.TitleText,
                     name=(
                         f"{self.num}Become (sudo) user name to change to on "
-                        "remote machine, leave blank if not needed:"
+                        "remote machine, leave blank for root less deployment:"
                     ),
                     value=cfg.get("ansible_become_user", "root"),
                 ),
@@ -591,7 +576,9 @@ class WebScreen(BaseForm):
                 self.add_widget_intelligent(
                     npyscreen.TitleFilename,
                     name=f"{self.num}Pythonpath on remote machine:",
-                    value=cfg.get("ansible_python_interpreter", "/usr/bin/python3"),
+                    value=cfg.get(
+                        "ansible_python_interpreter", "/usr/bin/python3"
+                    ),
                 ),
                 False,
             ),
@@ -669,7 +656,9 @@ class DBScreen(BaseForm):
             data_path=(
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
-                    name=(f"{self.num}Parent directory for any permanent data:"),
+                    name=(
+                        f"{self.num}Parent directory for any permanent data:"
+                    ),
                     value=cast(str, cfg.get("data_path", "/opt/freva")),
                 ),
                 True,
@@ -701,7 +690,7 @@ class DBScreen(BaseForm):
                     npyscreen.TitleText,
                     name=(
                         f"{self.num}Become (sudo) user name to change to on "
-                        "remote machine, leave blank if not needed:"
+                        "remote machine, leave blank for root less deployment:"
                     ),
                     value=cfg.get("ansible_become_user", "root"),
                 ),
@@ -711,7 +700,9 @@ class DBScreen(BaseForm):
                 self.add_widget_intelligent(
                     npyscreen.TitleFilename,
                     name=f"{self.num}Pythonpath on remote machine:",
-                    value=cfg.get("ansible_python_interpreter", "/usr/bin/python3"),
+                    value=cfg.get(
+                        "ansible_python_interpreter", "/usr/bin/python3"
+                    ),
                 ),
                 False,
             ),
@@ -803,7 +794,7 @@ class DatabrowserScreen(BaseForm):
                     npyscreen.TitleText,
                     name=(
                         f"{self.num}Become (sudo) user name to change to on "
-                        "remote machine, leave blank if not needed:"
+                        "remote machine, leave blank for root less deployment:"
                     ),
                     value=cfg.get("ansible_become_user", "root"),
                 ),
@@ -813,7 +804,9 @@ class DatabrowserScreen(BaseForm):
                 self.add_widget_intelligent(
                     npyscreen.TitleFilename,
                     name=f"{self.num}Pythonpath on remote machine:",
-                    value=cfg.get("ansible_python_interpreter", "/usr/bin/python3"),
+                    value=cfg.get(
+                        "ansible_python_interpreter", "/usr/bin/python3"
+                    ),
                 ),
                 False,
             ),
@@ -844,13 +837,15 @@ class RunForm(npyscreen.FormMultiPageAction):
 
         self.parentApp.thread_stop.set()
         if not self.project_name.value:
-            npyscreen.notify_confirm("You have to set a project name", title="ERROR")
+            npyscreen.notify_confirm(
+                "You have to set a project name", title="ERROR"
+            )
             return
         missing_form: None | str = self.parentApp.check_missing_config()
         if missing_form:
             self.parentApp.change_form(missing_form)
             return
-        public_keyfile = self.public_keyfile.value or self.chain_keyfile.value
+        public_keyfile = self.public_keyfile.value
         cert_files = dict(
             public=public_keyfile or "",
             private=self.private_keyfile.value or "",
@@ -858,39 +853,43 @@ class RunForm(npyscreen.FormMultiPageAction):
         save_file = Path(
             self.parentApp.get_save_file(self.inventory_file.value or None)
         )
+        if isinstance(self.gen_keys.value, list):
+            gen_keys = bool(self.gen_keys.value[0])
+        else:
+            gen_keys = bool(self.gen_keys.value)
         for key_type, keyfile in cert_files.items():
-            key_file = Path(get_current_file_dir(save_file.parent, str(keyfile)))
+            key_file = Path(
+                get_current_file_dir(save_file.parent, str(keyfile))
+            )
             for step, deploy_form in self.parentApp._forms.items():
                 if not keyfile or not Path(key_file).is_file():
                     if (
                         key_type in deploy_form.certificates
                         and step in self.parentApp.steps
+                        and gen_keys is False
                     ):
                         if keyfile:
-                            msg = (
-                                f"{key_type} certificate file `{key_file}` must exist."
-                            )
+                            msg = f"{key_type} certificate file `{key_file}` must exist."
                         else:
-                            msg = f"You must give a {key_type} certificate file."
+                            msg = (
+                                f"You must give a {key_type} certificate file."
+                            )
                         npyscreen.notify_confirm(msg, title="ERROR")
                         return
 
-        cert_files["chain"] = self.chain_keyfile.value or ""
-        if not cert_files["chain"]:
-            value = npyscreen.notify_yes_no(
-                "It is advised to create a chained certificate file. "
-                "This enhances the web ui security. Continue anyway?",
-                title="WARNING",
-            )
-            if not value:
-                return
         _ = self.parentApp.save_config_to_file(
             save_file=save_file, write_toml_file=True
         )
+        try:
+            ssh_port = int(self.ssh_port.value)
+        except ValueError:
+            ssh_port = 22
         self.parentApp.setup = {
             "steps": list(set(self.parentApp.steps)),
             "ask_pass": bool(self.use_ssh_pw.value),
             "config_file": str(save_file) or None,
+            "ssh_port": ssh_port,
+            "local_debug": bool(self.local_debug.value),
         }
         self.parentApp.exit_application(
             save_file=save_file, msg="Do you want to continue?"
@@ -920,7 +919,6 @@ class RunForm(npyscreen.FormMultiPageAction):
         project_name = self.parentApp.config.get(
             "project_name", self.parentApp._read_cache("project_name", "")
         )
-        ssh_pw = self.parentApp._read_cache("ssh_pw", True)
         self.project_name = self.add_widget_intelligent(
             npyscreen.TitleText,
             name=f"{self.num}Set the name of the project",
@@ -941,16 +939,29 @@ class RunForm(npyscreen.FormMultiPageAction):
             name=f"{self.num}Select a private certificate file; needed for steps web",
             value=self.parentApp.read_cert_file("private_keyfile"),
         )
-        self.chain_keyfile = self.add_widget_intelligent(
-            npyscreen.TitleFilename,
-            name=f"{self.num}Select a chain certificate file; needed for steps web",
-            value=self.parentApp.read_cert_file("chain_keyfile"),
+        self.gen_keys = self.add_widget_intelligent(
+            npyscreen.RoundCheckBox,
+            max_height=2,
+            value=self.parentApp._read_cache("gen_keys", False),
+            name=f"{self.num}Generate a pair web certificates, debugging",
         )
         self.use_ssh_pw = self.add_widget_intelligent(
             npyscreen.RoundCheckBox,
             max_height=2,
-            value=ssh_pw,
             editable=True,
+            value=self.parentApp._read_cache("ssh_pw", False),
             name=f"{self.num}Use password for ssh connection",
             scroll_exit=True,
+        )
+        self.ssh_port = self.add_widget_intelligent(
+            npyscreen.TitleText,
+            name=f"{self.num}If you need to, you can change the ssh port here",
+            value=str(self.parentApp._read_cache("ssh_port", 22)),
+        )
+        self.local_debug = self.add_widget_intelligent(
+            npyscreen.RoundCheckBox,
+            max_height=2,
+            value=self.parentApp._read_cache("local_debug", False),
+            editable=True,
+            name=f"{self.num}Deploy services on the local machine, debug",
         )

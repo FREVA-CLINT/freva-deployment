@@ -1,4 +1,5 @@
 """Call the freva tui."""
+
 from __future__ import annotations
 
 import argparse
@@ -49,9 +50,9 @@ def tui() -> None:
     setup = main_app.setup
     main_app.thread_stop.set()
     if setup:
-        server_map = setup.pop("server_map")
         ask_pass = setup.pop("ask_pass")
         steps = ", ".join(setup["steps"])
+        ssh_port = setup.pop("ssh_port")
         RichConsole.print(f"Playing steps: [i]{steps}[/] with ansible")
         with DeployFactory(**setup) as DF:
-            DF.play(server_map, ask_pass, verbosity)
+            DF.play(ask_pass, verbosity, ssh_port=ssh_port)

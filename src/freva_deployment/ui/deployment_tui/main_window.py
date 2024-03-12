@@ -147,7 +147,9 @@ class MainApp(npyscreen.NPSAppManaged):
             the_selected_file = str(the_selected_file.expanduser().absolute())
             self.check_missing_config(stop_at_missing=False)
             self._setup_form.inventory_file.value = the_selected_file
-            self.save_config_to_file(write_toml_file=True)
+            self.save_config_to_file(
+                save_file=the_selected_file, write_toml_file=True
+            )
 
     def _update_config(self, config_file: Path | str) -> None:
         """Update the main window after a new configuration has been loaded."""
@@ -199,22 +201,35 @@ class MainApp(npyscreen.NPSAppManaged):
         cert_files = dict(
             public_keyfile=self._setup_form.public_keyfile.value or "",
             private_keyfile=self._setup_form.private_keyfile.value or "",
-            chain_keyfile=self._setup_form.chain_keyfile.value or "",
         )
         for key, value in cert_files.items():
             if value and "cfd" not in value.lower():
                 cert_files[key] = str(Path(value).expanduser().absolute())
         project_name = self._setup_form.project_name.value
-        ssh_pw = self._setup_form.use_ssh_pw.value
-        if isinstance(ssh_pw, list):
-            ssh_pw = bool(ssh_pw[0])
+        bools = {}
+        for key, value in (
+            ("ssh_pw", self._setup_form.use_ssh_pw.value),
+            ("local_debug", self._setup_form.local_debug.value),
+            ("gen_keys", self._setup_form.gen_keys.value),
+        ):
+            if isinstance(value, list):
+                bools[key] = bool(value[0])
+            else:
+                bools[key] = bool(value)
+        try:
+            ssh_port = int(self._setup_form.ssh_port.value)
+        except ValueError:
+            ssh_port = 22
         self.config["certificates"] = cert_files
         self.config["project_name"] = project_name or ""
         config = {
-            "save_file": self.get_save_file(save_file),
-            "steps": self.steps,
-            "ssh_pw": ssh_pw,
-            "config": self.config,
+            **bools,
+            **{
+                "save_file": self.get_save_file(save_file),
+                "steps": self.steps,
+                "ssh_port": ssh_port,
+                "config": self.config,
+            },
         }
         with open(self.cache_dir / "freva_deployment.json", "w") as f:
             json.dump({k: v for (k, v) in config.items()}, f, indent=3)
