@@ -98,7 +98,7 @@ start () {
         -nographic                                                  \
         -hda $img_file                                              \
         -async-teardown                                             \
-        -smbios type=1,serial=ds="nocloud;s=http://10.0.2.2:$PORT" &> temp/vm.log &
+        -smbios type=1,serial=ds='nocloud;s=http://10.0.2.2:8000' &> temp/vm.log &
     echo $! > temp/vm.pid
     tail -f temp/vm.log |grep -v 'freva login:'
     kill_vm
