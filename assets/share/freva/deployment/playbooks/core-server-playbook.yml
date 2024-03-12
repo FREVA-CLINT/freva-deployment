@@ -4,6 +4,7 @@
   vars:
     ansible_python_interpreter: "{{ core_ansible_python_interpreter }}"
     conda_bin: "{{core_install_dir}}/bin"
+    pkg_mgr: conda
     ansible_become_user: >
         "{{ core_ansible_become_user
         if core_ansible_become_user is defined else 'root' }}"
@@ -82,22 +83,30 @@
       stat:
         path: "{{ core_install_dir }}/bin/freva"
       register: freva_path
-    - name: Deploying freva
+    - name: Installing temp micormamba
+      shell:
+        cmd: "curl -Ls https://micro.mamba.pm/api/micromamba/{{core_arch}}/latest | tar -xvj bin/micromamba"
+        chdir: /tmp/evaluation_system
+    - name: Installing freva
       command:
-        cmd: $PYTHON3 deploy.py {{core_install_dir}} --arch {{core_arch}} --packages freva
+        cmd: bin/micromamba create -y -q -p {{core_install_dir}} -c conda-forge freva mamba conda
         chdir: /tmp/evaluation_system
         creates: "{{core_install_dir}}/bin/freva"
-      environment:
-        PYTHON3: '{{ansible_python_interpreter}}'
-        EVALUATION_SYSTEM_CONFIG_FILE: /tmp/evaluation_system/evaluation_system.conf
-        PYTHON_VERSION: "{{core_python_version}}"
       become: "{{use_become}}"
+    - name: Check if mamba exists
+      stat:
+        path: "{{ core_install_dir }}/bin/mamba"
+      register: mamba_check
+    - name: Set variable for package manager
+      set_fact:
+        pkg_mgr: mamba
+      when: mamba_check.stat.exists
     - name: Updating existing freva
       command:
-        cmd: conda update -p {{core_install_dir}} -c conda-forge freva
+        cmd: |
+          {{pkg_mgr}} update -q -p {{core_install_dir}} -c conda-forge freva
       environment:
-        PATH: "{{conda_bin}}"
-        EVALUATION_SYSTEM_CONFIG_FILE: "{{ core_root_dir }}/freva/evaluation_system.conf"
+        PATH: '{{conda_bin}}'
       become: "{{use_become}}"
       when: freva_path.stat.exists
     - name: Inserting evaluation_system.conf file

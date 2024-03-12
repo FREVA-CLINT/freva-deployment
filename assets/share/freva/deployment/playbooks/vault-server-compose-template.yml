@@ -31,5 +31,6 @@ networks:
   hostnet:
     driver: host
 {% else %}
+  {{vault_name}}:
     driver: bridge
 {% endif %}

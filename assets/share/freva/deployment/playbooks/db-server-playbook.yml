@@ -110,8 +110,7 @@
     - pause: seconds=5
     - name: Preparing the root password reset II
       become: "{{use_become}}"
-      shell: |
-        /tmp/docker-or-podman rm -f {{db_name}}
+      shell: /tmp/docker-or-podman rm -f {{db_name}}
     - name: Preparing the root password reset III
       become: "{{use_become}}"
       shell: /tmp/docker-or-podman run -d {{skip_tables_cmd}}
@@ -138,8 +137,8 @@
         dest: "{{db_data_path}}/compose_services/{{db_name}}-compose.yml"
     - name: Creating system services
       become: "{{use_become}}"
-      shell: |
-        /tmp/create_systemd.py {{db_name}} compose --enable --project-name {{db_name}} -f {{compose_file}} up --remove-orphans
+      command:
+        cmd: /tmp/create_systemd.py {{db_name}} compose --enable --project-name {{db_name}} -f {{compose_file}} up --remove-orphans
       environment:
         DEBUG: '{{ debug }}'
       when: systemctl.stat.exists == true

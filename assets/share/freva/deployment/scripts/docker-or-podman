@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""A script that wraps docker/podman/apptainer commands."""
+"""A script that wraps docker/podman commands."""
 
 
 import abc
 import argparse
+from getpass import getuser
 import shlex
 import shutil
 import subprocess
@@ -11,7 +12,6 @@ import sys
 from datetime import datetime
 from pathlib import Path
 from typing import (
-    Any,
     ClassVar,
     Dict,
     List,
@@ -46,11 +46,14 @@ class CommandFactory(metaclass=abc.ABCMeta):
     @staticmethod
     def get_container_cmd() -> str:
         """Get the command of the container."""
-        for cmd in ("podman", "docker", "apptainer"):
+        engines = ["docker", "podman"]
+        if getuser() != "root":
+            engines = engines[::-1]
+        for cmd in engines:
             cont_cmd = shutil.which(cmd)
             if cont_cmd:
                 return cont_cmd
-        raise ValueError("Docker, Podman or Apptainer must be installed")
+        raise ValueError("Docker or Podman must be installed")
 
     def compose(self, *args, **kwargs) -> List[str]:
         """User the compose command.
@@ -143,6 +146,14 @@ class CommandFactory(metaclass=abc.ABCMeta):
         cli_command = [self.get_container_cmd(), "pull"]
         return cli_command + self._kwargs_to_list(**kwargs) + self.images
 
+    def stop(self, time_out: Optional[int] = None) -> List[str]:
+        """Stop running containers."""
+
+        cli_command = [self.get_container_cmd(), "stop"]
+        if time_out is not None:
+            cli_command += ["-t", str(time_out)]
+        return cli_command + self.images
+
     def rm(self, sub_command: str, **kwargs: FlagType) -> List[str]:
         """Remove images/containers.
 
@@ -212,89 +223,6 @@ class Podman(CommandFactory):
     """Wrapping the podman commands."""
 
     command = "podman"
-
-
-class Apptainer(CommandFactory):
-    """Wrapping the apptainer commands."""
-
-    command = "apptainer"
-
-    @property
-    def images(self) -> List[str]:
-        """Get the location of the image."""
-        return ["docker://{}".format(image) for image in self._images]
-
-    def network(self, sub_command: str, *flags: str) -> List[str]:
-        """The network sub command doesn't seem to work in apptainer."""
-        return []
-
-    def pull(self, **kwargs: FlagType) -> List[str]:
-        """Pull a container.
-
-        Parameters
-        ----------
-        **kwargs: Any
-            Additional command line arguments
-
-        Returns
-        -------
-        list[str]: Constructed commmand line arguments.
-        """
-        cli_command = [self.get_container_cmd(), "pull", "-F"]
-        return cli_command + self.images
-
-    def rm(self, sub_command: str, **kwargs: Any) -> List[str]:
-        """Remove images/containers.
-
-        Parameters
-        ----------
-        sub_command: str
-            The sub command used for deleting containers/images.
-        **kwargs:
-            Additional command line arguments
-
-        Returns
-        -------
-        list[str]: Constructed commmand line arguments.
-        """
-
-        if sub_command == "rmi":
-            new_command = ["delete"]
-        else:
-            # this is not ideal since 'oci' is for root only.
-            return []
-            # new_command = ["oci", "delete"]
-        cli_command = [self.get_container_cmd()] + new_command
-        return cli_command + self.images
-
-    def _translate(self, options: Dict[str, FlagType]) -> Dict[str, FlagType]:
-        """Translate the docker commands to an apptainer command."""
-        output: Dict[str, FlagType] = {
-            "env": options.get("env") or [],
-            "mount": [],
-            "dns": None,
-            "network-args": [],
-        }
-        for volume in cast(List[str], options.get("volume", [])) or []:
-            mounts = volume.split(":", 2)
-            cast(List[str], output["mount"]).append(
-                "type=bind,source={},destination={}".format(
-                    mounts[0], mounts[1]
-                )
-            )
-        for port in cast(List[str], options.get("publish", [])) or []:
-            in_port, _, out_port = port.partition(":")
-            cast(List[str], output["network-args"]).append(
-                "portmap={}:{}/tcp".format(in_port, out_port)
-            )
-        output = {k: v for (k, v) in output.items() if v}
-        if "net" in options:
-            output["network"] = "bridge"
-            output["fakeroot"] = True
-        if "network" in options or "network-args" in options:
-            output["net"] = True
-            output["fakeroot"] = True
-        return output
 
 
 def add_standard_args() -> argparse.ArgumentParser:
@@ -502,6 +430,25 @@ def parse_args() -> List[str]:
         action="append",
     )
 
+    # -------------------------- stop commands --------------------------------
+
+    parser_stop = subparsers.add_parser(
+        "stop", help="Stop one or more running containers"
+    )
+    parser_stop.add_argument(
+        "container",
+        nargs="+",
+        type=str,
+        metavar="CONTAINER",
+        help="Name of the container(s)",
+    )
+    parser_stop.add_argument(
+        "-t",
+        "--time-out",
+        type=int,
+        help="Timout",
+    )
+
     # -------------------------- rm commands ----------------------------------
 
     parser_rm = subparsers.add_parser(
@@ -573,7 +520,6 @@ def parse_args() -> List[str]:
     container_cmd = Path(Docker.get_container_cmd()).name
     container_cls = {
         "podman": Podman,
-        "apptainer": Apptainer,
         "docker": Docker,
     }
     container_inst = container_cls[container_cmd](
@@ -588,6 +534,8 @@ def parse_args() -> List[str]:
         cmd = container_inst.run(args.subcommand, *args.command, **kwargs)
     elif args.subcommand in ("rm", "rmi"):
         cmd = container_inst.rm(args.subcommand, **kwargs)
+    elif args.subcommand in ("stop",):
+        cmd = container_inst.stop(args.time_out)
     elif args.subcommand in ("pull",):
         cmd = container_inst.pull(**kwargs)
     elif args.subcommand in ("network",):

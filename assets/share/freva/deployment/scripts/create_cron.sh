@@ -1,5 +1,8 @@
 #!/bin/bash
-cmd="/usr/local/bin/docker-or-podman exec $1 bash /usr/local/bin/daily_backup 1> /dev/null"
+cmd=$(/tmp/docker-or-podman -p exec $1 bash /usr/local/bin/daily_backup)
+cmd="$cmd 1> /dev/null"
+echo $cmd
+exit
 # Function to check if the cron job already exists in the crontab
 cron_job_exists() {
     local cmd="$1"

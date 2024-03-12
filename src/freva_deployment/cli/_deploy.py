@@ -42,12 +42,24 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
         default=False,
     )
     ap.add_argument(
+        "--ssh-port",
+        help="Set the ssh port, in 99.9%% of the cases this should be 22",
+        type=int,
+        default=22,
+    )
+    ap.add_argument(
         "-v", "--verbose", action="count", help="Verbosity level", default=0
     )
     ap.add_argument(
         "-l",
         "--local",
         help="Deploy services on the local machine, debug purpose.",
+        action="store_true",
+        default=False,
+    )
+    ap.add_argument(
+        "--gen-keys",
+        help="Generate public and private web certs, use with caution.",
         action="store_true",
         default=False,
     )
@@ -65,9 +77,12 @@ def cli(argv: list[str] | None = None) -> None:
     args = parse_args(argv)
     set_log_level(args.verbose)
     with DeployFactory(
-        steps=args.steps, config_file=args.config, local_debug=args.local
+        steps=args.steps,
+        config_file=args.config,
+        local_debug=args.local,
+        gen_keys=args.gen_keys,
     ) as DF:
-        DF.play(args.ask_pass, args.verbose)
+        DF.play(args.ask_pass, args.verbose, ssh_port=args.ssh_port)
 
 
 if __name__ == "__main__":

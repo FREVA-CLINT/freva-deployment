@@ -48,7 +48,9 @@ class DeployFactory:
     config_file: os.PathLike, default: None
         Path to any existing deployment configuration file.
     local_debug: bool, default: False
-            Run deployment only on local machine, debug mode.
+        Run deployment only on local machine, debug mode.
+    gen_keys: bool, default: False
+        Create new set of certificates, if they don't already exist.
 
     Examples
     --------
@@ -66,12 +68,12 @@ class DeployFactory:
         steps: list[str] | None = None,
         config_file: Path | str | None = None,
         local_debug: bool = False,
+        gen_keys: bool = True,
     ) -> None:
+        self.gen_keys = gen_keys or local_debug
         self.local_debug = local_debug
         self._config_keys: list[str] = []
-        self.master_pass: str = ""
-        if local_debug:
-            self.master_pass = os.environ.get("MASTER_PASSWD", "") or ""
+        self.master_pass: str = os.environ.get("MASTER_PASSWD", "") or ""
         self.email_password: str = ""
         self._td: TemporaryDirectory = TemporaryDirectory(prefix="inventory")
         self.inventory_file: Path = Path(self._td.name) / "inventory.yaml"
@@ -101,7 +103,7 @@ class DeployFactory:
             return str(Path(public_keyfile).expanduser().absolute())
         if chain_keyfile:
             return str(Path(chain_keyfile).expanduser().absolute())
-        if self.local_debug:
+        if self.gen_keys:
             return self._random_key.public_chain_file
         raise ValueError("You must give a valid path to a public key file.")
 
@@ -111,19 +113,9 @@ class DeployFactory:
         keyfile = self.cfg["certificates"].get("private_keyfile")
         if keyfile:
             return str(Path(keyfile).expanduser().absolute())
-        if self.local_debug:
+        if self.gen_keys:
             return self._random_key.private_key_file
         raise ValueError("You must give a valid path to a private key file.")
-
-    @property
-    def chain_key_file(self) -> str:
-        """Path to the private key file."""
-        keyfile = self.cfg["certificates"].get("chain_keyfile")
-        if keyfile:
-            return str(Path(keyfile).expanduser().absolute())
-        if self.local_debug:
-            return self._random_key.public_key_file
-        return ""
 
     def _prep_vault(self) -> None:
         """Prepare the vault."""
@@ -158,19 +150,13 @@ class DeployFactory:
         self.cfg["db"]["config"]["root_passwd"] = self.master_pass
         self.cfg["db"]["config"]["passwd"] = self.db_pass
         self.cfg["db"]["config"]["keyfile"] = self.public_key_file
-        data_path = (
-            Path(
-                cast(
-                    str,
-                    self.cfg["db"]["config"].get("data_path", "/opt/freva"),
-                )
+        data_path = Path(
+            cast(
+                str,
+                self.cfg["db"]["config"].get("data_path", "/opt/freva"),
             )
-            .expanduser()
-            .absolute()
         )
-        self.cfg["db"]["config"]["data_path"] = str(
-            data_path.absolute().expanduser()
-        )
+        self.cfg["db"]["config"]["data_path"] = str(data_path)
         for key in ("name", "user", "db"):
             self.cfg["db"]["config"][key] = (
                 self.cfg["db"]["config"].get(key) or "freva"
@@ -196,21 +182,15 @@ class DeployFactory:
         )
         self.cfg["databrowser"]["config"]["root_passwd"] = self.master_pass
         self.cfg["databrowser"]["config"].pop("core", None)
-        data_path = (
-            Path(
-                cast(
-                    str,
-                    self.cfg["databrowser"]["config"].get(
-                        "data_path", "/opt/freva"
-                    ),
-                )
+        data_path = Path(
+            cast(
+                str,
+                self.cfg["databrowser"]["config"].get(
+                    "data_path", "/opt/freva"
+                ),
             )
-            .expanduser()
-            .absolute()
         )
-        self.cfg["databrowser"]["config"]["data_path"] = str(
-            data_path.absolute().expanduser()
-        )
+        self.cfg["databrowser"]["config"]["data_path"] = str(data_path)
         self.playbooks["databrowser"] = self.cfg["databrowser"]["config"].get(
             "databrowser_playbook"
         )
@@ -231,21 +211,23 @@ class DeployFactory:
         self.playbooks["core"] = self.cfg["core"]["config"].get(
             "core_playbook"
         )
+        # Legacy args as we are going to use micromamba
+        self.cfg["core"]["config"]["arch"] = (
+            self.cfg["core"]["config"]
+            .get("arch", "linux-64")
+            .lower()
+            .replace("x86_", "")
+            .replace("mac", "")
+        )
         self.cfg["core"]["config"]["python_version"] = FREVA_PYTHON_VERSION
         self.cfg["core"]["config"]["admins"] = (
             self.cfg["core"]["config"].get("admins") or getuser()
         )
         if not self.cfg["core"]["config"]["admins"]:
             self.cfg["core"]["config"]["admins"] = getuser()
-        install_dir = (
-            Path(self.cfg["core"]["config"]["install_dir"])
-            .expanduser()
-            .absolute()
-        )
-        root_dir = (
-            Path(self.cfg["core"]["config"].get("root_dir", "") or install_dir)
-            .expanduser()
-            .absolute()
+        install_dir = Path(self.cfg["core"]["config"]["install_dir"])
+        root_dir = Path(
+            self.cfg["core"]["config"].get("root_dir", "") or install_dir
         )
         self.cfg["core"]["config"]["install_dir"] = str(install_dir)
         self.cfg["core"]["config"]["root_dir"] = str(root_dir)
@@ -262,18 +244,13 @@ class DeployFactory:
         )
         if not preview_path:
             self.cfg["core"]["config"]["preview_path"] = str(
-                Path(base_dir_location).expanduser().absolute()
-                / "share"
-                / "preview"
+                Path(base_dir_location) / "share" / "preview"
             )
         if not scheduler_output_dir:
-            scheduler_output_dir = str(
-                Path(base_dir_location).expanduser().absolute() / "share"
-            )
+            scheduler_output_dir = str(Path(base_dir_location) / "share")
         elif Path(scheduler_output_dir).parts[-1] != scheduler_system:
             scheduler_output_dir = (
-                Path(scheduler_output_dir).expanduser().absolute()
-                / scheduler_system
+                Path(scheduler_output_dir) / scheduler_system
             )
         self.cfg["core"]["config"]["scheduler_output_dir"] = str(
             scheduler_output_dir
@@ -297,19 +274,13 @@ class DeployFactory:
         )
         self.cfg["web"]["config"]["databrowser_host"] = databrowser_host
         self.cfg["web"]["config"].setdefault("deploy_web_server", True)
-        data_path = (
-            Path(
-                cast(
-                    str,
-                    self.cfg["web"]["config"].get("data_path", "/opt/freva"),
-                )
+        data_path = Path(
+            cast(
+                str,
+                self.cfg["web"]["config"].get("data_path", "/opt/freva"),
             )
-            .expanduser()
-            .absolute()
         )
-        self.cfg["web"]["config"]["data_path"] = str(
-            data_path.absolute().expanduser()
-        )
+        self.cfg["web"]["config"]["data_path"] = str(data_path)
         admin = self.cfg["core"]["config"]["admins"]
         if not isinstance(admin, str):
             self.cfg["web"]["config"]["admin"] = admin[0]
@@ -385,9 +356,7 @@ class DeployFactory:
             self.master_pass = get_passwd()
         self._prep_vault()
         if ask_pass:
-            email_user, self.email_password = get_email_credentials(
-                self.local_debug
-            )
+            email_user, self.email_password = get_email_credentials()
             self.cfg["vault"]["config"]["email_user"] = email_user
             self.cfg["vault"]["config"]["email_password"] = self.email_password
         self.cfg["vault"]["config"]["ansible_python_interpreter"] = self.cfg[
@@ -396,9 +365,6 @@ class DeployFactory:
         self.cfg["web"]["config"]["root_passwd"] = self.master_pass
         self.cfg["web"]["config"]["private_keyfile"] = self.private_key_file
         self.cfg["web"]["config"]["public_keyfile"] = self.public_key_file
-        self.cfg["web"]["config"]["chain_keyfile"] = (
-            self.chain_key_file or self.public_key_file
-        )
         self.cfg["web"]["config"]["apache_config_file"] = str(
             self.apache_config
         )
@@ -406,17 +372,10 @@ class DeployFactory:
             self._prep_apache_config()
 
     def _prep_apache_config(self):
-        config = []
-        with (Path(asset_dir) / "web" / "freva_web.conf").open() as f_obj:
-            for line in f_obj.readlines():
-                if (
-                    not self.chain_key_file
-                    and "SSLCertificateChainFile" in line
-                ):
-                    continue
-                config.append(line)
         with open(self.apache_config, "w") as f_obj:
-            f_obj.write("".join(config))
+            f_obj.write(
+                (Path(asset_dir) / "web" / "freva_web.conf").read_text()
+            )
 
     def _set_hostnames(self) -> None:
         """Set the hostnames from the config or if debug the alias."""
@@ -660,39 +619,8 @@ class DeployFactory:
             with dump_file.open("w") as f_obj:
                 f_obj.write("".join(lines))
 
-    def _run(self, verbosity: int = 0, ask_pass: bool = False) -> None:
-        from ansible.executor.playbook_executor import PlaybookExecutor
-        from ansible.inventory.manager import InventoryManager
-        from ansible.parsing.dataloader import DataLoader
-        from ansible.playbook.play import Play
-        from ansible.vars.manager import VariableManager
-
-        loader = DataLoader()
-        inventory = InventoryManager(
-            loader=loader, sources=[str(self.inventory_file)]
-        )
-        variable_manager = VariableManager(loader=loader, inventory=inventory)
-        options = {
-            "verbosity": verbosity,
-            "ask_pass": ask_pass,
-            "become": True,
-            "ask_become_pass": True,
-        }
-        executor = PlaybookExecutor(
-            playbooks=[str(self._playbook_file)],
-            inventory=inventory,
-            variable_manager=variable_manager,
-            loader=loader,
-            options=options,
-        )
-        results = executor.run()
-        stats = executor._tqm._stats
-        print(stats)
-
     def play(
-        self,
-        ask_pass: bool = True,
-        verbosity: int = 0,
+        self, ask_pass: bool = True, verbosity: int = 0, ssh_port: int = 22
     ) -> None:
         """Play the ansible playbook.
 
@@ -703,9 +631,13 @@ class DeployFactory:
             ssh key
         verbosity: int, default: 0
             Verbosity level, default 0
+        ssh_port: int, default: 22
+            Set the ssh port, in 99.9% of cases this should be left at port 22
         """
         try:
-            self._play(ask_pass=ask_pass, verbosity=verbosity)
+            self._play(
+                ask_pass=ask_pass, verbosity=verbosity, ssh_port=ssh_port
+            )
         except KeyboardInterrupt:
             print(
                 " [red][ERROR]: User interrupted execution[/]", file=sys.stderr
@@ -716,6 +648,7 @@ class DeployFactory:
         self,
         ask_pass: bool = True,
         verbosity: int = 0,
+        ssh_port: int = 22,
     ) -> None:
         """Play the ansible playbook.
 
@@ -726,6 +659,8 @@ class DeployFactory:
             ssh key
         verbosity: int, default: 0
             Verbosity level, default 0
+        ssh_port: int, default: 22
+            Set the ssh port, in 99.9% of cases this should be left at port 22
         """
         inventory = self.parse_config()
         self.create_eval_config()
@@ -750,6 +685,7 @@ class DeployFactory:
         cmd = (
             f"ansible-playbook {v_string} -i {self.inventory_file} "
             f"{self._playbook_file} --ask-become-pass"
+            f" -e ansible_port={ssh_port}"
         )
         if ask_pass:
             cmd += " --ask-pass"

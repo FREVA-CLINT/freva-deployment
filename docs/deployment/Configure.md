@@ -24,9 +24,10 @@ in the [example deployment configuration](Config) section.
 If you already have a configuration saved in a toml configuration file you can
 issue the `deploy-freva-cmd` command:
 
-```console
+```bash
 deploy-freva-cmd --help
-usage: deploy-freva-cmd [-h] [--config CONFIG] [--steps {web,core,db,databrowser} [{web,core,db,databrowser} ...]] [--ask-pass] [-v] [-l] [-V]
+usage: deploy-freva-cmd [-h] [--config CONFIG] [--steps {web,core,db,databrowser} [{web,core,db,databrowser} ...]] [--ask-pass] [--ssh-port SSH_PORT] [-v] [-l]
+                        [--gen-keys] [-V]
 
 Deploy freva and its services on different machines.
 
@@ -37,9 +38,11 @@ options:
   --steps {web,core,db,databrowser} [{web,core,db,databrowser} ...]
                         The services/code stack to be deployed (default: ['db', 'databrowser', 'web', 'core'])
   --ask-pass            Connect to server via ssh passwd instead of public key. (default: False)
+  --ssh-port SSH_PORT   Set the ssh port, in 99.9% of the cases this should be 22 (default: 22)
   -v, --verbose         Verbosity level (default: 0)
   -l, --local           Deploy services on the local machine, debug purpose. (default: False)
-  -V, --version         show program's version number and exit
+  --gen-keys            Generate public and private web certs, use with caution. (default: False)
+  -V, --version         show program's version number and exit.
 ```
 
 The `--steps` flags can be used if not all services should be deployed.

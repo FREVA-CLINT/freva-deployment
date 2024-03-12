@@ -154,8 +154,6 @@
            dest: "{{service_dir}}/server-cert.crt"}
         - {src: "{{web_private_keyfile}}",
            dest: "{{service_dir}}/server-key.key"}
-        - {src: "{{web_chain_keyfile}}",
-           dest: "{{service_dir}}/cacert.pem"}
     - name: Pulling containers
       become: "{{use_become}}"
       shell:

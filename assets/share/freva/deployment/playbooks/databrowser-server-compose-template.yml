@@ -75,7 +75,7 @@ services:
     tty: true
 
 networks:
-{% if debug is false %}
+{% if debug  %}
   hostnet:
     driver: host
 {% else %}
