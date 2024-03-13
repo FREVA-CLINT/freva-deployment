@@ -38,7 +38,7 @@ packages:
   - docker-compose
 runcmd:
   - [ mkdir, -p, /opt/freva]
-  - [ chown, -R, freva:users, /opt/freva]
+  - [ chown, -R, freva:admin, /opt/freva]
   - [ chmod, -R, 775, /opt/freva]
 groups:
   admingroup: [root, sys]
@@ -79,7 +79,7 @@ kill_vm () {
             kill -9 $(cat temp/$file.pid) 2> /dev/null
         fi
     done
-    rm -rf temp
+    rm -rf temp 2> /dev/null
     }
 
 start () {
@@ -94,7 +94,7 @@ start () {
         -net user,hostfwd=tcp::2222-:22,hostfwd=tcp::5555-:80       \
         -machine accel=kvm:tcg                                      \
         -cpu host                                                   \
-        -m 12G                                                      \
+        -m 4G                                                       \
         -nographic                                                  \
         -hda $img_file                                              \
         -async-teardown                                             \
