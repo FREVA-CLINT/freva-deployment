@@ -35,19 +35,19 @@
   tasks:
     - name: Creating share directory
       file:
-        path: "{{core_root_dir}}/freva/web"
+        path: "{{core_root_dir|expanduser}}/freva/web"
         state: directory
         mode: "{{ '2775' if core_admin_group is defined else '2755' }}"
         group: "{{ core_admin_group if core_admin_group is defined else omit }}"
       become: "{{use_become}}"
     - name: Checking if a web config already exists
       stat:
-        path: "{{ core_root_dir }}/freva/web/freva_web_conf.toml"
+        path: "{{ core_root_dir |expanduser}}/freva/web/freva_web_conf.toml"
       register: web_config
     - name: Adding freva web config to the core structure
       copy:
-        src: "{{ core_config_toml_file }}"
-        dest: "{{ core_root_dir }}/freva/web/freva_web_conf.toml"
+        src: "{{ core_config_toml_file | expanduser}}"
+        dest: "{{ core_root_dir | expanduser}}/freva/web/freva_web_conf.toml"
         mode: "{{ '2664' if core_admin_group is defined else '2644' }}"
         group: "{{ core_admin_group if core_admin_group is defined else omit}}"
       become: "{{use_become}}"
@@ -57,21 +57,21 @@
 
   vars:
     ansible_python_interpreter: "{{ web_ansible_python_interpreter }}"
-    service_dir: '{{web_data_path}}/{{project_name}}/web_service'
-    compose_file: '{{web_data_path}}/compose_services/{{web_name}}-compose.yml'
+    service_dir: '{{web_data_path|expanduser}}/{{project_name}}/web_service'
+    compose_file: '{{web_data_path|expanduser}}/compose_services/{{web_name}}-compose.yml'
     web_volumes:
-      - "{{ core_root_dir }}:{{ core_root_dir }}:ro"
-      - "{{ core_scheduler_output_dir}}:{{ core_scheduler_output_dir }}:ro"
-      - "{{web_data_path}}/{{project_name}}/web_service/static:/opt/freva_web/static:z"
-      - "{{core_base_dir_location}}:{{core_base_dir_location}}:ro"
+      - "{{ core_root_dir | expanduser}}:{{ core_root_dir | expanduser}}:ro"
+      - "{{ core_scheduler_output_dir|expanduser}}:{{ core_scheduler_output_dir | expanduser}}:ro"
+      - "{{web_data_path|expanduser}}/{{project_name}}/web_service/static:/opt/freva_web/static:z"
+      - "{{core_base_dir_location|expanduser}}:{{core_base_dir_location|expanduser}}:ro"
     apache_volumes:
-      - "{{web_data_path}}/{{project_name}}/web_service/freva_web.conf:/usr/local/apache2/conf/httpd.conf:z"
-      - "{{web_data_path}}/{{project_name}}/web_service/server-cert.crt:/etc/ssl/certs/server-cert.crt:z"
-      - "{{web_data_path}}/{{project_name}}/web_service/server-key.key:/etc/ssl/private/server-key.key:z"
-      - "{{web_data_path}}/{{project_name}}/web_service/cacert.pem:/etc/ssl/certs/cacert.pem:z"
-      - "{{web_data_path}}/{{project_name}}/web_service/static:/srv/static:z"
-      - "{{web_data_path}}/{{project_name}}/web_service/prepare-httpd:/usr/local/bin/prepare-httpd:z"
-      - "{{ core_preview_path }}:/srv/static/preview:z"
+      - "{{web_data_path|expanduser}}/{{project_name}}/web_service/freva_web.conf:/usr/local/apache2/conf/httpd.conf:z"
+      - "{{web_data_path|expanduser}}/{{project_name}}/web_service/server-cert.crt:/etc/ssl/certs/server-cert.crt:z"
+      - "{{web_data_path|expanduser}}/{{project_name}}/web_service/server-key.key:/etc/ssl/private/server-key.key:z"
+      - "{{web_data_path|expanduser}}/{{project_name}}/web_service/cacert.pem:/etc/ssl/certs/cacert.pem:z"
+      - "{{web_data_path|expanduser}}/{{project_name}}/web_service/static:/srv/static:z"
+      - "{{web_data_path|expanduser}}/{{project_name}}/web_service/prepare-httpd:/usr/local/bin/prepare-httpd:z"
+      - "{{ core_preview_path | expanduser}}:/srv/static/preview:z"
     redis_name: "{{ project_name }}-redis"
     apache_name: "{{project_name}}-httpd"
     web_name: "{{project_name}}-web"
@@ -97,7 +97,7 @@
         mode: "0775"
     - name: Getting register to core dir
       stat:
-        path: "{{ core_root_dir }}/freva/evaluation_system.conf"
+        path: "{{ core_root_dir | expanduser}}/freva/evaluation_system.conf"
       register: core
     - name: Registering systemctl path
       stat:
@@ -123,22 +123,22 @@
     - name: Deleting existing web-directory
       file:
         state: absent
-        path: "{{service_dir}}"
+        path: "{{service_dir|expanduser}}"
       become: "{{use_become}}"
     - name: Creating volume dir for web
       become: "{{use_become}}"
       file:
-        path: "{{service_dir}}/static"
+        path: "{{service_dir|expanduser}}/static"
         state: directory
     - name: Copying httpd entrypoint script
       become: "{{use_become}}"
       copy:
         src: "{{ asset_dir }}/scripts/prepare-httpd"
-        dest: "{{web_data_path}}/{{project_name}}/web_service/prepare-httpd"
+        dest: "{{web_data_path|expanduser}}/{{project_name}}/web_service/prepare-httpd"
         mode: "0775"
     - name: Creating compose directory structure
       file:
-        path: '{{web_data_path}}/compose_services'
+        path: '{{web_data_path|expanduser}}/compose_services'
         state: directory
         recurse: true
       become: "{{use_become}}"
@@ -148,12 +148,12 @@
         src: "{{item.src}}"
         dest: "{{item.dest}}"
       with_items:
-        - {src: "{{web_apache_config_file}}",
-           dest: "{{service_dir}}/freva_web.conf"}
-        - {src: "{{web_public_keyfile}}",
-           dest: "{{service_dir}}/server-cert.crt"}
-        - {src: "{{web_private_keyfile}}",
-           dest: "{{service_dir}}/server-key.key"}
+        - {src: "{{web_apache_config_file|expanduser}}",
+           dest: "{{service_dir|expanduser}}/freva_web.conf"}
+        - {src: "{{web_public_keyfile|expanduser}}",
+           dest: "{{service_dir|expanduser}}/server-cert.crt"}
+        - {src: "{{web_private_keyfile|expanduser}}",
+           dest: "{{service_dir|expanduser}}/server-key.key"}
     - name: Pulling containers
       become: "{{use_become}}"
       shell:

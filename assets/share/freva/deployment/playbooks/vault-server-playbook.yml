@@ -4,10 +4,10 @@
   vars:
     ansible_python_interpreter: "{{ vault_ansible_python_interpreter }}"
     continer_name: "{{ vault_name }}"
-    compose_file: "{{vault_data_path}}/compose_services/{{vault_name}}-compose.yml"
+    compose_file: "{{vault_data_path|expanduser}}/compose_services/{{vault_name}}-compose.yml"
     vault_volumes:
-      - '{{vault_data_path}}/{{project_name}}/vault_service/config:/data:z'
-      - '{{vault_data_path}}/{{project_name}}/vault_service/files:/vault/file:z'
+      - '{{vault_data_path|expanduser}}/{{project_name}}/vault_service/config:/data:z'
+      - '{{vault_data_path|expanduser}}/{{project_name}}/vault_service/files:/vault/file:z'
       - /home/wilfred/workspace/deployment/assets/share/freva/deployment/vault/runserver.py:/bin/runserver:z
     use_become: "{{ vault_ansible_become_user is defined and vault_ansible_become_user != '' }}"
   tasks:
@@ -50,17 +50,17 @@
         state: directory
         path: "{{ item }}"
       with_items:
-        - "{{vault_data_path}}/{{ project_name }}/vault_service/config"
-        - "{{vault_data_path}}/{{ project_name }}/vault_service/files"
+        - "{{vault_data_path|expanduser}}/{{ project_name }}/vault_service/config"
+        - "{{vault_data_path|expanduser}}/{{ project_name }}/vault_service/files"
       become: "{{use_become}}"
     - name: Copying public key file to target machine
       copy:
         src: "{{ vault_keyfile }}"
-        dest: "{{vault_data_path}}/{{project_name}}/vault_service/config/freva.crt"
+        dest: "{{vault_data_path|expanduser}}/{{project_name}}/vault_service/config/freva.crt"
       become: "{{use_become}}"
     - name: Creating compose directory structure
       file:
-        path: '{{vault_data_path}}/compose_services'
+        path: '{{vault_data_path|expanduser}}/compose_services'
         state: directory
         recurse: true
       become: "{{use_become}}"
@@ -68,7 +68,7 @@
       become: "{{use_become}}"
       template:
         src: "{{ asset_dir }}/playbooks/vault-server-compose-template.yml"
-        dest: "{{vault_data_path}}/compose_services/{{vault_name}}-compose.yml"
+        dest: "{{vault_data_path|expanduser}}/compose_services/{{vault_name}}-compose.yml"
     - name: Creating system services
       become: "{{use_become}}"
       shell: |
