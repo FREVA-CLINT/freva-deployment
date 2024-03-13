@@ -571,8 +571,8 @@ class DeployFactory:
         """Create the ansible playbook form all steps."""
         logger.info("Creating Ansible playbooks")
         playbook = []
+        [getattr(self, f"_prep_{step}")() for step in self.step_order]
         for step in self.steps:
-            getattr(self, f"_prep_{step}")()
             playbook_file = (
                 self.playbooks.get(step)
                 or self.playbook_dir / f"{step}-server-playbook.yml"
