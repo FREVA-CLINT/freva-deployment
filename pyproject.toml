@@ -22,7 +22,6 @@ requires-python = ">=3.8"
 dependencies = [ "appdirs",
              "ansible>=2.10",
              "npyscreen",
-             "numpy",
              "PyMySQL",
              "PyYAML",
              "rich",
@@ -35,11 +34,13 @@ doc = [
     "pydata-sphinx-theme",
     "sphinx",
     "sphinx-copybutton",
-    "nbsphinx",
     "recommonmark",
-    "sphinx_rtd_theme",
-    "ipython",
-    "sphinxcontrib_github_alt",
+    "sphinx_sitemap",
+    "sphinx_favicon",
+    "sphinx_togglebutton",
+    "myst-parser",
+    "sphinx-design",
+    "linkify",
 ]
 test = ["mypy", "black", "flit", "isort", "types-toml", "types-PyMySQL"]
 
@@ -51,8 +52,6 @@ Home = "https://freva-deployment.readthedocs.io/en/latest"
 
 [project.scripts]
 deploy-freva-cmd = "freva_deployment.cli:deploy"
-deploy-freva-map = "freva_deployment.cli:server_map"
-freva-service = "freva_deployment.cli:service"
 freva-migrate = "freva_deployment.cli:migrate"
 deploy-freva = "freva_deployment.ui.deployment_tui:tui"
 

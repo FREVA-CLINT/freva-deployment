@@ -16,7 +16,7 @@
 
 # The project name that should be used for this freva instance
 # NOTE: this key has to be the first in the file
-project_name = "freva"
+project_name = "freva-local"
 
 ## Set the path to the SSL certificate files that is used to make password
 ## queries to the vault server or used as web certificates.
@@ -74,16 +74,16 @@ user = "freva"
 db = "frevadb"
 
 ##If you need a different user name you can set it here (defaults to current user):
-ansible_user = "freva"
+ansible_user = ""
 
 ## You can set the db_host separately, if none is given (default)
 ## the one from the hosts names above are taken
 
-db_host = "10.0.2.15"
+db_host = ""
 
 ## Set the become (sudo) user name to change to for installing the services
 ## leave blank to utilise a non privileged user based installation
-ansible_become_user = "root"
+ansible_become_user = ""
 
 ## Ansible needs a python3 interpreter, which can be set for custom python3 instances
 ansible_python_interpreter = ""
@@ -94,7 +94,7 @@ wipe = false
 
 ## Set the path where the permanent database data should be stored. By default
 ## this is set to /opt/freva/<project_name>/db_service
-data_path = "/opt/freva"
+data_path = "~/freva-local/services"
 
 ## In case you want to set a custom path to a ansible playbook,
 ## you can do this here, by default the deployment will use the playbook
@@ -113,14 +113,14 @@ databrowser_port = 7777
 
 ## Set the become (sudo) user name to change to for installing the services
 ## leave blank to utilise a non privileged user based installation
-ansible_become_user = "root"
+ansible_become_user = ""
 
 ## Ansible needs a python3 interpreter, which can be set for custom python3 instances
 
 ansible_python_interpreter = ""
 
 ## If you need a different user name you can set it here (default to current user):
-ansible_user = "freva"
+ansible_user = ""
 
 ##Indicate whether or not to empty any pre-existing folders/docker volumes.
 ##(Useful for a truly fresh start) (default: False)
@@ -128,7 +128,7 @@ wipe = false
 
 ## Set the path where the permanent databrowser data should be stored.
 ## By default this is set to /opt/freva
-data_path = "/opt/freva"
+data_path = "~/freva-local/services"
 
 ## In case you want to set a custom path to a ansible playbook,
 ## you can do this here, by default the deployment will use the playbook
@@ -145,7 +145,7 @@ databrowser_playbook = ""
 admins = ""
 
 ## The path where the core should be installed
-install_dir="/opt/freva/conda"
+install_dir="~/freva-local"
 
 ## Set the path to any existing conda executable on the target machine,
 ## if not existing (default) a temporary conda distribution will be downloaded
@@ -155,7 +155,7 @@ conda_exec_path=""
 ## This can be useful if you want to set up multiple freva instances with
 ## the same software stack. leave blank to use the same directory as
 ## `install_dir`
-root_dir = "/home/freva/freva-env"
+root_dir = ""
 
 ## If you which not to install a core instance but only configure one set the
 ## install variable to false. This can be useful if you have a central instance
@@ -193,7 +193,7 @@ arch = "Linux-x86_64"
 ansible_become_user = ""
 
 ##If you need a different user name you can set it here (defaults to current user):
-ansible_user = "freva"
+ansible_user = ""
 
 ## Ansible needs a python3 interpreter, which can be set for custom python3 instances
 ansible_python_interpreter = ""
@@ -227,11 +227,11 @@ project_website = "www.freva.dkrz.de"
 ansible_python_interpreter = ""
 
 ##If you need a different user name you can set it here (defaults to current user):
-ansible_user = "freva"
+ansible_user = ""
 
 ## Set the path where the permanent web data should be stored. By default
 ## this is set to /opt/freva
-data_path = "/opt/freva"
+data_path = "~/freva-local/services"
 
 ##Set html colors
 main_color = "Tomato"
@@ -337,10 +337,10 @@ web_playbook = ""
 
 ## Set the become (sudo) user name to change to for installing the services
 ## leave blank to utilise a non privileged user based installation
-ansible_become_user = "root"
+ansible_become_user = ""
 
 # Deploy a http reverse proxy. Turn off the deployment (set to false) of an
 # reverse proxy doesn't the user that deploys the web doesn't have access to
 # port 80 and 443 in this case you will have to deploy the reverse proxy
 # yourself.
-deploy_web_server = true
+deploy_web_server = false

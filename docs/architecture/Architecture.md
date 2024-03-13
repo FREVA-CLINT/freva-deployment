@@ -1,4 +1,4 @@
-# Deployment Architecture
+# Freva Architecture
 
 
 The Free evaluation system framework (Freva) consists of three basic parts:
@@ -10,7 +10,7 @@ The Free evaluation system framework (Freva) consists of three basic parts:
 
 Command line interface, python client and web ui make use of the core library, the core library on the other hand makes use of the apache solr and mariadb services. This hierachy is outlined in the figure below:
 
-![](Concept_Map.png)
+![](_static/Concept_Map.png)
 
 ### Core library and command line interface:
 
@@ -70,7 +70,7 @@ The next sections propose various deployment strategies for the framework:
 
 ### One service one machine set up:
 
-![](Topography_1.png)
+![](_static/Topography_1.png)
 
 *One service one machine*: Every service is installed on a dedicated machine
 
@@ -84,7 +84,7 @@ The vault server will always be running on the same machine that hosts the maria
 
 
 ### All services on one machine set up:
-![](Topography_2.png)
+![](_static/Topography_2.png)
 
 *All services on one machine*: All services are installed on the same machine
 
@@ -96,7 +96,7 @@ to administer since all services are running on one entry point.
 
 ### Multi-cli setup:
 
-![](Topography_3.png)
+![](_static/Topography_3.png)
 
 *Multi-cli*: The command line interface and core library are installed on many compute nodes
 

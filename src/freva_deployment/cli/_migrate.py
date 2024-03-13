@@ -1,4 +1,5 @@
 """CLI to assist with migrating the system."""
+
 from __future__ import annotations
 
 import argparse
@@ -18,9 +19,7 @@ import toml
 from freva_deployment import __version__
 
 from ..utils import (
-    download_server_map,
     get_setup_for_service,
-    guess_map_server,
     logger,
     read_db_credentials,
     set_log_level,

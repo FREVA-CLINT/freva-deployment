@@ -1,31 +1,44 @@
 version: '3'
 services:
-
   {{apache_name}}:
     image: httpd:latest
     container_name: {{apache_name}}
     hostname: {{apache_name}}
+{% if debug %}
+    network_mode: host
+{% else %}
     networks:
       - {{web_name}}
+{% endif %}
     environment:
-      - SCHEDULER_DIR={{core_scheduler_output_dir}}
+      - SCHEDULDER_DIR={{core_scheduler_output_dir|expanduser}}
       - UID={{uid}}
       - GID={{gid}}
+{% if debug %}
+      - DATABROWSER_HOST=127.0.0.1
+      - FREVA_HOST=127.0.0.1
+{% else %}
       - DATABROWSER_HOST={{web_databrowser_host}}
       - FREVA_HOST={{web_server_name}}
+{% endif %}
+      - HTTPD_PORT={{web_port_httpd}}
+      - HTTPDS_PORT={{web_port_httpsd}}
     volumes:
 {% for volume in apache_volumes %}
       - {{volume}}
 {% endfor %}
     command: /usr/local/bin/prepare-httpd
     ports:
-      - 80:80
-      - 443:443
-
+      - {{web_port_httpd}}:{{web_port_httpd}}
+      - {{web_port_httpsd}}:{{web_port_httpsd}}
   {{redis_name}}:
     image: redis
+{% if debug %}
+    network_mode: host
+{% else %}
     networks:
       - {{web_name}}
+{% endif %}
     ports:
       - 6379:6379
     tty: true
@@ -36,10 +49,14 @@ services:
     image: ghcr.io/freva-clint/freva-web
     container_name: {{web_name}}
     hostname: {{web_name}}
+{% if debug %}
+    network_mode: host
+{% else %}
     networks:
       - {{web_name}}
+{% endif %}
     environment:
-      - EVALUATION_SYSTEM_CONFIG_FILE={{core_root_dir}}/freva/evaluation_system.conf
+      - EVALUATION_SYSTEM_CONFIG_FILE={{core_root_dir|expanduser}}/freva/evaluation_system.conf
       - LDAP_USER_DN={{web_ldap_user_dn}}
       - LDAP_USER_PW={{web_ldap_user_pw}}
       - DJANGO_SUPERUSER_PASSWORD={{ root_passwd }}
@@ -55,5 +72,10 @@ services:
       - {{apache_name}}
 
 networks:
+{% if debug %}
+  hostnet:
+    driver: host
+{% else %}
   {{web_name}}:
     driver: bridge
+{% endif %}

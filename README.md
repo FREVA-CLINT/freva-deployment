@@ -109,37 +109,6 @@ can be found [on the docker docs](https://docs.docker.com/engine/security/rootle
 > **_Note:_** Some systems use `podman` instead of `docker`. The deployment
 routine is able to distinguish and use the right service.
 
-## Setting up a service that maps the server structure (Optional)
-Since the services might be scattered across different servers it might be hard
-to keep track of the host names of the servers where all services are running.
-We have created a service that keeps track of the locations of all services for
-a certain freva instance. Although not strictly needed we recommend you to setup
-this special server mapping service. To do so use the following command:
-
-```console
-deploy-freva-map --help
-usage: deploy-freva-map [-h] [--port PORT] [--wipe] [--user USER] [--python-path PYTHON_PATH] [-v] [-V] servername
-
-Create service that maps the freva server architecture.
-
-positional arguments:
-  servername            The server name where the infrastructure mapping service is deployed
-
-options:
-  -h, --help            show this help message and exit
-  --port PORT           The port the service is listing to (default: 6111)
-  --wipe                Delete any existing data. (default: False)
-  --user USER           Username to log on to the target server. (default: None)
-  --python-path PYTHON_PATH
-                        Path to the default python3 interpreter on the target machine. (default: /usr/bin/python)
-  -v, --verbose         Verbosity level (default: 0)
-  -V, --version         show program's version number and exit
-```
-> **_Note_:** As the service keeps track of all freva instances within your
-institution, this has to be deployed only *once*. Please make sure that other
-admins who might need to install freva are aware of the host name
-for this service. *This step is optional*
-
 # Configuring the deployment
 A complete freva instance will need the following services:
 
@@ -202,62 +171,29 @@ If you already have a configuration saved in a toml base inventory file you can
 issue the `deploy-freva-cmd` command:
 
 ```bash
-deploy-freva-cmd --help
-usage: deploy-freva-cmd [-h] [--server-map SERVER_MAP] [--config CONFIG]
-                        [--steps {services,web,core,db,solr,backup} [{services,web,core,db,solr,backup} ...]] [--ask-pass] [-v] [-V]
+eploy-freva-cmd --help
+usage: deploy-freva-cmd [-h] [--config CONFIG] [--steps {web,core,db,databrowser} [{web,core,db,databrowser} ...]] [--ask-pass] [--ssh-port SSH_PORT] [-v] [-l]
+                        [--gen-keys] [-V]
 
 Deploy freva and its services on different machines.
 
 options:
   -h, --help            show this help message and exit
-  --server-map SERVER_MAP
-                        Hostname of the service mapping the freva server archtiecture, Note: you can create a server map by running
-                        the deploy-freva-map command (default: None)
   --config CONFIG, -c CONFIG
-                        Path to ansible inventory file. (default: /home/wilfred/.config/freva/deployment/inventory.toml)
-  --steps {services,web,core,db,solr,backup} [{services,web,core,db,solr,backup} ...]
-                        The services/code stack to be deployed (default: ['services', 'web', 'core'])
+                        Path to ansible inventory file. (default: /home/wilfred/.anaconda3/share/freva/deployment/inventory.toml)
+  --steps {web,core,db,databrowser} [{web,core,db,databrowser} ...]
+                        The services/code stack to be deployed (default: ['db', 'databrowser', 'web', 'core'])
   --ask-pass            Connect to server via ssh passwd instead of public key. (default: False)
+  --ssh-port SSH_PORT   Set the ssh port, in 99.9% of the cases this should be 22 (default: 22)
   -v, --verbose         Verbosity level (default: 0)
+  -l, --local           Deploy services on the local machine, debug purpose. (default: False)
+  --gen-keys            Generate public and private web certs, use with caution. (default: False)
   -V, --version         show program's version number and exit
+
+
 ```
 
 The `--steps` flags can be used if not all services should be deployed.
-
-# Accessing the services after deployment:
-If the target machine where the services (solr, mariadb, web) were deployed
-is a Linux machine you will have a `systemd` unit service was created.
-You can control the service via the `freva-service` command:
-
-```console
-freva-service --help
-usage: freva-service [-h] [--server-map SERVER_MAP] [--services {web,db,solr} [{web,db,solr} ...]] [--user USER] [-v] [-V]
-                     {start,stop,restart,status} [project_name]
-
-Interact with installed freva services.
-
-positional arguments:
-  {start,stop,restart,status}
-                        The start|stop|restart|status command for the service
-  project_name          Name of the project (default: all)
-
-options:
-  -h, --help            show this help message and exit
-  --server-map SERVER_MAP
-                        Hostname of the service mapping the freva server archtiecture, Note: you can create a server map by running
-                        the deploy-freva-map command (default: None)
-  --services {web,db,solr} [{web,db,solr} ...]
-                        The services to be started|stopped|restarted|checked (default: ['solr', 'db', 'web'])
-  --user USER, -u USER  connect as this user (default: None)
-  -v, --verbose         Verbosity level (default: 0)
-  -V, --version         show program's version number and exit
-```
-The following command restarts `web` server for the `xces`:
-```console
-freva-service restart xces --services web --user k12345
-```
-All services (`db`, `web` and `solr`) will be selected if the `--services` option
-is omitted.
 
 # Kown Issues:
 Below are possible solutions to some known issues:
@@ -322,7 +258,60 @@ Make sure you have the following prerequisites installed:
 ```console
 git clone https://github.com/FREVA-CLINT/freva-deployment.git
 cd freva-deployment.git
+make
 ```
+
+The deployment routine is supposed to interact with the user - this can
+can be asking for user names or passwords. To avoid such interaction you can
+set the following environment variables.
+
+- `MASTER_PASSWD`: the admin/root password for all services (db, web etc)
+- `EMAIL_USER`: the user name for email server login credentials
+- `EMAIL_PASSWD`: the password for email server login credentials
+
+These environment variables have only an effect when the deployment is
+applied in debug or local mode using the `-l` flag.
+
+## Using a local VM for testing.
+A test freva instance can be deployed on a dedicated local virtual machine.
+This virtual machine is based on a minimal ubuntu server image and has
+docker and podman pre installed. To create the virtual machine simply
+run the following script.
+
+```console
+cloud-init/start-vm.sh -h
+```
+
+```bash
+Usage: start-vm.sh [-k|--kill], [-p|--port PORT]
+Create a new virtual machine (VM) ready for freva deployment.
+Options:
+  -k, --kill     Kill the virtual machine
+  -p, --port     Set the port of the service that is used to configure the VM default: 8000
+```
+
+> **_Note:_** *Before* running the script you will have to install [qemu](https://www.qemu.org/docs/master/).
+> The script has only been tested on Linux systems.
+
+You can then make use of the pre configured inventory file in
+`assets/share/freva/deployment/config/inventory.toml`. In order to deploy
+freva on the newly created VM you will have to instruct ansible to use
+ssh port 2222 instead of 22.
+
+The following command will install freva along all with it's components to
+the local VM:
+
+```console
+deploy-freva-cmd  assets/share/freva/deployment/config/inventory.toml --gen-keys --ssh-port 2222
+```
+
+If you want to tear down the created VM you can either press CTRL+C in the
+terminal where you created the VM or use the kill command:
+
+```console
+./cloud-init/start-vm.sh -k
+```
+
 ## Development Workflow
 
 We use a Makefile to manage common development tasks. Here are some useful

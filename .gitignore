@@ -1,4 +1,6 @@
 ansible/*
+*.img
+cloud-init/temp
 test.conf
 freva_web.toml
 config/evaluation_system.conf

@@ -9,13 +9,17 @@ services:
     dns:
       - 8.8.8.8
       - 8.8.4.4
+{% if debug %}
+    network_mode: host
+{% else %}
     networks:
       - {{vault_name}}
+{% endif %}
     environment:
       - ROOT_PW={{ root_passwd }}
     volumes:
 {% for volume in vault_volumes %}
-      - {{volume}}
+      - {{volume | expanduser}}
 {% endfor %}
     container_name: {{vault_name}}
     tty: true
@@ -23,5 +27,10 @@ services:
       - 5002:5002
 
 networks:
+{%if debug %}
+  hostnet:
+    driver: host
+{% else %}
   {{vault_name}}:
     driver: bridge
+{% endif %}

@@ -2,12 +2,13 @@
 - hosts: vault
 
   vars:
-    ansible_python_interpreter: "{{ db_ansible_python_interpreter }}"
+    ansible_python_interpreter: "{{ vault_ansible_python_interpreter }}"
     continer_name: "{{ vault_name }}"
-    compose_file: /opt/freva/compose_services/{{vault_name}}-compose.yml
+    compose_file: "{{vault_data_path|expanduser}}/compose_services/{{vault_name}}-compose.yml"
     vault_volumes:
-      - /opt/freva/{{project_name}}/vault_service/config:/data:z
-      - /opt/freva/{{project_name}}/vault_service/files:/vault/file:z
+      - '{{vault_data_path|expanduser}}/{{project_name}}/vault_service/config:/data:z'
+      - '{{vault_data_path|expanduser}}/{{project_name}}/vault_service/files:/vault/file:z'
+      - /home/wilfred/workspace/deployment/assets/share/freva/deployment/vault/runserver.py:/bin/runserver:z
     use_become: "{{ vault_ansible_become_user is defined and vault_ansible_become_user != '' }}"
   tasks:
     - name: Copying docker/podman wrapper script
@@ -31,7 +32,6 @@
         systemctl stop {{vault_name}};
         systemctl disable {{vault_name}};
         /tmp/docker-or-podman rm {{vault_name}};
-        /tmp/docker-or-podman rmi -f {{vault_name}} ghcr.io/freva-clint/freva-deployment/vault;
         exit 0
       ignore_errors: true
       become: "{{use_become}}"
@@ -50,17 +50,17 @@
         state: directory
         path: "{{ item }}"
       with_items:
-        - "/opt/freva/{{ project_name }}/vault_service/config"
-        - "/opt/freva/{{ project_name }}/vault_service/files"
+        - "{{vault_data_path|expanduser}}/{{ project_name }}/vault_service/config"
+        - "{{vault_data_path|expanduser}}/{{ project_name }}/vault_service/files"
       become: "{{use_become}}"
     - name: Copying public key file to target machine
       copy:
         src: "{{ vault_keyfile }}"
-        dest: "/opt/freva/{{project_name}}/vault_service/config/freva.crt"
+        dest: "{{vault_data_path|expanduser}}/{{project_name}}/vault_service/config/freva.crt"
       become: "{{use_become}}"
     - name: Creating compose directory structure
       file:
-        path: /opt/freva/compose_services
+        path: '{{vault_data_path|expanduser}}/compose_services'
         state: directory
         recurse: true
       become: "{{use_become}}"
@@ -68,27 +68,27 @@
       become: "{{use_become}}"
       template:
         src: "{{ asset_dir }}/playbooks/vault-server-compose-template.yml"
-        dest: "/opt/freva/compose_services/{{vault_name}}-compose.yml"
+        dest: "{{vault_data_path|expanduser}}/compose_services/{{vault_name}}-compose.yml"
     - name: Creating system services
       become: "{{use_become}}"
       shell: |
         /tmp/create_systemd.py {{vault_name}} compose --enable --project-name {{vault_name}} -f {{compose_file}} up --remove-orphans
+      environment:
+        DEBUG: '{{ debug }}'
       when: systemctl.stat.exists == true
     - pause: seconds=20
     - name: Deleting existing infrastructure
-      shell: >
-        /tmp/docker-or-podman exec -it {{ vault_name }}
-        vault kv delete kv/read-eval
+      shell: /tmp/docker-or-podman exec {{ vault_name }} vault kv delete kv/read-eval
       become: "{{use_become}}"
     - name: Inserting server infrastructure
       become: "{{use_become}}"
       shell: >
-        /tmp/docker-or-podman exec -it {{ vault_name }}
+        /tmp/docker-or-podman exec {{ vault_name }}
         vault kv put kv/read-eval db.container={{ vault_name }}
-        db.host={{ vault_host }}
-        db.port={{ db_port }}
+        db.host={{ vault_db_host }}
+        db.port={{ vault_db_port }}
         db.passwd='{{ vault_passwd }}'
-        db.user={{ db_user }}
+        db.user={{ vault_db_user }}
         db.db={{ vault_db }}
       become: "{{use_become}}"
     - name: Deleting auxillary files
