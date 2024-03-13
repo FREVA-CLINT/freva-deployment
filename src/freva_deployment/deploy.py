@@ -614,6 +614,10 @@ class DeployFactory:
                         lines[num] = f"{step}.host={self.cfg[step]['hosts']}\n"
                 if line.startswith("solr.host"):
                     lines[num] = f"solr.host={self.cfg[step]['hosts']}\n"
+                if line.startswith("db.host"):
+                    lines[num] = (
+                        f"db.host={self.cfg['db']['config']['host']}\n"
+                    )
         dump_file = self._get_files_copy("core")
         if dump_file:
             with dump_file.open("w") as f_obj:
