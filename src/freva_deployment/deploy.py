@@ -632,20 +632,21 @@ class DeployFactory:
         if ask_pass:
             sudo_pass_msg += ", defaults to ssh password"
         passwords = {}
-        passwords["ANSIBLE_BECOME_PASSWORD"] = (
+        sudo_key = "^BECOME password.*:\\s*?$"
+        ssh_key = "^SSH password:\\s*?$"
+        passwords[sudo_key] = (
             os.environ.get("ANSIBLE_BECOME_PASSWORD", "") or ""
         )
         if ask_pass:
-            passwords["ANSIBLE_SSH_PASS"] = Prompt.ask(
+            passwords[ssh_key] = Prompt.ask(
                 f"[green]{ssh_pass_msg}[/green]", password=True
             )
-        if (
-            not passwords["ANSIBLE_BECOME_PASSWORD"]
-            and not self.ask_become_password
-        ):
-            passwords["ANSIBLE_BECOME_PASSWORD"] = Prompt.ask(
+        if not passwords[sudo_key] and self.ask_become_password:
+            passwords[sudo_key] = Prompt.ask(
                 f"[green]{sudo_pass_msg}[/green]", password=True
             )
+            if not passwords[sudo_key]:
+                passwords[sudo_key] = passwords.get(ssh_key, "")
         return passwords
 
     def play(
@@ -698,19 +699,24 @@ class DeployFactory:
             f_obj.write(inventory)
         logger.info("Playing the playbooks with ansible")
         logger.debug(self.playbooks)
-        envvars = self.get_ansible_password(ask_pass)
+        envvars = {}
         envvars["ANSIBLE_STDOUT_CALLBACK"] = "yaml"
         extravars = {"ansible_port": ssh_port, "stdout_callback": "yaml"}
         if self.local_debug:
             extravars["ansible_connection"] = "local"
 
         try:
+            passwords = self.get_ansible_password(ask_pass)
+            print(passwords)
             result = run(
                 private_data_dir=str(self._td.parent_dir),
                 playbook=str(self._td.playbook_file),
                 inventory=str(self.inventory_file),
                 envvars=envvars,
+                passwords=passwords,
                 extravars=extravars,
+                cmdline="--ask-become",
+                verbosity=verbosity,
             )
         except KeyboardInterrupt:
             raise SystemExit(1)
