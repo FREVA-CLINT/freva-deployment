@@ -154,6 +154,24 @@ class CommandFactory(metaclass=abc.ABCMeta):
             cli_command += ["-t", str(time_out)]
         return cli_command + self.images
 
+    def inspect(self, **kwargs: FlagType) -> List[str]:
+        """Inspect images/containers.
+
+        Parameters
+        ----------
+        **kwargs:
+            Additional command line arguments
+
+        Returns
+        -------
+        list[str]: Constructed commmand line arguments.
+        """
+        return (
+            [self.get_container_cmd(), "inspect"]
+            + self._kwargs_to_list(**kwargs)
+            + self.images
+        )
+
     def rm(self, sub_command: str, **kwargs: FlagType) -> List[str]:
         """Remove images/containers.
 
@@ -514,6 +532,32 @@ def parse_args() -> List[str]:
         metavar="flags",
     )
 
+    # -------------------------- inspect commands -----------------------------
+
+    parser_inspect = subparsers.add_parser(
+        "inspect",
+        help="Return low-level information on Docker objects",
+        add_help=False,
+    )
+    parser_inspect.add_argument(
+        "container",
+        nargs="+",
+        type=str,
+        metavar="CONTAINER",
+        help="Name of the images(s)",
+    )
+    parser_inspect.add_argument(
+        "--format",
+        "-f",
+        type=str,
+    )
+    parser_inspect.add_argument(
+        "--size",
+        "-s",
+        action="store_true",
+    )
+    parser_inspect.add_argument("--type", type=str)
+
     # -------------------------------------------------------------------------
 
     args = parser.parse_args()
@@ -534,6 +578,8 @@ def parse_args() -> List[str]:
         cmd = container_inst.run(args.subcommand, *args.command, **kwargs)
     elif args.subcommand in ("rm", "rmi"):
         cmd = container_inst.rm(args.subcommand, **kwargs)
+    elif args.subcommand in ("inspect",):
+        cmd = container_inst.inspect(**kwargs)
     elif args.subcommand in ("stop",):
         cmd = container_inst.stop(args.time_out)
     elif args.subcommand in ("pull",):

@@ -1,0 +1,12 @@
+---
+- hosts: databrowser
+
+  tasks:
+    - name: Copy docker-or-podman script
+      copy:
+        src: "{{ asset_dir }}/scripts/docker-or-podman"
+        dest: /tmp/docker-or-podman
+        mode: "0775"
+    - name: Get version of databrowser API
+      command: /tmp/docker-or-podman
+
