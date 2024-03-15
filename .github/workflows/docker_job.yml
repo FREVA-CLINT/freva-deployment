@@ -19,13 +19,22 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      -
+        name: Set up Python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+      -
+        name: Install packages
+        run: |
+         python3 -m pip install -e .
 
       -
         name: Get tag
         id: repository
         run: |
           echo "repo=$(echo ${{ github.repository }}|tr 'A-Z' 'a-z')" >> $GITHUB_OUTPUT
-
+          echo "tag=$(python -c 'from freva_deployment import __version__;print(__version__)')"
       -
         name: Set up QEMU
         uses: docker/setup-qemu-action@v1
@@ -51,13 +60,4 @@ jobs:
           push: true
           tags: |
             ghcr.io/${{ steps.repository.outputs.repo }}/vault:latest
-
-      -
-        name: Build and push server map image
-        uses: docker/build-push-action@v4
-        with:
-          context: assets/share/freva/deployment/servers/
-          platforms: linux/amd64
-          push: true
-          tags: |
-            ghcr.io/${{ steps.repository.outputs.repo }}/freva-map:latest
+            ghcr.io/${{ steps.repository.outputs.repo }}:${{ steps.repository.outputs.tag }}
