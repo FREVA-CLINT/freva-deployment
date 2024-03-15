@@ -55,6 +55,9 @@ jobs:
     name: Simple functional tests for the vault image
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
 
@@ -69,6 +72,8 @@ jobs:
 
       - name: Set up Python
         uses: actions/setup-python@v4
+        with:
+          python-version: "3.x"
 
       - name: Check vault image
         run: python3 assets/share/freva/deployment/vault/checks.py
