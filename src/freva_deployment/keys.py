@@ -28,7 +28,10 @@ class RandomKeys:
         self, base_name: str = "freva", common_name: str = "localhost"
     ) -> None:
         if not _CRYPTO:
-            raise ImportError("Please install the `cryptography` module.")
+            raise ImportError(
+                "Please install the `cryptography` python module."
+                " in order to generate certificates."
+            )
         self.base_name = base_name
         self.common_name = common_name
         self._private_key_pem: Optional[bytes] = None
