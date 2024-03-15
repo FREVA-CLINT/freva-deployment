@@ -20,7 +20,7 @@ dynamic = ["version"]
 description = "Deployment of the Free Evaluation Framework Freva"
 requires-python = ">=3.8"
 dependencies = [ "appdirs",
-             "ansible>=2.10",
+             "ansible-runner",
              "npyscreen",
              "PyMySQL",
              "PyYAML",

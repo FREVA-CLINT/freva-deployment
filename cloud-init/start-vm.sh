@@ -46,6 +46,7 @@ users:
     lock_passwd: true
     gecos: Freva Test
     groups: users, admin
+    plain_text_passwd: "freva"
     sudo: "ALL=(ALL) NOPASSWD:ALL"
     shell: /bin/bash
     ssh_authorized_keys:
@@ -84,9 +85,14 @@ kill_vm () {
 start () {
     kill_vm
     local img_file=$(prepare)
-    echo $img_file
+    echo -e Starting http server for config injection...
     python3 -m http.server $PORT --directory temp &
     echo $! > temp/httpd.pid
+    sleep 2
+    if [ -z "$(ps aux|grep -v grep|awk '{print $2}'|grep $(cat temp/httpd.pid))" ];then
+        kill_vm
+        exit 1
+    fi
     qemu-system-x86_64                                              \
         -name freva-deployment                                      \
         -net nic                                                    \

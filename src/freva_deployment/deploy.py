@@ -5,25 +5,25 @@ from __future__ import annotations
 import json
 import os
 import random
-import shlex
 import string
 import sys
 from copy import deepcopy
 from getpass import getuser
 from pathlib import Path
 from socket import gethostbyname, gethostname
-from subprocess import CalledProcessError, run
-from tempfile import TemporaryDirectory
 from typing import Any, cast
 from urllib.parse import urlparse
 
 import tomlkit
 import yaml
+from ansible_runner import run
 from rich import print
+from rich.prompt import Prompt
 
 from freva_deployment import FREVA_PYTHON_VERSION
 
 from .keys import RandomKeys
+from .runner import RunnerDir
 from .utils import (
     AssetDir,
     RichConsole,
@@ -75,13 +75,13 @@ class DeployFactory:
         self._config_keys: list[str] = []
         self.master_pass: str = os.environ.get("MASTER_PASSWD", "") or ""
         self.email_password: str = ""
-        self._td: TemporaryDirectory = TemporaryDirectory(prefix="inventory")
-        self.inventory_file: Path = Path(self._td.name) / "inventory.yaml"
+        self._td: RunnerDir = RunnerDir()
+        self.inventory_file: Path = self._td.inventory_file
         self.eval_conf_file: Path = (
-            Path(self._td.name) / "evaluation_system.conf"
+            self._td.parent_dir / "evaluation_system.conf"
         )
-        self.web_conf_file: Path = Path(self._td.name) / "freva_web.toml"
-        self.apache_config: Path = Path(self._td.name) / "freva_web.conf"
+        self.web_conf_file: Path = self._td.parent_dir / "freva_web.toml"
+        self.apache_config: Path = self._td.parent_dir / "freva_web.conf"
         self._db_pass: str = ""
         self._steps = steps or ["db", "databrowser", "web"]
         self._inv_tmpl = Path(config_file or config_dir / "inventory.toml")
@@ -426,6 +426,14 @@ class DeployFactory:
                     )
 
     @property
+    def ask_become_password(self) -> bool:
+        """Check if we have to ask for the sudo passwd at all."""
+        for step in self.step_order:
+            if self.cfg[step]["config"].get("ansible_become_user", "") or "":
+                return True
+        return False
+
+    @property
     def _empty_ok(self) -> list[str]:
         """Define all keys that can be empty."""
         return [
@@ -539,10 +547,6 @@ class DeployFactory:
         return yaml.dump(json.loads(json.dumps(config)))
 
     @property
-    def _playbook_file(self) -> Path:
-        return Path(self._td.name) / "ansible-playbook.yml"
-
-    @property
     def python_prefix(self) -> Path:
         """Get the path of the new conda evnironment."""
         return Path(sys.exec_prefix) / "bin" / "python3"
@@ -579,9 +583,7 @@ class DeployFactory:
             )
             with Path(playbook_file).open() as f_obj:
                 playbook += yaml.safe_load(f_obj)
-        with self._playbook_file.open("w") as stream:
-            yaml.dump(playbook, stream)
-        return self._playbook_file.read_text()
+        return self._td.create_playbook(playbook)
 
     def create_eval_config(self) -> None:
         """Create and dump the evaluation_systme.config."""
@@ -623,6 +625,30 @@ class DeployFactory:
             with dump_file.open("w") as f_obj:
                 f_obj.write("".join(lines))
 
+    def get_ansible_password(self, ask_pass: bool = False) -> dict[str, str]:
+        """The the passwords for the ansible environments."""
+        ssh_pass_msg = "Give the [b]ssh[/b] password"
+        sudo_pass_msg = "Give the [b]sudo[/b] password"
+        if ask_pass:
+            sudo_pass_msg += ", defaults to ssh password"
+        passwords = {}
+        sudo_key = "^BECOME password.*:\\s*?$"
+        ssh_key = "^SSH password:\\s*?$"
+        passwords[sudo_key] = (
+            os.environ.get("ANSIBLE_BECOME_PASSWORD", "") or ""
+        )
+        if ask_pass:
+            passwords[ssh_key] = Prompt.ask(
+                f"[green]{ssh_pass_msg}[/green]", password=True
+            )
+        if not passwords[sudo_key] and self.ask_become_password:
+            passwords[sudo_key] = Prompt.ask(
+                f"[green]{sudo_pass_msg}[/green]", password=True
+            )
+            if not passwords[sudo_key]:
+                passwords[sudo_key] = passwords.get(ssh_key, "")
+        return passwords
+
     def play(
         self, ask_pass: bool = True, verbosity: int = 0, ssh_port: int = 22
     ) -> None:
@@ -639,7 +665,7 @@ class DeployFactory:
             Set the ssh port, in 99.9% of cases this should be left at port 22
         """
         try:
-            self._play(
+            return self._play(
                 ask_pass=ask_pass, verbosity=verbosity, ssh_port=ssh_port
             )
         except KeyboardInterrupt:
@@ -672,40 +698,31 @@ class DeployFactory:
         with self.inventory_file.open("w") as f_obj:
             f_obj.write(inventory)
         logger.info("Playing the playbooks with ansible")
-        RichConsole.print(
-            "[b]Note:[/] The [blue]BECOME[/] password refers to the "
-            "[blue]sudo[/] password",
-            markup=True,
-        )
-        # try:
-        #    self._run(ask_pass=ask_pass, verbosity=verbosity)
-        # except KeyboardInterrupt:
-        #    pass
-        # return
         logger.debug(self.playbooks)
-        v_string: str = ""
-        if verbosity > 0:
-            v_string += "-" + verbosity * "v"
-        cmd = (
-            f"ansible-playbook {v_string} -i {self.inventory_file} "
-            f"{self._playbook_file} --ask-become-pass"
-            f" -e ansible_port={ssh_port}"
-        )
-        if ask_pass:
-            cmd += " --ask-pass"
+        envvars = {}
+        envvars["ANSIBLE_STDOUT_CALLBACK"] = "yaml"
+        extravars = {"ansible_port": ssh_port, "stdout_callback": "yaml"}
         if self.local_debug:
-            cmd += " -c local"
-        env = os.environ.copy()
-        env["PATH"] += f":{AssetDir.get_dirs(user=True, key='scripts')}"
-        logger.debug("Using anisible command: %s", cmd)
+            extravars["ansible_connection"] = "local"
+
+        cmdline = "--ask-become"
+        if ask_pass:
+            cmdline += " --ask-pass"
         try:
-            _ = run(
-                shlex.split(cmd),
-                env=env,
-                cwd=str(asset_dir),
-                check=True,
+            passwords = self.get_ansible_password(ask_pass)
+            print(passwords)
+            result = run(
+                private_data_dir=str(self._td.parent_dir),
+                playbook=str(self._td.playbook_file),
+                inventory=str(self.inventory_file),
+                envvars=envvars,
+                passwords=passwords,
+                extravars=extravars,
+                cmdline=cmdline,
+                verbosity=verbosity,
             )
-        except CalledProcessError:
-            raise SystemExit(f"{cmd} failed")
         except KeyboardInterrupt:
             raise SystemExit(1)
+        if result.status in ("timeout", "failed"):
+            logger.error("Deployment not successful: %s", result.status)
+        return result
