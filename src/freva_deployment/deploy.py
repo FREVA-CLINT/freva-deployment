@@ -674,6 +674,46 @@ class DeployFactory:
             )
             raise SystemExit(130)
 
+    def get_steps_from_versions(
+        self,
+        envvars: dict[str],
+        extravars: dict[str],
+        cmdline: dict[str],
+        passwords: dict[str],
+        verbosity: int,
+    ) -> list[str]:
+        """Check the versions of the different freva parts."""
+        config: dict[str, dict[str, dict[str, str | int | bool]]] = {}
+        cfg = deepcopy(self.cfg)
+        if cfg.get("databrowser") is None:
+            cfg["databrowser"] = cfg["solr"]
+        for step in set(self.step_order):
+            config[step] = {}
+            config[step]["hosts"] = cfg[step]["hosts"]
+            if "ansible_become_user" not in cfg[step]["config"]:
+                become_user = "root"
+            else:
+                become_user = cfg[step]["config"]["ansible_become_user"]
+            config[step]["vars"] = {
+                f"{step}_ansible_become_user": become_user,
+                "asset_dir": str(asset_dir),
+            }
+        config["core"]["vars"]["core_install_dir"] = cfg["core"]["config"][
+            "install_dir"
+        ]
+        result = run(
+            private_data_dir=str(self._td.parent_dir),
+            playbook=str(asset_dir / "playbooks" / "versions.yaml"),
+            inventory=config,
+            envvars=envvars,
+            passwords=passwords,
+            extravars=extravars,
+            cmdline=cmdline,
+            verbosity=verbosity,
+        )
+        exit()
+        return []
+
     def _play(
         self,
         ask_pass: bool = True,
@@ -692,13 +732,6 @@ class DeployFactory:
         ssh_port: int, default: 22
             Set the ssh port, in 99.9% of cases this should be left at port 22
         """
-        inventory = self.parse_config()
-        self.create_eval_config()
-        logger.debug(inventory)
-        with self.inventory_file.open("w") as f_obj:
-            f_obj.write(inventory)
-        logger.info("Playing the playbooks with ansible")
-        logger.debug(self.playbooks)
         envvars = {}
         envvars["ANSIBLE_STDOUT_CALLBACK"] = "yaml"
         extravars = {"ansible_port": ssh_port, "stdout_callback": "yaml"}
@@ -708,9 +741,18 @@ class DeployFactory:
         cmdline = "--ask-become"
         if ask_pass:
             cmdline += " --ask-pass"
+        passwords = self.get_ansible_password(ask_pass)
+        steps = self.get_steps_from_versions(
+            envvars, extravars, cmdline, passwords, verbosity
+        )
+        inventory = self.parse_config()
+        self.create_eval_config()
+        logger.debug(inventory)
+        with self.inventory_file.open("w") as f_obj:
+            f_obj.write(inventory)
+        logger.info("Playing the playbooks with ansible")
+        logger.debug(self.playbooks)
         try:
-            passwords = self.get_ansible_password(ask_pass)
-            print(passwords)
             result = run(
                 private_data_dir=str(self._td.parent_dir),
                 playbook=str(self._td.playbook_file),
