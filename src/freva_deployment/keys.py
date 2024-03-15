@@ -5,12 +5,15 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Optional
 
-from cryptography import x509
-from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import hashes, serialization
-from cryptography.hazmat.primitives.asymmetric import rsa
-from cryptography.x509 import Name
-from cryptography.x509.oid import NameOID
+_CRYPTO = True
+try:
+    from cryptography import x509
+    from cryptography.hazmat.backends import default_backend
+    from cryptography.hazmat.primitives import hashes, serialization
+    from cryptography.hazmat.primitives.asymmetric import rsa
+    from cryptography.x509.oid import NameOID
+except ImportError:
+    _CRYPTO = False
 
 
 class RandomKeys:
@@ -24,6 +27,8 @@ class RandomKeys:
     def __init__(
         self, base_name: str = "freva", common_name: str = "localhost"
     ) -> None:
+        if not _CRYPTO:
+            raise ImportError("Please install the `cryptography` module.")
         self.base_name = base_name
         self.common_name = common_name
         self._private_key_pem: Optional[bytes] = None
