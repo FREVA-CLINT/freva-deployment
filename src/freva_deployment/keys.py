@@ -113,7 +113,7 @@ class RandomKeys:
             temp_file.write_bytes(self.certificate_chain)
         return str(temp_file)
 
-    def create_self_signed_cert(self) -> x509.Certificate:
+    def create_self_signed_cert(self) -> "x509.Certificate":
         """
         Create a self-signed certificate using the public key.
 
