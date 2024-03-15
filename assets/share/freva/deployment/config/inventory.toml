@@ -23,7 +23,7 @@ project_name = "freva"
 [certificates]
 
 ## Path to the public key file
-public_keyfile = ""
+public_keyfile = "freva.crt"
 
 ## Path to the private key file
 privat_keyfile = ""
@@ -51,11 +51,11 @@ hosts = "localhost"
 ## hosts = "db-[99:101]-node.example.com"
 [databrowser]
 ## Set the host names running the databrowser service
-hosts = "localhost"
+hosts = "freva-plugin-playground.cloud.dkrz.de"
 
 [db]
 ## Set the host names running the mariadb service
-hosts = "localhost"
+hosts = "freva-plugin-playground.cloud.dkrz.de"
 
 [core]
 ### Set the host names where the command line interface of freva will be installed
@@ -74,12 +74,12 @@ user = "freva"
 db = "frevadb"
 
 ##If you need a different user name you can set it here (defaults to current user):
-ansible_user = "freva"
+ansible_user = "k204230"
 
 ## You can set the db_host separately, if none is given (default)
 ## the one from the hosts names above are taken
 
-db_host = "10.0.2.15"
+db_host = ""
 
 ## Set the become (sudo) user name to change to for installing the services
 ## leave blank to utilise a non privileged user based installation
@@ -106,7 +106,7 @@ vault_playbook = ""
 
 [databrowser.config]
 # Set the memory for the solr server (solr is the search engine in the background)
-solr_mem = "1g"
+solr_mem = "4g"
 
 # Set the port the databrowser should be running on
 databrowser_port = 7777
@@ -120,7 +120,7 @@ ansible_become_user = "root"
 ansible_python_interpreter = ""
 
 ## If you need a different user name you can set it here (default to current user):
-ansible_user = "freva"
+ansible_user = "k204230"
 
 ##Indicate whether or not to empty any pre-existing folders/docker volumes.
 ##(Useful for a truly fresh start) (default: False)

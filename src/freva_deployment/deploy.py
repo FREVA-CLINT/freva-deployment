@@ -705,6 +705,9 @@ class DeployFactory:
         if self.local_debug:
             extravars["ansible_connection"] = "local"
 
+        cmdline = "--ask-become"
+        if ask_pass:
+            cmdline += " --ask-pass"
         try:
             passwords = self.get_ansible_password(ask_pass)
             print(passwords)
@@ -715,7 +718,7 @@ class DeployFactory:
                 envvars=envvars,
                 passwords=passwords,
                 extravars=extravars,
-                cmdline="--ask-become",
+                cmdline=cmdline,
                 verbosity=verbosity,
             )
         except KeyboardInterrupt:
