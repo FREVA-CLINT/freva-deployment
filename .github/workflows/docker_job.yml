@@ -50,6 +50,9 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      -
+        name: Set docker version label
+        run: sed -i 's/<VERSION>/${{ steps.repository.outputs.tag }}/g' assets/share/freva/deployment/vault/Dockerfile
 
       -
         name: Build and push vault image
