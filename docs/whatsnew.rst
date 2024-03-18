@@ -7,7 +7,7 @@ What's new
    :maxdepth: 0
    :titlesonly:
 
-v2403.0.2
+v2403.0.3
 ~~~~~~~~~
 *  A new procedure to check the correct versions of all micro services has
    been added
