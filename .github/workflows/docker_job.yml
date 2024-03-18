@@ -5,7 +5,7 @@ run-name: ${{ github.actor }} is building the container
   workflow_dispatch:
   push:
     branches:
-      - main
+      - versions
     tags:
       - "v*.*.*"
 
@@ -63,6 +63,4 @@ jobs:
           context: assets/share/freva/deployment/vault/
           platforms: linux/amd64
           push: true
-          tags: |
-            ghcr.io/${{ steps.repository.outputs.repo }}/vault:latest
-            ghcr.io/${{ steps.repository.outputs.repo }}:${{ steps.repository.outputs.tag }}
+          tags: ghcr.io/${{ steps.repository.outputs.repo }}/vault:latest,ghcr.io/${{ steps.repository.outputs.repo }}:${{ steps.repository.outputs.tag }}

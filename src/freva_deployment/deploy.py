@@ -46,7 +46,7 @@ class DeployFactory:
     ----------
     project_name: str
         The name of the project to distinguish this instance from others.
-    steps: list[str], default: ["services", "core", "web"]
+    steps: list[str], default: ["core", "web", "databrowser", "db"]
         The components that are going to be deployed.
     config_file: os.PathLike, default: None
         Path to any existing deployment configuration file.
@@ -87,6 +87,8 @@ class DeployFactory:
         self.apache_config: Path = self._td.parent_dir / "freva_web.conf"
         self._db_pass: str = ""
         self._steps = steps or ["db", "databrowser", "web"]
+        if self._steps == ["auto"]:
+            self._steps = []
         self._inv_tmpl = Path(config_file or config_dir / "inventory.toml")
         self._cfg_tmpl = self.aux_dir / "evaluation_system.conf.tmpl"
         self.cfg = self._read_cfg()

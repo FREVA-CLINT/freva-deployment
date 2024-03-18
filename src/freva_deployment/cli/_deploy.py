@@ -32,8 +32,8 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
         type=str,
         nargs="+",
         default=["db", "databrowser", "web", "core"],
-        choices=["web", "core", "db", "databrowser"],
-        help="The services/code stack to be deployed",
+        choices=["web", "core", "db", "databrowser", "auto"],
+        help="The services/code stack to be deployed.",
     )
     ap.add_argument(
         "--ask-pass",
