@@ -22,4 +22,4 @@ docs:
 	make -C docs html
 
 release:
-	python3 release.py tag freva_deployment  -b verions
+	python3 release.py tag freva_deployment  -b versions
