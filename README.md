@@ -314,23 +314,35 @@ terminal where you created the VM or use the kill command:
 
 ## Development Workflow
 
-We use a Makefile to manage common development tasks. Here are some useful
-commands:
-
-
-1. To install in development mode use:
+To install the code in development mode use:
 ```console
 make
 ```
 
-2. To reformat and do type checking:
+Unit tests, building the documentation, type annotations and code style tests
+are done with [tox](https://tox.wiki/en/latest/). To run all tests, linting
+in parallel simply execute the following command:
+
 ```console
-make lint
+tox -p 3
+```
+You can also run the each part alone, for example to only check the code style:
+
+```console
+tox -e lint
+```
+available options are ``lint``, ``types``, ``test`` and ``docs``.
+
+Tox runs in a separate python environment to run the tests in the current
+environment use:
+
+```console
+pytest
 ```
 
-3. Generate the documentation:
+To reformat and do type checking:
 ```console
-make docs
+make lint
 ```
 ### Creating a new release.
 
@@ -339,7 +351,7 @@ release of the software use the following command to trigger a release
 procedure:
 
 ```console
-make release
+tox -e release
 ```
 
 This will check the current version of the `main` branch and created a trigger

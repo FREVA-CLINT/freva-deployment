@@ -6,7 +6,7 @@ permissions:
   pull-requests: write
 on: [push, pull_request]
 jobs:
-  lint:
+  linting-and-testing:
     runs-on: ubuntu-latest
     steps:
     -
@@ -20,36 +20,11 @@ jobs:
     -
       name: Install packages
       run: |
-        python3 -m pip install -e .[test]
+        python3 -m pip install tox
         mkdir .mypy_cache
     -
-      name: formating
-      run: isort -c --profile black -t py311 -l 79 src
-    -
-      name: type checking
-      run: mypy --install-types --non-interactive
-
-  cli_test:
-    runs-on: ubuntu-latest
-    steps:
-    -
-      name: Checkout
-      uses: actions/checkout@v4
-    -
-      name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: "3.x"
-    -
-      name: Install packages
-      run: |
-        python3 -m pip install .
-    -
-      name: deploy-freva-cmd command checks
-      run: deploy-freva-cmd --help
-
-    - name: deploy-freva command check
-      run: deploy-freva --help
+      name: Running tests with tox
+      run: tox -p 3
 
   vault-test:
     name: Simple functional tests for the vault image

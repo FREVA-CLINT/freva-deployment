@@ -17,9 +17,6 @@ lint:
 	isort --profile black -t py311 -l 79 src
 	mypy --install-types --non-interactive
 
-docs:
-	make -C docs clean
-	make -C docs html
+docs: tox -e docs
 
-release:
-	python3 release.py tag freva_deployment  -b versions
+release: tox -e release

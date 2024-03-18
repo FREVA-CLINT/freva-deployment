@@ -7,6 +7,7 @@ config/evaluation_system.conf
 config/inventory
 __pycache__/*
 build/
+.tox/
 *.tmpl
 docs/_build/
 dist/
