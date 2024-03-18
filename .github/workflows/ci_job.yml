@@ -1,5 +1,5 @@
 name: CLI Test
-run-name: ${{ github.actor }} is tesing the cli 🧉
+run-name: ${{ github.actor }} is testing the cli 🧉
 
 # Set the access for individual scopes, or use permissions: write-all
 permissions:
@@ -57,7 +57,7 @@ jobs:
   dependabot:
     name: Merge PR by dependabot
     runs-on: ubuntu-latest
-    needs: [cli_test, lint, vault-test]
+    needs: [linting-and-testing, vault-test]
     # Specifically check that dependabot (or another trusted party) created this pull-request, and that it has been labelled correctly.
     if: github.event.pull_request.user.login == 'dependabot[bot]'
     steps:
