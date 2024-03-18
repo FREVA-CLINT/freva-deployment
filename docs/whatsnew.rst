@@ -7,8 +7,8 @@ What's new
    :maxdepth: 0
    :titlesonly:
 
-v240.0.1
-~~~~~~~~
+v2403.0.0
+~~~~~~~~~
 *  A new procedure to check the correct versions of all micro services has
    been added
 *  Unprivileged users (non-root) can now also deploy the system with all
