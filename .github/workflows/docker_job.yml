@@ -36,7 +36,7 @@ jobs:
         id: repository
         run: |
           echo "repo=$(echo ${{ github.repository }}|tr 'A-Z' 'a-z')" >> $GITHUB_OUTPUT
-          echo "tag=$(python -c 'from freva_deployment import __version__;print(__version__)')"
+          echo "tag=$(python -c 'from freva_deployment import __version__;print(__version__)')" >> $GITHUB_OUTPUT
       -
         name: Set up QEMU
         uses: docker/setup-qemu-action@v1
