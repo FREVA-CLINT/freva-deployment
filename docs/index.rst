@@ -93,27 +93,61 @@ Make sure you have the following prerequisites installed:
 Development Workflow
 --------------------
 
-We use a Makefile to manage common development tasks. Here are some useful
-commands:
-
-
-1. To install in development mode use:
+To install the code in development mode use:
 
 .. code:: console
 
     make
 
-2. To reformat and do type checking:
+Unit tests, building the documentation, type annotations and code style tests
+are done with `tox <https://tox.wiki/en/latest/>`_. To run all tests, linting
+in parallel simply execute the following command:
+
+.. code:: console
+
+    tox -p 3
+
+
+You can also run the each part alone, for example to only check the code style:
+
+
+.. code:: console
+
+    tox -e lint
+
+available options are ``lint``, ``types``, ``test`` and ``docs``.
+
+Tox runs in a separate python environment to run the tests in the current
+environment use:
+
+.. code:: console
+
+    pytest
+
+
+To reformat and do type checking:
 
 .. code:: console
 
     make lint
 
-3. Generate the documentations:
+
+Creating a new release
+#######################
+
+Once the development is finished and you decide that it's time for a new
+release of the software use the following command to trigger a release
+procedure:
 
 .. code:: console
 
-    make docs
+    tox -e release
+
+This will check the current version of the `main` branch and created a trigger
+a GitHub continuous integration pipeline to create a new release. The procedure
+performs a couple of checks, if theses checks fail please make sure to address
+the issues.
+
 
 Indices and tables
 ==================
