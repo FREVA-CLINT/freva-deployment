@@ -61,5 +61,5 @@ jobs:
           push: true
           build-args: VERSION=${{steps.repository.outputs.tag}}
           tags: |
-            ghcr.io/${{ steps.repository.outputs.repo }}/vault:${{ steps.repository.outputs.tag }}
-            ghcr.io/${{ steps.repository.outputs.repo }}/vault:latest
+            ghcr.io/${{ steps.repository.outputs.repo }}:${{ steps.repository.outputs.tag }}
+            ghcr.io/${{ steps.repository.outputs.repo }}:latest
