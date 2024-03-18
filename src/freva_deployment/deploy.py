@@ -7,8 +7,10 @@ import os
 import random
 import string
 import sys
+import time
 from copy import deepcopy
 from getpass import getuser
+from io import StringIO
 from pathlib import Path
 from socket import gethostbyname, gethostname
 from typing import Any, cast
@@ -16,8 +18,8 @@ from urllib.parse import urlparse
 
 import tomlkit
 import yaml
-from ansible_runner import run
-from rich import print
+from ansible_runner import run, run_async
+from rich import print as pprint
 from rich.prompt import Prompt
 
 from freva_deployment import FREVA_PYTHON_VERSION
@@ -512,9 +514,9 @@ class DeployFactory:
         if dump_file:
             config[step]["vars"][f"{step}_dump"] = str(dump_file)
 
-    def parse_config(self) -> str:
+    def parse_config(self, steps: list[str]) -> str:
         """Create config files for anisble and evaluation_system.conf."""
-        playbook = self.create_playbooks()
+        playbook = self.create_playbooks(set(steps + self.steps))
         logger.info("Parsing configurations")
         self._check_config()
         config: dict[str, dict[str, dict[str, str | int | bool]]] = {}
@@ -574,12 +576,12 @@ class DeployFactory:
                 steps.append("vault")
         return [s for s in self.step_order if s in steps]
 
-    def create_playbooks(self) -> str:
+    def create_playbooks(self, steps: set[str]) -> str:
         """Create the ansible playbook form all steps."""
         logger.info("Creating Ansible playbooks")
         playbook = []
         [getattr(self, f"_prep_{step}")() for step in self.step_order]
-        for step in self.steps:
+        for step in steps:
             playbook_file = (
                 self.playbooks.get(step)
                 or self.playbook_dir / f"{step}-server-playbook.yml"
@@ -672,7 +674,7 @@ class DeployFactory:
                 ask_pass=ask_pass, verbosity=verbosity, ssh_port=ssh_port
             )
         except KeyboardInterrupt:
-            print(
+            pprint(
                 " [red][ERROR]: User interrupted execution[/]", file=sys.stderr
             )
             raise SystemExit(130)
@@ -680,11 +682,11 @@ class DeployFactory:
     def get_steps_from_versions(
         self,
         envvars: dict[str, str],
-        extravars: dict[str, str],
-        cmdline: dict[str, str],
+        extravars: dict[str, str | int],
+        cmdline: str,
         passwords: dict[str, str],
         verbosity: int,
-    ) -> set[str, str]:
+    ) -> list[str]:
         """Check the versions of the different freva parts."""
         config: dict[str, dict[str, dict[str, str | int | bool]]] = {}
         cfg = deepcopy(self.cfg)
@@ -704,18 +706,33 @@ class DeployFactory:
         config["core"]["vars"]["core_install_dir"] = cfg["core"]["config"][
             "install_dir"
         ]
-        extravars["forks"] = 10
-        event = run(
-            private_data_dir=str(self._td.parent_dir),
-            playbook=str(asset_dir / "playbooks" / "versions.yaml"),
-            inventory=config,
-            envvars=envvars,
-            passwords=passwords,
-            extravars=extravars,
-            cmdline=cmdline,
-            verbosity=verbosity,
-            forks=4,
-        )
+        extravars["forks"] = 4
+        stdout = sys.stdout
+        buffer = StringIO()
+        pprint("Getting versions of micro services ...", end="")
+        try:
+            sys.stdout = buffer
+            thread, event = run_async(
+                private_data_dir=str(self._td.parent_dir),
+                playbook=str(asset_dir / "playbooks" / "versions.yaml"),
+                inventory=config,
+                envvars=envvars,
+                passwords=passwords,
+                extravars=extravars,
+                cmdline=cmdline,
+                verbosity=verbosity,
+                forks=4,
+                quiet=False,
+            )
+            while thread.is_alive():
+                time.sleep(0.5)
+        finally:
+            sys.stdout = stdout
+        if event.status != "successful":
+            pprint(" [red]fail[/red]")
+            print(buffer.getvalue())
+            raise SystemExit(1)
+        pprint(" [green]ok[/green]")
         versions = {}
         for res in event.events:
             msg = res.get("event_data", {}).get("res", {}).get("msg")
@@ -743,9 +760,12 @@ class DeployFactory:
         ssh_port: int, default: 22
             Set the ssh port, in 99.9% of cases this should be left at port 22
         """
-        envvars = {}
+        envvars: dict[str, str] = {}
         envvars["ANSIBLE_STDOUT_CALLBACK"] = "yaml"
-        extravars = {"ansible_port": ssh_port, "stdout_callback": "yaml"}
+        extravars: dict[str, str | int] = {
+            "ansible_port": ssh_port,
+            "stdout_callback": "yaml",
+        }
         if self.local_debug:
             extravars["ansible_connection"] = "local"
 
@@ -753,19 +773,14 @@ class DeployFactory:
         if ask_pass:
             cmdline += " --ask-pass"
         passwords = self.get_ansible_password(ask_pass)
-        steps = set(
-            self.get_steps_from_versions(
-                envvars.copy(),
-                extravars.copy(),
-                cmdline,
-                passwords.copy(),
-                verbosity,
-            )
-            + self.steps
+        steps = self.get_steps_from_versions(
+            envvars.copy(),
+            extravars.copy(),
+            cmdline,
+            passwords.copy(),
+            verbosity,
         )
-        print(steps)
-        return
-        inventory = self.parse_config()
+        inventory = self.parse_config(steps)
         self.create_eval_config()
         logger.debug(inventory)
         with self.inventory_file.open("w") as f_obj:
