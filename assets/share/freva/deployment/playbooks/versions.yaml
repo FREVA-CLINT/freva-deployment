@@ -1,43 +1,50 @@
 ---
 - hosts: databrowser
-  vars:
-    ansible_become_user: "{{ databrowser_ansible_become_user | default('root') }}"
-    use_become: "{{ databrowser_ansible_become_user is defined and databrowser_ansible_become_user != '' }}"
   tasks:
     - name: Get databrowserAPI version
-      tags: databrowser
+      register: databrowser
       ansible.builtin.script:
         cmd: "{{ asset_dir }}/scripts/inspect.sh ghcr.io/freva-clint/databrowserapi"
-      become: "{{use_become}}"
+      become: "{{ databrowser_ansible_become_user | default('root') is defined and databrowser_ansible_become_user | default('root') != '' }}"
+    - name: Display databrowser version
+      debug:
+        msg: "{{ databrowser.stdout }}"
     - name: Get apache solr version
-      tags: solr
+      register: solr
       ansible.builtin.script:
         cmd: "{{ asset_dir }}/scripts/inspect.sh solr"
-      become: "{{use_become}}"
+      become: "{{ databrowser_ansible_become_user | default('root') is defined and databrowser_ansible_become_user | default('root') != '' }}"
+      when: inventory_hostname in groups['databrowser']
+    - name: Display solr version
+      debug:
+        msg: "{{ solr.stdout }}"
 - hosts: web
-  vars:
-    ansible_become_user: "{{ web_ansible_become_user | default('root') }}"
-    use_become: "{{ web_ansible_become_user is defined and web_ansible_become_user != '' }}"
   tasks:
     - name: Get web version
-      tags: web
+      register: web
       ansible.builtin.script:
         cmd: "{{ asset_dir }}/scripts/inspect.sh ghcr.io/freva-clint/freva-web"
-      become: "{{use_become}}"
-- hosts: vault
-  vars:
-    ansible_become_user: "{{ db_ansible_become_user | default('root') }}"
-    use_become: "{{ db_ansible_become_user is defined and db_ansible_become_user != '' }}"
+      become: "{{ web_ansible_become_user | default('root') is defined and web_ansible_become_user | default('root') != '' }}"
+      when: inventory_hostname in groups['web']
+- hosts: db
   tasks:
     - name: Get vault version
-      tags: vault
+      register: vault
       ansible.builtin.script:
         cmd: "{{ asset_dir }}/scripts/inspect.sh ghcr.io/freva-clint/freva-deployment/vault"
-      become: "{{use_become}}"
+      become: "{{ db_ansible_become_user | default('root') is defined and db_ansible_become_user | default('root') != '' }}"
+      when: inventory_hostname in groups['vault']
+    - name: Display vault version
+      debug:
+        msg: "{{ vault.stdout }}"
 - hosts: core
-  vars:
-    freva_bin: "{{ core_install_dir | expanduser }}/bin/freva"
   tasks:
     - name: Get freva version
-      tags: freva
-      shell: "{{freva_bin}} -V 2> /dev/null |awk '{print $NF}'"
+      register: core
+      tags: core
+      shell:
+        cmd: "{{ core_install_dir | expanduser }}/bin/freva -V 2> /dev/null | awk '{print $NF}'"
+      when: inventory_hostname in groups['core']
+    - name: Display core version
+      debug:
+        msg: "{{ core.stdout }}"

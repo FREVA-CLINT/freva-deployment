@@ -20,3 +20,6 @@ lint:
 docs:
 	make -C docs clean
 	make -C docs html
+
+release:
+	python3 release.py tag freva_deployment  -b verions

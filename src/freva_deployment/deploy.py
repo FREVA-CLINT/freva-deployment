@@ -34,6 +34,7 @@ from .utils import (
     load_config,
     logger,
 )
+from .versions import get_steps_from_versions
 
 
 class DeployFactory:
@@ -428,8 +429,10 @@ class DeployFactory:
     @property
     def ask_become_password(self) -> bool:
         """Check if we have to ask for the sudo passwd at all."""
+        cfg = deepcopy(self.cfg)
+        cfg.setdefault("databrowser", cfg.get("solr", {}))
         for step in self.step_order:
-            if self.cfg[step]["config"].get("ansible_become_user", "") or "":
+            if cfg[step]["config"].get("ansible_become_user", "") or "root":
                 return True
         return False
 
@@ -676,12 +679,12 @@ class DeployFactory:
 
     def get_steps_from_versions(
         self,
-        envvars: dict[str],
-        extravars: dict[str],
-        cmdline: dict[str],
-        passwords: dict[str],
+        envvars: dict[str, str],
+        extravars: dict[str, str],
+        cmdline: dict[str, str],
+        passwords: dict[str, str],
         verbosity: int,
-    ) -> list[str]:
+    ) -> set[str, str]:
         """Check the versions of the different freva parts."""
         config: dict[str, dict[str, dict[str, str | int | bool]]] = {}
         cfg = deepcopy(self.cfg)
@@ -701,7 +704,8 @@ class DeployFactory:
         config["core"]["vars"]["core_install_dir"] = cfg["core"]["config"][
             "install_dir"
         ]
-        result = run(
+        extravars["forks"] = 10
+        event = run(
             private_data_dir=str(self._td.parent_dir),
             playbook=str(asset_dir / "playbooks" / "versions.yaml"),
             inventory=config,
@@ -710,9 +714,16 @@ class DeployFactory:
             extravars=extravars,
             cmdline=cmdline,
             verbosity=verbosity,
+            forks=4,
         )
-        exit()
-        return []
+        versions = {}
+        for res in event.events:
+            msg = res.get("event_data", {}).get("res", {}).get("msg")
+            title = res.get("event_data", {}).get("task", "").lower()
+            if msg is not None and title.startswith("display"):
+                service = res.get("event_data", {}).get("task", "").split()[1]
+                versions[service] = msg.strip()
+        return get_steps_from_versions(versions)
 
     def _play(
         self,
@@ -742,9 +753,18 @@ class DeployFactory:
         if ask_pass:
             cmdline += " --ask-pass"
         passwords = self.get_ansible_password(ask_pass)
-        steps = self.get_steps_from_versions(
-            envvars, extravars, cmdline, passwords, verbosity
+        steps = set(
+            self.get_steps_from_versions(
+                envvars.copy(),
+                extravars.copy(),
+                cmdline,
+                passwords.copy(),
+                verbosity,
+            )
+            + self.steps
         )
+        print(steps)
+        return
         inventory = self.parse_config()
         self.create_eval_config()
         logger.debug(inventory)

@@ -43,7 +43,7 @@ doc = [
     "linkify",
 ]
 test = ["mypy", "black", "flit", "isort", "types-toml", "types-PyMySQL"]
-
+release = ["git-python", "packaging", "tomli"]
 [project.urls]
 Documentation = "https://freva-deployment.readthedocs.io/en/latest/"
 Issues = "https://github.com/FREVA-CLINT/freva-deployment/issues"
@@ -64,5 +64,3 @@ directory = "assets"
 
 [package-data]
 freva_deployment = ["py.typed", "versions.json"]
-
-

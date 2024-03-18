@@ -4,10 +4,14 @@ run-name: ${{ github.actor }} is uploading the code to pypi 🧉
 on:
   push:
     tags:
-      - "*"
+      - "v*.*.*"
 
 jobs:
   pipy:
+    environment:
+      name: testpypi
+    permissions:
+      id-token: write
     runs-on: ubuntu-latest
     steps:
       -
@@ -31,3 +35,4 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           password: ${{ secrets.PYPI_API_TOKEN }}
+          repository-url: https://test.pypi.org/legacy/
