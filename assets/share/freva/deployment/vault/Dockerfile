@@ -1,8 +1,8 @@
 FROM docker.io/hashicorp/vault:latest
-
+ARG VERSION
 LABEL org.opencontainers.image.authors="DRKZ-CLINT"
 LABEL org.opencontainers.image.source="https://github.com/FREVA-CLINT/freva-deployment.git"
-LABEL org.opencontainers.image.version="<VERSION>"
+LABEL org.opencontainers.image.version="$VERSION"
 
 ENV VAULT_ADDR='http://127.0.0.1:8200'
 COPY runserver.py /bin/runserver.py
