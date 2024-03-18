@@ -46,7 +46,7 @@ services:
     hostname: {{redis_name}}
 
   {{web_name}}:
-    image: ghcr.io/freva-clint/freva-web
+    image: ghcr.io/freva-clint/freva-web:{{web_version}}
     container_name: {{web_name}}
     hostname: {{web_name}}
 {% if debug %}

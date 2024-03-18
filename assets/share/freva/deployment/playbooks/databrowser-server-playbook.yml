@@ -103,9 +103,9 @@
         cmd: /tmp/docker-or-podman pull {{item}}
       become: "{{use_become}}"
       with_items:
-        - "docker.io/solr:latest"
+        - "docker.io/solr:{{solr_version}}"
         - "docker.io/mongo:latest"
-        - "ghcr.io/freva-clint/databrowserapi:latest"
+        - "ghcr.io/freva-clint/databrowserapi:{{databrowser_version}}"
     - name: Copy cron create script to target machine
       copy: src="{{ asset_dir }}/scripts/create_cron.sh" dest=/tmp/solr_service/
       become: "{{use_become}}"

@@ -160,7 +160,7 @@
         cmd: /tmp/docker-or-podman pull {{ item }}
       with_items:
         - "docker.io/redis:latest"
-        - "ghcr.io/freva-clint/freva-web"
+        - "ghcr.io/freva-clint/freva-web:{{web_version}}"
         - "docker.io/httpd:latest"
     - name: Copying systemd files
       copy:

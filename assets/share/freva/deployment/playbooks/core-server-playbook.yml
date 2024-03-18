@@ -90,7 +90,7 @@
       when: not freva_path.stat.exists
     - name: Installing freva
       command:
-        cmd: bin/micromamba create -y -q -p {{core_install_dir}} -c conda-forge freva mamba conda
+        cmd: "bin/micromamba create -y -q -p {{core_install_dir}} -c conda-forge freva={{core_version}} mamba conda"
         chdir: /tmp/evaluation_system
         creates: "{{core_install_dir|expanduser}}/bin/freva"
       become: "{{use_become}}"
@@ -104,7 +104,7 @@
       when: mamba_check.stat.exists
     - name: Updating existing freva
       command:
-        cmd: "{{conda_bin}}/{{pkg_mgr}} update -q -p {{core_install_dir}} -c conda-forge freva"
+        cmd: "{{conda_bin}}/{{pkg_mgr}} update -q -p {{core_install_dir}} -c conda-forge freva={{core_version}}"
       environment:
         PATH: "{{conda_bin}}"
       become: "{{use_become}}"
@@ -140,7 +140,7 @@
       become: "{{use_become}}"
     - name: Configuring evaluation_system
       command:
-        cmd: $PYTHON3 deploy.py {{ core_install_dir | expanduser }} -s --no-conda
+        cmd: "$PYTHON3 deploy.py {{ core_install_dir | expanduser }} -s --no-conda"
         chdir: /tmp/evaluation_system
       environment:
         PYTHON3: "{{ ansible_python_interpreter }}"

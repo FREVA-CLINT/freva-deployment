@@ -516,6 +516,16 @@ class DeployFactory:
 
     def parse_config(self, steps: list[str]) -> str:
         """Create config files for anisble and evaluation_system.conf."""
+        versions = json.loads(
+            (Path(__file__).parent / "versions.json").read_text()
+        )
+        additional_steps = set(steps) - set(self.steps)
+        if additional_steps:
+            pprint(
+                "The following, [b]not selected[/b] steps will be auto "
+                f"updated.\n[green]{', '.join(additional_steps)}[/]"
+            )
+            time.sleep(3)
         playbook = self.create_playbooks(set(steps + self.steps))
         logger.info("Parsing configurations")
         self._check_config()
@@ -533,9 +543,12 @@ class DeployFactory:
                     new_key = f"{step}_{key}"
                 config[step]["vars"][new_key] = value
             config[step]["vars"]["project_name"] = self.project_name
+            config[step]["vars"][f"{step}_version"] = versions.get(step, "")
             config[step]["vars"]["debug"] = self.local_debug
             # Add additional keys
             self._set_additional_config_values(step, config)
+        if "databrowser" in config:
+            config["databrowser"]["vars"]["solr_version"] = versions["solr"]
         for step in info:
             for key, value in config[step]["vars"].items():
                 if (
@@ -581,7 +594,7 @@ class DeployFactory:
         logger.info("Creating Ansible playbooks")
         playbook = []
         [getattr(self, f"_prep_{step}")() for step in self.step_order]
-        for step in steps:
+        for step in [s for s in self.step_order if s in steps]:
             playbook_file = (
                 self.playbooks.get(step)
                 or self.playbook_dir / f"{step}-server-playbook.yml"
@@ -702,6 +715,9 @@ class DeployFactory:
             config[step]["vars"] = {
                 f"{step}_ansible_become_user": become_user,
                 "asset_dir": str(asset_dir),
+                f"{step}_ansible_user": cfg[step]["config"].get(
+                    "ansible_user", getuser()
+                ),
             }
         config["core"]["vars"]["core_install_dir"] = cfg["core"]["config"][
             "install_dir"
@@ -722,16 +738,18 @@ class DeployFactory:
                 cmdline=cmdline,
                 verbosity=verbosity,
                 forks=4,
-                quiet=False,
             )
             while thread.is_alive():
                 time.sleep(0.5)
         finally:
             sys.stdout = stdout
-        if event.status != "successful":
+        if event.status not in ["successful", "canceled"]:
             pprint(" [red]fail[/red]")
             print(buffer.getvalue())
             raise SystemExit(1)
+        elif event.status == "canceled":
+            pprint(" [yellow]canceled[/yellow]")
+            raise KeyboardInterrupt()
         pprint(" [green]ok[/green]")
         versions = {}
         for res in event.events:
@@ -740,7 +758,10 @@ class DeployFactory:
             if msg is not None and title.startswith("display"):
                 service = res.get("event_data", {}).get("task", "").split()[1]
                 versions[service] = msg.strip()
-        return get_steps_from_versions(versions)
+        steps = get_steps_from_versions(versions)
+        if "vault" in steps:
+            steps.append("db")
+        return steps
 
     def _play(
         self,
@@ -764,7 +785,7 @@ class DeployFactory:
         envvars["ANSIBLE_STDOUT_CALLBACK"] = "yaml"
         extravars: dict[str, str | int] = {
             "ansible_port": ssh_port,
-            "stdout_callback": "yaml",
+            "ansible_ssh_args": "-o ForwardX11=no",
         }
         if self.local_debug:
             extravars["ansible_connection"] = "local"
@@ -787,19 +808,18 @@ class DeployFactory:
             f_obj.write(inventory)
         logger.info("Playing the playbooks with ansible")
         logger.debug(self.playbooks)
-        try:
-            result = run(
-                private_data_dir=str(self._td.parent_dir),
-                playbook=str(self._td.playbook_file),
-                inventory=str(self.inventory_file),
-                envvars=envvars,
-                passwords=passwords,
-                extravars=extravars,
-                cmdline=cmdline,
-                verbosity=verbosity,
-            )
-        except KeyboardInterrupt:
-            raise SystemExit(1)
+        result = run(
+            private_data_dir=str(self._td.parent_dir),
+            playbook=str(self._td.playbook_file),
+            inventory=str(self.inventory_file),
+            envvars=envvars,
+            passwords=passwords,
+            extravars=extravars,
+            cmdline=cmdline,
+            verbosity=verbosity,
+        )
         if result.status in ("timeout", "failed"):
             logger.error("Deployment not successful: %s", result.status)
+        elif result.status == "canceled":
+            raise KeyboardInterrupt()
         return result
