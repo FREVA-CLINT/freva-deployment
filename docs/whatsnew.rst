@@ -7,6 +7,15 @@ What's new
    :maxdepth: 0
    :titlesonly:
 
+v240.0.1
+~~~~~~~~
+*  A new procedure to check the correct versions of all micro services has
+   been added
+*  Unprivileged users (non-root) can now also deploy the system with all
+   services.
+*  For better testing a setup script that create separate VM to deploy the
+   micro services has been added.
+
 v2309.0.0
 ~~~~~~~~~
 

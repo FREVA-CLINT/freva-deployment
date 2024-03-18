@@ -151,6 +151,7 @@ class Release:
             for search_pattern in (prefix, prefix.upper()):
                 glob_pattern = f"{search_pattern}{suffix}"
                 logger.debug("Searching for %s", glob_pattern)
+                print(self.repo_dir, glob_pattern)
                 for file in self.repo_dir.rglob(glob_pattern):
                     return file
         return Path(tempfile.mktemp())
