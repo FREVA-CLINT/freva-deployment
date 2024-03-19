@@ -14,7 +14,7 @@ jobs:
     uses: ./.github/workflows/ci_job.yml
   pipy:
     name: Create Pip package
-    needs: [tests, build-and-push-vault-image, build]
+    needs: [tests, build-and-push-vault-image]
     runs-on: ubuntu-latest
     steps:
       -
@@ -96,7 +96,7 @@ jobs:
   createrelease:
     name: Create Release
     runs-on: [ubuntu-latest]
-    needs: pipy
+    needs: build
     steps:
       - name: Create Release
         id: create_release
@@ -117,7 +117,7 @@ jobs:
           path: release_url.txt
   build:
     name: Build packages
-    needs: [build-and-push-vault-image]
+    needs: [pypi]
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
