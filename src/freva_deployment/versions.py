@@ -19,18 +19,14 @@ class VersionAction(argparse._VersionAction):
         values: Any,
         option_string=None,
     ):
-        version = self.version
-        if version is None:
-            version = parser.version
-        pprint(version % {"prog": parser.prog})
+        version = self.version or "%(prog)s"
+        pprint(version % {"prog": parser.prog or sys.argv[1]})
         parser.exit()
 
 
 def display_versions() -> str:
     """Get all service versions for display."""
-    minimum_version = json.loads(
-        (Path(__file__).parent / "versions.json").read_text()
-    )
+    minimum_version = json.loads((Path(__file__).parent / "versions.json").read_text())
     versions = ""
     for service, version in minimum_version.items():
         versions += f"\n   [bg]{service}[/bg] {version}"
@@ -49,9 +45,7 @@ def get_steps_from_versions(detected_versions: Dict[str, str]) -> List[str]:
     -------
     list: A list of services that should be updated.
     """
-    minimum_version = json.loads(
-        (Path(__file__).parent / "versions.json").read_text()
-    )
+    minimum_version = json.loads((Path(__file__).parent / "versions.json").read_text())
     steps = []
     lookup = {"solr": "databrowser"}
     for service, min_version in minimum_version.items():
