@@ -7,10 +7,10 @@ permissions:
 
 on:
   pull_request:
-  branches:
-    - "bump-*-*.*.*"
-  types:
-    - opened
+    branches:
+      - "bump-*-*.*.*"
+    types:
+      - opened
 jobs:
   tests:
     uses: ./.github/workflows/ci_job.yml
