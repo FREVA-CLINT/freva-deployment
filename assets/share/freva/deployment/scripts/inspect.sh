@@ -4,20 +4,22 @@
 if [ $(whoami) == "root" ];then
     order=(docker podman)
 else
-    order=(podman)
+    order=(podman docker)
 fi
 path=""
-
 for cmd in ${order[*]};do
-    if [ "$(which $cmd /dev/null)" ];then
+    if [ "$(which $cmd 2> /dev/null)" ];then
         path=$(which $cmd)
+	break
     fi
 done
-
 if [ -z "$path" ];then
-    echo "Docker nor Podman not on the system."
+    echo "Docker nor Podman on the system."
     exit 1
 fi
-if [ "$($path images | grep $1)" ];then
-    $path inspect $1 --format='{{index .Config.Labels "org.opencontainers.image.version"}}'
+if [ "$($path image ls --filter reference=$1)" ];then
+    tag=$($path image ls --filter reference=$1|awk '{print $2}'|grep -iv tag|grep -iv none|grep -iv latest|sort | tail -n 1)
+    if [ $tag ];then
+        $path inspect $1:$tag --format='{{index .Config.Labels "org.opencontainers.image.version"}}'
+    fi
 fi
