@@ -265,9 +265,10 @@ The deployment routine is supposed to interact with the user - this can
 can be asking for user names or passwords. To avoid such interaction you can
 set the following environment variables.
 
-- `MASTER_PASSWD`: the admin/root password for all services (db, web etc)
-- `EMAIL_USER`: the user name for email server login credentials
-- `EMAIL_PASSWD`: the password for email server login credentials
+- `MASTER_PASSWD`: the admin/root password for all services (db, web etc).
+- `EMAIL_USER`: the user name for email server login credentials.
+- `EMAIL_PASSWD`: the password for email server login credentials.
+- `ANSIBLE_BECOME_PASSWORD`: the password used in any *sudo* command.
 
 These environment variables have only an effect when the deployment is
 applied in debug or local mode using the `-l` flag.
