@@ -99,5 +99,5 @@ commands = mypy --install-types --non-interactive
 deps = git-python
        packaging
        tomli
-commands = python3 release.py tag freva_deployment -b main
+commands = python3 release.py tag freva_deployment -b versions
 """

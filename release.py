@@ -1,7 +1,11 @@
 """Script that prepares a new release of a version."""
 
+import abc
 import argparse
+import requests
 import json
+from datetime import date
+import os
 import logging
 import re
 import tempfile
@@ -22,6 +26,57 @@ logging.basicConfig(
 
 
 logger = logging.getLogger("create-release")
+
+
+class Release:
+    """Abstract class for defining release jobs."""
+
+    version_pattern: str = r'__version__\s*=\s*["\'](\d+\.\d+\.\d+)["\']'
+
+    @abc.abstractmethod
+    def __init__(
+        self, package_name: str, repo_dir: str, branch: str = "main"
+    ) -> None:
+        """Abstract init method."""
+
+    @abc.abstractmethod
+    def main(self) -> None:
+        """Abstract main method."""
+
+
+def cli(temp_dir: str) -> "Release":
+    """Command line interface."""
+
+    parser = argparse.ArgumentParser(
+        description="Prepare the release of a package."
+    )
+    subparser = parser.add_subparsers(help="Available commands:")
+    tag_parser = subparser.add_parser("tag", help="Create a new tag")
+    deploy_parser = subparser.add_parser(
+        "deploy", help="Update the version in the deployment repository"
+    )
+    for _parser in tag_parser, deploy_parser:
+        _parser.add_argument("name", help="The name of the software/package.")
+        _parser.add_argument(
+            "-v",
+            "--verbose",
+            help="Enable debug mode.",
+            action="store_true",
+        )
+        _parser.add_argument(
+            "-b",
+            "--branch",
+            help="Set the working branch",
+            type=str,
+            default="main",
+        )
+
+    tag_parser.set_defaults(apply_func=Tag)
+    deploy_parser.set_defaults(apply_func=Bump)
+    args = parser.parse_args()
+    if args.verbose:
+        logger.setLevel(logging.DEBUG)
+    return args.apply_func(args.name, temp_dir, args.branch)
 
 
 class Exit(Exception):
@@ -45,16 +100,139 @@ class Exit(Exception):
         raise SystemExit(code)
 
 
-class Release:
-    """Release class."""
+class Bump(Release):
+    """Bump the version."""
 
-    version_pattern: str = r'__version__\s*=\s*["\'](\d+\.\d+\.\d+)["\']'
+    url = "https://api.github.com/repos/FREVA-CLINT/freva-deployment/pulls"
 
-    def __init__(self, package_name: str, repo_dir: str, branch: str = "main") -> None:
+    def __init__(
+        self,
+        package_name: str,
+        repo_dir: str,
+        branch: str = "main",
+    ) -> None:
+        self.version = os.environ.get("VERSION", "").strip("v")
         self.branch = branch
         self.package_name = package_name
         self.repo_dir = Path(repo_dir)
-        logger.info("Searching for packages/config with the name: %s", package_name)
+        self.repo_url = "git@github.com:FREVA-CLINT/freva-deployment.git"
+        logger.debug(
+            "Cloning repository from %s with branch %s to %s",
+            self.repo_url,
+            self.repo_dir,
+            branch,
+        )
+        self.repo = git.Repo.clone_from(
+            self.repo_url, self.repo_dir, branch=branch
+        )
+
+    @property
+    def repo_name(self) -> str:
+        lookup = {"freva-web": "web",
+                  "databrowserAPI": "databrowser",
+                  "freva": "core"}
+        repo = Repo(search_parent_directories=True)
+        name = repo.remotes.origin.url.split('/')[-1].replace('.git', '')
+        return lookup.get(name, name)
+
+    def update_whatsnew(self) -> None:
+        """Update the whats new section."""
+        file = Path(self.repo_dir / "docs" / "whatsnew.rst")
+        new_content = (":titlesonly:\n\nv{self.deploy_version}\n"
+                     f"{'~'*len(self.deploy_version)}\n"
+                     f"* Bumped version of {self.service} to "
+                     f"{self.version}\n\n")
+        file.write_text(file.read_text().replace(":titlesonly:", new_content))
+
+    @property
+    def deploy_version(self) -> str:
+        """Get the deployment version."""
+        version_tuple = self.old_deploy_version.release
+        major = int(date.today().strftime("%y%m"))
+        if major > version_tuple[0]:
+            new_version = Version(f"{major}.0.0")
+        else:
+            new_version = Version(f"{version_tuple[0]}.{version_tuple[1]+1}.0")
+        return new_version
+
+    @property
+    def old_deploy_version(self) -> str:
+        """Get the current deployment version."""
+        file = Path(self.repo_dir / "src" / "freva_deployment" / "__init__.py")
+        match = re.search(self.version_pattern, file.read_text())
+        if not match:
+            raise ValueError("Could not find frev-deployment version")
+        return Version(match.group(1))
+
+
+    def main(self) -> None:
+        """Do the main work."""
+        self.update_whatsnew()
+        return
+        file = Path(self.repo_dir / "src" / "freva_deployment" / "__init__.py")
+        service_file = file.parent / "versions.json"
+        logger.debug("Logging for version")
+        logger.debug("New version is %s", self.deploy_version)
+        file_content = file.read_text().replace(
+            self.old_deploy_version.public, self.version.public
+        )
+        logger.debug("Updating service versions.")
+        file.write_text(file_content)
+        versions = json.loads(service_file.read_text())
+        versions[self.package_name] = self.version
+        service_file.write_text(json.dumps(versions, indent=3))
+        branch = f"bump-{self.package_name}-{self.version}"
+        logger.debug("Creating new branch %s", branch)
+        self.repo.create_head(branch)
+        self.repo.git.checkout(branch)
+        self.repo.index.add("*")
+        commit_message = f"Bump {self.package_name} version to {self.version}"
+        self.repo.index.commit(commit_message)
+        origin = self.repo.remote(name="origin")
+        logger.debug("Submitting PR")
+        origin.push(branch)
+        self.submit_pr(branch)
+
+    def submit_pr(self, branch: str) -> str:
+        """Submit a PR on the deployment repo."""``:w
+
+        # Data for the pull request
+        data = {
+            "title": f"Bump {self.package_name} version to {self.version}",
+            "head": branch,  # Source branch
+            "base": self.branch,  # Target branch
+            "body": f"This PR increments the version fo {self.package_name}.",
+        }
+        headers = {
+            "Authorization": f"Bearer {os.environ.get('GITHUB_TOKEN', '')}",
+            "Accept": "application/vnd.github+json",
+            "X-GitHub-Api-Version": "2022-11-28",
+        }
+        logger.info("Creating PR")
+        response = requests.post(self.url, json=data, headers=headers)
+        # Check if pull request was successfully created
+        if response.status_code == 201:
+            logger.debug("Pull request created successfully!")
+        else:
+            raise Exit("Failed to create pull request:%s", response.text)
+
+
+class Tag(Release):
+    """Tag class."""
+
+    def __init__(
+        self,
+        package_name: str,
+        repo_dir: str,
+        branch: str = "main",
+        version: str = "",
+    ) -> None:
+        self.branch = branch
+        self.package_name = package_name
+        self.repo_dir = Path(repo_dir)
+        logger.info(
+            "Searching for packages/config with the name: %s", package_name
+        )
         logger.debug("Reading current git config")
         self.git_config = (
             Path(git.Repo(search_parent_directories=True).git_dir) / "config"
@@ -77,7 +255,9 @@ class Release:
         try:
             # Get the latest tag on the main branch
             return Version(
-                repo.git.describe("--tags", "--abbrev=0", self.branch).lstrip("v")
+                repo.git.describe("--tags", "--abbrev=0", self.branch).lstrip(
+                    "v"
+                )
             )
         except git.exc.GitCommandError:
             logger.debug("No tag found")
@@ -157,7 +337,7 @@ class Release:
                     return file
         return Path(tempfile.mktemp())
 
-    def tag_new_version(self) -> None:
+    def main(self) -> None:
         """Tag a new git version."""
         self._clone_repo_from_franch(self.branch)
         cloned_repo = git.Repo(self.repo_dir)
@@ -176,50 +356,20 @@ class Release:
         head = cloned_repo.head.reference
         message = f"Create a release for v{self.version}"
         try:
-            cloned_repo.create_tag(f"v{self.version}", ref=head, message=message)
+            cloned_repo.create_tag(
+                f"v{self.version}", ref=head, message=message
+            )
             cloned_repo.git.push("--tags")
         except git.GitCommandError as error:
             raise Exit("Could not create tag: {}".format(error))
         logger.info("Tags created.")
 
-    @classmethod
-    def cli(cls, temp_dir: str) -> "Release":
-        """Command line interface."""
-
-        parser = argparse.ArgumentParser(
-            description="Prepare the release of a package."
-        )
-        subparser = parser.add_subparsers(help="Available commands:")
-        tag_parser = subparser.add_parser("tag", help="Create a new tag")
-        deploy_parser = subparser.add_parser(
-            "deploy", help="Update the version in the deployment repository"
-        )
-        for _parser in tag_parser, deploy_parser:
-            _parser.add_argument("name", help="The name of the software/package.")
-            _parser.add_argument(
-                "-v",
-                "--verbose",
-                help="Enable debug mode.",
-                action="store_true",
-            )
-        tag_parser.add_argument(
-            "-b",
-            "--branch",
-            help="Set the working branch",
-            type=str,
-            default="main",
-        )
-        args = parser.parse_args()
-        if args.verbose:
-            logger.setLevel(logging.DEBUG)
-        return cls(args.name, temp_dir, args.branch)
-
 
 if __name__ == "__main__":
     with tempfile.TemporaryDirectory() as temporary_dir:
         try:
-            release = Release.cli(temporary_dir)
-            release.tag_new_version()
+            release = cli(temporary_dir)
+            release.main()
         except Exception as error:
             if logger.getEffectiveLevel() == logging.DEBUG:
                 raise
