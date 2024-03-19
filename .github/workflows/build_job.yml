@@ -41,6 +41,7 @@ jobs:
           repository-url: https://test.pypi.org/legacy/
   build-and-push-vault-image:
     runs-on: ubuntu-latest
+    needs: tests
     permissions:
       contents: read
       packages: write
@@ -116,7 +117,7 @@ jobs:
           path: release_url.txt
   build:
     name: Build packages
-    needs: createrelease
+    needs: [tests, build-and-push-vault-image]
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
