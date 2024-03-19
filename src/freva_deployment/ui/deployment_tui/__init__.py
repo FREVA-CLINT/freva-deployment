@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 
 from freva_deployment import __version__
+from freva_deployment.versions import display_versions, VersionAction
 from freva_deployment.deploy import DeployFactory
 from freva_deployment.utils import RichConsole, set_log_level
 
@@ -24,8 +25,10 @@ def parse_args() -> int:
     app.add_argument(
         "-V",
         "--version",
-        action="version",
-        version="%(prog)s {version}".format(version=__version__),
+        action=VersionAction,
+        version="%(prog)s [b]{version}[/b]{services}".format(
+            version=__version__, services=display_versions()
+        ),
     )
     parser = app.parse_args()
     return parser.verbose

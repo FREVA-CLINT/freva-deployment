@@ -1,11 +1,40 @@
 """Define the version of the microservices."""
 
+import argparse
 import json
 import os
 from pathlib import Path
-from typing import Dict, List
+import sys
+from typing import Any, Dict, List
 
 from rich.prompt import Prompt
+from rich import print as pprint
+
+
+class VersionAction(argparse._VersionAction):
+    def __call__(
+        self,
+        parser: argparse.ArgumentParser,
+        namespace: argparse.Namespace,
+        values: Any,
+        option_string=None,
+    ):
+        version = self.version
+        if version is None:
+            version = parser.version
+        pprint(version % {"prog": parser.prog})
+        parser.exit()
+
+
+def display_versions() -> str:
+    """Get all service versions for display."""
+    minimum_version = json.loads(
+        (Path(__file__).parent / "versions.json").read_text()
+    )
+    versions = ""
+    for service, version in minimum_version.items():
+        versions += f"\n   [bg]{service}[/bg] {version}"
+    return versions
 
 
 def get_steps_from_versions(detected_versions: Dict[str, str]) -> List[str]:
@@ -20,7 +49,9 @@ def get_steps_from_versions(detected_versions: Dict[str, str]) -> List[str]:
     -------
     list: A list of services that should be updated.
     """
-    minimum_version = json.loads((Path(__file__).parent / "versions.json").read_text())
+    minimum_version = json.loads(
+        (Path(__file__).parent / "versions.json").read_text()
+    )
     steps = []
     lookup = {"solr": "databrowser"}
     for service, min_version in minimum_version.items():
