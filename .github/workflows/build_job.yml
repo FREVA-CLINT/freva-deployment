@@ -7,12 +7,13 @@ permissions:
 on:
   push:
     tags:
-      - "*"
+      - "v*.*.*"
 
 jobs:
   createrelease:
     name: Create Release
     runs-on: [ubuntu-latest]
+    needs: pipy
     steps:
       - name: Create Release
         id: create_release

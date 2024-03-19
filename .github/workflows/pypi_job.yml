@@ -1,4 +1,3 @@
-name: Create Pip package
 run-name: ${{ github.actor }} is uploading the code to pypi 🧉
 
 on:
@@ -8,6 +7,8 @@ on:
 
 jobs:
   pipy:
+    name: Create Pip package
+    needs: [linting-and-testing, vault-test, build-and-push-vault-image]
     runs-on: ubuntu-latest
     steps:
       -
