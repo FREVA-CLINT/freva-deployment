@@ -26,7 +26,7 @@ def parse_args() -> int:
         "-V",
         "--version",
         action=VersionAction,
-        version="%(prog)s [b]{version}[/b]{services}".format(
+        version="[b][red]%(prog)s[/red] {version}[/b]{services}".format(
             version=__version__, services=display_versions()
         ),
     )

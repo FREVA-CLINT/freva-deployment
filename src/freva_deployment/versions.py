@@ -27,9 +27,16 @@ class VersionAction(argparse._VersionAction):
 def display_versions() -> str:
     """Get all service versions for display."""
     minimum_version = json.loads((Path(__file__).parent / "versions.json").read_text())
+    lookup = {
+        "databrowser": "databrowserAPI",
+        "core": "freva-core",
+        "solr": "apache-solr",
+        "web": "webUI",
+    }
     versions = ""
     for service, version in minimum_version.items():
-        versions += f"\n   [bg]{service}[/bg] {version}"
+        service_name = lookup.get(service, service)
+        versions += f"\n   [b][green]{service_name}[/b][/green] {version}"
     return versions
 
 
