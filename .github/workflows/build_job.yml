@@ -117,7 +117,7 @@ jobs:
           path: release_url.txt
   build:
     name: Build packages
-    needs: [tests, build-and-push-vault-image]
+    needs: [build-and-push-vault-image]
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
