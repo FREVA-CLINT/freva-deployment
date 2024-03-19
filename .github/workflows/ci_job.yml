@@ -4,7 +4,7 @@ run-name: ${{ github.actor }} is testing the cli 🧉
 # Set the access for individual scopes, or use permissions: write-all
 permissions:
   pull-requests: write
-on: [push, pull_request]
+on: [push, pull_request, workflow_call]
 jobs:
   linting-and-testing:
     runs-on: ubuntu-latest
