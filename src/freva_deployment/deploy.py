@@ -516,7 +516,7 @@ class DeployFactory:
         if dump_file:
             config[step]["vars"][f"{step}_dump"] = str(dump_file)
 
-    def parse_config(self, steps: list[str]) -> str:
+    def parse_config(self, steps: list[str]) -> str | None:
         """Create config files for anisble and evaluation_system.conf."""
         versions = json.loads(
             (Path(__file__).parent / "versions.json").read_text()
@@ -529,6 +529,8 @@ class DeployFactory:
             )
             time.sleep(3)
         playbook = self.create_playbooks(set(steps + self.steps))
+        if not playbook:
+            return None
         logger.info("Parsing configurations")
         self._check_config()
         config: dict[str, dict[str, dict[str, str | int | bool]]] = {}
@@ -603,6 +605,8 @@ class DeployFactory:
             )
             with Path(playbook_file).open() as f_obj:
                 playbook += yaml.safe_load(f_obj)
+        if not playbook:
+            return ""
         return self._td.create_playbook(playbook)
 
     def create_eval_config(self) -> None:
@@ -753,6 +757,8 @@ class DeployFactory:
             pprint(" [yellow]canceled[/yellow]")
             raise KeyboardInterrupt()
         pprint(" [green]ok[/green]")
+        if verbosity > 0:
+            print(buffer.getvalue())
         versions = {}
         for res in event.events:
             msg = res.get("event_data", {}).get("res", {}).get("msg")
@@ -804,6 +810,9 @@ class DeployFactory:
             verbosity,
         )
         inventory = self.parse_config(steps)
+        if inventory is None:
+            logger.info("Nothing to do!")
+            return
         self.create_eval_config()
         logger.debug(inventory)
         with self.inventory_file.open("w") as f_obj:

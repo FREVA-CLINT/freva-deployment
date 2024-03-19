@@ -20,6 +20,11 @@ fi
 if [ "$($path image ls --filter reference=$1)" ];then
     tag=$($path image ls --filter reference=$1|awk '{print $2}'|grep -iv tag|grep -iv none|grep -iv latest|sort | tail -n 1)
     if [ $tag ];then
-        $path inspect $1:$tag --format='{{index .Config.Labels "org.opencontainers.image.version"}}'
+        version=$($path inspect $1:$tag --format='{{index .Config.Labels "org.opencontainers.image.version"}}')
+        if [ "$version" ];then
+            echo $version
+        else # Fall back
+            echo $tag
+        fi
     fi
 fi

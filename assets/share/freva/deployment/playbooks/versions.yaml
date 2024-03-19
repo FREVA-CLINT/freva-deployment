@@ -30,6 +30,9 @@
       ansible.builtin.script:
         cmd: "{{ asset_dir }}/scripts/inspect.sh ghcr.io/freva-clint/freva-web"
       become: "{{ web_ansible_become_user | default('root') is defined and web_ansible_become_user | default('root') != '' }}"
+    - name: Display web version
+      debug:
+        msg: "{{ web.stdout }}"
 - hosts: db
   vars:
     ansible_become_user: "{{ db_ansible_become_user | default('root') }}"
