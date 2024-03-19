@@ -5,9 +5,9 @@ from __future__ import annotations
 import argparse
 
 from freva_deployment import __version__
-from freva_deployment.versions import display_versions, VersionAction
 from freva_deployment.deploy import DeployFactory
 from freva_deployment.utils import RichConsole, set_log_level
+from freva_deployment.versions import VersionAction, display_versions
 
 from .main_window import MainApp
 

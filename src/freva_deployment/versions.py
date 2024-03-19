@@ -3,12 +3,12 @@
 import argparse
 import json
 import os
-from pathlib import Path
 import sys
+from pathlib import Path
 from typing import Any, Dict, List
 
-from rich.prompt import Prompt
 from rich import print as pprint
+from rich.prompt import Prompt
 
 
 class VersionAction(argparse._VersionAction):

@@ -7,11 +7,12 @@ import sys
 from pathlib import Path
 
 from rich_argparse import ArgumentDefaultsRichHelpFormatter
+
 from freva_deployment import __version__
 
 from ..deploy import DeployFactory
-from ..versions import display_versions, VersionAction
 from ..utils import config_dir, set_log_level
+from ..versions import VersionAction, display_versions
 
 
 def parse_args(argv: list[str] | None) -> argparse.Namespace:
