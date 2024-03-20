@@ -12,6 +12,7 @@ import tempfile
 from functools import cached_property
 from itertools import product
 from pathlib import Path
+from typing import Dict
 
 import git
 import tomli
@@ -128,22 +129,28 @@ class Bump(Release):
 
     @property
     def repo_name(self) -> str:
-        lookup = {
+        repo = git.Repo(search_parent_directories=True)
+        name = repo.remotes.origin.url.split("/")[-1].replace(".git", "")
+        return self.lookup.get(name, name)
+
+    @property
+    def lookup(self) -> Dict[str, str]:
+        return {
             "freva-web": "web",
             "databrowserAPI": "databrowser",
             "freva": "core",
         }
-        repo = git.Repo(search_parent_directories=True)
-        name = repo.remotes.origin.url.split("/")[-1].replace(".git", "")
-        return lookup.get(name, name)
 
     def update_whatsnew(self) -> None:
         """Update the whats new section."""
         file = Path(self.repo_dir / "docs" / "whatsnew.rst")
+        service = {v: k for k, v in self.lookup.items()}.get(
+            self.package_name, self.package_name
+        )
         new_content = (
             ":titlesonly:\n\nv{self.deploy_version}\n"
-            f"{'~'*len(self.deploy_version)}\n"
-            f"* Bumped version of {self.service} to "
+            f"{'~'*len(self.deploy_version.release)}\n"
+            f"* Bumped version of {service} to "
             f"{self.version}\n\n"
         )
         file.write_text(file.read_text().replace(":titlesonly:", new_content))
