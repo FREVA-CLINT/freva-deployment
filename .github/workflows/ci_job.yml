@@ -21,7 +21,7 @@ jobs:
         mkdir .mypy_cache
     -
       name: Running tests with tox
-      run: tox -p 3
+      run: tox -p 3 --parallel-no-spinner
 
   vault-test:
     name: Simple functional tests for the vault image
