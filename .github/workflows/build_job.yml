@@ -4,7 +4,6 @@ run-name: ${{ github.actor }} creating a new release 🧉
 # Set the access for individual scopes, or use permissions: write-all
 permissions:
   pull-requests: write
-  id-token: write
   contents: write
   packages: write
 
@@ -19,6 +18,9 @@ jobs:
     uses: ./.github/workflows/ci_job.yml
   pypi:
     name: Create Pip package
+    permissions:
+      id-token: write
+    url: https://pypi.org/project/freva-deployment/
     needs: [tests, build-and-push-vault-image]
     runs-on: ubuntu-latest
     steps:
@@ -44,6 +46,8 @@ jobs:
         with:
           password: ${{ secrets.TEST_PYPI_API_TOKEN }}
           repository-url: https://test.pypi.org/legacy/
+          skip-existing: true
+          verbose: true
   build-and-push-vault-image:
     runs-on: ubuntu-latest
     needs: tests
