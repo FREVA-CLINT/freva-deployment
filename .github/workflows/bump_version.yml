@@ -6,7 +6,8 @@ run-name: ${{ github.actor }} is updating service versions 🧉
 permissions:
   pull-requests: write
 
-on: [pull_request]
+on:
+  pull_request:
 jobs:
   tests:
     uses: ./.github/workflows/ci_job.yml
