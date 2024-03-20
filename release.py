@@ -202,6 +202,7 @@ class Bump(Release):
         self.repo.index.commit(commit_message)
         origin = self.repo.remote(name="origin")
         logger.debug("Submitting PR")
+        origin.set_url(self.repo_url)
         origin.push(branch)
         self.submit_pr(branch)
 
