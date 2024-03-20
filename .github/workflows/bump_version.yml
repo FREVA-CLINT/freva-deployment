@@ -5,10 +5,10 @@ run-name: ${{ github.actor }} is updating service versions 🧉
 permissions:
   pull-requests: write
 
-on: [push, pull_request]
-#  pull_request:
-#    branches:
-#      - "bump-*-*.*.*"
+on:
+ pull_request:
+    branches:
+      - "bump-*-*.*.*"
 jobs:
   tests:
     uses: ./.github/workflows/ci_job.yml
@@ -22,7 +22,6 @@ jobs:
     name: Merge PR
     runs-on: [ubuntu-latest]
     needs: tests
-    if: github.event.pull_request.head.ref == 'bump-*-*.*.*'
     steps:
       - name: Approve PR
         run: gh pr review --approve "$PR_URL"
