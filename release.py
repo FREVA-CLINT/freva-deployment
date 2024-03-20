@@ -217,10 +217,10 @@ class Bump(Release):
             "base": self.branch,  # Target branch
             "body": (
                 f"This PR auto bumps the version of {self.package_name}"
-                f"to {self.version}. After the PR was merged you can create"
+                f"to {self.version}. After the PR is merged you can create"
                 " a new release of the deployment software by creating a"
-                f" tag with the name v{self.version} or, better running"
-                "`tox -e release` on a local copy of the software."
+                f" tag with the name v{self.version} or, better by following "
+                "the release procedure:\n\n```console\ntox -e release\n```\n"
             ),
         }
         headers = {
