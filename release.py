@@ -373,6 +373,7 @@ class Tag(Release):
         token = os.environ.get("GITHUB_TOKEN")
         if token:
             url = url.replace("https://", f"https://{token}@")
+            logger.info("Setting remote url to %s", url)
         remote.set_url(url)
         if self.version <= self.git_tag:
             raise Exit(
