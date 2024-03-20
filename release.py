@@ -216,8 +216,11 @@ class Bump(Release):
             "head": branch,  # Source branch
             "base": self.branch,  # Target branch
             "body": (
-                "This PR auto bumps the version of {self.package_name}"
-                "to {self.version}"
+                f"This PR auto bumps the version of {self.package_name}"
+                f"to {self.version}. After the PR was merged you can create"
+                " a new release of the deployment software by creating a"
+                f" tag with the name v{self.version} or, better running"
+                "`tox -e release` on a local copy of the software."
             ),
         }
         headers = {
