@@ -47,6 +47,7 @@ jobs:
     name: Create a new tag
     permissions:
       contents: read
+      packages: write
     runs-on: [ubuntu-latest]
     needs: merge-pr
     steps:
