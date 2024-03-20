@@ -7,6 +7,12 @@ What's new
    :maxdepth: 0
    :titlesonly:
 
+v{self.deploy_version}
+~~~~~~~~
+* Bumped version of databrowserAPI to 2403.0.2
+
+
+
 v2403.0.5
 ~~~~~~~~~
 *  A new procedure to check the correct versions of all micro services has
