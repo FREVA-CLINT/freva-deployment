@@ -38,11 +38,6 @@ jobs:
     needs: tests
     if: github.event.pull_request.body == 'auto-bump'
     steps:
-      - name: Approve PR
-        run: gh pr review --approve "$PR_URL"
-        env:
-          PR_URL: ${{github.event.pull_request.html_url}}
-          GITHUB_TOKEN: ${{secrets.ACCESS_TOKEN}}
       - name: Auto-merge for dependabot's PR
         run: gh pr merge --merge --auto "$PR_URL"
         env:
