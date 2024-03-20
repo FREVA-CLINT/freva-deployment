@@ -58,3 +58,6 @@ jobs:
         run: python3 -m pip install tox
       - name: Create tag
         run: tox -e release
+        env:
+          GIT_USER: ${{github.actor}}
+          GITHUB_TOKEN: ${{secrets.ACCESS_TOKEN}}

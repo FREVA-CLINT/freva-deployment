@@ -251,6 +251,15 @@ class Tag(Release):
         self.git_config = (
             Path(git.Repo(search_parent_directories=True).git_dir) / "config"
         ).read_text()
+        if os.environ.get("GIT_USER"):
+            append = """[user]
+    name = {user}
+    email = {user}@users.noreply.github.com
+    """.format(
+                user=os.environ.get("GIT_USER")
+            )
+            self.git_config += "\n"
+            self.git_config += append
 
     def tag_version(self) -> None:
         """Tag the latest git version."""
@@ -259,7 +268,11 @@ class Tag(Release):
     def repo_url(self) -> str:
         """Get the current git repo url."""
         repo = git.Repo(search_parent_directories=True)
-        return repo.remotes.origin.url
+        url = repo.remotes.origin.url
+        token = os.environ.get("GITHUB_TOKEN")
+        if os.environ.get("GITHUB_TOKEN"):
+            url = url.replace("https://", f"https://{token}@")
+        return url
 
     @cached_property
     def git_tag(self) -> Version:
@@ -310,7 +323,7 @@ class Tag(Release):
                         return Version(content["project"]["version"])
         raise ValueError("Could not find version")
 
-    def _clone_repo_from_franch(self, branch: str = "main") -> None:
+    def _clone_repo_from_branch(self, branch: str = "main") -> None:
         logger.debug(
             "Cloning repository from %s with branch %s to %s",
             self.repo_url,
@@ -320,27 +333,27 @@ class Tag(Release):
         git.Repo.clone_from(self.repo_url, self.repo_dir, branch=branch)
         (self.repo_dir / ".git" / "config").write_text(self.git_config)
 
-    def _check_change_lock_file(self) -> None:
-        """Check if the current version was added to the change lock file."""
+    def _check_change_log_file(self) -> None:
+        """Check if the current version was added to the change log file."""
         logger.debug("Checking for change log file.")
-        if not self._change_lock_file.is_file():
+        if not self._change_log_file.is_file():
             raise Exit(
                 "Could not find change log file. "
                 f"Create one first and push it to the {self.branch} branch."
             )
-        if f"v{self.version}" not in self._change_lock_file.read_text("utf-8"):
+        if f"v{self.version}" not in self._change_log_file.read_text("utf-8"):
             raise Exit(
                 "You need to add the version v{} to the {} change log file "
                 "and push the update to the {} branch".format(
                     self.version,
-                    self._change_lock_file.relative_to(self.repo_dir),
+                    self._change_log_file.relative_to(self.repo_dir),
                     self.branch,
                 )
             )
 
     @cached_property
-    def _change_lock_file(self) -> Path:
-        """Find the change lock file."""
+    def _change_log_file(self) -> Path:
+        """Find the change log file."""
         for prefix, suffix in product(
             ("changelog", "whats-new", "whatsnew"), (".rst", ".md")
         ):
@@ -365,7 +378,7 @@ class Tag(Release):
                     self.branch,
                 )
             )
-        self._check_change_lock_file()
+        self._check_change_log_file()
         logger.info("Creating tag for version v%s", self.version)
         head = cloned_repo.head.reference
         message = f"Create a release for v{self.version}"
