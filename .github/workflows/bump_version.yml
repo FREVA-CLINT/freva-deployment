@@ -4,6 +4,7 @@ run-name: ${{ github.actor }} is updating service versions 🧉
 
 # Set the access for individual scopes, or use permissions: write-all
 permissions:
+  id-token: write
   pull-requests: write
   contents: write
   packages: write
