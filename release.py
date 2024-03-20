@@ -11,7 +11,6 @@ from datetime import date
 from functools import cached_property
 from itertools import product
 from pathlib import Path
-from subprocess import run
 from typing import Dict
 
 import git
@@ -37,7 +36,11 @@ class Release:
 
     @abc.abstractmethod
     def __init__(
-        self, package_name: str, repo_dir: str, branch: str = "main"
+        self,
+        package_name: str,
+        repo_dir: str,
+        branch: str = "main",
+        **kwargs: str,
     ) -> None:
         """Abstract init method."""
 
@@ -72,13 +75,23 @@ def cli(temp_dir: str) -> "Release":
             type=str,
             default="main",
         )
-
+    deploy_parser.add_argument(
+        "-s",
+        "--services",
+        help="Additional services and their versions.",
+        type=str,
+        nargs=2,
+        action="append",
+    )
     tag_parser.set_defaults(apply_func=Tag)
     deploy_parser.set_defaults(apply_func=Bump)
     args = parser.parse_args()
+    kwargs = {}
+    if hasattr(args, "services"):
+        kwargs = {s: v for (s, v) in args.services}
     if args.verbose:
         logger.setLevel(logging.DEBUG)
-    return args.apply_func(args.name, temp_dir, args.branch)
+    return args.apply_func(args.name, temp_dir, args.branch, **kwargs)
 
 
 class Exit(Exception):
@@ -112,7 +125,9 @@ class Bump(Release):
         package_name: str,
         repo_dir: str,
         branch: str = "main",
+        **kwargs: str,
     ) -> None:
+        self.extra_packages = kwargs
         self.version = os.environ.get("REPO_VERSION", "").strip("v")
         token = os.environ.get("GITHUB_TOKEN", "")
         self.branch = branch
@@ -184,7 +199,7 @@ class Bump(Release):
         self.update_whatsnew()
         file = Path(self.repo_dir / "src" / "freva_deployment" / "__init__.py")
         service_file = file.parent / "versions.json"
-        logger.debug("Logging for version")
+        logger.debug("Looking for version")
         logger.debug("New version is %s", self.deploy_version.public)
         file_content = file.read_text().replace(
             self.old_deploy_version.public, self.deploy_version.public
@@ -193,6 +208,9 @@ class Bump(Release):
         file.write_text(file_content)
         versions = json.loads(service_file.read_text())
         versions[self.package_name] = self.version
+        versions["vault"] = self.deploy_version.public
+        for service, vers in self.extra_packages.items():
+            versions[service] = vers
         service_file.write_text(json.dumps(versions, indent=3))
         branch = f"bump-{self.package_name}-{self.version}"
         logger.debug("Creating new branch %s", branch)
@@ -217,7 +235,7 @@ class Bump(Release):
             "base": self.branch,  # Target branch
             "body": (
                 f"This PR auto bumps the version of {self.package_name}"
-                f"to {self.version}. After the PR is merged you can create"
+                f" to {self.version}. After the PR is merged you can create"
                 " a new release of the deployment software by creating a"
                 f" tag with the name v{self.version} or, better by following "
                 "the release procedure:\n\n```console\ntox -e release\n```\n"
@@ -246,6 +264,7 @@ class Tag(Release):
         repo_dir: str,
         branch: str = "main",
         version: str = "",
+        **kwargs: str,
     ) -> None:
         self.branch = branch
         self.package_name = package_name
