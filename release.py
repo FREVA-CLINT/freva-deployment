@@ -392,7 +392,7 @@ class Tag(Release):
             cloned_repo.create_tag(
                 f"v{self.version}", ref=head, message=message
             )
-            remote.push("--tags")
+            cloned_repo.git.push("--tags")
         except git.GitCommandError as error:
             raise Exit("Could not create tag: {}".format(error))
         logger.info("Tags created.")
