@@ -35,9 +35,7 @@ class Release:
     version_pattern: str = r'__version__\s*=\s*["\'](\d+\.\d+\.\d+)["\']'
 
     @abc.abstractmethod
-    def __init__(
-        self, package_name: str, repo_dir: str, branch: str = "main"
-    ) -> None:
+    def __init__(self, package_name: str, repo_dir: str, branch: str = "main") -> None:
         """Abstract init method."""
 
     @abc.abstractmethod
@@ -48,9 +46,7 @@ class Release:
 def cli(temp_dir: str) -> "Release":
     """Command line interface."""
 
-    parser = argparse.ArgumentParser(
-        description="Prepare the release of a package."
-    )
+    parser = argparse.ArgumentParser(description="Prepare the release of a package.")
     subparser = parser.add_subparsers(help="Available commands:")
     tag_parser = subparser.add_parser("tag", help="Create a new tag")
     deploy_parser = subparser.add_parser(
@@ -123,9 +119,7 @@ class Bump(Release):
             self.repo_dir,
             branch,
         )
-        self.repo = git.Repo.clone_from(
-            self.repo_url, self.repo_dir, branch=branch
-        )
+        self.repo = git.Repo.clone_from(self.repo_url, self.repo_dir, branch=branch)
 
     @property
     def repo_name(self) -> str:
@@ -178,7 +172,6 @@ class Bump(Release):
     def main(self) -> None:
         """Do the main work."""
         self.update_whatsnew()
-        return
         file = Path(self.repo_dir / "src" / "freva_deployment" / "__init__.py")
         service_file = file.parent / "versions.json"
         logger.debug("Logging for version")
@@ -240,9 +233,7 @@ class Tag(Release):
         self.branch = branch
         self.package_name = package_name
         self.repo_dir = Path(repo_dir)
-        logger.info(
-            "Searching for packages/config with the name: %s", package_name
-        )
+        logger.info("Searching for packages/config with the name: %s", package_name)
         logger.debug("Reading current git config")
         self.git_config = (
             Path(git.Repo(search_parent_directories=True).git_dir) / "config"
@@ -265,9 +256,7 @@ class Tag(Release):
         try:
             # Get the latest tag on the main branch
             return Version(
-                repo.git.describe("--tags", "--abbrev=0", self.branch).lstrip(
-                    "v"
-                )
+                repo.git.describe("--tags", "--abbrev=0", self.branch).lstrip("v")
             )
         except git.exc.GitCommandError:
             logger.debug("No tag found")
@@ -366,9 +355,7 @@ class Tag(Release):
         head = cloned_repo.head.reference
         message = f"Create a release for v{self.version}"
         try:
-            cloned_repo.create_tag(
-                f"v{self.version}", ref=head, message=message
-            )
+            cloned_repo.create_tag(f"v{self.version}", ref=head, message=message)
             cloned_repo.git.push("--tags")
         except git.GitCommandError as error:
             raise Exit("Could not create tag: {}".format(error))
