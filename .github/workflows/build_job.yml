@@ -4,6 +4,10 @@ run-name: ${{ github.actor }} creating a new release 🧉
 # Set the access for individual scopes, or use permissions: write-all
 permissions:
   pull-requests: write
+  id-token: write
+  contents: write
+  packages: write
+
 on:
   push:
     tags:
