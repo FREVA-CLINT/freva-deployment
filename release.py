@@ -187,7 +187,7 @@ class Bump(Release):
         logger.debug("Logging for version")
         logger.debug("New version is %s", self.deploy_version.public)
         file_content = file.read_text().replace(
-            self.old_deploy_version.public, self.version
+            self.old_deploy_version.public, self.deploy_version.public
         )
         logger.debug("Updating service versions.")
         file.write_text(file_content)
