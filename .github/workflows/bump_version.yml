@@ -12,8 +12,9 @@ on: [push, pull_request]
 jobs:
   tests:
     uses: ./.github/workflows/ci_job.yml
-  show:
-    name: show
+  foo:
+    name: Foo
+    runs-on: [ubuntu-latest]
     steps:
       - name: Show
         run: echo ${{ github.event.pull_request.head.ref }}
