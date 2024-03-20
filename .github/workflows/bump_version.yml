@@ -36,36 +36,3 @@ jobs:
         env:
           PR_URL: ${{github.event.pull_request.html_url}}
           GITHUB_TOKEN: ${{secrets.TOKEN}}
-  merge-pr:
-    name: Merge PR
-    runs-on: [ubuntu-latest]
-    needs: tests
-    if: github.event.pull_request.body == 'auto-bump'
-    steps:
-      - name: Auto-merge the PR
-        run: gh pr merge --merge --auto "$PR_URL"
-        env:
-          PR_URL: ${{github.event.pull_request.html_url}}
-          GITHUB_TOKEN: ${{secrets.ACCESS_TOKEN}}
-  tag:
-    name: Create a new tag
-    runs-on: [ubuntu-latest]
-    needs: merge-pr
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Set up Python 3
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.X"
-      - name: Install dependencies
-        run: python3 -m pip install git-python packaging tomli requests
-      - name: Create tag
-        run: python3 release.py tag freva_deployment -b versions
-        env:
-          GIT_USER: ${{github.actor}}
-          GITHUB_TOKEN: ${{secrets.ACCESS_TOKEN}}
-  release:
-    needs: tag
-    name: Create the release
-    uses: ./.github/workflows/build_job.yml

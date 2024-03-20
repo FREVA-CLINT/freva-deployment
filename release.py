@@ -215,7 +215,10 @@ class Bump(Release):
             "title": f"Bump {self.package_name} version to {self.version}",
             "head": branch,  # Source branch
             "base": self.branch,  # Target branch
-            "body": "auto-bump",
+            "body": (
+                "This PR auto bumps the version of {self.package_name}"
+                "to {self.version}"
+            ),
         }
         headers = {
             "Authorization": f"Bearer {os.environ.get('GITHUB_TOKEN', '')}",
