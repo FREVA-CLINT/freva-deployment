@@ -65,5 +65,6 @@ jobs:
           GIT_USER: ${{github.actor}}
           GITHUB_TOKEN: ${{secrets.ACCESS_TOKEN}}
   release:
+    needs: tag
     name: Create the release
     uses: ./.github/workflows/build_job.yml
