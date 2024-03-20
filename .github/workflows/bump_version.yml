@@ -5,12 +5,10 @@ run-name: ${{ github.actor }} is updating service versions 🧉
 permissions:
   pull-requests: write
 
-on:
-  pull_request:
-    branches:
-      - "bump-*-*.*.*"
-    types:
-      - opened
+on: [push, pull_request]
+#  pull_request:
+#    branches:
+#      - "bump-*-*.*.*"
 jobs:
   tests:
     uses: ./.github/workflows/ci_job.yml
