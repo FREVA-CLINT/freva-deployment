@@ -7,6 +7,12 @@ What's new
    :maxdepth: 0
    :titlesonly:
 
+v2403.4.0
+~~~~~~~~
+* Bumped version of databrowserAPI to 2403.0.2
+
+
+
 v2403.3.0
 ~~~~~~~~
 * Bumped version of databrowserAPI to 2403.0.2
