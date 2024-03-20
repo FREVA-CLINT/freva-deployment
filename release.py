@@ -111,13 +111,10 @@ class Bump(Release):
     ) -> None:
         self.version = os.environ.get("REPO_VERSION", "").strip("v")
         token = os.environ.get("GITHUB_TOKEN", "")
-        user = os.environ.get("GITHUB_USER", "")
         self.branch = branch
         self.package_name = package_name
         self.repo_dir = Path(repo_dir)
-        self.repo_url = (
-            f"https://{user}:{token}@github.com/FREVA-CLINT/freva-deployment.git"
-        )
+        self.repo_url = f"https://{token}@github.com/FREVA-CLINT/freva-deployment.git"
         logger.debug(
             "Cloning repository from %s with branch %s to %s",
             self.repo_url,
