@@ -52,9 +52,7 @@ class Release:
 def cli(temp_dir: str) -> "Release":
     """Command line interface."""
 
-    parser = argparse.ArgumentParser(
-        description="Prepare the release of a package."
-    )
+    parser = argparse.ArgumentParser(description="Prepare the release of a package.")
     subparser = parser.add_subparsers(help="Available commands:")
     tag_parser = subparser.add_parser("tag", help="Create a new tag")
     deploy_parser = subparser.add_parser(
@@ -133,18 +131,14 @@ class Bump(Release):
         self.branch = branch
         self.package_name = package_name
         self.repo_dir = Path(repo_dir)
-        self.repo_url = (
-            f"https://{token}@github.com/FREVA-CLINT/freva-deployment.git"
-        )
+        self.repo_url = f"https://{token}@github.com/FREVA-CLINT/freva-deployment.git"
         logger.debug(
             "Cloning repository from %s with branch %s to %s",
             self.repo_url,
             self.repo_dir,
             branch,
         )
-        self.repo = git.Repo.clone_from(
-            self.repo_url, self.repo_dir, branch=branch
-        )
+        self.repo = git.Repo.clone_from(self.repo_url, self.repo_dir, branch=branch)
 
     @property
     def repo_name(self) -> str:
@@ -174,7 +168,7 @@ class Bump(Release):
         )
         file.write_text(file.read_text().replace(":titlesonly:", new_content))
 
-    @property
+    @cached_property
     def deploy_version(self) -> str:
         """Get the deployment version."""
         version_tuple = self.old_deploy_version.release
@@ -185,7 +179,7 @@ class Bump(Release):
             new_version = Version(f"{version_tuple[0]}.{version_tuple[1]+1}.0")
         return new_version
 
-    @property
+    @cached_property
     def old_deploy_version(self) -> str:
         """Get the current deployment version."""
         file = Path(self.repo_dir / "src" / "freva_deployment" / "__init__.py")
@@ -269,9 +263,7 @@ class Tag(Release):
         self.branch = branch
         self.package_name = package_name
         self.repo_dir = Path(repo_dir)
-        logger.info(
-            "Searching for packages/config with the name: %s", package_name
-        )
+        logger.info("Searching for packages/config with the name: %s", package_name)
         logger.debug("Reading current git config")
         self.git_config = (
             Path(git.Repo(search_parent_directories=True).git_dir) / "config"
@@ -307,9 +299,7 @@ class Tag(Release):
         try:
             # Get the latest tag on the main branch
             return Version(
-                repo.git.describe("--tags", "--abbrev=0", self.branch).lstrip(
-                    "v"
-                )
+                repo.git.describe("--tags", "--abbrev=0", self.branch).lstrip("v")
             )
         except git.exc.GitCommandError:
             logger.debug("No tag found")
@@ -415,9 +405,7 @@ class Tag(Release):
         head = cloned_repo.head.reference
         message = f"Create a release for v{self.version}"
         try:
-            cloned_repo.create_tag(
-                f"v{self.version}", ref=head, message=message
-            )
+            cloned_repo.create_tag(f"v{self.version}", ref=head, message=message)
             cloned_repo.git.push("--tags")
         except git.GitCommandError as error:
             raise Exit("Could not create tag: {}".format(error))
