@@ -46,7 +46,7 @@ jobs:
       - name: Auto-merge for dependabot's PR
         run: gh pr merge --merge --auto "$PR_URL"
         env:
-          R_URL: ${{github.event.pull_request.html_url}}
+          PR_URL: ${{github.event.pull_request.html_url}}
           GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
   tag:
     name: Create a new tag
