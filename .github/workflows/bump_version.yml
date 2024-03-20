@@ -12,6 +12,11 @@ on: [push, pull_request]
 jobs:
   tests:
     uses: ./.github/workflows/ci_job.yml
+  show:
+    name: show
+    steps:
+      - name: Show
+        run: echo ${{ github.event.pull_request.head.ref }}
   merge-pr:
     name: Merge PR
     runs-on: [ubuntu-latest]
