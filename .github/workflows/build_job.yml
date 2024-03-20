@@ -20,7 +20,6 @@ jobs:
     name: Create Pip package
     permissions:
       id-token: write
-    url: https://pypi.org/project/freva-deployment/
     needs: [tests, build-and-push-vault-image]
     runs-on: ubuntu-latest
     steps:
