@@ -41,7 +41,7 @@ jobs:
     needs: tests
     if: github.event.pull_request.body == 'auto-bump'
     steps:
-      - name: Auto-merge for dependabot's PR
+      - name: Auto-merge the PR
         run: gh pr merge --merge --auto "$PR_URL"
         env:
           PR_URL: ${{github.event.pull_request.html_url}}
