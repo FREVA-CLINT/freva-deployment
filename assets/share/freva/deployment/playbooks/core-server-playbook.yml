@@ -122,7 +122,7 @@
       command:
         cmd: "{{conda_bin}}/python -m pip install {{item}}"
       with_items:
-        - "git+https://gitlab.dkrz.de/k204230/install-kernelspec.git"
+        - "kernel-install"
         - "metadata-inspector"
       become: "{{use_become}}"
     - name: Getting status of drs_config.toml file
