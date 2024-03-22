@@ -528,9 +528,9 @@ class DeployFactory:
                 f"updated.\n[green]{', '.join(additional_steps)}[/]"
             )
             time.sleep(3)
-        playbook = self.create_playbooks(set(steps + self.steps))
-        if not playbook:
+        if not set(steps + self.steps):
             return None
+        playbook = self.create_playbooks(set(steps + self.steps))
         logger.info("Parsing configurations")
         self._check_config()
         config: dict[str, dict[str, dict[str, str | int | bool]]] = {}
@@ -585,7 +585,7 @@ class DeployFactory:
 
     @property
     def steps(self) -> list[str]:
-        """Set all the deploment steps."""
+        """Set all the deployment steps."""
         steps = []
         for step in self._steps:
             steps.append(step)
@@ -597,20 +597,18 @@ class DeployFactory:
         """Create the ansible playbook form all steps."""
         logger.info("Creating Ansible playbooks")
         playbook = []
-        [getattr(self, f"_prep_{step}")() for step in self.step_order]
+        _ = [getattr(self, f"_prep_{step}")() for step in self.step_order]
         for step in [s for s in self.step_order if s in steps]:
             playbook_file = (
                 self.playbooks.get(step)
                 or self.playbook_dir / f"{step}-server-playbook.yml"
             )
-            with Path(playbook_file).open() as f_obj:
+            with Path(playbook_file).open(encoding="utf-8") as f_obj:
                 playbook += yaml.safe_load(f_obj)
-        if not playbook:
-            return ""
         return self._td.create_playbook(playbook)
 
     def create_eval_config(self) -> None:
-        """Create and dump the evaluation_systme.config."""
+        """Create and dump the evaluation_system.config."""
         logger.info("Creating evaluation_system.conf")
         keys = (
             ("core", "admins"),
@@ -650,9 +648,11 @@ class DeployFactory:
                 f_obj.write("".join(lines))
 
     def get_ansible_password(self, ask_pass: bool = False) -> dict[str, str]:
-        """The the passwords for the ansible environments."""
-        ssh_pass_msg = "Give the [b]ssh[/b] password"
-        sudo_pass_msg = "Give the [b]sudo[/b] password"
+        """The passwords for the ansible environments."""
+        ssh_pass_msg = "Give the [b]ssh[/b] password for remote login"
+        sudo_pass_msg = (
+            "Give the password elevating user privilege ([b]sudo[/b])"
+        )
         if ask_pass:
             sudo_pass_msg += ", defaults to ssh password"
         passwords = {}
@@ -681,7 +681,7 @@ class DeployFactory:
         Parameters
         ----------
         ask_pass: bool, default: True
-            Instruct Ansible to ask for the ssh passord instead of using a
+            Instruct Ansible to ask for the ssh password instead of using a
             ssh key
         verbosity: int, default: 0
             Verbosity level, default 0
@@ -753,7 +753,7 @@ class DeployFactory:
             pprint(" [red]fail[/red]")
             print(buffer.getvalue())
             raise SystemExit(1)
-        elif event.status == "canceled":
+        if event.status == "canceled":
             pprint(" [yellow]canceled[/yellow]")
             raise KeyboardInterrupt()
         pprint(" [green]ok[/green]")
@@ -782,7 +782,7 @@ class DeployFactory:
         Parameters
         ----------
         ask_pass: bool, default: True
-            Instruct Ansible to ask for the ssh passord instead of using a
+            Instruct Ansible to ask for the ssh password instead of using a
             ssh key
         verbosity: int, default: 0
             Verbosity level, default 0
@@ -811,8 +811,8 @@ class DeployFactory:
         )
         inventory = self.parse_config(steps)
         if inventory is None:
-            logger.info("Nothing to do!")
-            return
+            logger.info("Services up to date, nothing to do!")
+            return None
         self.create_eval_config()
         logger.debug(inventory)
         with self.inventory_file.open("w") as f_obj:
