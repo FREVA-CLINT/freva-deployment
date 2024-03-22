@@ -69,17 +69,17 @@ hosts = "localhost"
 [db.config]
 
 ## Config variables for the database service
-port = 3306
+port = 3307
 user = "freva"
 db = "frevadb"
 
 ##If you need a different user name you can set it here (defaults to current user):
-ansible_user = ""
+ansible_user = "freva"
 
 ## You can set the db_host separately, if none is given (default)
 ## the one from the hosts names above are taken
 
-db_host = ""
+db_host = "freva"
 
 ## Set the become (sudo) user name to change to for installing the services
 ## leave blank to utilise a non privileged user based installation
@@ -109,7 +109,7 @@ vault_playbook = ""
 solr_mem = "1g"
 
 # Set the port the databrowser should be running on
-databrowser_port = 7777
+databrowser_port = 7778
 
 ## Set the become (sudo) user name to change to for installing the services
 ## leave blank to utilise a non privileged user based installation
@@ -120,7 +120,7 @@ ansible_become_user = ""
 ansible_python_interpreter = ""
 
 ## If you need a different user name you can set it here (default to current user):
-ansible_user = ""
+ansible_user = "freva"
 
 ##Indicate whether or not to empty any pre-existing folders/docker volumes.
 ##(Useful for a truly fresh start) (default: False)
@@ -145,7 +145,7 @@ databrowser_playbook = ""
 admins = ""
 
 ## The path where the core should be installed
-install_dir="~/freva-local"
+install_dir="~/freva-env"
 
 ## Set the path to any existing conda executable on the target machine,
 ## if not existing (default) a temporary conda distribution will be downloaded
@@ -193,7 +193,7 @@ arch = "Linux-x86_64"
 ansible_become_user = ""
 
 ##If you need a different user name you can set it here (defaults to current user):
-ansible_user = ""
+ansible_user = "freva"
 
 ## Ansible needs a python3 interpreter, which can be set for custom python3 instances
 ansible_python_interpreter = ""
@@ -227,7 +227,7 @@ project_website = "www.freva.dkrz.de"
 ansible_python_interpreter = ""
 
 ##If you need a different user name you can set it here (defaults to current user):
-ansible_user = ""
+ansible_user = "freva"
 
 ## Set the path where the permanent web data should be stored. By default
 ## this is set to /opt/freva

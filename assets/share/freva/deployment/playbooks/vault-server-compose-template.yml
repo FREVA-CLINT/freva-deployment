@@ -19,7 +19,7 @@ services:
       - ROOT_PW={{ root_passwd }}
     volumes:
 {% for volume in vault_volumes %}
-      - {{volume | expanduser}}
+      - {{volume | regex_replace('^~', ansible_env.HOME)}}
 {% endfor %}
     container_name: {{vault_name}}
     tty: true

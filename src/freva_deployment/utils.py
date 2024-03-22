@@ -16,21 +16,10 @@ import appdirs
 import requests
 import tomlkit
 from rich.console import Console
-from rich.logging import RichHandler
 from rich.prompt import Prompt
 
-logger_stream_handle = RichHandler(
-    rich_tracebacks=True,
-    show_path=False,
-    console=Console(soft_wrap=True, stderr=True),
-)
-logging.basicConfig(
-    format="%(name)s - %(message)s",
-    level=logging.INFO,
-    handlers=[logger_stream_handle],
-    datefmt="[%X]",
-)
-logger = logging.getLogger("freva-deployment")
+from .logger import logger
+from .error import ConfigurationError
 
 RichConsole = Console(markup=True, force_terminal=True)
 
@@ -94,7 +83,7 @@ class AssetDir:
         for path in (data_dir, user_dir):
             if path.is_dir():
                 return path
-        raise ValueError(
+        raise ConfigurationError(
             "Could not find asset dir, please consider reinstalling the package."
         )
 
@@ -201,17 +190,12 @@ def load_config(inp_file: str | Path) -> dict[str, Any]:
     return config
 
 
-def set_log_level(verbosity: int) -> None:
-    """Set the log level of the logger."""
-    logger.setLevel(max(logging.INFO - 10 * verbosity, logging.DEBUG))
-
-
 def get_setup_for_service(service: str, setups: list[ServiceInfo]) -> tuple[str, str]:
     """Get the setup of a service configuration."""
     for setup in setups:
         if setup.name == service:
             return setup.python_path, setup.hosts
-    raise KeyError("Service not found")
+    raise ConfigurationError("Service not found")
 
 
 def read_db_credentials(
@@ -248,7 +232,7 @@ def get_email_credentials() -> tuple[str, str]:
     return username, password
 
 
-def get_passwd(min_characters: int = 8) -> str:
+def get_passwd(foo: str, min_characters: int = 8) -> str:
     """Create a secure pasword.
 
     Parameters
