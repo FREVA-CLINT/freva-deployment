@@ -12,13 +12,15 @@ from copy import deepcopy
 from getpass import getuser
 from io import StringIO
 from pathlib import Path
+import signal
 from socket import gethostbyname, gethostname
 from typing import Any, cast
 from urllib.parse import urlparse
 
 import tomlkit
 import yaml
-from ansible_runner import run, run_async
+from ansible_runner import run
+from ansible_runner.runner import Runner
 from rich import print as pprint
 from rich.prompt import Prompt
 
@@ -34,9 +36,10 @@ from .utils import (
     get_email_credentials,
     get_passwd,
     load_config,
-    logger,
 )
+from .logger import logger
 from .versions import get_steps_from_versions
+from .error import handled_exception, ConfigurationError, DeploymentError
 
 
 class DeployFactory:
@@ -66,17 +69,18 @@ class DeployFactory:
     step_order: tuple[str, ...] = ("core", "vault", "db", "databrowser", "web")
     _steps_with_cert: tuple[str, ...] = ("core", "db", "vault", "web")
 
+    @handled_exception
     def __init__(
         self,
         steps: list[str] | None = None,
         config_file: Path | str | None = None,
         local_debug: bool = False,
-        gen_keys: bool = True,
+        gen_keys: bool = False,
     ) -> None:
         self.gen_keys = gen_keys or local_debug
         self.local_debug = local_debug
         self._config_keys: list[str] = []
-        self.master_pass: str = os.environ.get("MASTER_PASSWD", "") or ""
+        self._master_pass: str = os.environ.get("MASTER_PASSWD", "") or ""
         self.email_password: str = ""
         self._td: RunnerDir = RunnerDir()
         self.inventory_file: Path = self._td.inventory_file
@@ -86,8 +90,8 @@ class DeployFactory:
         self.web_conf_file: Path = self._td.parent_dir / "freva_web.toml"
         self.apache_config: Path = self._td.parent_dir / "freva_web.conf"
         self._db_pass: str = ""
-        self._steps = steps or ["db", "databrowser", "web"]
-        if self._steps == ["auto"]:
+        self._steps = steps or ["db", "databrowser", "web", "core"]
+        if self._steps == ["auto"] or self._steps == "auto":
             self._steps = []
         self._inv_tmpl = Path(config_file or config_dir / "inventory.toml")
         self._cfg_tmpl = self.aux_dir / "evaluation_system.conf.tmpl"
@@ -96,8 +100,48 @@ class DeployFactory:
         self._random_key = RandomKeys(self.project_name or "freva")
         self.playbooks: dict[str, Path | None] = {}
         if not self.project_name:
-            raise ValueError("You must set a project name")
+            raise ConfigurationError("You must set a project name") from None
         self._set_hostnames()
+        self.current_step = ""
+        self._check_steps_()
+
+    def _check_steps_(self) -> None:
+        """Before we do anything check if something is wrong with the config."""
+        # First the steps that are needed
+        old_master = self._master_pass
+        self._master_pass = old_master or "foo"
+        not_in_use = set(["db", "databrowser", "web", "core"]) - set(
+            self.steps
+        )
+        # We temporary set the env variables for email user and email password
+        # This is not pretty but prevents the password dialogs, which aren't
+        # needed at this step to show up.
+        # Later we will set everything back as it was.
+        current_values = {}
+        for key in ("EMAIL_USER", "EMAIL_PASSWD"):
+            current_values[key] = os.environ.get(key, "")
+            os.environ[key] = current_values[key] or "foo"
+        for step in self.steps:
+            getattr(self, f"_prep_{step}")()
+        for step in not_in_use:
+            try:
+                getattr(self, f"_prep_{step}")()
+            except ConfigurationError as error:
+                logger.warning("Some of your config isn't valid:\n%s", error)
+        for key, value in current_values.items():
+            os.environ[key] = current_values[key]
+        self._master_pass = old_master
+
+    @property
+    def master_pass(self) -> str:
+        """Define the master password."""
+        if self._master_pass:
+            return self._master_pass
+        if os.environ.get("MASTER_PASSWD", ""):
+            self._master_pass = os.environ.get("MASTER_PASSWD", "")
+        else:
+            self._master_pass = get_passwd(self.current_step)
+        return self._master_pass
 
     @property
     def public_key_file(self) -> str:
@@ -110,7 +154,9 @@ class DeployFactory:
             return str(Path(chain_keyfile).expanduser().absolute())
         if self.gen_keys:
             return self._random_key.public_chain_file
-        raise ValueError("You must give a valid path to a public key file.")
+        raise ConfigurationError(
+            "You must give a valid path to a public key file."
+        ) from None
 
     @property
     def private_key_file(self) -> str:
@@ -120,7 +166,9 @@ class DeployFactory:
             return str(Path(keyfile).expanduser().absolute())
         if self.gen_keys:
             return self._random_key.private_key_file
-        raise ValueError("You must give a valid path to a private key file.")
+        raise ConfigurationError(
+            "You must give a valid path to a private key file."
+        ) from None
 
     def _prep_vault(self) -> None:
         """Prepare the vault."""
@@ -130,8 +178,6 @@ class DeployFactory:
             "vault_playbook"
         )
         self.cfg["vault"]["config"].pop("db_playbook", "")
-        if not self.master_pass:
-            self.master_pass = get_passwd()
         self.cfg["vault"]["config"]["db_port"] = self.cfg["vault"][
             "config"
         ].get("port", 3306)
@@ -149,8 +195,6 @@ class DeployFactory:
         """prepare the mariadb service."""
         self._config_keys.append("db")
         self.cfg["db"]["config"].setdefault("ansible_become_user", "root")
-        if not self.master_pass:
-            self.master_pass = get_passwd()
         host = self.cfg["db"]["hosts"]
         self.cfg["db"]["config"]["root_passwd"] = self.master_pass
         self.cfg["db"]["config"]["passwd"] = self.db_pass
@@ -179,8 +223,6 @@ class DeployFactory:
 
     def _prep_databrowser(self, prep_web=True) -> None:
         """prepare the databrowser service."""
-        if not self.master_pass:
-            self.master_pass = get_passwd()
         self._config_keys.append("databrowser")
         self.cfg["databrowser"]["config"].setdefault(
             "ansible_become_user", "root"
@@ -299,10 +341,10 @@ class DeployFactory:
                     _webserver_items[key] = v
                 else:
                     self.cfg["web"]["config"].setdefault(k, "")
-        except KeyError as error:
-            raise KeyError(
+        except KeyError:
+            raise ConfigurationError(
                 "No web config section given, please configure the web.config"
-            ) from error
+            ) from None
         _webserver_items["ALLOWED_HOSTS"].append(self.cfg["web"]["hosts"])
         if self.local_debug:
             _webserver_items["REDIS_HOST"] = self.cfg["web"]["hosts"]
@@ -357,8 +399,6 @@ class DeployFactory:
             self.cfg[key]["config"]["config_toml_file"] = str(
                 self.web_conf_file
             )
-        if not self.master_pass:
-            self.master_pass = get_passwd()
         self._prep_vault()
         if ask_pass:
             email_user, self.email_password = get_email_credentials()
@@ -406,12 +446,12 @@ class DeployFactory:
             config = dict(load_config(self._inv_tmpl).items())
             config["vault"] = deepcopy(config["db"])
             return config
-        except FileNotFoundError as error:
-            raise FileNotFoundError(
+        except FileNotFoundError:
+            raise ConfigurationError(
                 f"No such file {self._inv_tmpl}"
-            ) from error
+            ) from None
         except KeyError:
-            raise KeyError("You must define a db section")
+            raise ConfigurationError("You must define a db section") from None
 
     def _check_config(self) -> None:
         sections = []
@@ -426,9 +466,9 @@ class DeployFactory:
                     and not self._empty_ok
                     and not isinstance(value, bool)
                 ):
-                    raise ValueError(
+                    raise ConfigurationError(
                         f"{key} in {section} is empty in {self._inv_tmpl}"
-                    )
+                    ) from None
 
     @property
     def ask_become_password(self) -> bool:
@@ -528,9 +568,11 @@ class DeployFactory:
                 f"updated.\n[green]{', '.join(additional_steps)}[/]"
             )
             time.sleep(3)
-        if not set(steps + self.steps):
+        new_steps = set(steps + self.steps)
+        if not new_steps:
             return None
-        playbook = self.create_playbooks(set(steps + self.steps))
+        self._steps = new_steps
+        playbook = self.create_playbooks()
         logger.info("Parsing configurations")
         self._check_config()
         config: dict[str, dict[str, dict[str, str | int | bool]]] = {}
@@ -564,7 +606,7 @@ class DeployFactory:
         info_str = yaml.dump(json.loads(json.dumps(info)))
         for passwd in (self.email_password, self.master_pass):
             if passwd:
-                info_str = info_str.replace(passwd, "*" * len(passwd))
+                info_str = info_str.replace(passwd, "***")
         RichConsole.print(info_str, style="bold", markup=True)
         return yaml.dump(json.loads(json.dumps(config)))
 
@@ -589,16 +631,17 @@ class DeployFactory:
         steps = []
         for step in self._steps:
             steps.append(step)
-            if step == "db":
+            if step == "db" and "vault" not in steps:
                 steps.append("vault")
         return [s for s in self.step_order if s in steps]
 
-    def create_playbooks(self, steps: set[str]) -> str:
+    def create_playbooks(self) -> str:
         """Create the ansible playbook form all steps."""
         logger.info("Creating Ansible playbooks")
         playbook = []
-        _ = [getattr(self, f"_prep_{step}")() for step in self.step_order]
-        for step in [s for s in self.step_order if s in steps]:
+        self.current_step = "foo"
+        _ = [getattr(self, f"_prep_{step}")() for step in self.steps]
+        for step in self.steps:
             playbook_file = (
                 self.playbooks.get(step)
                 or self.playbook_dir / f"{step}-server-playbook.yml"
@@ -673,9 +716,10 @@ class DeployFactory:
                 passwords[sudo_key] = passwords.get(ssh_key, "")
         return passwords
 
+    @handled_exception
     def play(
         self, ask_pass: bool = True, verbosity: int = 0, ssh_port: int = 22
-    ) -> None:
+    ) -> "Runner | None":
         """Play the ansible playbook.
 
         Parameters
@@ -696,7 +740,7 @@ class DeployFactory:
             pprint(
                 " [red][ERROR]: User interrupted execution[/]", file=sys.stderr
             )
-            raise SystemExit(130)
+            raise KeyboardInterrupt() from None
 
     def get_steps_from_versions(
         self,
@@ -731,10 +775,11 @@ class DeployFactory:
         extravars["forks"] = 4
         stdout = sys.stdout
         buffer = StringIO()
+        sig_handler = signal.getsignal(signal.SIGINT)
         pprint("Getting versions of micro services ...", end="")
         try:
             sys.stdout = buffer
-            thread, event = run_async(
+            event = run(
                 private_data_dir=str(self._td.parent_dir),
                 playbook=str(asset_dir / "playbooks" / "versions.yaml"),
                 inventory=config,
@@ -745,17 +790,15 @@ class DeployFactory:
                 verbosity=verbosity,
                 forks=4,
             )
-            while thread.is_alive():
-                time.sleep(0.5)
         finally:
             sys.stdout = stdout
+            signal.signal(signal.SIGINT, sig_handler)
         if event.status not in ["successful", "canceled"]:
             pprint(" [red]fail[/red]")
-            print(buffer.getvalue())
-            raise SystemExit(1)
+            raise DeploymentError(buffer.getvalue()) from None
         if event.status == "canceled":
             pprint(" [yellow]canceled[/yellow]")
-            raise KeyboardInterrupt()
+            raise KeyboardInterrupt() from None
         pprint(" [green]ok[/green]")
         if verbosity > 0:
             print(buffer.getvalue())
@@ -776,7 +819,7 @@ class DeployFactory:
         ask_pass: bool = True,
         verbosity: int = 0,
         ssh_port: int = 22,
-    ) -> None:
+    ) -> "Runner | None":
         """Play the ansible playbook.
 
         Parameters
@@ -819,18 +862,22 @@ class DeployFactory:
             f_obj.write(inventory)
         logger.info("Playing the playbooks with ansible")
         logger.debug(self.playbooks)
-        result = run(
-            private_data_dir=str(self._td.parent_dir),
-            playbook=str(self._td.playbook_file),
-            inventory=str(self.inventory_file),
-            envvars=envvars,
-            passwords=passwords,
-            extravars=extravars,
-            cmdline=cmdline,
-            verbosity=verbosity,
-        )
+        sig_handler = signal.getsignal(signal.SIGINT)
+        try:
+            result = run(
+                private_data_dir=str(self._td.parent_dir),
+                playbook=str(self._td.playbook_file),
+                inventory=str(self.inventory_file),
+                envvars=envvars,
+                passwords=passwords,
+                extravars=extravars,
+                cmdline=cmdline,
+                verbosity=verbosity,
+            )
+        finally:
+            signal.signal(signal.SIGINT, sig_handler)
         if result.status in ("timeout", "failed"):
             logger.error("Deployment not successful: %s", result.status)
         elif result.status == "canceled":
-            raise KeyboardInterrupt()
+            raise KeyboardInterrupt() from None
         return result
