@@ -73,7 +73,7 @@
       environment:
         DEBUG: '{{ debug }}'
       when: systemctl.stat.exists == true
-    - pause: seconds=20
+    - pause: seconds=35
     - name: Deleting existing infrastructure
       shell: /tmp/docker-or-podman exec {{ vault_name }} vault kv delete kv/read-eval
       become: "{{use_become}}"

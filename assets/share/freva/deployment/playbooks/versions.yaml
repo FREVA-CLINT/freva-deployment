@@ -54,7 +54,7 @@
       register: core
       tags: core
       shell:
-        cmd: "{{ core_install_dir | expanduser }}/bin/freva -V 2> /dev/null | awk '{print $NF}'"
+        cmd: "{{ core_install_dir | regex_replace('^~', ansible_env.HOME) }}/bin/freva -V 2> /dev/null | awk '{print $NF}';"
     - name: Display core version
       debug:
         msg: "{{ core.stdout }}"

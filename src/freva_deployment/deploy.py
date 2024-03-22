@@ -571,7 +571,7 @@ class DeployFactory:
         new_steps = set(steps + self.steps)
         if not new_steps:
             return None
-        self._steps = new_steps
+        self._steps = list(new_steps)
         playbook = self.create_playbooks()
         logger.info("Parsing configurations")
         self._check_config()
@@ -719,7 +719,7 @@ class DeployFactory:
     @handled_exception
     def play(
         self, ask_pass: bool = True, verbosity: int = 0, ssh_port: int = 22
-    ) -> "Runner | None":
+    ) -> Runner | None:
         """Play the ansible playbook.
 
         Parameters
@@ -772,15 +772,14 @@ class DeployFactory:
         config["core"]["vars"]["core_install_dir"] = cfg["core"]["config"][
             "install_dir"
         ]
-        extravars["forks"] = 4
         stdout = sys.stdout
         buffer = StringIO()
         sig_handler = signal.getsignal(signal.SIGINT)
-        pprint("Getting versions of micro services ...", end="")
+        pprint("Getting versions of micro-services ...", end="")
+        extravars["forks"] = 4
         try:
             sys.stdout = buffer
             event = run(
-                private_data_dir=str(self._td.parent_dir),
                 playbook=str(asset_dir / "playbooks" / "versions.yaml"),
                 inventory=config,
                 envvars=envvars,
@@ -819,7 +818,7 @@ class DeployFactory:
         ask_pass: bool = True,
         verbosity: int = 0,
         ssh_port: int = 22,
-    ) -> "Runner | None":
+    ) -> Runner | None:
         """Play the ansible playbook.
 
         Parameters
@@ -860,8 +859,11 @@ class DeployFactory:
         logger.debug(inventory)
         with self.inventory_file.open("w") as f_obj:
             f_obj.write(inventory)
-        logger.info("Playing the playbooks with ansible")
+        logger.info(
+            "Playing the playbooks for %s with ansible", ", ".join(self.steps)
+        )
         logger.debug(self.playbooks)
+        time.sleep(3)
         sig_handler = signal.getsignal(signal.SIGINT)
         try:
             result = run(

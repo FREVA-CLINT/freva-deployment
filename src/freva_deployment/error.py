@@ -7,7 +7,7 @@ from typing import Any, Callable, Optional, Type
 
 from rich import print as pprint
 
-from .utils import logger
+from .logger import logger
 
 
 class DeploymentError(BaseException):
