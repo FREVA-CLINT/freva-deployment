@@ -1,7 +1,7 @@
 """Definition of custom Errors."""
 
-from functools import wraps
 import sys
+from functools import wraps
 from types import TracebackType
 from typing import Any, Callable, Optional, Type
 

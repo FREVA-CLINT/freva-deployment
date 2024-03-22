@@ -18,10 +18,8 @@ import toml
 
 from freva_deployment import __version__
 
-from ..utils import (
-    read_db_credentials,
-)
 from ..logger import logger, set_log_level
+from ..utils import read_db_credentials
 
 DUMP_SCRIPT = """#!{python_bin}
 import json

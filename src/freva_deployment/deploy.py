@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import os
 import random
+import signal
 import string
 import sys
 import time
@@ -12,7 +13,6 @@ from copy import deepcopy
 from getpass import getuser
 from io import StringIO
 from pathlib import Path
-import signal
 from socket import gethostbyname, gethostname
 from typing import Any, cast
 from urllib.parse import urlparse
@@ -26,7 +26,9 @@ from rich.prompt import Prompt
 
 from freva_deployment import FREVA_PYTHON_VERSION
 
+from .error import ConfigurationError, DeploymentError, handled_exception
 from .keys import RandomKeys
+from .logger import logger
 from .runner import RunnerDir
 from .utils import (
     AssetDir,
@@ -37,9 +39,7 @@ from .utils import (
     get_passwd,
     load_config,
 )
-from .logger import logger
 from .versions import get_steps_from_versions
-from .error import handled_exception, ConfigurationError, DeploymentError
 
 
 class DeployFactory:

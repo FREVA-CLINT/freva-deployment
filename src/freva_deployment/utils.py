@@ -18,8 +18,8 @@ import tomlkit
 from rich.console import Console
 from rich.prompt import Prompt
 
-from .logger import logger
 from .error import ConfigurationError
+from .logger import logger
 
 RichConsole = Console(markup=True, force_terminal=True)
 

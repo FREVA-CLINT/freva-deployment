@@ -11,10 +11,10 @@ from rich_argparse import ArgumentDefaultsRichHelpFormatter
 from freva_deployment import __version__
 
 from ..deploy import DeployFactory
-from ..utils import config_dir
-from ..logger import set_log_level
-from ..versions import VersionAction, display_versions
 from ..error import DeploymentError
+from ..logger import set_log_level
+from ..utils import config_dir
+from ..versions import VersionAction, display_versions
 
 
 def parse_args(argv: list[str] | None) -> argparse.Namespace:
