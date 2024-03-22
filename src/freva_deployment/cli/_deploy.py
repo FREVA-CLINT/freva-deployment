@@ -11,8 +11,10 @@ from rich_argparse import ArgumentDefaultsRichHelpFormatter
 from freva_deployment import __version__
 
 from ..deploy import DeployFactory
-from ..utils import config_dir, set_log_level
+from ..utils import config_dir
+from ..logger import set_log_level
 from ..versions import VersionAction, display_versions
+from ..error import DeploymentError
 
 
 def parse_args(argv: list[str] | None) -> argparse.Namespace:
@@ -91,7 +93,16 @@ def cli(argv: list[str] | None = None) -> None:
         local_debug=args.local,
         gen_keys=args.gen_keys,
     ) as DF:
-        DF.play(args.ask_pass, args.verbose, ssh_port=args.ssh_port)
+        try:
+            result = DF.play(
+                args.ask_pass, args.verbose, ssh_port=args.ssh_port
+            )
+        except KeyboardInterrupt:
+            raise SystemExit(130)
+        except DeploymentError:
+            raise SystemExit(1)
+        if result and result.status != "ssuccessful":
+            raise DeploymentError()
 
 
 if __name__ == "__main__":
