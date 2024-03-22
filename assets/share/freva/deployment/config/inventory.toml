@@ -79,7 +79,7 @@ ansible_user = "freva"
 ## You can set the db_host separately, if none is given (default)
 ## the one from the hosts names above are taken
 
-db_host = ""
+db_host = "127.0.0.1"
 
 ## Set the become (sudo) user name to change to for installing the services
 ## leave blank to utilise a non privileged user based installation
