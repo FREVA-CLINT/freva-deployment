@@ -1,7 +1,7 @@
 """Definition of custom Errors."""
 
 import sys
-from functools import wraps
+from functools import partial, wraps
 from types import TracebackType
 from typing import Any, Callable, Optional, Type
 
@@ -47,7 +47,7 @@ def handled_exception(func: Callable[..., Any]) -> Callable[..., Any]:
     @wraps(func)
     def wrapper(*args: Any, **kwargs: Any) -> Any:
         """Wrapper function that handles the exception."""
-        sys.excepthook = exception_hook
+        sys.excepthook = partial(exception_hook, _sys_handler=sys.excepthook)
         try:
             return func(*args, **kwargs)
         except (ConfigurationError, DeploymentError) as exception:
@@ -57,13 +57,13 @@ def handled_exception(func: Callable[..., Any]) -> Callable[..., Any]:
 
 
 def exception_hook(
-    exception_type: Type,
+    exception_type: Type[BaseException],
     exception: BaseException,
     traceback: TracebackType,
     _sys_handler: Callable[
-        [Type, BaseException, Optional[TracebackType]], BaseException
+        [Type[BaseException], BaseException, Optional[TracebackType]], Any
     ] = sys.excepthook,
-) -> BaseException:
+) -> Any:
     """Make certain types of exceptions silent."""
     if isinstance(exception, ConfigurationError):
         while traceback.tb_next:
