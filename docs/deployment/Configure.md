@@ -104,9 +104,9 @@ To avoid this you have to enable 'lingering' states of services for that user:
 loginctl enable-linger [USER]
 ```
 
-This command can only by applied by the root user. Backups are also done on
-user instead of system basis, you can check the backups after deployment using
-the `crontab` command.
+This command can only by applied by the root user. Backups are also done as
+user instead of system wide basis, you can check the backups after deployment using
+the `crontab -l` command.
 
 *No direct access to ports 80 and 443*: The freva web user interface cannot directly be accessed by a web server
 listing on port 80 and 443 as those ports are off limits for normal users. If

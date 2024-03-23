@@ -51,7 +51,6 @@ In the old version the DRS (Date Reference Syntax) File configuration,
 that is the definitions of dataset metadata, was hard coded into the module
 `evaluation_system.model.file`. In the new version this configuration
 is saved in a designated [toml](https://toml.io/en/) file (drs_config.toml).
-The ingestion of data is done by the new `freva-ingest` software, which is
-written in rust. More information on this configuration and usage of the
-ingestion software can be found on the
-[README](https://gitlab.dkrz.de/freva/freva-ingest).
+The ingestion of data is done by the new `data-crawler` software, which is
+written in python. More information on this configuration and usage of the
+software can be found on the [software documentation](https://freva.gitlab-pages.dkrz.de/metadata-crawler-source/index.html).
