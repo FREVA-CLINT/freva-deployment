@@ -11,7 +11,7 @@ prepare () {
     if [ ! -f "$IMG" ];then
         wget https://cloud-images.ubuntu.com/minimal/releases/mantic/release/$IMG
         img_file=$IMG
-        qemu-img resize $img_file +25G 1>&2
+        qemu-img resize $img_file +50G 1>&2
     else
         cp $IMG temp/ubuntu.img
         img_file=temp/ubuntu.img
