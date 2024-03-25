@@ -27,8 +27,10 @@ if [ "$cron_dir" ]; then
     echo "$cmd" >> "$cron_file"
     chmod +x "$cron_file"
 else
-     if ! cron_job_exists "$cmd"; then
-        echo "0 0 * * * $cmd" >> "$HOME/.crontab"
-        crontab "$HOME/.crontab"
+    if [ "$(which crontab 2> /dev/null)" ];then
+        if ! cron_job_exists "$cmd"; then
+            echo "0 0 * * * $cmd" >> "$HOME/.crontab"
+            crontab "$HOME/.crontab"
+        fi
     fi
 fi

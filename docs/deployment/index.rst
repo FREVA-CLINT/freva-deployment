@@ -31,3 +31,4 @@ The general strategy is to split the deployment into different steps, these are 
    Configure
    TuiHowto
    Config
+   changelog

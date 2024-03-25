@@ -4,32 +4,32 @@
   vars:
     ansible_python_interpreter: "{{ db_ansible_python_interpreter }}"
     ansible_become_user: "{{ db_ansible_become_user | default('root') }}"
-    compose_file: '{{db_data_path|expanduser}}/compose_services/{{db_name}}-compose.yml'
+    compose_file: '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/compose_services/{{db_name}}-compose.yml'
     db_volumes:
-      - '{{db_data_path|expanduser}}/freva-service-config/mysql/create_tables.sql:/docker-entrypoint-initdb.d/002_create_tables.sql:z'
-      - '{{db_data_path|expanduser}}/freva-service-config/mysql/daily_backup.sh:/usr/local/bin/daily_backup:z'
-      - '{{db_data_path|expanduser}}/{{project_name}}/db_service:/var/lib/mysql:z'
+      - '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/freva-service-config/mysql/create_tables.sql:/docker-entrypoint-initdb.d/002_create_tables.sql:z'
+      - '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/freva-service-config/mysql/daily_backup.sh:/usr/local/bin/daily_backup:z'
+      - '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/{{project_name}}/db_service:/var/lib/mysql:z'
     docker_cmd: >
         --network {{ project_name }} -v
         {{db_data_path}}/{{project_name}}/db_service:/var/lib/mysql:z
         -e MYSQL_USER={{db_user}}
         -e MYSQL_PASSWORD='{{db_passwd}}'
         -e MYSQL_DATABASE={{db}}
-        -v '{{db_data_path|expanduser}}/freva-service-config/mysql/create_tables.sql:/docker-entrypoint-initdb.d/002_create_tables.sql:z'
-        -v '{{db_data_path|expanduser}}/freva-service-config/mysql/daily_backup.sh:/usr/local/bin/daily_backup:z'
+        -v '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/freva-service-config/mysql/create_tables.sql:/docker-entrypoint-initdb.d/002_create_tables.sql:z'
+        -v '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/freva-service-config/mysql/daily_backup.sh:/usr/local/bin/daily_backup:z'
         --rm
         --name {{db_name}}
         -e MYSQL_ROOT_PASSWORD={{ root_passwd }}
         -t docker.io/mariadb:latest
     skip_tables_cmd: >
         --network {{ project_name }} -v
-        '{{db_data_path|expanduser}}/{{project_name}}/db_service:/var/lib/mysql:z'
+        '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/{{project_name}}/db_service:/var/lib/mysql:z'
         -e MYSQL_USER={{db_user}}
         -e MYSQL_PASSWORD='{{db_passwd}}'
         -e MYSQL_DATABASE={{db}}
         --name {{db_name}}
-        -v '{{db_data_path|expanduser}}/freva-service-config/mysql/create_tables.sql:/docker-entrypoint-initdb.d/002_create_tables.sql:z'
-        -v '{{db_data_path|expanduser}}/freva-service-config/mysql/daily_backup.sh:/usr/local/bin/daily_backup:z'
+        -v '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/freva-service-config/mysql/create_tables.sql:/docker-entrypoint-initdb.d/002_create_tables.sql:z'
+        -v '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/freva-service-config/mysql/daily_backup.sh:/usr/local/bin/daily_backup:z'
         -v /tmp/reset_root_pw.sh:/tmp/reset_root_pw.sh:z
         -t docker.io/mariadb:latest mariadbd-safe --skip-grant-tables
     continer_name: "{{ db_name }}"
@@ -63,7 +63,7 @@
       file:
         state: absent
         force: true
-        path: "{{db_data_path|expanduser}}/freva-service-config/"
+        path: "{{db_data_path|regex_replace('^~', ansible_env.HOME)}}/freva-service-config/"
       become: "{{use_become}}"
     - name: Pulling container
       become: "{{use_become}}"
@@ -75,13 +75,13 @@
       become: "{{use_become}}"
     - name: Cleaning existing directory structure
       file:
-        path: '{{db_data_path|expanduser}}/{{ project_name }}/db_service'
+        path: '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/{{ project_name }}/db_service'
         state: absent
       become: "{{use_become}}"
       when: db_wipe == true
     - name: Creating directory structure
       file:
-        path: '{{db_data_path|expanduser}}/{{ project_name }}/db_service'
+        path: '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/{{ project_name }}/db_service'
         state: directory
         recurse: true
         owner: "{{ '999' if db_ansible_become_user == 'root' else omit }}"
@@ -102,7 +102,7 @@
       become: "{{use_become}}"
       git:
         repo: https://github.com/FREVA-CLINT/freva-service-config.git
-        dest: '{{db_data_path|expanduser}}/freva-service-config'
+        dest: '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/freva-service-config'
         update: true
     - name: Preparing the root password reset I
       become: "{{use_become}}"
@@ -126,7 +126,7 @@
         /tmp/docker-or-podman rm -f {{db_name}}
     - name: Creating compose directory structure
       file:
-        path: '{{db_data_path|expanduser}}/compose_services'
+        path: '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/compose_services'
         state: directory
         recurse: true
       become: "{{use_become}}"
@@ -134,7 +134,7 @@
       become: "{{use_become}}"
       template:
         src: "{{ asset_dir }}/playbooks/db-server-compose-template.yml"
-        dest: "{{db_data_path|expanduser}}/compose_services/{{db_name}}-compose.yml"
+        dest: "{{db_data_path|regex_replace('^~', ansible_env.HOME)}}/compose_services/{{db_name}}-compose.yml"
     - name: Creating system services
       become: "{{use_become}}"
       command:

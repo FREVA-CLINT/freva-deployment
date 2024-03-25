@@ -6,7 +6,10 @@ import argparse
 
 from freva_deployment import __version__
 from freva_deployment.deploy import DeployFactory
-from freva_deployment.utils import RichConsole, set_log_level
+from freva_deployment.error import DeploymentError
+from freva_deployment.logger import set_log_level
+from freva_deployment.utils import RichConsole
+from freva_deployment.versions import VersionAction, display_versions
 
 from .main_window import MainApp
 
@@ -24,8 +27,10 @@ def parse_args() -> int:
     app.add_argument(
         "-V",
         "--version",
-        action="version",
-        version="%(prog)s {version}".format(version=__version__),
+        action=VersionAction,
+        version="[b][red]%(prog)s[/red] {version}[/b]{services}".format(
+            version=__version__, services=display_versions()
+        ),
     )
     parser = app.parse_args()
     return parser.verbose
@@ -55,4 +60,9 @@ def tui() -> None:
         ssh_port = setup.pop("ssh_port")
         RichConsole.print(f"Playing steps: [i]{steps}[/] with ansible")
         with DeployFactory(**setup) as DF:
-            DF.play(ask_pass, verbosity, ssh_port=ssh_port)
+            try:
+                DF.play(ask_pass, verbosity, ssh_port=ssh_port)
+            except KeyboardInterrupt:
+                raise SystemExit(130)
+            except DeploymentError:
+                raise SystemExit(1)

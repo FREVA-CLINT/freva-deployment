@@ -20,7 +20,7 @@ key was set to `clex-ces` then the following services are created:
 
 - database: `clex-ces-db.service`, `clex-ces-vault.serice`
 - databrowser: `clex-ces-databrowser.service`
-- web ui: `clex-ces-web.service`, `clex-ces-redis.service`, `clex-ces-httpd.service`
+- web ui: `clex-ces-web.service`
 
 > **_Note:_** If you have set up the services as an unprivileged user you need
 to access the services with help of the ``--user`` flag for example:
@@ -30,11 +30,20 @@ systemclt --user restart clex-ces-web.service
 ```
 
 ## Access of service data on the host machine
-The data of the services, like the database or databrowser cores are stored "outside"
-the docker containers on the host machine and can be accessed at
-`/opt/freva/<project_name>/<service_name>_service/` for example
-`/opt/freva/clex-ces/db_service`
+The data of the services, like the database or databrowser cores
+are stored "outside" the docker containers on the host machine. The default
+location for all the service data is `/opt/freva` or whatever folder was set
+as `data_path` variable. The following logic applies:
 
+- `<data_path>/services/<project_name>/<service_name>_service/`
+
+for example:
+
+- `/opt/freva/services/clex-ces/db_service`
+
+The compose files are also located in the `<data_path>` location, for example:
+
+- `/opt/freva/services/compose_services`
 
 ## Simple backup scripts:
 The `db` and `databrowser` services offer a very simple backup script that can

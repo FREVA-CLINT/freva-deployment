@@ -7,6 +7,28 @@ What's new
    :maxdepth: 0
    :titlesonly:
 
+v2403.2.0
+~~~~~~~~
+* Bumped version of databrowserAPI to 2403.0.2
+
+
+
+v2403.1.0
+~~~~~~~~
+* Bumped version of databrowserAPI to 2403.0.2
+
+
+
+
+v2403.0.5
+~~~~~~~~~
+*  A new procedure to check the correct versions of all micro services has
+   been added
+*  Unprivileged users (non-root) can now also deploy the system with all
+   services.
+*  For better testing a setup script that create separate VM to deploy the
+   micro services has been added.
+
 v2309.0.0
 ~~~~~~~~~
 

@@ -265,9 +265,10 @@ The deployment routine is supposed to interact with the user - this can
 can be asking for user names or passwords. To avoid such interaction you can
 set the following environment variables.
 
-- `MASTER_PASSWD`: the admin/root password for all services (db, web etc)
-- `EMAIL_USER`: the user name for email server login credentials
-- `EMAIL_PASSWD`: the password for email server login credentials
+- `MASTER_PASSWD`: the admin/root password for all services (db, web etc).
+- `EMAIL_USER`: the user name for email server login credentials.
+- `EMAIL_PASSWD`: the password for email server login credentials.
+- `ANSIBLE_BECOME_PASSWORD`: the password used in any *sudo* command.
 
 These environment variables have only an effect when the deployment is
 applied in debug or local mode using the `-l` flag.
@@ -314,21 +315,47 @@ terminal where you created the VM or use the kill command:
 
 ## Development Workflow
 
-We use a Makefile to manage common development tasks. Here are some useful
-commands:
-
-
-1. To install in development mode use:
+To install the code in development mode use:
 ```console
 make
 ```
 
-2. To reformat and do type checking:
+Unit tests, building the documentation, type annotations and code style tests
+are done with [tox](https://tox.wiki/en/latest/). To run all tests, linting
+in parallel simply execute the following command:
+
+```console
+tox -p 3
+```
+You can also run the each part alone, for example to only check the code style:
+
+```console
+tox -e lint
+```
+available options are ``lint``, ``types``, ``test`` and ``docs``.
+
+Tox runs in a separate python environment to run the tests in the current
+environment use:
+
+```console
+pytest
+```
+
+To reformat and do type checking:
 ```console
 make lint
 ```
+### Creating a new release.
 
-3. Generate the documentation:
+Once the development is finished and you decide that it's time for a new
+release of the software use the following command to trigger a release
+procedure:
+
 ```console
-make docs
+tox -e release
 ```
+
+This will check the current version of the `main` branch and trigger
+a GitHub continuous integration pipeline to create a new release. The procedure
+performs a couple of checks, if theses checks fail please make sure to address
+the issues.
