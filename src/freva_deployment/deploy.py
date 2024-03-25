@@ -83,7 +83,6 @@ class DeployFactory:
         self._master_pass: str = os.environ.get("MASTER_PASSWD", "") or ""
         self.email_password: str = ""
         self._td: RunnerDir = RunnerDir()
-        self.inventory_file: Path = self._td.inventory_file
         self.eval_conf_file: Path = (
             self._td.parent_dir / "evaluation_system.conf"
         )
@@ -857,8 +856,6 @@ class DeployFactory:
             return None
         self.create_eval_config()
         logger.debug(inventory)
-        with self.inventory_file.open("w") as f_obj:
-            f_obj.write(inventory)
         logger.info(
             "Playing the playbooks for %s with ansible", ", ".join(self.steps)
         )
@@ -869,7 +866,7 @@ class DeployFactory:
             result = run(
                 private_data_dir=str(self._td.parent_dir),
                 playbook=str(self._td.playbook_file),
-                inventory=str(self.inventory_file),
+                inventory=inventory,
                 envvars=envvars,
                 passwords=passwords,
                 extravars=extravars,
@@ -879,7 +876,9 @@ class DeployFactory:
         finally:
             signal.signal(signal.SIGINT, sig_handler)
         if result.status in ("timeout", "failed"):
-            logger.error("Deployment not successful: %s", result.status)
+            raise DeploymentError(
+                f"Deployment not successful: {result.status}"
+            )
         elif result.status == "canceled":
             raise KeyboardInterrupt() from None
         return result

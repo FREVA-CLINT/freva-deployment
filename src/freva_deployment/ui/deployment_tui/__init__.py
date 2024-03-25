@@ -6,6 +6,7 @@ import argparse
 
 from freva_deployment import __version__
 from freva_deployment.deploy import DeployFactory
+from freva_deployment.error import DeploymentError
 from freva_deployment.logger import set_log_level
 from freva_deployment.utils import RichConsole
 from freva_deployment.versions import VersionAction, display_versions
@@ -59,4 +60,9 @@ def tui() -> None:
         ssh_port = setup.pop("ssh_port")
         RichConsole.print(f"Playing steps: [i]{steps}[/] with ansible")
         with DeployFactory(**setup) as DF:
-            DF.play(ask_pass, verbosity, ssh_port=ssh_port)
+            try:
+                DF.play(ask_pass, verbosity, ssh_port=ssh_port)
+            except KeyboardInterrupt:
+                raise SystemExit(130)
+            except DeploymentError:
+                raise SystemExit(1)

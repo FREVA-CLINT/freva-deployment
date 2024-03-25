@@ -94,15 +94,11 @@ def cli(argv: list[str] | None = None) -> None:
         gen_keys=args.gen_keys,
     ) as DF:
         try:
-            result = DF.play(
-                args.ask_pass, args.verbose, ssh_port=args.ssh_port
-            )
+            _ = DF.play(args.ask_pass, args.verbose, ssh_port=args.ssh_port)
         except KeyboardInterrupt:
             raise SystemExit(130)
         except DeploymentError:
             raise SystemExit(1)
-        if result and result.status != "ssuccessful":
-            raise DeploymentError()
 
 
 if __name__ == "__main__":
