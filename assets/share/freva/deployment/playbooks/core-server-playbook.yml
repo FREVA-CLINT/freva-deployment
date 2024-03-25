@@ -40,6 +40,7 @@
         chdir: /tmp/evaluation_system
         creates: "{{core_install_dir|regex_replace('^~', ansible_env.HOME)}}/bin/freva"
       become: "{{use_become}}"
+      when: not freva_path.stat.exists
     - name: Check if mamba exists
       stat:
         path: "{{ core_install_dir | regex_replace('^~', ansible_env.HOME)}}/bin/mamba"
@@ -50,7 +51,7 @@
       when: mamba_check.stat.exists
     - name: Updating existing freva
       command:
-        cmd: "{{conda_bin}}/{{pkg_mgr}} update -q -p {{core_install_dir}} -c conda-forge freva={{core_version}}"
+        cmd: "{{conda_bin}}/{{pkg_mgr}} update -q -p {{core_install_dir}} -c conda-forge freva"
       environment:
         PATH: "{{conda_bin}}"
       become: "{{use_become}}"
