@@ -36,7 +36,7 @@
       become: "{{use_become}}"
     - name: Pulling container
       become: "{{use_become}}"
-      shell: /tmp/docker-or-podman pull ghcr.io/freva-clint/freva-deployment:{{vault_version}}
+      shell: /tmp/docker-or-podman pull ghcr.io/freva-clint/freva-vault:{{vault_version}}
     - name: Copying systemd files
       copy:
         src: "{{ asset_dir }}/scripts/create_systemd.py"

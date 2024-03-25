@@ -41,7 +41,7 @@
     - name: Get vault version
       register: vault
       ansible.builtin.script:
-        cmd: "{{ asset_dir }}/scripts/inspect.sh ghcr.io/freva-clint/freva-deployment"
+        cmd: "{{ asset_dir }}/scripts/inspect.sh ghcr.io/freva-clint/freva-vault"
       become: "{{ db_ansible_become_user | default('root') is defined and db_ansible_become_user | default('root') != '' }}"
     - name: Display vault version
       debug:

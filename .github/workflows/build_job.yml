@@ -72,7 +72,6 @@ jobs:
         name: Get tag
         id: repository
         run: |
-          echo "repo=$(echo ${{ github.repository }}|tr 'A-Z' 'a-z')" >> $GITHUB_OUTPUT
           echo "tag=$(python -c 'from freva_deployment import __version__;print(__version__)')" >> $GITHUB_OUTPUT
       -
         name: Set up QEMU
@@ -98,8 +97,8 @@ jobs:
           push: true
           build-args: VERSION=${{steps.repository.outputs.tag}}
           tags: |
-            ghcr.io/${{ steps.repository.outputs.repo }}:${{ steps.repository.outputs.tag }}
-            ghcr.io/${{ steps.repository.outputs.repo }}:latest
+            ghcr.io/freva-clint/freva-vault:${{ steps.repository.outputs.tag }}
+            ghcr.io/freva-clint/freva-vault:latest
   createrelease:
     name: Create Release
     runs-on: [ubuntu-latest]
