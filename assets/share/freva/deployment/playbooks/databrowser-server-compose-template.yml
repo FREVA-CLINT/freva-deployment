@@ -33,7 +33,6 @@ services:
       - {{databrowser_name}}
 {% endif %}
     environment:
-    environment:
       - MONGO_INITDB_ROOT_USERNAME=mongo
       - MONGO_INITDB_ROOT_PASSWORD={{root_passwd}}
       - MONGO_INITDB_DATABASE=search_stats
