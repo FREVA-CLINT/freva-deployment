@@ -34,6 +34,7 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
     )
     ap.add_argument(
         "--steps",
+        "-s",
         type=str,
         nargs="+",
         default=["db", "databrowser", "web", "core"],
