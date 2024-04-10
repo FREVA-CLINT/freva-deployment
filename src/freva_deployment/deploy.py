@@ -844,11 +844,15 @@ class DeployFactory:
         ssh_port: int, default: 22
             Set the ssh port, in 99.9% of cases this should be left at port 22
         """
-        envvars: dict[str, str] = {}
-        envvars["ANSIBLE_STDOUT_CALLBACK"] = "yaml"
+        envvars: dict[str, str] = {
+            "ANSIBLE_STDOUT_CALLBACK": "yaml",
+            "DISPLAY_SKIPPED_HOSTS": str(verbosity > 0).lower(),
+            "ANSIBLE_CONFIG": self._td.ansible_config_file,
+        }
         extravars: dict[str, str | int] = {
             "ansible_port": ssh_port,
             "ansible_ssh_args": "-o ForwardX11=no",
+            "display_skipped_hosts": str(verbosity > 0).lower(),
         }
         if self.local_debug:
             extravars["ansible_connection"] = "local"
@@ -856,6 +860,9 @@ class DeployFactory:
         cmdline = "--ask-become"
         if ask_pass:
             cmdline += " --ask-pass"
+        self._td.create_config(
+            display_skipped_hosts=str(verbosity > 0).lower()
+        )
         passwords = self.get_ansible_password(ask_pass)
         steps = self.get_steps_from_versions(
             envvars.copy(),
