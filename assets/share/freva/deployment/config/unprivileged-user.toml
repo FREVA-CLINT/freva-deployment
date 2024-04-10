@@ -102,7 +102,6 @@ data_path = "~/freva-local/services"
 ## NOTE: only adjust this if you know what you are doing, if you leave this
 ## blank the system will used the default playbook (standard procedure)
 db_playbook = ""
-vault_playbook = ""
 
 [databrowser.config]
 # Set the memory for the solr server (solr is the search engine in the background)
@@ -146,10 +145,6 @@ admins = ""
 
 ## The path where the core should be installed
 install_dir="~/freva-env"
-
-## Set the path to any existing conda executable on the target machine,
-## if not existing (default) a temporary conda distribution will be downloaded
-conda_exec_path=""
 
 ## The directory where the project configuration files will be stored.
 ## This can be useful if you want to set up multiple freva instances with

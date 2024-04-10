@@ -156,18 +156,6 @@ class CoreScreen(BaseForm):
                 ),
                 False,
             ),
-            conda_exec_path=(
-                self.add_widget_intelligent(
-                    npyscreen.TitleText,
-                    name=(
-                        f"{self.num}Path to any existing conda installation - "
-                        "leave blank to "
-                        "install a temporary conda distribution:"
-                    ),
-                    value=cfg.get("conda_exec_path", ""),
-                ),
-                False,
-            ),
             arch=(
                 self.add_widget_intelligent(
                     npyscreen.TitleCombo,
@@ -671,17 +659,6 @@ class DBScreen(BaseForm):
                         " setting up the system."
                     ),
                     value=cfg.get("db_playbook", ""),
-                ),
-                False,
-            ),
-            vault_playbook=(
-                self.add_widget_intelligent(
-                    npyscreen.TitleFilename,
-                    name=(
-                        f"{self.num}Set the path to the vault playbook used for"
-                        " setting up the system."
-                    ),
-                    value=cfg.get("vault_playbook", ""),
                 ),
                 False,
             ),
