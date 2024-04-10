@@ -23,6 +23,9 @@ from ansible_runner import run
 from ansible_runner.runner import Runner
 from rich import print as pprint
 from rich.prompt import Prompt
+from rich.live import Live
+from rich.spinner import Spinner
+from rich.console import Console
 
 from freva_deployment import FREVA_PYTHON_VERSION
 
@@ -31,7 +34,6 @@ from .keys import RandomKeys
 from .logger import logger
 from .runner import RunnerDir
 from .utils import (
-    AssetDir,
     RichConsole,
     asset_dir,
     config_dir,
@@ -751,6 +753,9 @@ class DeployFactory:
     ) -> list[str]:
         """Check the versions of the different freva parts."""
         config: dict[str, dict[str, dict[str, str | int | bool]]] = {}
+        if not set(self.step_order) - set(self.steps):
+            # The user has selected all steps anyway, nothing to do here:
+            return []
         cfg = deepcopy(self.cfg)
         if cfg.get("databrowser") is None:
             cfg["databrowser"] = cfg["solr"]
@@ -774,30 +779,39 @@ class DeployFactory:
         stdout = sys.stdout
         buffer = StringIO()
         sig_handler = signal.getsignal(signal.SIGINT)
-        pprint("Getting versions of micro-services ...", end="")
-        extravars["forks"] = 4
-        try:
-            sys.stdout = buffer
-            event = run(
-                playbook=str(asset_dir / "playbooks" / "versions.yaml"),
-                inventory=config,
-                envvars=envvars,
-                passwords=passwords,
-                extravars=extravars,
-                cmdline=cmdline,
-                verbosity=verbosity,
-                forks=4,
+        text = "Getting versions of micro-services ..."
+        spinner = Spinner("weather", text=text)
+        status_text = {
+            "successful": " [green]ok[/green]",
+            "canceled": " [yellow]canceled[/yellow]",
+            "failed": " [red]failed[/red]",
+        }
+        with Live(spinner, refresh_per_second=3, console=Console(stderr=True)):
+            extravars["forks"] = 4
+            try:
+                sys.stdout = buffer
+                sys.stdout.write("\n")
+                event = run(
+                    playbook=str(asset_dir / "playbooks" / "versions.yaml"),
+                    inventory=config,
+                    envvars=envvars,
+                    passwords=passwords,
+                    extravars=extravars,
+                    cmdline=cmdline,
+                    verbosity=verbosity,
+                    forks=4,
+                )
+            finally:
+                sys.stdout = stdout
+                signal.signal(signal.SIGINT, sig_handler)
+            spinner.update(
+                text=text + status_text.get(event.status, " [red]failed[/red]")
             )
-        finally:
-            sys.stdout = stdout
-            signal.signal(signal.SIGINT, sig_handler)
+
         if event.status not in ["successful", "canceled"]:
-            pprint(" [red]fail[/red]")
             raise DeploymentError(buffer.getvalue()) from None
         if event.status == "canceled":
-            pprint(" [yellow]canceled[/yellow]")
             raise KeyboardInterrupt() from None
-        pprint(" [green]ok[/green]")
         if verbosity > 0:
             print(buffer.getvalue())
         versions = {}
