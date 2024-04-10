@@ -68,7 +68,6 @@
       - "{{web_data_path|regex_replace('^~', ansible_env.HOME)}}/{{project_name}}/web_service/freva_web.conf:/usr/local/apache2/conf/httpd.conf:z"
       - "{{web_data_path|regex_replace('^~', ansible_env.HOME)}}/{{project_name}}/web_service/server-cert.crt:/etc/ssl/certs/server-cert.crt:z"
       - "{{web_data_path|regex_replace('^~', ansible_env.HOME)}}/{{project_name}}/web_service/server-key.key:/etc/ssl/private/server-key.key:z"
-      - "{{web_data_path|regex_replace('^~', ansible_env.HOME)}}/{{project_name}}/web_service/cacert.pem:/etc/ssl/certs/cacert.pem:z"
       - "{{web_data_path|regex_replace('^~', ansible_env.HOME)}}/{{project_name}}/web_service/static:/srv/static:z"
       - "{{web_data_path|regex_replace('^~', ansible_env.HOME)}}/{{project_name}}/web_service/prepare-httpd:/usr/local/bin/prepare-httpd:z"
       - "{{ core_preview_path | regex_replace('^~', ansible_env.HOME)}}:/srv/static/preview:z"

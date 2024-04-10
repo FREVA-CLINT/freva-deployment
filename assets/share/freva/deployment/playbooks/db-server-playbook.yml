@@ -5,6 +5,9 @@
     ansible_python_interpreter: "{{ db_ansible_python_interpreter }}"
     ansible_become_user: "{{ db_ansible_become_user | default('root') }}"
     compose_file: '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/compose_services/{{db_name}}-compose.yml'
+    vault_volumes:
+      - '{{vault_data_path|regex_replace("^~", ansible_env.HOME)}}/{{project_name}}/vault_service/config:/data:z'
+      - '{{vault_data_path|regex_replace("^~", ansible_env.HOME)}}/{{project_name}}/vault_service/files:/vault/file:z'
     db_volumes:
       - '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/freva-service-config/mysql/create_tables.sql:/docker-entrypoint-initdb.d/002_create_tables.sql:z'
       - '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/freva-service-config/mysql/daily_backup.sh:/usr/local/bin/daily_backup:z'
@@ -49,6 +52,21 @@
       stat:
         path: /etc/cron.daily
       register: cron
+    - name: Registering vault volume path
+      stat:
+        path: /etc/systemd/system/{{vault_name}}.service
+      register: vault_service
+    - name: Removing old vault service
+      file:
+        state: absent
+        force: true
+        path: /etc/systemd/system/{{vault_name}}.service
+        become: true
+      when: vault_service.stat.exists == true
+      register: vault_volume
+    - name: Set vault valume path
+      set_fact:
+        exists: vault_volume.stat.exists
     - name: Stopping services and deleting existing containers
       shell: >
         /tmp/docker-or-podman stop {{db_name}};
@@ -56,6 +74,9 @@
         systemctl disable {{db_name}};
         systemctl reset-failed;
         /tmp/docker-or-podman rm {{db_name}};
+        systemctl stop {{vault_name}};
+        systemctl disable {{vault_name}};
+        /tmp/docker-or-podman rm {{vault_name}};
         echo 0
       become: "{{use_become}}"
       ignore_errors: true
@@ -67,7 +88,10 @@
       become: "{{use_become}}"
     - name: Pulling container
       become: "{{use_become}}"
-      shell: /tmp/docker-or-podman pull docker.io/mariadb:latest
+      shell: /tmp/docker-or-podman pull {{item}}
+      with_items:
+        - "docker.io/mariadb:latest"
+        - "ghcr.io/freva-clint/freva-vault:{{vault_version}}"
     - name: Creating docker network
       shell: >
         /tmp/docker-or-podman network create "{{ project_name }}";
@@ -79,13 +103,26 @@
         state: absent
       become: "{{use_become}}"
       when: db_wipe == true
-    - name: Creating directory structure
+    - name: Creating db directory structure
       file:
         path: '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/{{ project_name }}/db_service'
         state: directory
         recurse: true
         owner: "{{ '999' if db_ansible_become_user == 'root' else omit }}"
         group: "{{ '999' if db_ansible_become_user == 'root' else omit }}"
+      become: "{{use_become}}"
+    - name: Creating vault directory structure
+      file:
+        state: directory
+        path: "{{ item }}"
+      with_items:
+        - "{{vault_data_path|regex_replace('^~', ansible_env.HOME)}}/{{ project_name }}/vault_service/config"
+        - "{{vault_data_path|regex_replace('^~', ansible_env.HOME)}}/{{ project_name }}/vault_service/files"
+      become: "{{use_become}}"
+    - name: Copying public key file to target machine
+      copy:
+        src: "{{ vault_keyfile }}"
+        dest: "{{vault_data_path|regex_replace('^~', ansible_env.HOME)}}/{{project_name}}/vault_service/config/freva.crt"
       become: "{{use_become}}"
     - name: Copying auxillary files to target machine
       become: "{{use_become}}"
@@ -147,6 +184,20 @@
       shell: sh /tmp/create_cron.sh "{{ db_name }}" "{{db_email}}"
       when: cron.stat.exists == true and debug == false
     - pause: seconds=5
+    - name: Deleting existing infrastructure
+      shell: /tmp/docker-or-podman exec {{ vault_name }} vault kv delete kv/read-eval
+      become: "{{use_become}}"
+    - name: Inserting server infrastructure
+      become: "{{use_become}}"
+      shell: >
+        /tmp/docker-or-podman exec {{ vault_name }}
+        vault kv put kv/read-eval db.container={{ vault_name }}
+        db.host={{ vault_db_host }}
+        db.port={{ vault_db_port }}
+        db.passwd='{{ vault_passwd }}'
+        db.user={{ vault_db_user }}
+        db.db={{ vault_db }}
+      become: "{{use_become}}"
     - name: Deleting auxillary files
       become: "{{use_become}}"
       file:

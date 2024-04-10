@@ -68,8 +68,8 @@ class DeployFactory:
     >>> deploy.play(ask_pass=True)
     """
 
-    step_order: tuple[str, ...] = ("core", "vault", "db", "databrowser", "web")
-    _steps_with_cert: tuple[str, ...] = ("core", "db", "vault", "web")
+    step_order: tuple[str, ...] = ("core", "db", "databrowser", "web")
+    _steps_with_cert: tuple[str, ...] = ("core", "db", "web")
 
     @handled_exception
     def __init__(
@@ -173,7 +173,6 @@ class DeployFactory:
 
     def _prep_vault(self) -> None:
         """Prepare the vault."""
-        self._config_keys.append("vault")
         self.cfg["vault"]["config"].setdefault("ansible_become_user", "root")
         self.playbooks["vault"] = self.cfg["vault"]["config"].get(
             "vault_playbook"
@@ -456,8 +455,11 @@ class DeployFactory:
 
     def _check_config(self) -> None:
         sections = []
+        config_keys = deepcopy(self._config_keys)
+        if "db" in config_keys:
+            config_keys.append("vault")
         for section in self.cfg.keys():
-            for step in self._config_keys:
+            for step in config_keys:
                 if section.startswith(step) and section not in sections:
                     sections.append(section)
         for section in sections:
@@ -578,7 +580,10 @@ class DeployFactory:
         self._check_config()
         config: dict[str, dict[str, dict[str, str | int | bool]]] = {}
         info: dict[str, dict[str, dict[str, str | int | bool]]] = {}
-        for step in set(self._config_keys):
+        config_keys = deepcopy(self._config_keys)
+        if "db" in config_keys:
+            config_keys.append("vault")
+        for step in set(config_keys):
             config[step], info[step] = {}, {}
             config[step]["hosts"] = self.cfg[step]["hosts"]
             info[step]["hosts"] = self.cfg[step]["hosts"]
