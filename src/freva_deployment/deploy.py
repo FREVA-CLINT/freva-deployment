@@ -22,10 +22,10 @@ import yaml
 from ansible_runner import run
 from ansible_runner.runner import Runner
 from rich import print as pprint
-from rich.prompt import Prompt
-from rich.live import Live
-from rich.spinner import Spinner
 from rich.console import Console
+from rich.live import Live
+from rich.prompt import Prompt
+from rich.spinner import Spinner
 
 from freva_deployment import FREVA_PYTHON_VERSION
 
