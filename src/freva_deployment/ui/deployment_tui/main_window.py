@@ -55,7 +55,13 @@ class MainApp(npyscreen.NPSAppManaged):
             "databrowser": "FOURTH",
             "db": "THIRD",
         }
+        save_file = cast(str, self._read_cache("save_file", ""))
         self.config = cast(Dict[str, Any], self._read_cache("config", {}))
+        if save_file and Path(save_file).is_file():
+            try:
+                self.config = tomlkit.loads(Path(save_file).read_text())
+            except Exception:
+                pass
         for step in self._steps_lookup.keys():
             self.config.setdefault(step, {"hosts": "", "config": {}})
         self._add_froms()
