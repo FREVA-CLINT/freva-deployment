@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 import argparse
-from pathlib import Path
 import os
 import shlex
-import sys
 import subprocess
+import sys
+from pathlib import Path
 from typing import Dict, List, Tuple
 
 SYSTEMD_TMPL = dict(

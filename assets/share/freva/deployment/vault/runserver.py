@@ -5,25 +5,17 @@ import binascii
 import json
 import logging
 import os
-from pathlib import Path
 import random
-from subprocess import Popen, PIPE, run
 import shlex
-import time
 import threading
-from typing import (
-    Any,
-    Dict,
-    Literal,
-    List,
-    TypedDict,
-    cast,
-)
+import time
+from pathlib import Path
+from subprocess import PIPE, Popen, run
+from typing import Any, Dict, List, Literal, TypedDict, cast
 
-
+import requests
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
-import requests
 
 KeyType = TypedDict("KeyType", {"keys": List[str], "token": str})
 KEY_FILE = Path("/vault/file/keys")

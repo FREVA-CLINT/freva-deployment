@@ -1,7 +1,7 @@
 """Simple script to start and stop the storage service."""
 
-import logging
 import json
+import logging
 import subprocess
 import time
 import urllib.request

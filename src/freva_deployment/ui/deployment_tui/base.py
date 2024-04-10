@@ -82,9 +82,7 @@ def selectFile(starting_value: str = "", *args, **keywords):
     F.set_colors()
     F.wCommand.show_bold = True
     if starting_value:
-        if not os.path.exists(
-            os.path.abspath(os.path.expanduser(starting_value))
-        ):
+        if not os.path.exists(os.path.abspath(os.path.expanduser(starting_value))):
             F.value = os.getcwd()
         else:
             F.value = starting_value
@@ -158,7 +156,9 @@ class BaseForm(npyscreen.FormMultiPageWithMenus, npyscreen.FormWithMenus):
                     msg = f"MISSING ENTRY FOR {self.step}: {obj.name}"
                     npyscreen.notify_confirm(msg, title="ERROR")
                     return None
-                elif not value and not mandatory:
+                elif (
+                    key not in ("ansible_become_user",) and not value and not mandatory
+                ):
                     continue
             config[key] = value
         cfg = dict(hosts=config.pop("hosts"))
@@ -227,9 +227,7 @@ class BaseForm(npyscreen.FormMultiPageWithMenus, npyscreen.FormWithMenus):
 
     def clear_cache(self):
         """Clear the app cache."""
-        with open(
-            self.parentApp.cache_dir / "freva_deployment.json", "w"
-        ) as f:
+        with open(self.parentApp.cache_dir / "freva_deployment.json", "w") as f:
             json.dump({}, f, indent=3)
         self.parentApp.reset()
 

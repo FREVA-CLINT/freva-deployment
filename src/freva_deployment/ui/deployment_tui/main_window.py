@@ -120,8 +120,7 @@ class MainApp(npyscreen.NPSAppManaged):
             try:
                 self.config[step] = cfg
             except Exception as error:
-                raise ValueError((step, cfg))
-                raise error
+                raise ValueError((step, cfg)) from None
         return None
 
     def _auto_save(self) -> None:

@@ -27,25 +27,35 @@ class RandomKeys:
     def __init__(
         self, base_name: str = "freva", common_name: str = "localhost"
     ) -> None:
+        self.base_name = base_name
+        self.common_name = common_name
+        self._private_key_pem: Optional[bytes] = None
+        self._public_key_pem: Optional[bytes] = None
+        self._private_key: Optional["rsa.RSAPrivateKey"] = None
+        self._temp_dir = TemporaryDirectory("random_keys")
+
+    def _check_crypto(self) -> None:
         if not _CRYPTO:
             raise ImportError(
                 "Please install the `cryptography` python module."
                 " in order to generate certificates."
             )
-        self.base_name = base_name
-        self.common_name = common_name
-        self._private_key_pem: Optional[bytes] = None
-        self._public_key_pem: Optional[bytes] = None
+
+    @property
+    def private_key(self) -> "rsa.RSAPrivateKey":
+        if self._private_key is not None:
+            return self._private_key
         self._private_key = rsa.generate_private_key(
             public_exponent=65537, key_size=2048, backend=default_backend()
         )
-        self._temp_dir = TemporaryDirectory("random_keys")
+        return self._private_key
 
     @property
     def private_key_pem(self) -> bytes:
         """Create a new private key pem if it doesn't exist."""
+        self._check_crypto()
         if self._private_key_pem is None:
-            self._private_key_pem = self._private_key.private_bytes(
+            self._private_key_pem = self.private_key.private_bytes(
                 encoding=serialization.Encoding.PEM,
                 format=serialization.PrivateFormat.PKCS8,
                 encryption_algorithm=serialization.NoEncryption(),
@@ -60,8 +70,9 @@ class RandomKeys:
         Returns:
             bytes: The public key (PEM format).
         """
+        self._check_crypto()
         if self._public_key_pem is None:
-            public_key = self._private_key.public_key()
+            public_key = self.private_key.public_key()
             self._public_key_pem = public_key.public_bytes(
                 encoding=serialization.Encoding.PEM,
                 format=serialization.PublicFormat.SubjectPublicKeyInfo,
@@ -76,6 +87,7 @@ class RandomKeys:
         Returns:
             str: The filename of the private key file.
         """
+        self._check_crypto()
         temp_file = (Path(self._temp_dir.name) / self.base_name).with_suffix(
             ".key"
         )
@@ -121,6 +133,7 @@ class RandomKeys:
         -------
             x509.Certificate: The self-signed certificate.
         """
+        self._check_crypto()
         csr = (
             x509.CertificateSigningRequestBuilder()
             .subject_name(
@@ -128,7 +141,7 @@ class RandomKeys:
                     [x509.NameAttribute(NameOID.COMMON_NAME, self.common_name)]
                 )
             )
-            .sign(self._private_key, hashes.SHA256(), default_backend())
+            .sign(self.private_key, hashes.SHA256(), default_backend())
         )
 
         certificate = (
@@ -142,7 +155,7 @@ class RandomKeys:
                 datetime.datetime.now(datetime.UTC)
                 + datetime.timedelta(days=365)
             )
-            .sign(self._private_key, hashes.SHA256(), default_backend())
+            .sign(self.private_key, hashes.SHA256(), default_backend())
         )
 
         return certificate
