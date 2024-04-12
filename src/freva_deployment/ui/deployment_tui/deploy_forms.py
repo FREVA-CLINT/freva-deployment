@@ -230,6 +230,17 @@ class WebScreen(BaseForm):
             if key in cfg and isinstance(cfg[key], str):
                 value = cast(str, cfg[key])
                 cfg[key] = [v.strip() for v in value.split(",") if v.strip()]
+        availalbe_ldab_models = [
+            "MiklipUserInformation",
+            "UCARUserInformation",
+            "DWDUserInformation",
+            "FUUserInformation",
+        ]
+        current_ldab_model = get_index(
+            availalbe_ldab_models,
+            cfg.get("ldap_model", "MiklipUserInformation"),
+            0,
+        )
         self.input_fields: dict[str, tuple[npyscreen.TitleText, bool]] = dict(
             hosts=(
                 self.add_widget_intelligent(
@@ -530,11 +541,12 @@ class WebScreen(BaseForm):
             ),
             ldap_model=(
                 self.add_widget_intelligent(
-                    npyscreen.TitleText,
+                    npyscreen.TitleCombo,
                     name=(
                         f"{self.num}Ldap tools class to be used for authentication."
                     ),
-                    value=cfg.get("ldap_model", "MiklipUserInformation"),
+                    value=current_ldab_model,
+                    values=availalbe_ldab_models,
                 ),
                 True,
             ),
