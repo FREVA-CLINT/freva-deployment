@@ -174,9 +174,6 @@ class DeployFactory:
     def _prep_vault(self) -> None:
         """Prepare the vault."""
         self.cfg["vault"]["config"].setdefault("ansible_become_user", "root")
-        self.playbooks["vault"] = self.cfg["vault"]["config"].get(
-            "vault_playbook"
-        )
         self.cfg["vault"]["config"].pop("db_playbook", "")
         self.cfg["vault"]["config"]["db_port"] = self.cfg["vault"][
             "config"
