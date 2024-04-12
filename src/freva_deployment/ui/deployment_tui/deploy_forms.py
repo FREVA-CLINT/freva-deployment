@@ -704,6 +704,10 @@ class DatabrowserScreen(BaseForm):
         self.list_keys: list[str] = []
         cfg = self.get_config(self.step)
         databrowser_ports: list[int] = list(range(7770, 7780))
+        solr_mem_values = [f"{i}g" for i in range(1, 10)]
+        solr_mem_select = get_index(
+            solr_mem_values, cfg.get("solr_mem", "4g"), 3
+        )
         databrowser_port_idx = get_index(
             [str(p) for p in databrowser_ports],
             str(cfg.get("databrowser_port", 7777)),
@@ -733,8 +737,8 @@ class DatabrowserScreen(BaseForm):
                 self.add_widget_intelligent(
                     npyscreen.TitleCombo,
                     name=f"{self.num}Virtual memory (in GB) for the search engine service:",
-                    value=3,
-                    values=[f"{i}g" for i in range(1, 10)],
+                    value=solr_mem_select,
+                    values=solr_mem_values,
                 ),
                 True,
             ),
