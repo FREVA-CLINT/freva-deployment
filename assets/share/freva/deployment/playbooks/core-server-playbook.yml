@@ -6,9 +6,7 @@
     ansible_python_interpreter: "{{ core_ansible_python_interpreter }}"
     conda_bin: "{{ core_install_dir | regex_replace('^~', ansible_env.HOME) }}/bin"
     pkg_mgr: "conda"
-    ansible_become_user: >
-        "{{ core_ansible_become_user
-        if core_ansible_become_user is defined else 'root' }}"
+    ansible_become_user: "{{ core_ansible_become_user  | default('root')}}"
     allow_world_readable_tmpfiles: true
     conda_exec_path: >
         "{{ core_conda_exec_path
@@ -16,7 +14,7 @@
     eval_path: "freva/evaluation_system.conf"
   tasks:
     - name: Creating temp. dir
-      tepfile:
+      tempfile:
         state: directory
         prefix: evaluation_system
       register: tempdir
@@ -32,12 +30,12 @@
     - name: Installing temp micromamba
       shell:
         cmd: "curl -Ls https://micro.mamba.pm/api/micromamba/{{core_arch}}/latest | tar -xvj bin/micromamba"
-        chdir: "{{tempdir.path}}/evaluation_system"
+        chdir: "{{tempdir.path}}"
       when: not freva_path.stat.exists
     - name: Installing freva
       command:
         cmd: "bin/micromamba env create -y -q -p {{core_install_dir}} -c conda-forge freva={{core_version}} mamba conda"
-        chdir: "{{tempdir.path}}/evaluation_system"
+        chdir: "{{tempdir.path}}"
         creates: "{{core_install_dir|regex_replace('^~', ansible_env.HOME)}}/bin/freva"
       when: not freva_path.stat.exists
     - name: Check if mamba exists
@@ -102,10 +100,10 @@
     - name: Inserting evaluation_system.config file to temp location
       copy:
         src: "{{ core_dump }}"
-        dest: "{{tempdir.path}}/evaluation_system/evaluation_system.conf"
+        dest: "{{tempdir.path}}/evaluation_system.conf"
     - name: Inserting evaluation_system.conf file
       copy:
-        src: "{tempdir.path}}/evaluation_system/evaluation_system.conf"
+        src: "{{tempdir.path}}/evaluation_system.conf"
         dest: "{{ core_root_dir | regex_replace('^~', ansible_env.HOME)}}/freva/evaluation_system.conf"
         remote_src: true
         group: "{{ core_admin_group if core_admin_group is defined else omit}}"
@@ -123,7 +121,7 @@
       register: drs_path
     - name: Inserting drs_config.toml file
       copy:
-        src: "{{tempdir.path}}/evaluation_system/assets/drs_config.toml"
+        src: "{{tempdir.path}}/assets/drs_config.toml"
         dest: "{{ core_root_dir | regex_replace('^~', ansible_env.HOME)}}/freva/drs_config.toml"
         remote_src: true
         group: "{{ core_admin_group if core_admin_group is defined else omit}}"
@@ -132,7 +130,7 @@
     - name: Configuring evaluation_system
       command:
         cmd: "$PYTHON3 deploy.py {{ core_install_dir | regex_replace('^~', ansible_env.HOME) }} -s --no-conda"
-        chdir: "{{tempdir.path}}/evaluation_system"
+        chdir: "{{tempdir.path}}"
       environment:
         PYTHON3: "{{ ansible_python_interpreter }}"
         EVALUATION_SYSTEM_CONFIG_FILE: "{{ core_root_dir | regex_replace('^~', ansible_env.HOME) }}/freva/evaluation_system.conf"
