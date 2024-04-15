@@ -121,6 +121,8 @@ def create_unit(
     if "docker" in container_cmd:
         SYSTEMD_TMPL["Unit"]["Requires"] = "docker.service"
         SYSTEMD_TMPL["Unit"]["After"] += " docker.service"
+    else:
+        SYSTEMD_TMPL["Service"]["Environment"] = "PODMAN_USERNS=keep-id"
     for key in ("ExecStart",):
         SYSTEMD_TMPL["Service"][key] = SYSTEMD_TMPL["Service"][key].format(
             container_cmd=container_cmd,
