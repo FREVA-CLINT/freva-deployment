@@ -725,7 +725,7 @@ class DatabrowserScreen(BaseForm):
         databrowser_ports: list[int] = list(range(7770, 7780))
         solr_mem_values = [f"{i}g" for i in range(1, 10)]
         solr_mem_select = get_index(
-            cast(str, solr_mem_values, cfg.get("solr_mem", "4g")), 3
+            solr_mem_values, cast(str, cfg.get("solr_mem", "4g")), 3
         )
         databrowser_port_idx = get_index(
             [str(p) for p in databrowser_ports],
