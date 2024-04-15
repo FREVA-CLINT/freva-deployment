@@ -84,7 +84,7 @@ class CoreScreen(BaseForm):
                     npyscreen.TitleFilename,
                     name=(
                         f"{self.num}Directory where project configuration is stored "
-                        "(defaults to `anaconda installation dir.` in #3):"
+                        f"(defaults to `anaconda installation dir.` in #{self._num-1}):"
                     ),
                     value=cfg.get("root_dir", ""),
                 ),
@@ -93,7 +93,10 @@ class CoreScreen(BaseForm):
             base_dir_location=(
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
-                    name=f"{self.num}User data directory:",
+                    name=(
+                        f"{self.num}User data directory, defaults to "
+                        f"project config. dir given in #{self._num-1}."
+                    ),
                     value=cfg.get("base_dir_location", ""),
                 ),
                 False,
@@ -101,7 +104,11 @@ class CoreScreen(BaseForm):
             preview_path=(
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
-                    name=f"{self.num}Plugin output dir for the web UI (preview path):",
+                    name=(
+                        f"{self.num}Plugin output dir for the web UI "
+                        "(preview path), defaults to user data dir"
+                        f" given in #{self._num - 1}."
+                    ),
                     value=cfg.get("preview_path", ""),
                 ),
                 False,
@@ -238,7 +245,7 @@ class WebScreen(BaseForm):
         ]
         current_ldab_model = get_index(
             availalbe_ldab_models,
-            cfg.get("ldap_model", "MiklipUserInformation"),
+            cast(str, cfg.get("ldap_model", "MiklipUserInformation")),
             0,
         )
         self.input_fields: dict[str, tuple[npyscreen.TitleText, bool]] = dict(
@@ -718,7 +725,7 @@ class DatabrowserScreen(BaseForm):
         databrowser_ports: list[int] = list(range(7770, 7780))
         solr_mem_values = [f"{i}g" for i in range(1, 10)]
         solr_mem_select = get_index(
-            solr_mem_values, cfg.get("solr_mem", "4g"), 3
+            cast(str, solr_mem_values, cfg.get("solr_mem", "4g")), 3
         )
         databrowser_port_idx = get_index(
             [str(p) for p in databrowser_ports],
