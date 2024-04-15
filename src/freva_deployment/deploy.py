@@ -700,13 +700,14 @@ class DeployFactory:
     ) -> list[str]:
         """Check the versions of the different freva parts."""
         config: dict[str, dict[str, dict[str, str | int | bool]]] = {}
-        if not (set(self.step_order) - set(self.steps)) or self.local_debug:
+        steps = set(self.step_order) - set(self.steps)
+        if not steps or self.local_debug:
             # The user has selected all steps anyway, nothing to do here:
             return []
         cfg = deepcopy(self.cfg)
         if cfg.get("databrowser") is None:
             cfg["databrowser"] = cfg["solr"]
-        for step in set(self.step_order):
+        for step in steps:
             config[step] = {}
             config[step]["hosts"] = cfg[step]["hosts"]
             if "ansible_become_user" not in cfg[step]["config"]:
@@ -768,10 +769,8 @@ class DeployFactory:
             if msg is not None and title.startswith("display"):
                 service = res.get("event_data", {}).get("task", "").split()[1]
                 versions[service] = msg.strip()
-        steps = get_steps_from_versions(versions)
-        if "vault" in steps:
-            steps.append("db")
-        return steps
+        additional_steps = get_steps_from_versions(versions)
+        return additional_steps
 
     def _play(
         self,
