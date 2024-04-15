@@ -45,6 +45,7 @@ class MainApp(npyscreen.NPSAppManaged):
         self._forms: dict[str, BaseForm] = {}
         self.current_form = "core"
         self.init()
+        self._auto_save_active = False
         self.thread_stop = threading.Event()
         self.start_auto_save()
 
@@ -102,6 +103,8 @@ class MainApp(npyscreen.NPSAppManaged):
         )
         if value is True:
             self.thread_stop.set()
+            while self._auto_save_active is True:
+                time.sleep(0.1)
             self.setNextForm(None)
             self.save_config_to_file(save_file=kwargs.get("save_file"))
             self.editing = False
@@ -131,6 +134,7 @@ class MainApp(npyscreen.NPSAppManaged):
 
     def _auto_save(self) -> None:
         """Auto save the current configuration."""
+        self._auto_save_active = True
         while not self.thread_stop.is_set():
             time.sleep(0.5)
             if self.thread_stop.is_set():
@@ -140,6 +144,7 @@ class MainApp(npyscreen.NPSAppManaged):
                 self.save_config_to_file()
             except Exception:
                 pass
+        self._auto_save_active = False
 
     def save_dialog(self, *args, **kwargs) -> None:
         """Create a dialoge that allows for saving the config file."""
@@ -193,7 +198,7 @@ class MainApp(npyscreen.NPSAppManaged):
 
     def get_save_file(self, save_file: Path | None = None) -> str:
         """Get the name of the file where the config should be stored to."""
-        cache_file = self.cache_dir / ".temp_file.toml"
+        cache_file = self.cache_dir / "temp_file.toml"
         if save_file:
             save_file = Path(save_file).expanduser().absolute()
         return str(save_file or cache_file)
@@ -230,7 +235,7 @@ class MainApp(npyscreen.NPSAppManaged):
         config = {
             **bools,
             **{
-                "save_file": self.get_save_file(save_file),
+                "save_file": str(save_file or ""),
                 "steps": self.steps,
                 "ssh_port": ssh_port,
                 "config": self.config,
