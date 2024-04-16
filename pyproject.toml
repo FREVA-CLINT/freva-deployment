@@ -33,6 +33,19 @@ dependencies = [ "appdirs",
 ]
 [project.optional-dependencies]
 dev = ["flit", "tox"]
+doc = ["pydata-sphinx-theme",
+       "sphinx",
+       "sphinx-copybutton",
+       "recommonmark",
+       "sphinx_sitemap",
+       "sphinx_favicon",
+       "sphinx_togglebutton",
+       "myst-parser",
+       "sphinx-design",
+       "linkify",
+       "sphinx-execute-code-python3",
+]
+
 [project.urls]
 Documentation = "https://freva-deployment.readthedocs.io/en/latest/"
 Issues = "https://github.com/FREVA-CLINT/freva-deployment/issues"
@@ -69,17 +82,7 @@ commands =
     deploy-freva --help
 
 [testenv:docs]
-deps = .
-       pydata-sphinx-theme
-       sphinx
-       sphinx-copybutton
-       recommonmark
-       sphinx_sitemap
-       sphinx_favicon
-       sphinx_togglebutton
-       myst-parser
-       sphinx-design
-       linkify
+deps = .[doc]
 allowlist_externals = make
 commands = make -C docs clean
            make -C docs html

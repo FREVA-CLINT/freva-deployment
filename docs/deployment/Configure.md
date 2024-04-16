@@ -26,25 +26,24 @@ issue the `deploy-freva-cmd` command:
 
 ```bash
 deploy-freva-cmd --help
-usage: deploy-freva-cmd [-h] [--config CONFIG] [--steps {web,core,db,databrowser} [{web,core,db,databrowser} ...]] [--ask-pass] [--ssh-port SSH_PORT] [-v] [-l]
-                        [--gen-keys] [-V]
+Usage: deploy-freva-cmd [-h] [--config CONFIG] [--steps {web,core,db,databrowser,auto} [{web,core,db,databrowser,auto} ...]] [--ask-pass] [--ssh-port SSH_PORT] [-v] [-l]
+                        [-g] [-V]
 
 Deploy freva and its services on different machines.
 
-options:
+Options:
   -h, --help            show this help message and exit
-  --config CONFIG, -c CONFIG
-                        Path to ansible inventory file. (default: /home/wilfred/.anaconda3/share/freva/deployment/inventory.toml)
-  --steps {web,core,db,databrowser} [{web,core,db,databrowser} ...]
-                        The services/code stack to be deployed (default: ['db', 'databrowser', 'web', 'core'])
+  --config, -c CONFIG   Path to ansible inventory file. (default: /home/wilfred/.anaconda3/envs/python3_12/share/freva/deployment/inventory.toml)
+  --steps, -s {web,core,db,databrowser,auto} [{web,core,db,databrowser,auto} ...]
+                        The services/code stack to be deployed. Use auto to only deploy outdated services (default: ['db', 'databrowser', 'web', 'core'])
   --ask-pass            Connect to server via ssh passwd instead of public key. (default: False)
   --ssh-port SSH_PORT   Set the ssh port, in 99.9% of the cases this should be 22 (default: 22)
   -v, --verbose         Verbosity level (default: 0)
   -l, --local           Deploy services on the local machine, debug purpose. (default: False)
-  --gen-keys            Generate public and private web certs, use with caution. (default: False)
-  -V, --version         show program's version number and exit.
-```
+  -g, --gen-keys        Generate public and private web certs, use with caution. (default: False)
+  -V, --version         show program's version number and exit
 
+```
 The `--steps` flags can be used if not all services should be deployed.
 
 ## Setting the python and git path
