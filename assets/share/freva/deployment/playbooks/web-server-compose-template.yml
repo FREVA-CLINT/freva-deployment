@@ -12,8 +12,6 @@ services:
 {% endif %}
     environment:
       - SCHEDULDER_DIR={{core_scheduler_output_dir|regex_replace('^~', ansible_env.HOME)}}
-      - UID={{uid}}
-      - GID={{gid}}
 {% if debug %}
       - DATABROWSER_HOST=127.0.0.1
       - FREVA_HOST=127.0.0.1

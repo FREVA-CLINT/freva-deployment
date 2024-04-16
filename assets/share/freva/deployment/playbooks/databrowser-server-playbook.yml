@@ -1,6 +1,7 @@
 ---
 - hosts: databrowser
 
+  become: "{{ databrowser_ansible_become_user is defined and databrowser_ansible_become_user != '' }}"
   vars:
     ansible_python_interpreter: "{{ databrowser_ansible_python_interpreter }}"
     databrowser_name: "{{project_name}}-databrowser"
@@ -17,7 +18,6 @@
     mongo_volumes:
       - '{{databrowser_data_path|regex_replace("^~", ansible_env.HOME)}}/{{project_name}}/databrowser/stats:/data/db:z'
     ansible_become_user: "{{ databrowser_ansible_become_user | default('root') }}"
-    use_become: "{{ databrowser_ansible_become_user is defined and databrowser_ansible_become_user != '' }}"
   tasks:
     - name: Copying docker/podman wrapper script
       copy:
@@ -33,7 +33,6 @@
         path: /etc/cron.daily
       register: cron
     - name: Stopping services and deleting existing containers
-      become: "{{use_become}}"
       shell: >
         systemctl stop {{solr_name}} {{mongo_name}} {{databrowser_name}};
         systemctl disable {{solr_name}} {{mongo_name}} {{databrowser_name}};
@@ -51,14 +50,12 @@
         - "{{solr_name}}"
         - "{{mongo_name}}"
         - "{{databrowser_name}}"
-      become: "{{use_become}}"
       when: systemctl.stat.exists == true
     - name: Deleting config file
       file:
         state: absent
         force: true
         path: '{{databrowser_data_path|regex_replace("^~", ansible_env.HOME)}}/freva-service-config/'
-      become: "{{use_become}}"
     - name: Cleaning existing directory structure
       file:
         path: "{item}"
@@ -67,31 +64,26 @@
         - "{{databrowser_data_path|regex_replace('^~', ansible_env.HOME)}}/{{ project_name }}/solr_service"
         - "{{databrowser_data_path|regex_replace('^~', ansible_env.HOME)}}/{{ project_name }}/databrowser"
       when: databrowser_wipe == true
-      become: "{{use_become}}"
     - name: Creating solr directory structure
       file:
         path: '{{databrowser_data_path|regex_replace("^~", ansible_env.HOME)}}/{{ project_name }}/solr_service'
         state: directory
         recurse: true
-      become: "{{use_become}}"
     - name: Creating compose directory structure
       file:
         path: '{{databrowser_data_path|regex_replace("^~", ansible_env.HOME)}}/compose_services'
         state: directory
         recurse: true
-      become: "{{use_become}}"
     - name: Creating directory structure
       file:
         path: '{{databrowser_data_path|regex_replace("^~", ansible_env.HOME)}}/{{ project_name }}/databrowser'
         state: directory
         recurse: true
-      become: "{{use_become}}"
     - name: Getting additional configurations
       git:
         repo: https://github.com/FREVA-CLINT/freva-service-config.git
         dest: '{{databrowser_data_path|regex_replace("^~", ansible_env.HOME)}}/freva-service-config'
         update: true
-      become: "{{use_become}}"
     - name: Copy systemd files
       copy:
         src: "{{ asset_dir }}/scripts/create_systemd.py"
@@ -100,16 +92,13 @@
     - name: Pulling container
       shell:
         cmd: /tmp/docker-or-podman pull {{item}}
-      become: "{{use_become}}"
       with_items:
         - "docker.io/solr:{{solr_version}}"
         - "docker.io/mongo:latest"
         - "ghcr.io/freva-clint/databrowserapi:{{databrowser_version}}"
     - name: Copy cron create script to target machine
       copy: src="{{ asset_dir }}/scripts/create_cron.sh" dest=/tmp/solr_service/
-      become: "{{use_become}}"
     - name: Creating compose file
-      become: "{{use_become}}"
       template:
         src: "{{ asset_dir }}/playbooks/databrowser-server-compose-template.yml"
         dest: "{{compose_file}}"
@@ -124,13 +113,11 @@
       environment:
         DEBUG: '{{ debug }}'
       when: systemctl.stat.exists == true
-      become: "{{use_become}}"
     - pause: seconds=3
     - name: Creating cron jobs
       shell: >
         sh /tmp/solr_service/create_cron.sh "{{ solr_name }}" "{{databrowser_email}}"
       when: cron.stat.exists == true and debug == false
-      become: "{{use_become}}"
     - name: Deleting tmporary files
       file:
         path: "{{item}}"
@@ -139,10 +126,9 @@
         - /tmp/docker-or-podman
         - /tmp/create_systemd.py
         - /tmp/solr_service
-      become: "{{use_become}}"
 - hosts: web
+  become: "{{ web_ansible_become_user is defined and web_ansible_become_user != '' }}"
   vars:
-    use_become: "{{ web_ansible_become_user is defined and web_ansible_become_user != '' }}"
   tasks:
     - name: Registering systemctl path
       stat:
@@ -150,5 +136,4 @@
       register: systemctl
     - name: Restarting web container
       shell: systemctl restart {{web_name}}; echo 0
-      become: "{{use_become}}"
       when: systemctl.stat.exists == true
