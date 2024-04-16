@@ -7,6 +7,7 @@
     compose_file: '{{databrowser_data_path|regex_replace("^~", ansible_env.HOME)}}/compose_services/{{databrowser_name}}-compose.yml'
     solr_name: "{{project_name}}-solr"
     mongo_name: "{{project_name}}-mongo"
+    solr_data: '{{databrowser_data_path|regex_replace("^~", ansible_env.HOME)}}/{{project_name}}/solr_service:/var/solr/data:z'
     solr_volumes:
       - '{{databrowser_data_path|regex_replace("^~", ansible_env.HOME)}}/{{project_name}}/solr_service:/var/solr/data:z'
       - '{{databrowser_data_path|regex_replace("^~", ansible_env.HOME)}}/freva-service-config/solr/managed-schema.xml:/opt/solr/managed-schema.xml:z'
@@ -37,7 +38,7 @@
         systemctl stop {{solr_name}} {{mongo_name}} {{databrowser_name}};
         systemctl disable {{solr_name}} {{mongo_name}} {{databrowser_name}};
         systemctl reset-failed;
-        /tmp/docker-or-podman rm {{solr_name}} {{mongo_name}} {{databrowser_name}};
+        /tmp/docker-or-podman rm -f {{solr_name}} {{mongo_name}} {{databrowser_name}};
         exit 0
       ignore_errors: true
     - pause: seconds=5
@@ -71,8 +72,6 @@
       file:
         path: '{{databrowser_data_path|regex_replace("^~", ansible_env.HOME)}}/{{ project_name }}/solr_service'
         state: directory
-        owner: "{{ '8983' if databrowser_ansible_become_user == 'root' else omit }}"
-        group: "{{ '8983' if databrowser_ansible_become_user == 'root' else omit }}"
         recurse: true
       become: "{{use_become}}"
     - name: Creating compose directory structure
@@ -114,6 +113,11 @@
       template:
         src: "{{ asset_dir }}/playbooks/databrowser-server-compose-template.yml"
         dest: "{{compose_file}}"
+    - name: Setting solr permissions inside the solr container
+      shell:
+        cmd: |
+          /tmp/docker-or-podman rm -f {{solr_name}}
+          /tmp/docker-or-podman run -it --rm --name {{solr_name}} -v {{solr_data}} --user root:0 -t docker.io/solr:{{solr_version}} chown -R solr:solr /var/solr/data
     - name: Creating systemd services
       shell: |
         /tmp/create_systemd.py {{databrowser_name}} compose --enable --project-name {{databrowser_name}} -f {{compose_file}} up --remove-orphans

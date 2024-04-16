@@ -27,7 +27,6 @@ services:
 {% for volume in apache_volumes %}
       - {{volume}}
 {% endfor %}
-    command: /usr/local/bin/prepare-httpd
     ports:
       - {{web_port_httpd}}:{{web_port_httpd}}
       - {{web_port_httpsd}}:{{web_port_httpsd}}
