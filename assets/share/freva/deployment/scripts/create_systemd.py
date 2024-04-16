@@ -98,9 +98,7 @@ def get_container_cmd(args: str) -> Tuple[str, str]:
     return "", ""
 
 
-def create_unit(
-    args: str, unit: str, requires: List[str], enable: bool
-) -> None:
+def create_unit(args: str, unit: str, requires: List[str], enable: bool) -> None:
     """Create the systemd unit."""
     container_cmd, container_args = get_container_cmd(args)
     cmd = args.split()
@@ -121,8 +119,8 @@ def create_unit(
     if "docker" in container_cmd:
         SYSTEMD_TMPL["Unit"]["Requires"] = "docker.service"
         SYSTEMD_TMPL["Unit"]["After"] += " docker.service"
-    else:
-        SYSTEMD_TMPL["Service"]["Environment"] = "PODMAN_USERNS=keep-id"
+    # else:
+    #    SYSTEMD_TMPL["Service"]["Environment"] = "PODMAN_USERNS=keep-id"
     for key in ("ExecStart",):
         SYSTEMD_TMPL["Service"][key] = SYSTEMD_TMPL["Service"][key].format(
             container_cmd=container_cmd,
