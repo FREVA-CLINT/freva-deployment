@@ -54,8 +54,12 @@ class AssetDir:
     this_module = "freva_deployment"
 
     def __init__(self):
-        self._user_asset_dir = Path(appdirs.user_data_dir()) / "freva" / "deployment"
-        self._user_config_dir = Path(appdirs.user_config_dir()) / "freva" / "deployment"
+        self._user_asset_dir = (
+            Path(appdirs.user_data_dir()) / "freva" / "deployment"
+        )
+        self._user_config_dir = (
+            Path(appdirs.user_config_dir()) / "freva" / "deployment"
+        )
 
     @staticmethod
     def get_dirs(user: bool = True, key: str = "data") -> Path:
@@ -100,7 +104,9 @@ class AssetDir:
             inventory_file.unlink()
         except FileNotFoundError:
             pass
-        shutil.copy2(self.asset_dir / "config" / "inventory.toml", inventory_file)
+        shutil.copy2(
+            self.asset_dir / "config" / "inventory.toml", inventory_file
+        )
         return self._user_config_dir
 
     @property
@@ -168,12 +174,14 @@ def _create_new_config(inp_file: Path) -> Path:
         config["databrowser"] = config.pop("solr")
         for key in ("port", "mem"):
             if key in config["databrowser"]["config"]:
-                config["databrowser"]["config"][f"solr_{key}"] = config["databrowser"][
-                    "config"
-                ].pop(key)
+                config["databrowser"]["config"][f"solr_{key}"] = config[
+                    "databrowser"
+                ]["config"].pop(key)
     _update_config(config_tmpl, config)
     if create_backup:
-        inp_file.with_suffix(inp_file.suffix + ".bck").write_text(inp_file.read_text())
+        inp_file.with_suffix(inp_file.suffix + ".bck").write_text(
+            inp_file.read_text()
+        )
     inp_file.write_text(tomlkit.dumps(config_tmpl))
     return inp_file
 
@@ -189,7 +197,9 @@ def load_config(inp_file: str | Path) -> dict[str, Any]:
     return config
 
 
-def get_setup_for_service(service: str, setups: list[ServiceInfo]) -> tuple[str, str]:
+def get_setup_for_service(
+    service: str, setups: list[ServiceInfo]
+) -> tuple[str, str]:
     """Get the setup of a service configuration."""
     for setup in setups:
         if setup.name == service:
@@ -202,7 +212,9 @@ def read_db_credentials(
 ) -> dict[str, str]:
     """Read database config."""
     with cert_file.open() as f_obj:
-        key = "".join([k.strip() for k in f_obj.readlines() if not k.startswith("-")])
+        key = "".join(
+            [k.strip() for k in f_obj.readlines() if not k.startswith("-")]
+        )
         sha = hashlib.sha512(key.encode()).hexdigest()
     url = f"http://{db_host}:{port}/vault/data/{sha}"
     return requests.get(url).json()
@@ -227,7 +239,9 @@ def get_email_credentials() -> tuple[str, str]:
         if not username:
             username = Prompt.ask("[green b]Username[/] for mail server")
         if not password:
-            password = Prompt.ask("[green b]Password[/] for mail server", password=True)
+            password = Prompt.ask(
+                "[green b]Password[/] for mail server", password=True
+            )
     return username, password
 
 
@@ -261,17 +275,27 @@ def _create_passwd(min_characters: int, msg: str = "") -> str:
         if not re.search(check, master_pass):
             is_ok = False
             break
-    is_safe: bool = len([True for c in "[_@$#$%^&*-!]" if c in master_pass]) > 0
+    forbidden_characters = ":/?#[]@%"
+    is_safe: bool = len([True for c in "[_$^&*-!]" if c in master_pass]) > 0
     if is_ok is False or is_safe is False:
         raise ValueError(
             (
                 "Password must confirm the following constraints:\n"
                 f"- {min_characters} alphanumeric characters long,\n"
                 "- have both, lower and upper case characters,\n"
-                "- have at least one special special character."
+                "- have at least one special special character.\n"
+                f"- must *not* not contain: {forbidden_characters}"
             )
         )
-    master_pass_2 = Prompt.ask("[bold green]re-enter[/] master password", password=True)
+    for character in forbidden_characters:
+        if character in master_pass:
+            raise ValueError(
+                "Your password must *not* contain the following "
+                f"characters: {forbidden_characters}"
+            )
+    master_pass_2 = Prompt.ask(
+        "[bold green]re-enter[/] master password", password=True
+    )
     if master_pass != master_pass_2:
         raise ValueError("Passwords do not match")
     return master_pass

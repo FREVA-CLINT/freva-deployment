@@ -2,7 +2,7 @@
 
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import Any, Dict, List, Union, cast
+from typing import Any, Dict, List
 
 import yaml
 
