@@ -47,8 +47,8 @@
         pkg_mgr: "mamba"
       when: mamba_check.stat.exists
     - name: Updating existing freva
-      command:
-        cmd: "{{conda_bin}}/{{pkg_mgr}} update -q -p {{core_install_dir}} -c conda-forge freva"
+      shell:
+        cmd: "{{conda_bin}}/{{pkg_mgr}} update -y -q -p {{core_install_dir}} -c conda-forge freva"
       environment:
         PATH: "{{conda_bin}}"
       when: freva_path.stat.exists
