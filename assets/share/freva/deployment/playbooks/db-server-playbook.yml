@@ -1,40 +1,44 @@
 ---
 - hosts: db
 
+  become: "{{ db_ansible_become_user is defined and db_ansible_become_user != '' }}"
   vars:
     ansible_python_interpreter: "{{ db_ansible_python_interpreter }}"
     ansible_become_user: "{{ db_ansible_become_user | default('root') }}"
-    compose_file: '{{db_data_path|expanduser}}/compose_services/{{db_name}}-compose.yml'
+    compose_file: '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/compose_services/{{db_name}}-compose.yml'
+    vault_volumes:
+      - '{{vault_data_path|regex_replace("^~", ansible_env.HOME)}}/{{project_name}}/vault_service/config:/data:z'
+      - '{{vault_data_path|regex_replace("^~", ansible_env.HOME)}}/{{project_name}}/vault_service/files:/vault/file:z'
     db_volumes:
-      - '{{db_data_path|expanduser}}/freva-service-config/mysql/create_tables.sql:/docker-entrypoint-initdb.d/002_create_tables.sql:z'
-      - '{{db_data_path|expanduser}}/freva-service-config/mysql/daily_backup.sh:/usr/local/bin/daily_backup:z'
-      - '{{db_data_path|expanduser}}/{{project_name}}/db_service:/var/lib/mysql:z'
+      - '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/freva-service-config/mysql/create_tables.sql:/docker-entrypoint-initdb.d/002_create_tables.sql:z'
+      - '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/freva-service-config/mysql/daily_backup.sh:/usr/local/bin/daily_backup:z'
+      - '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/{{project_name}}/db_service:/var/lib/mysql:z'
     docker_cmd: >
         --network {{ project_name }} -v
-        {{db_data_path}}/{{project_name}}/db_service:/var/lib/mysql:z
+        '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/{{project_name}}/db_service:/var/lib/mysql:z'
         -e MYSQL_USER={{db_user}}
         -e MYSQL_PASSWORD='{{db_passwd}}'
         -e MYSQL_DATABASE={{db}}
-        -v '{{db_data_path|expanduser}}/freva-service-config/mysql/create_tables.sql:/docker-entrypoint-initdb.d/002_create_tables.sql:z'
-        -v '{{db_data_path|expanduser}}/freva-service-config/mysql/daily_backup.sh:/usr/local/bin/daily_backup:z'
+        -e MYSQL_ROOT_PASSWORD={{ root_passwd }}
+        -v '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/freva-service-config/mysql/create_tables.sql:/docker-entrypoint-initdb.d/002_create_tables.sql:z'
+        -v '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/freva-service-config/mysql/daily_backup.sh:/usr/local/bin/daily_backup:z'
         --rm
         --name {{db_name}}
-        -e MYSQL_ROOT_PASSWORD={{ root_passwd }}
         -t docker.io/mariadb:latest
     skip_tables_cmd: >
         --network {{ project_name }} -v
-        '{{db_data_path|expanduser}}/{{project_name}}/db_service:/var/lib/mysql:z'
+        '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/{{project_name}}/db_service:/var/lib/mysql:z'
         -e MYSQL_USER={{db_user}}
         -e MYSQL_PASSWORD='{{db_passwd}}'
         -e MYSQL_DATABASE={{db}}
+        --rm
         --name {{db_name}}
-        -v '{{db_data_path|expanduser}}/freva-service-config/mysql/create_tables.sql:/docker-entrypoint-initdb.d/002_create_tables.sql:z'
-        -v '{{db_data_path|expanduser}}/freva-service-config/mysql/daily_backup.sh:/usr/local/bin/daily_backup:z'
+        -v '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/freva-service-config/mysql/create_tables.sql:/docker-entrypoint-initdb.d/002_create_tables.sql:z'
+        -v '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/freva-service-config/mysql/daily_backup.sh:/usr/local/bin/daily_backup:z'
         -v /tmp/reset_root_pw.sh:/tmp/reset_root_pw.sh:z
         -t docker.io/mariadb:latest mariadbd-safe --skip-grant-tables
     continer_name: "{{ db_name }}"
     vault_name: "{{project_name}}-vault"
-    use_become: "{{ db_ansible_become_user is defined and db_ansible_become_user != '' }}"
   tasks:
     - name: Copying docker/podman wrapper script
       copy:
@@ -49,6 +53,21 @@
       stat:
         path: /etc/cron.daily
       register: cron
+    - name: Registering vault volume path
+      stat:
+        path: /etc/systemd/system/{{vault_name}}.service
+      register: vault_service
+    - name: Removing old vault service
+      file:
+        state: absent
+        force: true
+        path: /etc/systemd/system/{{vault_name}}.service
+      when: vault_service.stat.exists == true
+      ignore_errors: true
+      register: vault_volume
+    - name: Set vault valume path
+      set_fact:
+        exists: vault_volume.stat.exists
     - name: Stopping services and deleting existing containers
       shell: >
         /tmp/docker-or-podman stop {{db_name}};
@@ -56,39 +75,49 @@
         systemctl disable {{db_name}};
         systemctl reset-failed;
         /tmp/docker-or-podman rm {{db_name}};
+        systemctl stop {{vault_name}};
+        systemctl disable {{vault_name}};
+        /tmp/docker-or-podman rm {{vault_name}};
         echo 0
-      become: "{{use_become}}"
       ignore_errors: true
     - name: Deleting config file
       file:
         state: absent
         force: true
-        path: "{{db_data_path|expanduser}}/freva-service-config/"
-      become: "{{use_become}}"
+        path: "{{db_data_path|regex_replace('^~', ansible_env.HOME)}}/freva-service-config/"
     - name: Pulling container
-      become: "{{use_become}}"
-      shell: /tmp/docker-or-podman pull docker.io/mariadb:latest
+      shell: /tmp/docker-or-podman pull {{item}}
+      with_items:
+        - "docker.io/mariadb:latest"
+        - "ghcr.io/freva-clint/freva-vault:{{vault_version}}"
     - name: Creating docker network
       shell: >
         /tmp/docker-or-podman network create "{{ project_name }}";
         echo 0
-      become: "{{use_become}}"
     - name: Cleaning existing directory structure
       file:
-        path: '{{db_data_path|expanduser}}/{{ project_name }}/db_service'
+        path: '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/{{ project_name }}/db_service'
         state: absent
-      become: "{{use_become}}"
       when: db_wipe == true
-    - name: Creating directory structure
+    - name: Creating db directory structure
       file:
-        path: '{{db_data_path|expanduser}}/{{ project_name }}/db_service'
+        path: '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/{{ project_name }}/db_service'
         state: directory
         recurse: true
         owner: "{{ '999' if db_ansible_become_user == 'root' else omit }}"
         group: "{{ '999' if db_ansible_become_user == 'root' else omit }}"
-      become: "{{use_become}}"
+    - name: Creating vault directory structure
+      file:
+        state: directory
+        path: "{{ item }}"
+      with_items:
+        - "{{vault_data_path|regex_replace('^~', ansible_env.HOME)}}/{{ project_name }}/vault_service/config"
+        - "{{vault_data_path|regex_replace('^~', ansible_env.HOME)}}/{{ project_name }}/vault_service/files"
+    - name: Copying public key file to target machine
+      copy:
+        src: "{{ vault_keyfile }}"
+        dest: "{{vault_data_path|regex_replace('^~', ansible_env.HOME)}}/{{project_name}}/vault_service/config/freva.crt"
     - name: Copying auxillary files to target machine
-      become: "{{use_become}}"
       copy: src="{{ asset_dir }}/db_service/reset_root_pw.sh" dest=/tmp/
     - name: Copying systemd files
       copy:
@@ -99,56 +128,55 @@
         - "create_systemd.py"
         - "create_cron.sh"
     - name: Getting additional configurations
-      become: "{{use_become}}"
       git:
         repo: https://github.com/FREVA-CLINT/freva-service-config.git
-        dest: '{{db_data_path|expanduser}}/freva-service-config'
+        dest: '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/freva-service-config'
         update: true
     - name: Preparing the root password reset I
-      become: "{{use_become}}"
       shell: /tmp/docker-or-podman run -d {{docker_cmd}}
     - pause: seconds=5
     - name: Preparing the root password reset II
-      become: "{{use_become}}"
       shell: /tmp/docker-or-podman rm -f {{db_name}}
-    - name: Preparing the root password reset III
-      become: "{{use_become}}"
-      shell: /tmp/docker-or-podman run -d {{skip_tables_cmd}}
-    - pause: seconds=2
-    - name: Resetting the root password and creating potentially missing tables.
-      become: "{{use_become}}"
+    - name: Resetting the root password
       shell: |
+        /tmp/docker-or-podman run -d {{skip_tables_cmd}}
+        sleep 5
         /tmp/docker-or-podman exec {{db_name}} bash /tmp/reset_root_pw.sh
         /tmp/docker-or-podman exec {{db_name}} /bin/sh -c 'mariadb -u root {{db}} < /docker-entrypoint-initdb.d/002_create_tables.sql'
     - name: Deleting temp. container
-      become: "{{use_become}}"
       shell: |
         /tmp/docker-or-podman rm -f {{db_name}}
     - name: Creating compose directory structure
       file:
-        path: '{{db_data_path|expanduser}}/compose_services'
+        path: '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/compose_services'
         state: directory
         recurse: true
-      become: "{{use_become}}"
     - name: Creating compose file
-      become: "{{use_become}}"
       template:
         src: "{{ asset_dir }}/playbooks/db-server-compose-template.yml"
-        dest: "{{db_data_path|expanduser}}/compose_services/{{db_name}}-compose.yml"
+        dest: "{{db_data_path|regex_replace('^~', ansible_env.HOME)}}/compose_services/{{db_name}}-compose.yml"
     - name: Creating system services
-      become: "{{use_become}}"
       command:
         cmd: /tmp/create_systemd.py {{db_name}} compose --enable --project-name {{db_name}} -f {{compose_file}} up --remove-orphans
       environment:
         DEBUG: '{{ debug }}'
       when: systemctl.stat.exists == true
     - name: Creating cron jobs
-      become: "{{use_become}}"
       shell: sh /tmp/create_cron.sh "{{ db_name }}" "{{db_email}}"
       when: cron.stat.exists == true and debug == false
-    - pause: seconds=5
+    - pause: seconds=15
+    - name: Deleting existing infrastructure
+      shell: /tmp/docker-or-podman exec {{ vault_name }} vault kv delete kv/read-eval
+    - name: Inserting server infrastructure
+      shell: >
+        /tmp/docker-or-podman exec {{ vault_name }}
+        vault kv put kv/read-eval db.container={{ vault_name }}
+        db.host={{ vault_db_host }}
+        db.port={{ vault_db_port }}
+        db.passwd='{{ vault_passwd }}'
+        db.user={{ vault_db_user }}
+        db.db={{ vault_db }}
     - name: Deleting auxillary files
-      become: "{{use_become}}"
       file:
         state: absent
         path: "{{ item }}"
@@ -158,8 +186,8 @@
         - /tmp/reset_root_pw.sh
         - /tmp/docker-or-podman
 - hosts: web
+  become: "{{ web_ansible_become_user is defined and web_ansible_become_user != '' }}"
   vars:
-    use_become: "{{ web_ansible_become_user is defined and web_ansible_become_user != '' }}"
   tasks:
     - name: Registering systemctl path
       stat:
@@ -167,5 +195,4 @@
       register: systemctl
     - name: Restarting web container
       shell: systemctl restart {{web_name}}; echo 0
-      become: "{{use_become}}"
       when: systemctl.stat.exists == true

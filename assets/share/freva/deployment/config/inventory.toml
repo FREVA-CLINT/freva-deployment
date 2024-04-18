@@ -23,7 +23,7 @@ project_name = "freva"
 [certificates]
 
 ## Path to the public key file
-public_keyfile = "freva.crt"
+public_keyfile = ""
 
 ## Path to the private key file
 privat_keyfile = ""
@@ -51,11 +51,11 @@ hosts = "localhost"
 ## hosts = "db-[99:101]-node.example.com"
 [databrowser]
 ## Set the host names running the databrowser service
-hosts = "freva-plugin-playground.cloud.dkrz.de"
+hosts = "localhost"
 
 [db]
 ## Set the host names running the mariadb service
-hosts = "freva-plugin-playground.cloud.dkrz.de"
+hosts = "localhost"
 
 [core]
 ### Set the host names where the command line interface of freva will be installed
@@ -74,12 +74,12 @@ user = "freva"
 db = "frevadb"
 
 ##If you need a different user name you can set it here (defaults to current user):
-ansible_user = "k204230"
+ansible_user = "freva"
 
 ## You can set the db_host separately, if none is given (default)
 ## the one from the hosts names above are taken
 
-db_host = ""
+db_host = "127.0.0.1"
 
 ## Set the become (sudo) user name to change to for installing the services
 ## leave blank to utilise a non privileged user based installation
@@ -102,7 +102,6 @@ data_path = "/opt/freva"
 ## NOTE: only adjust this if you know what you are doing, if you leave this
 ## blank the system will used the default playbook (standard procedure)
 db_playbook = ""
-vault_playbook = ""
 
 [databrowser.config]
 # Set the memory for the solr server (solr is the search engine in the background)
@@ -120,7 +119,7 @@ ansible_become_user = "root"
 ansible_python_interpreter = ""
 
 ## If you need a different user name you can set it here (default to current user):
-ansible_user = "k204230"
+ansible_user = "freva"
 
 ##Indicate whether or not to empty any pre-existing folders/docker volumes.
 ##(Useful for a truly fresh start) (default: False)
@@ -146,10 +145,6 @@ admins = ""
 
 ## The path where the core should be installed
 install_dir="/opt/freva/conda"
-
-## Set the path to any existing conda executable on the target machine,
-## if not existing (default) a temporary conda distribution will be downloaded
-conda_exec_path=""
 
 ## The directory where the project configuration files will be stored.
 ## This can be useful if you want to set up multiple freva instances with

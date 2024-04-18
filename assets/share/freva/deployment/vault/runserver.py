@@ -5,25 +5,17 @@ import binascii
 import json
 import logging
 import os
-from pathlib import Path
 import random
-from subprocess import Popen, PIPE, run
 import shlex
-import time
 import threading
-from typing import (
-    Any,
-    Dict,
-    Literal,
-    List,
-    TypedDict,
-    cast,
-)
+import time
+from pathlib import Path
+from subprocess import PIPE, Popen, run
+from typing import Any, Dict, List, Literal, TypedDict, cast
 
-
+import requests
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
-import requests
 
 KeyType = TypedDict("KeyType", {"keys": List[str], "token": str})
 KEY_FILE = Path("/vault/file/keys")
@@ -93,7 +85,9 @@ def interact_with_vault(
     text = f"Failed to connect to {endpoint}"
     for _ in range(10):
         try:
-            response = requests.request(method, f"{VAULT_ADDR}/{endpoint}", **kwargs)
+            response = requests.request(
+                method, f"{VAULT_ADDR}/{endpoint}", **kwargs
+            )
             text = response.text
             if response.status_code >= 200 and response.status_code < 300:
                 return cast(Dict[str, Any], response.json())
@@ -112,7 +106,9 @@ def read_key() -> KeyType:
     """Read the login token and the vault seal keys from a secret file."""
     auth: KeyType = {"keys": [], "token": ""}
     try:
-        return cast(KeyType, json.loads(base64.b64decode(KEY_FILE.read_bytes())))
+        return cast(
+            KeyType, json.loads(base64.b64decode(KEY_FILE.read_bytes()))
+        )
     except FileNotFoundError:
         return auth
     except (json.JSONDecodeError, binascii.Error):
@@ -195,8 +191,18 @@ def deploy_vault() -> None:
         )
         auth["keys"] = data.get("keys", [])
         auth["token"] = data.get("token", data.get("root_token", ""))
-        KEY_FILE.write_bytes(base64.b64encode(json.dumps(auth).encode("utf-8")))
+        KEY_FILE.write_bytes(
+            base64.b64encode(json.dumps(auth).encode("utf-8"))
+        )
     unseal(auth)
+
+
+@app.get("/vault/status")
+async def get_vault_status() -> JSONResponse:
+    """Get the status of the vault."""
+    is_sealed = interact_with_vault("v1/sys/seal-status").get("sealed")
+    vault_status = {True: "sealed", False: "unsealed", None: "down"}[is_sealed]
+    return JSONResponse(content={"status": vault_status}, status_code=200)
 
 
 @app.get("/vault/data/{public_key}")
@@ -218,7 +224,9 @@ async def read_secret(public_key: str) -> JSONResponse:
     status = 400
     if len(public_key) != 128:  # This is not a checksum of a cert.
         is_sealed = interact_with_vault("v1/sys/seal-status").get("sealed")
-        vault_status = {True: "sealed", False: "unsealed", None: "down"}[is_sealed]
+        vault_status = {True: "sealed", False: "unsealed", None: "down"}[
+            is_sealed
+        ]
         text = f"But the vault is {vault_status}"
         raise HTTPException(
             detail=f"{random.choice(PHRASES)} {text}", status_code=status

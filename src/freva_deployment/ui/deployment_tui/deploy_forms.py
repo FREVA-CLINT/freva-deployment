@@ -84,7 +84,7 @@ class CoreScreen(BaseForm):
                     npyscreen.TitleFilename,
                     name=(
                         f"{self.num}Directory where project configuration is stored "
-                        "(defaults to `anaconda installation dir.` in #3):"
+                        f"(defaults to `anaconda installation dir.` in #{self._num-1}):"
                     ),
                     value=cfg.get("root_dir", ""),
                 ),
@@ -93,7 +93,10 @@ class CoreScreen(BaseForm):
             base_dir_location=(
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
-                    name=f"{self.num}User data directory:",
+                    name=(
+                        f"{self.num}User data directory, defaults to "
+                        f"project config. dir given in #{self._num-1}."
+                    ),
                     value=cfg.get("base_dir_location", ""),
                 ),
                 False,
@@ -101,7 +104,11 @@ class CoreScreen(BaseForm):
             preview_path=(
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
-                    name=f"{self.num}Plugin output dir for the web UI (preview path):",
+                    name=(
+                        f"{self.num}Plugin output dir for the web UI "
+                        "(preview path), defaults to user data dir"
+                        f" given in #{self._num - 1}."
+                    ),
                     value=cfg.get("preview_path", ""),
                 ),
                 False,
@@ -153,18 +160,6 @@ class CoreScreen(BaseForm):
                         "remote machine, leave blank if not needed:"
                     ),
                     value=cfg.get("ansible_become_user", ""),
-                ),
-                False,
-            ),
-            conda_exec_path=(
-                self.add_widget_intelligent(
-                    npyscreen.TitleText,
-                    name=(
-                        f"{self.num}Path to any existing conda installation - "
-                        "leave blank to "
-                        "install a temporary conda distribution:"
-                    ),
-                    value=cfg.get("conda_exec_path", ""),
                 ),
                 False,
             ),
@@ -242,6 +237,17 @@ class WebScreen(BaseForm):
             if key in cfg and isinstance(cfg[key], str):
                 value = cast(str, cfg[key])
                 cfg[key] = [v.strip() for v in value.split(",") if v.strip()]
+        availalbe_ldab_models = [
+            "MiklipUserInformation",
+            "UCARUserInformation",
+            "DWDUserInformation",
+            "FUUserInformation",
+        ]
+        current_ldab_model = get_index(
+            availalbe_ldab_models,
+            cast(str, cfg.get("ldap_model", "MiklipUserInformation")),
+            0,
+        )
         self.input_fields: dict[str, tuple[npyscreen.TitleText, bool]] = dict(
             hosts=(
                 self.add_widget_intelligent(
@@ -542,11 +548,12 @@ class WebScreen(BaseForm):
             ),
             ldap_model=(
                 self.add_widget_intelligent(
-                    npyscreen.TitleText,
+                    npyscreen.TitleCombo,
                     name=(
                         f"{self.num}Ldap tools class to be used for authentication."
                     ),
-                    value=cfg.get("ldap_model", "MiklipUserInformation"),
+                    value=current_ldab_model,
+                    values=availalbe_ldab_models,
                 ),
                 True,
             ),
@@ -674,17 +681,6 @@ class DBScreen(BaseForm):
                 ),
                 False,
             ),
-            vault_playbook=(
-                self.add_widget_intelligent(
-                    npyscreen.TitleFilename,
-                    name=(
-                        f"{self.num}Set the path to the vault playbook used for"
-                        " setting up the system."
-                    ),
-                    value=cfg.get("vault_playbook", ""),
-                ),
-                False,
-            ),
             ansible_become_user=(
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
@@ -727,6 +723,10 @@ class DatabrowserScreen(BaseForm):
         self.list_keys: list[str] = []
         cfg = self.get_config(self.step)
         databrowser_ports: list[int] = list(range(7770, 7780))
+        solr_mem_values = [f"{i}g" for i in range(1, 10)]
+        solr_mem_select = get_index(
+            solr_mem_values, cast(str, cfg.get("solr_mem", "4g")), 3
+        )
         databrowser_port_idx = get_index(
             [str(p) for p in databrowser_ports],
             str(cfg.get("databrowser_port", 7777)),
@@ -756,8 +756,8 @@ class DatabrowserScreen(BaseForm):
                 self.add_widget_intelligent(
                     npyscreen.TitleCombo,
                     name=f"{self.num}Virtual memory (in GB) for the search engine service:",
-                    value=3,
-                    values=[f"{i}g" for i in range(1, 10)],
+                    value=solr_mem_select,
+                    values=solr_mem_values,
                 ),
                 True,
             ),
@@ -876,7 +876,6 @@ class RunForm(npyscreen.FormMultiPageAction):
                             )
                         npyscreen.notify_confirm(msg, title="ERROR")
                         return
-
         _ = self.parentApp.save_config_to_file(
             save_file=save_file, write_toml_file=True
         )
@@ -890,6 +889,7 @@ class RunForm(npyscreen.FormMultiPageAction):
             "config_file": str(save_file) or None,
             "ssh_port": ssh_port,
             "local_debug": bool(self.local_debug.value),
+            "gen_keys": bool(gen_keys),
         }
         self.parentApp.exit_application(
             save_file=save_file, msg="Do you want to continue?"

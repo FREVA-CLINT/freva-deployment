@@ -4,22 +4,14 @@
 
 import abc
 import argparse
-from getpass import getuser
 import shlex
 import shutil
 import subprocess
 import sys
 from datetime import datetime
+from getpass import getuser
 from pathlib import Path
-from typing import (
-    ClassVar,
-    Dict,
-    List,
-    Optional,
-    Tuple,
-    Union,
-    cast,
-)
+from typing import ClassVar, Dict, List, Optional, Tuple, Union, cast
 
 FlagType = Union[str, List[str], bool, None]
 """Type for additional command line arguments."""

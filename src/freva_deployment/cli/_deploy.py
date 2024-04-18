@@ -6,10 +6,15 @@ import argparse
 import sys
 from pathlib import Path
 
+from rich_argparse import ArgumentDefaultsRichHelpFormatter
+
 from freva_deployment import __version__
 
 from ..deploy import DeployFactory
-from ..utils import config_dir, set_log_level
+from ..error import DeploymentError
+from ..logger import set_log_level
+from ..utils import config_dir
+from ..versions import VersionAction, display_versions
 
 
 def parse_args(argv: list[str] | None) -> argparse.Namespace:
@@ -18,7 +23,7 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
     ap = argparse.ArgumentParser(
         prog="deploy-freva-cmd",
         description="Deploy freva and its services on different machines.",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        formatter_class=ArgumentDefaultsRichHelpFormatter,
     )
     ap.add_argument(
         "--config",
@@ -29,11 +34,15 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
     )
     ap.add_argument(
         "--steps",
+        "-s",
         type=str,
         nargs="+",
         default=["db", "databrowser", "web", "core"],
-        choices=["web", "core", "db", "databrowser"],
-        help="The services/code stack to be deployed",
+        choices=["web", "core", "db", "databrowser", "auto"],
+        help=(
+            "The services/code stack to be deployed. Use [it]auto[/it]"
+            " to only deploy outdated services"
+        ),
     )
     ap.add_argument(
         "--ask-pass",
@@ -58,6 +67,7 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
         default=False,
     )
     ap.add_argument(
+        "-g",
         "--gen-keys",
         help="Generate public and private web certs, use with caution.",
         action="store_true",
@@ -66,8 +76,10 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
     ap.add_argument(
         "-V",
         "--version",
-        action="version",
-        version="%(prog)s {version}".format(version=__version__),
+        action=VersionAction,
+        version="[b][red]%(prog)s[/red] {version}[/b]{services}".format(
+            version=__version__, services=display_versions()
+        ),
     )
     return ap.parse_args()
 
@@ -82,7 +94,12 @@ def cli(argv: list[str] | None = None) -> None:
         local_debug=args.local,
         gen_keys=args.gen_keys,
     ) as DF:
-        DF.play(args.ask_pass, args.verbose, ssh_port=args.ssh_port)
+        try:
+            _ = DF.play(args.ask_pass, args.verbose, ssh_port=args.ssh_port)
+        except KeyboardInterrupt:
+            raise SystemExit(130)
+        except DeploymentError:
+            raise SystemExit(1)
 
 
 if __name__ == "__main__":

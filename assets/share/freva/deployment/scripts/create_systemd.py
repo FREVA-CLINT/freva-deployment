@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 import argparse
-from pathlib import Path
 import os
 import shlex
-import sys
 import subprocess
+import sys
+from pathlib import Path
 from typing import Dict, List, Tuple
 
 SYSTEMD_TMPL = dict(
@@ -98,9 +98,7 @@ def get_container_cmd(args: str) -> Tuple[str, str]:
     return "", ""
 
 
-def create_unit(
-    args: str, unit: str, requires: List[str], enable: bool
-) -> None:
+def create_unit(args: str, unit: str, requires: List[str], enable: bool) -> None:
     """Create the systemd unit."""
     container_cmd, container_args = get_container_cmd(args)
     cmd = args.split()
@@ -121,6 +119,8 @@ def create_unit(
     if "docker" in container_cmd:
         SYSTEMD_TMPL["Unit"]["Requires"] = "docker.service"
         SYSTEMD_TMPL["Unit"]["After"] += " docker.service"
+    # else:
+    #    SYSTEMD_TMPL["Service"]["Environment"] = "PODMAN_USERNS=keep-id"
     for key in ("ExecStart",):
         SYSTEMD_TMPL["Service"][key] = SYSTEMD_TMPL["Service"][key].format(
             container_cmd=container_cmd,

@@ -1,7 +1,7 @@
 version: '3'
 services:
   {{solr_name}}:
-    image: solr:latest
+    image: solr:{{solr_version}}
     container_name: {{solr_name}}
     hostname: {{solr_name}}
 {% if debug %}
@@ -33,7 +33,6 @@ services:
       - {{databrowser_name}}
 {% endif %}
     environment:
-    environment:
       - MONGO_INITDB_ROOT_USERNAME=mongo
       - MONGO_INITDB_ROOT_PASSWORD={{root_passwd}}
       - MONGO_INITDB_DATABASE=search_stats
@@ -46,7 +45,7 @@ services:
     tty: true
 
   {{databrowser_name}}:
-    image: ghcr.io/freva-clint/databrowserapi:latest
+    image: ghcr.io/freva-clint/databrowserapi:{{databrowser_version}}
     hostname: {{databrowser_name}}
 {% if debug %}
     network_mode: host

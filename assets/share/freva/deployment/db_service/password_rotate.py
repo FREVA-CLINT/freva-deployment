@@ -3,8 +3,8 @@
 import os
 import random
 import shlex
-from subprocess import run
 import string
+from subprocess import run
 
 import requests
 

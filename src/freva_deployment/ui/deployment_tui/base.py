@@ -158,8 +158,6 @@ class BaseForm(npyscreen.FormMultiPageWithMenus, npyscreen.FormWithMenus):
                     msg = f"MISSING ENTRY FOR {self.step}: {obj.name}"
                     npyscreen.notify_confirm(msg, title="ERROR")
                     return None
-                elif not value and not mandatory:
-                    continue
             config[key] = value
         cfg = dict(hosts=config.pop("hosts"))
         cfg["config"] = config

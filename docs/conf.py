@@ -13,6 +13,7 @@
 import os
 import sys
 from datetime import date
+
 from recommonmark.parser import CommonMarkParser
 
 sys.path.insert(0, os.path.abspath("."))

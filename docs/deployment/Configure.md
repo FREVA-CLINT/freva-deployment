@@ -26,25 +26,24 @@ issue the `deploy-freva-cmd` command:
 
 ```bash
 deploy-freva-cmd --help
-usage: deploy-freva-cmd [-h] [--config CONFIG] [--steps {web,core,db,databrowser} [{web,core,db,databrowser} ...]] [--ask-pass] [--ssh-port SSH_PORT] [-v] [-l]
-                        [--gen-keys] [-V]
+Usage: deploy-freva-cmd [-h] [--config CONFIG] [--steps {web,core,db,databrowser,auto} [{web,core,db,databrowser,auto} ...]] [--ask-pass] [--ssh-port SSH_PORT] [-v] [-l]
+                        [-g] [-V]
 
 Deploy freva and its services on different machines.
 
-options:
+Options:
   -h, --help            show this help message and exit
-  --config CONFIG, -c CONFIG
-                        Path to ansible inventory file. (default: /home/wilfred/.anaconda3/share/freva/deployment/inventory.toml)
-  --steps {web,core,db,databrowser} [{web,core,db,databrowser} ...]
-                        The services/code stack to be deployed (default: ['db', 'databrowser', 'web', 'core'])
+  --config, -c CONFIG   Path to ansible inventory file. (default: /home/wilfred/.anaconda3/envs/python3_12/share/freva/deployment/inventory.toml)
+  --steps, -s {web,core,db,databrowser,auto} [{web,core,db,databrowser,auto} ...]
+                        The services/code stack to be deployed. Use auto to only deploy outdated services (default: ['db', 'databrowser', 'web', 'core'])
   --ask-pass            Connect to server via ssh passwd instead of public key. (default: False)
   --ssh-port SSH_PORT   Set the ssh port, in 99.9% of the cases this should be 22 (default: 22)
   -v, --verbose         Verbosity level (default: 0)
   -l, --local           Deploy services on the local machine, debug purpose. (default: False)
-  --gen-keys            Generate public and private web certs, use with caution. (default: False)
-  -V, --version         show program's version number and exit.
-```
+  -g, --gen-keys        Generate public and private web certs, use with caution. (default: False)
+  -V, --version         show program's version number and exit
 
+```
 The `--steps` flags can be used if not all services should be deployed.
 
 ## Setting the python and git path
@@ -104,9 +103,9 @@ To avoid this you have to enable 'lingering' states of services for that user:
 loginctl enable-linger [USER]
 ```
 
-This command can only by applied by the root user. Backups are also done on
-user instead of system basis, you can check the backups after deployment using
-the `crontab` command.
+This command can only by applied by the root user. Backups are also done as
+user instead of system wide basis, you can check the backups after deployment using
+the `crontab -l` command.
 
 *No direct access to ports 80 and 443*: The freva web user interface cannot directly be accessed by a web server
 listing on port 80 and 443 as those ports are off limits for normal users. If
@@ -185,21 +184,21 @@ the path to the playbook for that step in the inventory file or tui. For example
 ## Known Issues:
 Below are possible solutions to some known issues:
 
-#### SSH connection fails:
+### SSH connection fails:
 
 ```console
 fatal: [host.name]: FAILED! => {"msg": "Using a SSH password instead of a key is not possible because Host Key checking is enabled and sshpass does not support this.  Please add this host's fingerprint to your known_hosts file to manage this host."}
 ```
 - This means that you've never logged on to the server. You can avoid this error message by simply logging on to the server for the first time.
 
-#### Playbook complains about refused connections for the solr or db playbook
+### Playbook complains about refused connections for the solr or db playbook
 
 ```console
 fatal: [localhost]: FAILED! => {"changed": true, "cmd": "docker run --name \"test_ces_db\" -e MYSQL_ROOT_PASSWORD=\"T3st\" -p \"3306\":3306 -d docker.io/library/mariadb", "delta": "0:00:00.229695", "end": "2021-05-27 16:10:58.553280", "msg": "non-zero return code", "rc": 125, "start": "2021-05-27 16:10:58.323585", "stderr": "docker: Error response from daemon: driver failed programming external connectivity on endpoint test_ces_db (d106bf1fe310a2ae0e012685df5a897874c61870c5241f7a2af2c4ce461794c2): Error starting userland proxy: listen tcp4 0.0.0.0:3306: bind: address already in use.", "stderr_lines": ["docker: Error response from daemon: driver failed programming external connectivity on endpoint test_ces_db (d106bf1fe310a2ae0e012685df5a897874c61870c5241f7a2af2c4ce461794c2): Error starting userland proxy: listen tcp4 0.0.0.0:3306: bind: address already in use."], "stdout": "895ba35cdf5dcf2d4ec86997aedf0637bf4020f2e9d3e5775221966dcfb820a5", "stdout_lines": ["895ba35cdf5dcf2d4ec86997aedf0637bf4020f2e9d3e5775221966dcfb820a5"]}
 ```
 - This means that there is already a service running on this port - in this case a local mariadb service. To avoid this error chose a different port in your `config/inventory` file.
 
-#### Playbook cannot create database tables because connections fails
+### Playbook cannot create database tables because connections fails
 
 ```console
 fatal: [localhost]: FAILED! => {"changed": false, "msg": "ERROR 1698 (28000): Access denied for user 'root'@'localhost'\n"}
@@ -213,6 +212,50 @@ you can figure out the `db_docker_name` using the following command:
 
 ```console
 docker container ls
+```
+
+### Cannot pull/run container due to insufficient system UIDs.
+When you run the services in rootless mode you might see this error message
+when trying to pull/run container images:
+
+```console
+ERRO[0000] cannot find UID/GID for user foo: no subuid ranges found for user "foo" in /etc/subuid - check rootless mode in man pages.
+```
+
+To fix this issue log on to the machine that that should run the container
+and update your `/etc/subuid` and `/etc/subgid` files to include a range of
+UIDs/GIDs that cover the necessary system operations inside the container.
+In most cases it is sufficient to to set these options in both files
+(`/etc/subuid` and `/etc/subgid`):
+
+```console
+user_name:100000:65536
+```
+
+After that you will have to apply the following command
+
+```console
+podman system migrate
+```
+
+You might want to read [this article](https://www.redhat.com/sysadmin/rootless-podman-user-namespace-modes)
+for more information.
+
+### Insufficient permissions when running in rootless mode (selinux)
+When running containers in rootless mode you might see errors like this:
+
+```console
+podman run --userns=keep-id
+/bin/bash: error while loading shared libraries: libc.so.6: cannot change memory protections
+```
+
+This issues arises when the SELinux container context is not set for the local
+user container storage location. You can set the context via:
+
+
+```console
+sudo semanage fcontext -a -t container_var_lib_t '/home/myuser/.local/share/containers/storage(/.*)?'
+sudo restorecon -Rv /home/myuser/.local/share/containers/storage
 ```
 
 ### Stuck in load/save dialogue in the tui

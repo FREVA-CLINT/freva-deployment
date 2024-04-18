@@ -1,0 +1,7 @@
+{
+   "vault": "2403.2.0",
+   "databrowser": "2403.0.3",
+   "solr": "9.5.0",
+   "core": "2309.0.2",
+   "django_evaluation": "2405.0.0"
+}

@@ -1,8 +1,8 @@
 #!/usr/bin/python3
 
-from subprocess import run, PIPE
-import shlex
 import os
+import shlex
+from subprocess import PIPE, run
 
 if __name__ == "__main__":
 

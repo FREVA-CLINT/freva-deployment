@@ -1,4 +1,4 @@
-name: tintx
+name: deployment
 channels:
   - conda-forge
 dependencies:
@@ -7,12 +7,3 @@ dependencies:
   - pip
   - pip:
       - freva-deployment[doc]
-      - sphinx-execute-code-python3
-      - sphinx-rtd-theme
-      - sphinx-copybutton
-      - pydata-sphinx-theme
-      - sphinxcontrib_github_alt
-      - nbsphinx
-      - furo
-      - recommonmark
-      - sphinx

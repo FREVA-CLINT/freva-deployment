@@ -48,7 +48,7 @@ python3 -m pip install libselinux-python3
 ```
 
 ## Commands after installation:
-The `pip install` command will create *four* different commands:
+The `pip install` command will create *three* different commands:
 - `deploy-freva`: Text user interface to configure and run the deployment.
 - `deploy-freva-cmd`: Run already configured deployment.
 - `freva-migrate`: Command line interface to manage project migration from

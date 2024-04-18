@@ -2,6 +2,7 @@ version: '3'
 services:
   {{apache_name}}:
     image: httpd:latest
+    user: root:0
     container_name: {{apache_name}}
     hostname: {{apache_name}}
 {% if debug %}
@@ -11,7 +12,7 @@ services:
       - {{web_name}}
 {% endif %}
     environment:
-      - SCHEDULDER_DIR={{core_scheduler_output_dir|expanduser}}
+      - SCHEDULDER_DIR={{core_scheduler_output_dir|regex_replace('^~', ansible_env.HOME)}}
       - UID={{uid}}
       - GID={{gid}}
 {% if debug %}
@@ -46,9 +47,10 @@ services:
     hostname: {{redis_name}}
 
   {{web_name}}:
-    image: ghcr.io/freva-clint/freva-web
+    image: ghcr.io/freva-clint/freva-web:{{web_version}}
     container_name: {{web_name}}
     hostname: {{web_name}}
+    user: root:0
 {% if debug %}
     network_mode: host
 {% else %}
@@ -56,7 +58,7 @@ services:
       - {{web_name}}
 {% endif %}
     environment:
-      - EVALUATION_SYSTEM_CONFIG_FILE={{core_root_dir|expanduser}}/freva/evaluation_system.conf
+      - EVALUATION_SYSTEM_CONFIG_FILE={{core_root_dir|regex_replace('^~', ansible_env.HOME)}}/freva/evaluation_system.conf
       - LDAP_USER_DN={{web_ldap_user_dn}}
       - LDAP_USER_PW={{web_ldap_user_pw}}
       - DJANGO_SUPERUSER_PASSWORD={{ root_passwd }}
