@@ -7,6 +7,12 @@ What's new
    :maxdepth: 0
    :titlesonly:
 
+v2404.0.0
+~~~~~~~~
+* Bumped version of django_evaluation to 2405.0.0
+
+
+
 
 v2403.2.0
 ~~~~~~~~
