@@ -40,6 +40,7 @@ class Release:
         package_name: str,
         repo_dir: str,
         branch: str = "main",
+        search_path: str = ".",
         **kwargs: str,
     ) -> None:
         """Abstract init method."""
@@ -62,6 +63,9 @@ def cli(temp_dir: str) -> "Release":
     )
     for _parser in tag_parser, deploy_parser:
         _parser.add_argument("name", help="The name of the software/package.")
+        _parser.add_argument(
+            "-p", "--path", help="Set the search path.", type=str, default="."
+        )
         _parser.add_argument(
             "-v",
             "--verbose",
@@ -91,7 +95,9 @@ def cli(temp_dir: str) -> "Release":
         kwargs = {s: v for (s, v) in args.services or ()}
     if args.verbose:
         logger.setLevel(logging.DEBUG)
-    return args.apply_func(args.name, temp_dir, args.branch, **kwargs)
+    return args.apply_func(
+        args.name, temp_dir, args.branch, args.path, **kwargs
+    )
 
 
 class Exit(Exception):
@@ -125,6 +131,7 @@ class Bump(Release):
         package_name: str,
         repo_dir: str,
         branch: str = "main",
+        search_path: str = ".",
         **kwargs: str,
     ) -> None:
         self.extra_packages = kwargs
@@ -133,6 +140,7 @@ class Bump(Release):
         self.branch = branch
         self.package_name = package_name
         self.repo_dir = Path(repo_dir)
+        self.search_path = search_path
         self.repo_url = (
             f"https://{token}@github.com/FREVA-CLINT/freva-deployment.git"
         )
@@ -263,12 +271,14 @@ class Tag(Release):
         package_name: str,
         repo_dir: str,
         branch: str = "main",
+        search_path: str = ".",
         version: str = "",
         **kwargs: str,
     ) -> None:
         self.branch = branch
         self.package_name = package_name
         self.repo_dir = Path(repo_dir)
+        self.search_path = search_path
         logger.info(
             "Searching for packages/config with the name: %s", package_name
         )
@@ -321,16 +331,20 @@ class Tag(Release):
     def version(self) -> Version:
         """Get the version of the current software."""
         logger.debug("Searching for software version.")
-        pck_dirs = Path("src") / self.package_name, Path(
+        pck_dirs = Path(self.search_path) / Path(
             "src"
-        ) / self.package_name.replace("-", "_")
+        ) / self.package_name, Path(self.search_path) / Path(
+            "src"
+        ) / self.package_name.replace(
+            "-", "_"
+        )
         files = [
             self.repo_dir / f[1] / f[0]
             for f in product(("_version.py", "__init__.py"), pck_dirs)
         ]
         files += [
-            self.repo_dir / Path("package.json"),
-            self.repo_dir / "pyproject.toml",
+            self.repo_dir / self.search_path / Path("package.json"),
+            self.repo_dir / self.search_path / "pyproject.toml",
         ]
         for file in files:
             if file.is_file():
