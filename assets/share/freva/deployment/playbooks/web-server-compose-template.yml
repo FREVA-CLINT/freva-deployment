@@ -2,6 +2,7 @@ version: '3'
 services:
   {{apache_name}}:
     image: httpd:latest
+    user: root:0
     container_name: {{apache_name}}
     hostname: {{apache_name}}
 {% if debug %}
@@ -12,6 +13,8 @@ services:
 {% endif %}
     environment:
       - SCHEDULDER_DIR={{core_scheduler_output_dir|regex_replace('^~', ansible_env.HOME)}}
+      - UID={{uid}}
+      - GID={{gid}}
 {% if debug %}
       - DATABROWSER_HOST=127.0.0.1
       - FREVA_HOST=127.0.0.1
@@ -25,6 +28,7 @@ services:
 {% for volume in apache_volumes %}
       - {{volume}}
 {% endfor %}
+    command: /usr/local/bin/prepare-httpd
     ports:
       - {{web_port_httpd}}:{{web_port_httpd}}
       - {{web_port_httpsd}}:{{web_port_httpsd}}
@@ -46,6 +50,7 @@ services:
     image: ghcr.io/freva-clint/freva-web:{{web_version}}
     container_name: {{web_name}}
     hostname: {{web_name}}
+    user: root:0
 {% if debug %}
     network_mode: host
 {% else %}

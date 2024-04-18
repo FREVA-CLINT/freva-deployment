@@ -59,16 +59,17 @@
     compose_file: "{{web_data_path|regex_replace('^~', ansible_env.HOME)}}/compose_services/{{web_name}}-compose.yml"
     static_folder: "{{web_data_path|regex_replace('^~', ansible_env.HOME)}}/{{project_name}}/web_service/static:/opt/freva_web/static:z"
     web_volumes:
-      - "{{ core_root_dir | regex_replace('^~', ansible_env.HOME)}}:{{ core_root_dir | regex_replace('^~', ansible_env.HOME)}}:z"
-      - "{{ core_scheduler_output_dir|regex_replace('^~', ansible_env.HOME)}}:{{ core_scheduler_output_dir | regex_replace('^~', ansible_env.HOME)}}:z"
+      - "{{ core_root_dir | regex_replace('^~', ansible_env.HOME)}}:{{ core_root_dir | regex_replace('^~', ansible_env.HOME)}}:ro"
+      - "{{ core_scheduler_output_dir|regex_replace('^~', ansible_env.HOME)}}:{{ core_scheduler_output_dir | regex_replace('^~', ansible_env.HOME)}}:ro"
       - "{{web_data_path|regex_replace('^~', ansible_env.HOME)}}/{{project_name}}/web_service/static:/opt/freva_web/static:z"
-      - "{{core_base_dir_location|regex_replace('^~', ansible_env.HOME)}}:{{core_base_dir_location|regex_replace('^~', ansible_env.HOME)}}:z"
+      - "{{core_base_dir_location|regex_replace('^~', ansible_env.HOME)}}:{{core_base_dir_location|regex_replace('^~', ansible_env.HOME)}}:ro"
     apache_volumes:
       - "{{web_data_path|regex_replace('^~', ansible_env.HOME)}}/{{project_name}}/web_service/freva_web.conf:/usr/local/apache2/conf/httpd.conf:z"
       - "{{web_data_path|regex_replace('^~', ansible_env.HOME)}}/{{project_name}}/web_service/server-cert.crt:/etc/ssl/certs/server-cert.crt:z"
       - "{{web_data_path|regex_replace('^~', ansible_env.HOME)}}/{{project_name}}/web_service/server-key.key:/etc/ssl/private/server-key.key:z"
+      - "{{web_data_path|regex_replace('^~', ansible_env.HOME)}}/{{project_name}}/web_service/prepare-httpd:/usr/local/bin/prepare-httpd:z"
       - "{{web_data_path|regex_replace('^~', ansible_env.HOME)}}/{{project_name}}/web_service/static:/srv/static:z"
-      - "{{ core_preview_path | regex_replace('^~', ansible_env.HOME)}}:/srv/static/preview:z"
+      - "{{ core_preview_path | regex_replace('^~', ansible_env.HOME)}}:/srv/static/preview:ro"
     redis_name: "{{ project_name }}-redis"
     apache_name: "{{project_name}}-httpd"
     web_name: "{{project_name}}-web"
@@ -76,6 +77,21 @@
     web_port_httpd: "{{ '80' if web_ansible_become_user == 'root' or ansible_user == 'root' else '9080' }}"
     web_port_httpsd: "{{ '443' if web_ansible_become_user == 'root' or ansible_user == 'root'  else '9443' }}"
   tasks:
+     - name: Get UID
+      command: id -u {{ ansible_user }}
+      register: uid_result
+    - name: Get GID
+      command: id -g {{ ansible_user }}
+      register: gid_result
+    - name: Set UID and GID as facts
+      set_fact:
+        uid: "{{ uid_result.stdout }}"
+        gid: "{{ gid_result.stdout }}"
+    - name: Copying httpd entrypoint script
+      copy:
+        src: "{{ asset_dir }}/scripts/prepare-httpd"
+        dest: "{{web_data_path|regex_replace('^~', ansible_env.HOME)}}/{{project_name}}/web_service/prepare-httpd"
+        mode: "0775"
     - name: Copying docker/podman wrapper script
       copy:
         src: "{{ asset_dir }}/scripts/docker-or-podman"
