@@ -26,14 +26,12 @@ class VersionAction(argparse._VersionAction):
 
 def display_versions() -> str:
     """Get all service versions for display."""
-    minimum_version = json.loads(
-        (Path(__file__).parent / "versions.json").read_text()
-    )
+    minimum_version = json.loads((Path(__file__).parent / "versions.json").read_text())
     lookup = {
         "databrowser": "databrowserAPI",
         "core": "freva-core",
         "solr": "apache-solr",
-        "web": "webUI",
+        "django_evaluation": "webUI",
     }
     versions = ""
     for service, version in minimum_version.items():
@@ -54,11 +52,9 @@ def get_steps_from_versions(detected_versions: Dict[str, str]) -> List[str]:
     -------
     list: A list of services that should be updated.
     """
-    minimum_version = json.loads(
-        (Path(__file__).parent / "versions.json").read_text()
-    )
+    minimum_version = json.loads((Path(__file__).parent / "versions.json").read_text())
     steps = []
-    lookup = {"solr": "databrowser", "vault": "db"}
+    lookup = {"solr": "databrowser", "vault": "db", "django_evaluation": "web"}
     for service, min_version in minimum_version.items():
         lookup.setdefault(service, service)
         min_version = minimum_version[service].strip("v")

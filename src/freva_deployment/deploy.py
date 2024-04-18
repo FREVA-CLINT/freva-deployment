@@ -561,6 +561,7 @@ class DeployFactory:
         versions = json.loads(
             (Path(__file__).parent / "versions.json").read_text()
         )
+        versions["web"] = versions["django_evaluation"]
         additional_steps = set(steps) - set(self.steps)
         if additional_steps:
             pprint(
