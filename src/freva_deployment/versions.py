@@ -31,7 +31,7 @@ def display_versions() -> str:
         "databrowser": "databrowserAPI",
         "core": "freva-core",
         "solr": "apache-solr",
-        "django_evaluation": "webUI",
+        "web": "webUI",
     }
     versions = ""
     for service, version in minimum_version.items():
@@ -54,7 +54,7 @@ def get_steps_from_versions(detected_versions: Dict[str, str]) -> List[str]:
     """
     minimum_version = json.loads((Path(__file__).parent / "versions.json").read_text())
     steps = []
-    lookup = {"solr": "databrowser", "vault": "db", "django_evaluation": "web"}
+    lookup = {"solr": "databrowser", "vault": "db"}
     for service, min_version in minimum_version.items():
         lookup.setdefault(service, service)
         min_version = minimum_version[service].strip("v")
