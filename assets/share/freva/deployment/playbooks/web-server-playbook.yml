@@ -87,11 +87,6 @@
       set_fact:
         uid: "{{ uid_result.stdout }}"
         gid: "{{ gid_result.stdout }}"
-    - name: Copying httpd entrypoint script
-      copy:
-        src: "{{ asset_dir }}/scripts/prepare-httpd"
-        dest: "{{web_data_path|regex_replace('^~', ansible_env.HOME)}}/{{project_name}}/web_service/prepare-httpd"
-        mode: "0775"
     - name: Copying docker/podman wrapper script
       copy:
         src: "{{ asset_dir }}/scripts/docker-or-podman"
@@ -140,10 +135,11 @@
         path: "{{web_data_path|regex_replace('^~', ansible_env.HOME)}}/compose_services"
         state: directory
         recurse: true
-    - name: Copying key files files
+    - name: Copying  httpd files
       copy:
         src: "{{item.src}}"
         dest: "{{item.dest}}"
+        mode: "0775"
       with_items:
         - {src: "{{web_apache_config_file|regex_replace('^~', ansible_env.HOME)}}",
            dest: "{{service_dir|regex_replace('^~', ansible_env.HOME)}}/freva_web.conf"}
@@ -151,6 +147,8 @@
            dest: "{{service_dir|regex_replace('^~', ansible_env.HOME)}}/server-cert.crt"}
         - {src: "{{web_private_keyfile|regex_replace('^~', ansible_env.HOME)}}",
            dest: "{{service_dir|regex_replace('^~', ansible_env.HOME)}}/server-key.key"}
+        - {src: "{{ asset_dir }}/scripts/prepare-httpd",
+           dest: "{{web_data_path|regex_replace('^~', ansible_env.HOME)}}/{{project_name}}/web_service/prepare-httpd"}
     - name: Pulling containers
       shell:
         cmd: /tmp/docker-or-podman pull {{ item }}
