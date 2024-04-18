@@ -77,7 +77,7 @@
     web_port_httpd: "{{ '80' if web_ansible_become_user == 'root' or ansible_user == 'root' else '9080' }}"
     web_port_httpsd: "{{ '443' if web_ansible_become_user == 'root' or ansible_user == 'root'  else '9443' }}"
   tasks:
-     - name: Get UID
+    - name: Get UID
       command: id -u {{ ansible_user }}
       register: uid_result
     - name: Get GID
