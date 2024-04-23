@@ -1,6 +1,7 @@
 version: '3'
 services:
   {{db_name}}:
+    user: {{uid}}:{{gid}}
     image: mariadb:latest
     hostname: {{db_name}}
 {% if debug %}
@@ -28,6 +29,7 @@ services:
     ports:
       - {{db_port}}:3306
   {{vault_name}}:
+    user: {{uid}}:{{gid}}
     image: ghcr.io/freva-clint/freva-vault:{{vault_version}}
     hostname: {{db_name}}
     cap_add:

@@ -1,6 +1,7 @@
 version: '3'
 services:
   {{solr_name}}:
+    user: "{{uid}}:{{gid}}"
     image: solr:{{solr_version}}
     container_name: {{solr_name}}
     hostname: {{solr_name}}
@@ -23,6 +24,7 @@ services:
       - 8983:8983
 
   {{mongo_name}}:
+    user: "{{uid}}:{{gid}}"
     image: mongo:latest
     container_name: {{mongo_name}}
     hostname: {{mongo_name}}
@@ -45,6 +47,7 @@ services:
     tty: true
 
   {{databrowser_name}}:
+    user: "{{uid}}:{{gid}}"
     image: ghcr.io/freva-clint/databrowserapi:{{databrowser_version}}
     hostname: {{databrowser_name}}
 {% if debug %}

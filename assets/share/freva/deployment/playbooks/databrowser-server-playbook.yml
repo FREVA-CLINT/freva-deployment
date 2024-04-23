@@ -8,9 +8,9 @@
     compose_file: '{{databrowser_data_path|regex_replace("^~", ansible_env.HOME)}}/compose_services/{{databrowser_name}}-compose.yml'
     solr_name: "{{project_name}}-solr"
     mongo_name: "{{project_name}}-mongo"
-    solr_data: '{{databrowser_data_path|regex_replace("^~", ansible_env.HOME)}}/{{project_name}}/solr_service:/var/solr/data:z'
+    solr_data: '{{databrowser_data_path|regex_replace("^~", ansible_env.HOME)}}/{{project_name}}/solr_service'
     solr_volumes:
-      - '{{databrowser_data_path|regex_replace("^~", ansible_env.HOME)}}/{{project_name}}/solr_service:/var/solr/data:z'
+      - '{{databrowser_data_path|regex_replace("^~", ansible_env.HOME)}}/{{project_name}}/solr_service:/var/solr:z'
       - '{{databrowser_data_path|regex_replace("^~", ansible_env.HOME)}}/freva-service-config/solr/managed-schema.xml:/opt/solr/managed-schema.xml:z'
       - '{{databrowser_data_path|regex_replace("^~", ansible_env.HOME)}}/freva-service-config/solr/create_cores.sh:/docker-entrypoint-initdb.d/create_cores.sh:z'
       - '{{databrowser_data_path|regex_replace("^~", ansible_env.HOME)}}/freva-service-config/solr/synonyms.txt:/opt/solr/synonyms.txt:z'
@@ -19,6 +19,16 @@
       - '{{databrowser_data_path|regex_replace("^~", ansible_env.HOME)}}/{{project_name}}/databrowser/stats:/data/db:z'
     ansible_become_user: "{{ databrowser_ansible_become_user | default('root') }}"
   tasks:
+    - name: Get UID
+      command: id -u {{ ansible_user }}
+      register: uid_result
+    - name: Get GID
+      command: id -g {{ ansible_user }}
+      register: gid_result
+    - name: Set UID and GID as facts
+      set_fact:
+        uid: "{{ uid_result.stdout }}"
+        gid: "{{ gid_result.stdout }}"
     - name: Copying docker/podman wrapper script
       copy:
         src: "{{ asset_dir }}/scripts/docker-or-podman"
@@ -58,32 +68,49 @@
         path: '{{databrowser_data_path|regex_replace("^~", ansible_env.HOME)}}/freva-service-config/'
     - name: Cleaning existing directory structure
       file:
-        path: "{item}"
+        path: "{{item}}"
         state: absent
       with_items:
         - "{{databrowser_data_path|regex_replace('^~', ansible_env.HOME)}}/{{ project_name }}/solr_service"
         - "{{databrowser_data_path|regex_replace('^~', ansible_env.HOME)}}/{{ project_name }}/databrowser"
       when: databrowser_wipe == true
-    - name: Creating solr directory structure
+    - name: Creating service data directory structure
       file:
-        path: '{{databrowser_data_path|regex_replace("^~", ansible_env.HOME)}}/{{ project_name }}/solr_service'
+        path: "{{item}}"
         state: directory
         recurse: true
+        owner: "{{uid}}"
+        group: "{{gid}}"
+      with_items:
+        - '{{solr_data}}/data'
+        - '{{databrowser_data_path|regex_replace("^~", ansible_env.HOME)}}/{{ project_name }}/databrowser'
     - name: Creating compose directory structure
       file:
         path: '{{databrowser_data_path|regex_replace("^~", ansible_env.HOME)}}/compose_services'
         state: directory
         recurse: true
-    - name: Creating directory structure
-      file:
-        path: '{{databrowser_data_path|regex_replace("^~", ansible_env.HOME)}}/{{ project_name }}/databrowser'
-        state: directory
-        recurse: true
+    - name: Adjusting old directory structure
+      command: mv "{{solr_data}}/{{item}}" "{{solr_data}}/data/{{item}}"
+      args:
+        removes: "{{solr_data}}/{{item}}"
+        creates: "{{solr_data}}/data/{{item}}"
+      with_items:
+        - "files"
+        - "latest"
     - name: Getting additional configurations
       git:
         repo: https://github.com/FREVA-CLINT/freva-service-config.git
         dest: '{{databrowser_data_path|regex_replace("^~", ansible_env.HOME)}}/freva-service-config'
         update: true
+    - name: Adjusting configuration onwnership
+      file:
+        recurse: true
+        path: '{{item}}'
+        owner: "{{uid}}"
+        group: "{{gid}}"
+      with_items:
+        - "{{solr_data}}"
+        - '{{databrowser_data_path|regex_replace("^~", ansible_env.HOME)}}/freva-service-config'
     - name: Copy systemd files
       copy:
         src: "{{ asset_dir }}/scripts/create_systemd.py"
@@ -102,11 +129,6 @@
       template:
         src: "{{ asset_dir }}/playbooks/databrowser-server-compose-template.yml"
         dest: "{{compose_file}}"
-    - name: Setting solr permissions inside the solr container
-      shell:
-        cmd: |
-          /tmp/docker-or-podman rm -f {{solr_name}}
-          /tmp/docker-or-podman run -it --rm --name {{solr_name}} -v {{solr_data}} --user root:0 -t docker.io/solr:{{solr_version}} chown -R solr:solr /var/solr/data
     - name: Creating systemd services
       shell: |
         /tmp/create_systemd.py {{databrowser_name}} compose --enable --project-name {{databrowser_name}} -f {{compose_file}} up --remove-orphans

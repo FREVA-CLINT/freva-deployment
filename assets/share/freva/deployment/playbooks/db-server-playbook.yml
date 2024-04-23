@@ -40,6 +40,16 @@
     continer_name: "{{ db_name }}"
     vault_name: "{{project_name}}-vault"
   tasks:
+    - name: Get UID
+      command: id -u {{ ansible_user }}
+      register: uid_result
+    - name: Get GID
+      command: id -g {{ ansible_user }}
+      register: gid_result
+    - name: Set UID and GID as facts
+      set_fact:
+        uid: "{{ uid_result.stdout }}"
+        gid: "{{ gid_result.stdout }}"
     - name: Copying docker/podman wrapper script
       copy:
         src: "{{ asset_dir }}/scripts/docker-or-podman"
@@ -99,24 +109,24 @@
         path: '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/{{ project_name }}/db_service'
         state: absent
       when: db_wipe == true
-    - name: Creating db directory structure
-      file:
-        path: '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/{{ project_name }}/db_service'
-        state: directory
-        recurse: true
-        owner: "{{ '999' if db_ansible_become_user == 'root' else omit }}"
-        group: "{{ '999' if db_ansible_become_user == 'root' else omit }}"
-    - name: Creating vault directory structure
+    - name: Creating service directory structure
       file:
         state: directory
         path: "{{ item }}"
+        owner: "{{uid}}"
+        group: "{{gid}}"
+        recurse: true
       with_items:
+        - "{{vault_data_path|regex_replace('^~', ansible_env.HOME)}}/{{ project_name }}/vault_service"
         - "{{vault_data_path|regex_replace('^~', ansible_env.HOME)}}/{{ project_name }}/vault_service/config"
         - "{{vault_data_path|regex_replace('^~', ansible_env.HOME)}}/{{ project_name }}/vault_service/files"
+        - '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/{{ project_name }}/db_service'
     - name: Copying public key file to target machine
       copy:
         src: "{{ vault_keyfile }}"
         dest: "{{vault_data_path|regex_replace('^~', ansible_env.HOME)}}/{{project_name}}/vault_service/config/freva.crt"
+        owner: "{{uid}}"
+        group: "{{gid}}"
     - name: Copying auxillary files to target machine
       copy: src="{{ asset_dir }}/db_service/reset_root_pw.sh" dest=/tmp/
     - name: Copying systemd files
@@ -132,14 +142,20 @@
         repo: https://github.com/FREVA-CLINT/freva-service-config.git
         dest: '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/freva-service-config'
         update: true
+    - name: Adjusting configuration onwnership
+      file:
+        recurse: true
+        path: '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/freva-service-config'
+        owner: "{{uid}}"
+        group: "{{gid}}"
     - name: Preparing the root password reset I
-      shell: /tmp/docker-or-podman run -d {{docker_cmd}}
+      shell: /tmp/docker-or-podman run --user {{uid}}:{{gid}} -d {{docker_cmd}}
     - pause: seconds=5
     - name: Preparing the root password reset II
       shell: /tmp/docker-or-podman rm -f {{db_name}}
     - name: Resetting the root password
       shell: |
-        /tmp/docker-or-podman run -d {{skip_tables_cmd}}
+        /tmp/docker-or-podman run --user {{uid}}:{{gid}} -d {{skip_tables_cmd}}
         sleep 5
         /tmp/docker-or-podman exec {{db_name}} bash /tmp/reset_root_pw.sh
         /tmp/docker-or-podman exec {{db_name}} /bin/sh -c 'mariadb -u root {{db}} < /docker-entrypoint-initdb.d/002_create_tables.sql'
@@ -165,17 +181,15 @@
       shell: sh /tmp/create_cron.sh "{{ db_name }}" "{{db_email}}"
       when: cron.stat.exists == true and debug == false
     - pause: seconds=15
-    - name: Deleting existing infrastructure
-      shell: /tmp/docker-or-podman exec {{ vault_name }} vault kv delete kv/read-eval
     - name: Inserting server infrastructure
       shell: >
-        /tmp/docker-or-podman exec {{ vault_name }}
-        vault kv put kv/read-eval db.container={{ vault_name }}
-        db.host={{ vault_db_host }}
-        db.port={{ vault_db_port }}
-        db.passwd='{{ vault_passwd }}'
-        db.user={{ vault_db_user }}
-        db.db={{ vault_db }}
+        /tmp/docker-or-podman exec {{ vault_name }} add-vault-secret data
+        -s db.container {{ vault_name }}
+        -s db.host {{ vault_db_host }}
+        -s db.port {{ vault_db_port }}
+        -s db.passwd '{{ vault_passwd }}'
+        -s db.user {{ vault_db_user }}
+        -s db.db {{ vault_db }}
     - name: Deleting auxillary files
       file:
         state: absent
