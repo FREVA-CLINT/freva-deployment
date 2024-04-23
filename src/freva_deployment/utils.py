@@ -245,7 +245,9 @@ def get_email_credentials() -> tuple[str, str]:
     return username, password
 
 
-def get_passwd(foo: str, min_characters: int = 8) -> str:
+def get_passwd(
+    master_pass: Optional[str] = None, min_characters: int = 8
+) -> str:
     """Create a secure pasword.
 
     Parameters
@@ -261,23 +263,29 @@ def get_passwd(foo: str, min_characters: int = 8) -> str:
     msg = ""
     while True:
         try:
+            if master_pass:
+                return _passwd_is_good(master_pass, min_characters)
             return _create_passwd(min_characters, msg)
         except ValueError as e:
-            RichConsole.print(f"[red]{e.__str__()}[/]")
+            RichConsole.print(f"[red]{e}[/]")
             msg = "[b red]re-enter[/] master password"
+            master_pass = ""
 
 
-def _create_passwd(min_characters: int, msg: str = "") -> str:
-    """Create passwords."""
-    master_pass = Prompt.ask(msg or password_prompt, password=True)
+def _passwd_is_good(master_pass: str, min_characters: int) -> str:
+
     is_ok: bool = len(master_pass) > min_characters
     for check in ("[a-z]", "[A-Z]", "[0-9]"):
         if not re.search(check, master_pass):
             is_ok = False
             break
     forbidden_characters = ":/?#[]@%"
-    is_safe: bool = len([True for c in "[_$^&*-!]" if c in master_pass]) > 0
-    if is_ok is False or is_safe is False:
+    is_ok = is_ok and len([True for c in "[_$^&*-!]" if c in master_pass]) > 0
+    for character in forbidden_characters:
+        if character in master_pass:
+            is_ok = False
+            break
+    if not is_ok:
         raise ValueError(
             (
                 "Password must confirm the following constraints:\n"
@@ -287,12 +295,13 @@ def _create_passwd(min_characters: int, msg: str = "") -> str:
                 f"- must *not* not contain: {forbidden_characters}"
             )
         )
-    for character in forbidden_characters:
-        if character in master_pass:
-            raise ValueError(
-                "Your password must *not* contain the following "
-                f"characters: {forbidden_characters}"
-            )
+    return master_pass
+
+
+def _create_passwd(min_characters: int, msg: str = "") -> str:
+    """Create passwords."""
+    master_pass = Prompt.ask(msg or password_prompt, password=True)
+    _passwd_is_good(master_pass, min_characters)
     master_pass_2 = Prompt.ask(
         "[bold green]re-enter[/] master password", password=True
     )
