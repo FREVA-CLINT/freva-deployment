@@ -196,9 +196,7 @@ async def get_vault_status() -> JSONResponse:
 
 @app.post("/vault/{path}", tags=["Secrets"])
 async def update_secret(
-    path: Annotated[
-        str, Path(description="Secret location.", examples="test")
-    ],
+    path: Annotated[str, Path(description="Secret location.", example="test")],
     secret: Annotated[
         Optional[str],
         Query(
@@ -209,7 +207,7 @@ async def update_secret(
                 "key=value. Multiple secrets are ',' "
                 "comma separated."
             ),
-            examples="foo=bar,hoo=rohoo",
+            example="foo=bar,hoo=rohoo",
         ),
     ] = None,
     admin_pw: Annotated[
@@ -217,7 +215,7 @@ async def update_secret(
         Header(
             alias="password",
             description="Give the pre defined admin password.",
-            examples="password",
+            example="password",
             tile="Password",
         ),
     ] = None,
@@ -254,28 +252,24 @@ async def update_secret(
     )
 
 
-@app.get("/vault/data/{public_key}", tags=["Secrets"])
+@app.get("/vault/{path}/{public_key}", tags=["Secrets"])
 async def read_secret(
+    path: Annotated[
+        str,
+        Path(
+            description="The name of the k/v secrets path",
+            example="data",
+        ),
+    ],
     public_key: Annotated[
         str,
         Path(
             description="hexdigest representation of the sha512 freva public key.",
-            examples="foo",
+            example="foo",
         ),
-    ]
+    ],
 ) -> JSONResponse:
-    """Read evaulation system secrets from the vault.
-
-    Parameters
-    ----------
-    public_key: str
-        hexdigest representation of the sha512 freva public key.
-
-
-    Returns
-    -------
-    dict: A key-value paired dictionary containing the secrets.
-    """
+    """Read evaulation system secrets from the vault."""
     status_code = 400
     if len(public_key) != 128:  # This is not a checksum of a cert.
         text = f"But the vault is {Vault.vault_state}"
@@ -283,7 +277,7 @@ async def read_secret(
             detail=f"{random.choice(PHRASES)} {text}", status_code=status_code
         ) from None
     # Get the information from the vault
-    data = Vault.get_secret("read-eval")
+    data = Vault.get_secret(path)
     if data is not None:
         status_code = 200
     return JSONResponse(content=data or {}, status_code=status_code)
