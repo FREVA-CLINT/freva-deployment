@@ -39,7 +39,6 @@
         dest: "{{ core_root_dir | regex_replace('^~', ansible_env.HOME)}}/freva/web/freva_web_conf.toml"
         mode: "{{ '2664' if core_admin_group is defined else '2644' }}"
         group: "{{ core_admin_group if core_admin_group is defined else omit}}"
-      when: not web_config.stat.exists
 
 - hosts: web
 
@@ -50,6 +49,7 @@
     service_dir: "{{web_data_path|regex_replace('^~', ansible_env.HOME)}}/{{project_name}}/web_service"
     compose_file: "{{web_data_path|regex_replace('^~', ansible_env.HOME)}}/compose_services/{{web_name}}-compose.yml"
     static_folder: "{{web_data_path|regex_replace('^~', ansible_env.HOME)}}/{{project_name}}/web_service/static:/opt/freva_web/static:z"
+    web_config_file: "{{ core_root_dir | regex_replace('^~', ansible_env.HOME)}}/freva/web/freva_web_conf.toml"
     web_volumes:
       - "{{ core_root_dir | regex_replace('^~', ansible_env.HOME)}}:{{ core_root_dir | regex_replace('^~', ansible_env.HOME)}}:ro"
       - "{{ core_scheduler_output_dir|regex_replace('^~', ansible_env.HOME)}}:{{ core_scheduler_output_dir | regex_replace('^~', ansible_env.HOME)}}:ro"
@@ -59,8 +59,8 @@
       - "{{web_data_path|regex_replace('^~', ansible_env.HOME)}}/{{project_name}}/web_service/freva_web.conf:/usr/local/apache2/conf/httpd.conf:z"
       - "{{web_data_path|regex_replace('^~', ansible_env.HOME)}}/{{project_name}}/web_service/server-cert.crt:/etc/ssl/certs/server-cert.crt:z"
       - "{{web_data_path|regex_replace('^~', ansible_env.HOME)}}/{{project_name}}/web_service/server-key.key:/etc/ssl/private/server-key.key:z"
-      - "{{web_data_path|regex_replace('^~', ansible_env.HOME)}}/{{project_name}}/web_service/prepare-httpd:/usr/local/bin/prepare-httpd:z"
       - "{{web_data_path|regex_replace('^~', ansible_env.HOME)}}/{{project_name}}/web_service/static:/srv/static:z"
+      - "{{web_data_path|regex_replace('^~', ansible_env.HOME)}}/{{project_name}}/web_service/prepare-httpd:/usr/local/bin/prepare-httpd:z"
       - "{{ core_preview_path | regex_replace('^~', ansible_env.HOME)}}:/srv/static/preview:ro"
     redis_name: "{{ project_name }}-redis"
     apache_name: "{{project_name}}-httpd"
