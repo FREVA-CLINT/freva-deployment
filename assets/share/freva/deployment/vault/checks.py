@@ -25,6 +25,8 @@ def check_container(container_name: str = "vault") -> None:
                 "--net=host",
                 "-e",
                 "ROOT_PW=foo",
+                "-e",
+                "VERSION=0.0.0",
                 "-p",
                 "5002:5002",
                 container_name,
