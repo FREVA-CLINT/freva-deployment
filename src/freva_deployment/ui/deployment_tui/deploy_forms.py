@@ -117,9 +117,7 @@ class CoreScreen(BaseForm):
                 self.add_widget_intelligent(
                     npyscreen.TitleCombo,
                     name=f"{self.num}Workload manger",
-                    value=self.scheduler_index(
-                        cast(str, cfg.get("scheduler_system"))
-                    ),
+                    value=self.scheduler_index(cast(str, cfg.get("scheduler_system"))),
                     values=self.scheduler_systems,
                 ),
                 True,
@@ -190,9 +188,7 @@ class CoreScreen(BaseForm):
                 self.add_widget_intelligent(
                     npyscreen.TitleFilename,
                     name=f"{self.num}Python path on remote machine:",
-                    value=cfg.get(
-                        "ansible_python_interpreter", "/usr/bin/python3"
-                    ),
+                    value=cfg.get("ansible_python_interpreter", "/usr/bin/python3"),
                 ),
                 False,
             ),
@@ -382,9 +378,7 @@ class WebScreen(BaseForm):
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
                     name=f"{self.num}A brief describtion of the project:",
-                    value=cfg.get(
-                        "homepage_heading", "Lorem ipsum dolor sit amet"
-                    ),
+                    value=cfg.get("homepage_heading", "Lorem ipsum dolor sit amet"),
                 ),
                 True,
             ),
@@ -549,9 +543,7 @@ class WebScreen(BaseForm):
             ldap_model=(
                 self.add_widget_intelligent(
                     npyscreen.TitleCombo,
-                    name=(
-                        f"{self.num}Ldap tools class to be used for authentication."
-                    ),
+                    name=(f"{self.num}Ldap tools class to be used for authentication."),
                     value=current_ldab_model,
                     values=availalbe_ldab_models,
                 ),
@@ -583,9 +575,7 @@ class WebScreen(BaseForm):
                 self.add_widget_intelligent(
                     npyscreen.TitleFilename,
                     name=f"{self.num}Pythonpath on remote machine:",
-                    value=cfg.get(
-                        "ansible_python_interpreter", "/usr/bin/python3"
-                    ),
+                    value=cfg.get("ansible_python_interpreter", "/usr/bin/python3"),
                 ),
                 False,
             ),
@@ -663,9 +653,7 @@ class DBScreen(BaseForm):
             data_path=(
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
-                    name=(
-                        f"{self.num}Parent directory for any permanent data:"
-                    ),
+                    name=(f"{self.num}Parent directory for any permanent data:"),
                     value=cast(str, cfg.get("data_path", "/opt/freva")),
                 ),
                 True,
@@ -696,9 +684,7 @@ class DBScreen(BaseForm):
                 self.add_widget_intelligent(
                     npyscreen.TitleFilename,
                     name=f"{self.num}Pythonpath on remote machine:",
-                    value=cfg.get(
-                        "ansible_python_interpreter", "/usr/bin/python3"
-                    ),
+                    value=cfg.get("ansible_python_interpreter", "/usr/bin/python3"),
                 ),
                 False,
             ),
@@ -713,31 +699,31 @@ class DBScreen(BaseForm):
         )
 
 
-class DatabrowserScreen(BaseForm):
-    """Form for the databrowser deployment configuration."""
+class FrevaRestScreen(BaseForm):
+    """Form for the freva-rest deployment configuration."""
 
-    step: str = "databrowser"
+    step: str = "freva_rest"
 
     def _add_widgets(self) -> None:
         """Add widgets to the screen."""
         self.list_keys: list[str] = []
         cfg = self.get_config(self.step)
-        databrowser_ports: list[int] = list(range(7770, 7780))
+        freva_rest_ports: list[int] = list(range(7770, 7780))
         solr_mem_values = [f"{i}g" for i in range(1, 10)]
         solr_mem_select = get_index(
             solr_mem_values, cast(str, cfg.get("solr_mem", "4g")), 3
         )
-        databrowser_port_idx = get_index(
-            [str(p) for p in databrowser_ports],
-            str(cfg.get("databrowser_port", 7777)),
+        freva_rest_port_idx = get_index(
+            [str(p) for p in freva_rest_ports],
+            str(cfg.get("freva_rest_port", 7777)),
             7,
         )
         self.input_fields: dict[str, tuple[npyscreen.TitleText, bool]] = dict(
             hosts=(
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
-                    name=f"{self.num}Server Name(s) where the databrowser service is deployed:",
-                    value=self.get_host("databrowser"),
+                    name=f"{self.num}Server Name(s) where the freva-rest service is deployed:",
+                    value=self.get_host("freva_rest"),
                 ),
                 True,
             ),
@@ -761,12 +747,12 @@ class DatabrowserScreen(BaseForm):
                 ),
                 True,
             ),
-            databrowser_port=(
+            freva_rest_port=(
                 self.add_widget_intelligent(
                     npyscreen.TitleCombo,
-                    name=f"{self.num}Databrowser API port:",
-                    value=databrowser_port_idx,
-                    values=databrowser_ports,
+                    name=f"{self.num}Freva-rest API port:",
+                    value=freva_rest_port_idx,
+                    values=freva_rest_ports,
                 ),
                 True,
             ),
@@ -778,14 +764,14 @@ class DatabrowserScreen(BaseForm):
                 ),
                 True,
             ),
-            databrowser_playbook=(
+            freva_rest_playbook=(
                 self.add_widget_intelligent(
                     npyscreen.TitleFilename,
                     name=(
                         f"{self.num}Set the path to the playbook used for"
                         " setting up the system."
                     ),
-                    value=cfg.get("databrowser_playbook", ""),
+                    value=cfg.get("freva_rest_playbook", ""),
                 ),
                 False,
             ),
@@ -804,9 +790,7 @@ class DatabrowserScreen(BaseForm):
                 self.add_widget_intelligent(
                     npyscreen.TitleFilename,
                     name=f"{self.num}Pythonpath on remote machine:",
-                    value=cfg.get(
-                        "ansible_python_interpreter", "/usr/bin/python3"
-                    ),
+                    value=cfg.get("ansible_python_interpreter", "/usr/bin/python3"),
                 ),
                 False,
             ),
@@ -837,9 +821,7 @@ class RunForm(npyscreen.FormMultiPageAction):
 
         self.parentApp.thread_stop.set()
         if not self.project_name.value:
-            npyscreen.notify_confirm(
-                "You have to set a project name", title="ERROR"
-            )
+            npyscreen.notify_confirm("You have to set a project name", title="ERROR")
             return
         missing_form: None | str = self.parentApp.check_missing_config()
         if missing_form:
@@ -858,9 +840,7 @@ class RunForm(npyscreen.FormMultiPageAction):
         else:
             gen_keys = bool(self.gen_keys.value)
         for key_type, keyfile in cert_files.items():
-            key_file = Path(
-                get_current_file_dir(save_file.parent, str(keyfile))
-            )
+            key_file = Path(get_current_file_dir(save_file.parent, str(keyfile)))
             for step, deploy_form in self.parentApp._forms.items():
                 if not keyfile or not Path(key_file).is_file():
                     if (
@@ -869,11 +849,11 @@ class RunForm(npyscreen.FormMultiPageAction):
                         and gen_keys is False
                     ):
                         if keyfile:
-                            msg = f"{key_type} certificate file `{key_file}` must exist."
-                        else:
                             msg = (
-                                f"You must give a {key_type} certificate file."
+                                f"{key_type} certificate file `{key_file}` must exist."
                             )
+                        else:
+                            msg = f"You must give a {key_type} certificate file."
                         npyscreen.notify_confirm(msg, title="ERROR")
                         return
         _ = self.parentApp.save_config_to_file(

@@ -18,7 +18,7 @@ from freva_deployment.utils import asset_dir, config_dir, load_config
 from .base import BaseForm, VarForm, selectFile
 from .deploy_forms import (
     CoreScreen,
-    DatabrowserScreen,
+    FrevaRestScreen,
     DBScreen,
     RunForm,
     WebScreen,
@@ -53,14 +53,14 @@ class MainApp(npyscreen.NPSAppManaged):
         self._steps_lookup = {
             "core": "MAIN",
             "web": "SECOND",
-            "databrowser": "FOURTH",
+            "freva_rest": "FOURTH",
             "db": "THIRD",
         }
         save_file = cast(str, self._read_cache("save_file", ""))
         self.config = cast(Dict[str, Any], self._read_cache("config", {}))
         if save_file and Path(save_file).is_file():
             try:
-                self.config = tomlkit.loads(Path(save_file).read_text())
+                self.config = load_config(save_file)
             except Exception:
                 pass
         for step in self._steps_lookup.keys():
@@ -84,18 +84,12 @@ class MainApp(npyscreen.NPSAppManaged):
             CoreScreen,
             name="Core deployment",
         )
-        self._forms["web"] = self.addForm(
-            "SECOND", WebScreen, name="Web deployment"
+        self._forms["web"] = self.addForm("SECOND", WebScreen, name="Web deployment")
+        self._forms["db"] = self.addForm("THIRD", DBScreen, name="Database deployment")
+        self._forms["freva_rest"] = self.addForm(
+            "FOURTH", FrevaRestScreen, name="Freva Rest deployment"
         )
-        self._forms["db"] = self.addForm(
-            "THIRD", DBScreen, name="Database deployment"
-        )
-        self._forms["databrowser"] = self.addForm(
-            "FOURTH", DatabrowserScreen, name="Databrowser deployment"
-        )
-        self._setup_form = self.addForm(
-            "SETUP", RunForm, name="Apply the Deployment"
-        )
+        self._setup_form = self.addForm("SETUP", RunForm, name="Apply the Deployment")
 
     def exit_application(self, *args, **kwargs) -> None:
         value = npyscreen.notify_ok_cancel(
@@ -157,16 +151,13 @@ class MainApp(npyscreen.NPSAppManaged):
             the_selected_file = str(the_selected_file.expanduser().absolute())
             self.check_missing_config(stop_at_missing=False)
             self._setup_form.inventory_file.value = the_selected_file
-            self.save_config_to_file(
-                save_file=the_selected_file, write_toml_file=True
-            )
+            self.save_config_to_file(save_file=the_selected_file, write_toml_file=True)
 
     def _update_config(self, config_file: Path | str) -> None:
         """Update the main window after a new configuration has been loaded."""
 
         try:
-            with open(config_file) as f:
-                self.config = tomlkit.load(f)
+            self.config = load_config(config_file)
         except Exception:
             return
         self.resetHistory()
@@ -283,7 +274,7 @@ class MainApp(npyscreen.NPSAppManaged):
         """Read the deployment-steps from the cache."""
         return cast(
             List[str],
-            self._read_cache("steps", ["core", "web", "db", "databrowser"]),
+            self._read_cache("steps", ["core", "web", "db", "freva_rest"]),
         )
 
     def read_cert_file(self, key: str) -> str:

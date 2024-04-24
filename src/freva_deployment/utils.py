@@ -169,26 +169,38 @@ def _create_new_config(inp_file: Path) -> Path:
     create_backup = False
     config_tmpl = tomlkit.loads(AD.inventory_file.read_text())
     # Legacy solr:
-    if "solr" in config:
+    if "solr" in config or "databrowser" in config:
         create_backup = True
-        config["databrowser"] = config.pop("solr")
-        for key in ("port", "mem"):
-            if key in config["databrowser"]["config"]:
-                config["databrowser"]["config"][f"solr_{key}"] = config[
-                    "databrowser"
-                ]["config"].pop(key)
-    _update_config(config_tmpl, config)
+        if "solr" in config:
+            config["freva_rest"] = config.pop("solr")
+            for key in ("port", "mem"):
+                if key in config["freva_rest"]["config"]:
+                    config["freva_rest"]["config"][f"solr_{key}"] = config[
+                        "freva_rest"
+                    ]["config"].pop(key)
+        else:
+            config["freva_rest"] = config.pop("databrowser")
+            config["freva_rest"]["config"]["freva_rest_port"] = config[
+                "freva_rest"
+            ]["config"].pop("databrowser_port", "")
+            config["freva_rest"]["config"]["freva_rest_playbook"] = config[
+                "freva_rest"
+            ]["config"].pop("databrowser_playbook", "")
     if create_backup:
-        inp_file.with_suffix(inp_file.suffix + ".bck").write_text(
-            inp_file.read_text()
+        backup_file = inp_file.with_suffix(inp_file.suffix + ".bck")
+        logger.info(
+            "Updating config file, original config can be found in %s",
+            backup_file,
         )
-    inp_file.write_text(tomlkit.dumps(config_tmpl))
+        backup_file.write_text(inp_file.read_text())
+        _update_config(config_tmpl, config)
+        inp_file.write_text(tomlkit.dumps(config_tmpl))
     return inp_file
 
 
 def load_config(inp_file: str | Path) -> dict[str, Any]:
     """Load the inventory toml file and replace all environment variables."""
-    inp_file = Path(inp_file).expanduser().absolute()
+    inp_file = _create_new_config(Path(inp_file).expanduser().absolute())
     variables = cast(
         dict[str, str], tomlkit.loads(config_file.read_text())["variables"]
     )

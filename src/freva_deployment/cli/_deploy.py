@@ -37,8 +37,8 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
         "-s",
         type=str,
         nargs="+",
-        default=["db", "databrowser", "web", "core"],
-        choices=["web", "core", "db", "databrowser", "auto"],
+        default=["db", "freva-rest", "web", "core"],
+        choices=["web", "core", "db", "freva-rest", "auto"],
         help=(
             "The services/code stack to be deployed. Use [it]auto[/it]"
             " to only deploy outdated services"
@@ -89,7 +89,7 @@ def cli(argv: list[str] | None = None) -> None:
     args = parse_args(argv)
     set_log_level(args.verbose)
     with DeployFactory(
-        steps=args.steps,
+        steps=[s.replace("-", "_") for s in args.steps],
         config_file=args.config,
         local_debug=args.local,
         gen_keys=args.gen_keys,

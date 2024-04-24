@@ -9,12 +9,12 @@ services:
     network_mode: host
 {% else %}
     networks:
-      - {{databrowser_name}}
+      - {{freva_rest_name}}
 {% endif %}
     environment:
       - CORE=files
       - NUM_BACKUPS=7
-      - SOLR_HEAP={{databrowser_solr_mem}}
+      - SOLR_HEAP={{freva_rest_solr_mem}}
     volumes:
 {% for volume in solr_volumes %}
       - {{volume}}
@@ -25,14 +25,14 @@ services:
 
   {{mongo_name}}:
     user: "{{uid}}:{{gid}}"
-    image: mongo:latest
+    image: docker.io/mongo:latest
     container_name: {{mongo_name}}
     hostname: {{mongo_name}}
 {% if debug %}
     network_mode: host
 {% else %}
     networks:
-      - {{databrowser_name}}
+      - {{freva_rest_name}}
 {% endif %}
     environment:
       - MONGO_INITDB_ROOT_USERNAME=mongo
@@ -46,15 +46,15 @@ services:
       - 27017:27017
     tty: true
 
-  {{databrowser_name}}:
+  {{freva_rest_name}}:
     user: "{{uid}}:{{gid}}"
-    image: ghcr.io/freva-clint/databrowserapi:{{databrowser_version}}
-    hostname: {{databrowser_name}}
+    image: ghcr.io/freva-clint/freva-rest-api:{{freva_rest_version}}
+    hostname: {{freva_rest_name}}
 {% if debug %}
     network_mode: host
 {% else %}
     networks:
-      - {{databrowser_name}}
+      - {{freva_rest_name}}
 {% endif %}
     environment:
       - SOLR_CORE=files
@@ -69,8 +69,8 @@ services:
       - MONGO_DB=search_stats
       - MONGO_USER=mongo
     ports:
-      - {{databrowser_port}}:8080
-    container_name: {{databrowser_name}}
+      - {{freva_rest_port}}:8080
+    container_name: {{freva_rest_name}}
     depends_on:
       - {{solr_name}}
       - {{mongo_name}}
@@ -81,6 +81,6 @@ networks:
   hostnet:
     driver: host
 {% else %}
-  {{databrowser_name}}:
+  {{freva_rest_name}}:
     driver: bridge
 {% endif %}

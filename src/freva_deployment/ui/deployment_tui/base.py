@@ -82,9 +82,7 @@ def selectFile(starting_value: str = "", *args, **keywords):
     F.set_colors()
     F.wCommand.show_bold = True
     if starting_value:
-        if not os.path.exists(
-            os.path.abspath(os.path.expanduser(starting_value))
-        ):
+        if not os.path.exists(os.path.abspath(os.path.expanduser(starting_value))):
             F.value = os.getcwd()
         else:
             F.value = starting_value
@@ -200,6 +198,8 @@ class BaseForm(npyscreen.FormMultiPageWithMenus, npyscreen.FormWithMenus):
             if self.name.lower().startswith(step):
                 name = step
                 break
+            elif "rest" in self.name.lower():
+                name = "freva_rest"
             elif self.name.lower().startswith("database"):
                 name = "db"
                 break
@@ -225,9 +225,7 @@ class BaseForm(npyscreen.FormMultiPageWithMenus, npyscreen.FormWithMenus):
 
     def clear_cache(self):
         """Clear the app cache."""
-        with open(
-            self.parentApp.cache_dir / "freva_deployment.json", "w"
-        ) as f:
+        with open(self.parentApp.cache_dir / "freva_deployment.json", "w") as f:
             json.dump({}, f, indent=3)
         self.parentApp.reset()
 
@@ -270,7 +268,7 @@ class BaseForm(npyscreen.FormMultiPageWithMenus, npyscreen.FormWithMenus):
                 ("Web Deployment", self._change_form, "w", "w", ("SECOND",)),
                 ("DB Deployment", self._change_form, "d", "d", ("THIRD",)),
                 (
-                    "Databrowser Deployment",
+                    "Freva-Rest Deployment",
                     self._change_form,
                     "s",
                     "s",

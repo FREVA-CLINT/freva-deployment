@@ -26,10 +26,7 @@ project_name = "freva"
 public_keyfile = ""
 
 ## Path to the private key file
-privat_keyfile = ""
-
-## Path to the chain file
-chain_keyfile = ""
+private_keyfile = ""
 
 
 
@@ -49,8 +46,8 @@ hosts = "localhost"
 ## leading 0s:
 
 ## hosts = "db-[99:101]-node.example.com"
-[databrowser]
-## Set the host names running the databrowser service
+[freva_rest]
+## Set the host names running the freva-rest service
 hosts = "localhost"
 
 [db]
@@ -103,12 +100,12 @@ data_path = "/opt/freva"
 ## blank the system will used the default playbook (standard procedure)
 db_playbook = ""
 
-[databrowser.config]
+[freva_rest.config]
 # Set the memory for the solr server (solr is the search engine in the background)
 solr_mem = "4g"
 
-# Set the port the databrowser should be running on
-databrowser_port = 7777
+# Set the port the freva_rest should be running on
+freva_rest_port = 7777
 
 ## Set the become (sudo) user name to change to for installing the services
 ## leave blank to utilise a non privileged user based installation
@@ -125,7 +122,7 @@ ansible_user = "freva"
 ##(Useful for a truly fresh start) (default: False)
 wipe = false
 
-## Set the path where the permanent databrowser data should be stored.
+## Set the path where the permanent freva-rest data should be stored.
 ## By default this is set to /opt/freva
 data_path = "/opt/freva"
 
@@ -134,7 +131,7 @@ data_path = "/opt/freva"
 ## located in the user config directory.
 ## NOTE: only adjust this if you know what you are doing, if you leave this
 ## blank the system will used the default playbook (standard procedure)
-databrowser_playbook = ""
+freva_rest_playbook = ""
 
 
 

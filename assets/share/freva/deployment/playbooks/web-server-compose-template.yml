@@ -19,7 +19,7 @@ services:
       - DATABROWSER_HOST=127.0.0.1
       - FREVA_HOST=127.0.0.1
 {% else %}
-      - DATABROWSER_HOST={{web_databrowser_host}}
+      - DATABROWSER_HOST={{web_freva_rest_host}}
       - FREVA_HOST={{web_server_name}}
 {% endif %}
       - HTTPD_PORT={{web_port_httpd}}

@@ -28,7 +28,7 @@ def display_versions() -> str:
     """Get all service versions for display."""
     minimum_version = json.loads((Path(__file__).parent / "versions.json").read_text())
     lookup = {
-        "databrowser": "databrowserAPI",
+        "freva_rest": "freva-rest API",
         "core": "freva-core",
         "solr": "apache-solr",
         "web": "webUI",
@@ -54,7 +54,7 @@ def get_steps_from_versions(detected_versions: Dict[str, str]) -> List[str]:
     """
     minimum_version = json.loads((Path(__file__).parent / "versions.json").read_text())
     steps = []
-    lookup = {"solr": "databrowser", "vault": "db"}
+    lookup = {"solr": "freva_rest", "vault": "db"}
     for service, min_version in minimum_version.items():
         lookup.setdefault(service, service)
         min_version = minimum_version[service].strip("v")
