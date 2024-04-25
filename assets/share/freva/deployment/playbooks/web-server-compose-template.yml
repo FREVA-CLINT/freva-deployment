@@ -35,6 +35,11 @@ services:
   {{redis_name}}:
     user: {{uid}}:{{gid}}
     image: redis
+    volumes:
+{% for volume in redis_volumes %}
+      - {{volume}}
+{% endfor %}
+
 {% if debug %}
     network_mode: host
 {% else %}

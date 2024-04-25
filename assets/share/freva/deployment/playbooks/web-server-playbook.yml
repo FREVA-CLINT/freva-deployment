@@ -48,7 +48,6 @@
     become: "{{ web_ansible_become_user is defined and web_ansible_become_user != '' }}"
     service_dir: "{{web_data_path|regex_replace('^~', ansible_env.HOME)}}/{{project_name}}/web_service"
     compose_file: "{{web_data_path|regex_replace('^~', ansible_env.HOME)}}/compose_services/{{web_name}}-compose.yml"
-    static_folder: "{{web_data_path|regex_replace('^~', ansible_env.HOME)}}/{{project_name}}/web_service/static:/opt/freva_web/static:z"
     web_config_file: "{{ core_root_dir | regex_replace('^~', ansible_env.HOME)}}/freva/web/freva_web_conf.toml"
     web_volumes:
       - "{{ core_root_dir | regex_replace('^~', ansible_env.HOME)}}:{{ core_root_dir | regex_replace('^~', ansible_env.HOME)}}:ro"
@@ -62,6 +61,8 @@
       - "{{web_data_path|regex_replace('^~', ansible_env.HOME)}}/{{project_name}}/web_service/static:/srv/static:z"
       - "{{web_data_path|regex_replace('^~', ansible_env.HOME)}}/{{project_name}}/web_service/prepare-httpd:/usr/local/bin/prepare-httpd:z"
       - "{{ core_preview_path | regex_replace('^~', ansible_env.HOME)}}:/srv/static/preview:ro"
+    redis_volumes:
+      - "{{web_data_path|regex_replace('^~', ansible_env.HOME)}}/{{project_name}}/web_service/cache:/data:z"
     redis_name: "{{ project_name }}-redis"
     apache_name: "{{project_name}}-httpd"
     web_name: "{{project_name}}-web"
@@ -114,11 +115,14 @@
       register: data_path
     - name: Creating volume dir for web
       file:
-        path: "{{service_dir|regex_replace('^~', ansible_env.HOME)}}/static"
+        path: "{{service_dir|regex_replace('^~', ansible_env.HOME)}}/{{item}}"
         state: directory
         recurse: true
         owner: "{{uid}}"
         group: "{{gid}}"
+      with_items:
+        - "static"
+        - "cache"
     - name: Creating compose directory structure
       file:
         path: "{{web_data_path|regex_replace('^~', ansible_env.HOME)}}/compose_services"
