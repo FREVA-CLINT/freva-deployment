@@ -51,7 +51,7 @@ services:
     hostname: {{redis_name}}
 
   {{web_name}}:
-    user: {{uid}}:{{gid}}
+    user: root:0
     image: ghcr.io/freva-clint/freva-web:{{web_version}}
     container_name: {{web_name}}
     hostname: {{web_name}}
