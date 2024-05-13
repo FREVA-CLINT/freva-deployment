@@ -3,10 +3,10 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to freva admin documentation!
-=====================================
+The freva admin documentation!
+==============================
 
-.. image:: freva_flowchart-new.jpg
+.. image:: architecture/_static/freva_flowchart-new.jpg
    :width: 320
    :align: center
 
@@ -48,65 +48,29 @@ components of Freva work with each other is introduced. This is followed by a
 documentation on how to install the Freva deployment software. After this section
 basic deployment setup and servicing Freva will be introduced.
 
+.. note::
+
+    Please check :ref:`whatsnew` for any update announcments.
+
+
+
+
 .. toctree::
-   :maxdepth: 3
-   :caption: Contents:
+   :maxdepth: 2
 
-   Architecture
-   Folders
-   Installation
-   Configure
-   AfterDeployment
-   Services
-   TuiHowto
-   Transition
-   LegalNotes
-   modules
+   architecture/index
 
-Contributing to freva-deployment
-================================
+.. toctree::
+   :maxdepth: 2
 
-We welcome contributions from the community! Before you start contributing,
-please follow these steps to set up your development environment.
-Make sure you have the following prerequisites installed:
+   deployment/index
+.. toctree::
+   :maxdepth: 2
 
-- Python (>=3.x)
-- Git
-- Make
+   after-deployment/index
 
-.. code:: console
+.. toctree::
+   :maxdepth: 1
 
-    git clone https://github.com/FREVA-CLINT/freva-deployment.git
-    cd freva-deployment.git
-
-Development Workflow
---------------------
-
-We use a Makefile to manage common development tasks. Here are some useful
-commands:
-
-
-1. To install in development mode use:
-
-.. code:: console
-
-    make
-
-2. To reformat and do type checking:
-
-.. code:: console
-
-    make lint
-
-3. Generate the documentations:
-
-.. code:: console
-
-    make docs
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+   whatsnew
+   contributing

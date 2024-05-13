@@ -1,5 +1,6 @@
 """The Freva deployment Text User Interface (TUI) helps to configure a
 deployment setup for a new instance of freva."""
+
 from __future__ import annotations
 
 import json
@@ -12,10 +13,16 @@ import appdirs
 import npyscreen
 import tomlkit
 
-from freva_deployment.utils import asset_dir, config_dir
+from freva_deployment.utils import asset_dir, config_dir, load_config
 
 from .base import BaseForm, VarForm, selectFile
-from .deploy_forms import CoreScreen, DBScreen, RunForm, SolrScreen, WebScreen
+from .deploy_forms import (
+    CoreScreen,
+    DBScreen,
+    FrevaRestScreen,
+    RunForm,
+    WebScreen,
+)
 
 
 class MainApp(npyscreen.NPSAppManaged):
@@ -38,6 +45,7 @@ class MainApp(npyscreen.NPSAppManaged):
         self._forms: dict[str, BaseForm] = {}
         self.current_form = "core"
         self.init()
+        self._auto_save_active = False
         self.thread_stop = threading.Event()
         self.start_auto_save()
 
@@ -45,10 +53,16 @@ class MainApp(npyscreen.NPSAppManaged):
         self._steps_lookup = {
             "core": "MAIN",
             "web": "SECOND",
-            "solr": "FOURTH",
+            "freva_rest": "FOURTH",
             "db": "THIRD",
         }
+        save_file = cast(str, self._read_cache("save_file", ""))
         self.config = cast(Dict[str, Any], self._read_cache("config", {}))
+        if save_file and Path(save_file).is_file():
+            try:
+                self.config = load_config(save_file)
+            except Exception:
+                pass
         for step in self._steps_lookup.keys():
             self.config.setdefault(step, {"hosts": "", "config": {}})
         self._add_froms()
@@ -72,7 +86,9 @@ class MainApp(npyscreen.NPSAppManaged):
         )
         self._forms["web"] = self.addForm("SECOND", WebScreen, name="Web deployment")
         self._forms["db"] = self.addForm("THIRD", DBScreen, name="Database deployment")
-        self._forms["solr"] = self.addForm("FOURTH", SolrScreen, name="Solr deployment")
+        self._forms["freva_rest"] = self.addForm(
+            "FOURTH", FrevaRestScreen, name="Freva Rest deployment"
+        )
         self._setup_form = self.addForm("SETUP", RunForm, name="Apply the Deployment")
 
     def exit_application(self, *args, **kwargs) -> None:
@@ -81,6 +97,8 @@ class MainApp(npyscreen.NPSAppManaged):
         )
         if value is True:
             self.thread_stop.set()
+            while self._auto_save_active is True:
+                time.sleep(0.1)
             self.setNextForm(None)
             self.save_config_to_file(save_file=kwargs.get("save_file"))
             self.editing = False
@@ -105,12 +123,12 @@ class MainApp(npyscreen.NPSAppManaged):
             try:
                 self.config[step] = cfg
             except Exception as error:
-                raise ValueError((step, cfg))
-                raise error
+                raise ValueError((step, cfg)) from None
         return None
 
     def _auto_save(self) -> None:
         """Auto save the current configuration."""
+        self._auto_save_active = True
         while not self.thread_stop.is_set():
             time.sleep(0.5)
             if self.thread_stop.is_set():
@@ -120,6 +138,7 @@ class MainApp(npyscreen.NPSAppManaged):
                 self.save_config_to_file()
             except Exception:
                 pass
+        self._auto_save_active = False
 
     def save_dialog(self, *args, **kwargs) -> None:
         """Create a dialoge that allows for saving the config file."""
@@ -132,14 +151,13 @@ class MainApp(npyscreen.NPSAppManaged):
             the_selected_file = str(the_selected_file.expanduser().absolute())
             self.check_missing_config(stop_at_missing=False)
             self._setup_form.inventory_file.value = the_selected_file
-            self.save_config_to_file(write_toml_file=True)
+            self.save_config_to_file(save_file=the_selected_file, write_toml_file=True)
 
     def _update_config(self, config_file: Path | str) -> None:
         """Update the main window after a new configuration has been loaded."""
 
         try:
-            with open(config_file) as f:
-                self.config = tomlkit.load(f)
+            self.config = load_config(config_file)
         except Exception:
             return
         self.resetHistory()
@@ -167,11 +185,11 @@ class MainApp(npyscreen.NPSAppManaged):
                 title="Error",
                 message=f"Couldn't save config:\n{error}",
             )
-        return None
+            raise
 
     def get_save_file(self, save_file: Path | None = None) -> str:
         """Get the name of the file where the config should be stored to."""
-        cache_file = self.cache_dir / ".temp_file.toml"
+        cache_file = self.cache_dir / "temp_file.toml"
         if save_file:
             save_file = Path(save_file).expanduser().absolute()
         return str(save_file or cache_file)
@@ -184,35 +202,43 @@ class MainApp(npyscreen.NPSAppManaged):
         cert_files = dict(
             public_keyfile=self._setup_form.public_keyfile.value or "",
             private_keyfile=self._setup_form.private_keyfile.value or "",
-            chain_keyfile=self._setup_form.chain_keyfile.value or "",
         )
         for key, value in cert_files.items():
             if value and "cfd" not in value.lower():
                 cert_files[key] = str(Path(value).expanduser().absolute())
         project_name = self._setup_form.project_name.value
-        server_map = self._setup_form.server_map.value
-        ssh_pw = self._setup_form.use_ssh_pw.value
-        if isinstance(ssh_pw, list):
-            ssh_pw = bool(ssh_pw[0])
+        bools = {}
+        for key, value in (
+            ("ssh_pw", self._setup_form.use_ssh_pw.value),
+            ("local_debug", self._setup_form.local_debug.value),
+            ("gen_keys", self._setup_form.gen_keys.value),
+        ):
+            if isinstance(value, list):
+                bools[key] = bool(value[0])
+            else:
+                bools[key] = bool(value)
+        try:
+            ssh_port = int(self._setup_form.ssh_port.value)
+        except ValueError:
+            ssh_port = 22
         self.config["certificates"] = cert_files
         self.config["project_name"] = project_name or ""
         config = {
-            "save_file": self.get_save_file(save_file),
-            "steps": self.steps,
-            "ssh_pw": ssh_pw,
-            "server_map": server_map,
-            "config": self.config,
+            **bools,
+            **{
+                "save_file": str(save_file or ""),
+                "steps": self.steps,
+                "ssh_port": ssh_port,
+                "config": self.config,
+            },
         }
         with open(self.cache_dir / "freva_deployment.json", "w") as f:
             json.dump({k: v for (k, v) in config.items()}, f, indent=3)
         if write_toml_file is False:
             return None
+
         try:
-            with open(self.save_file) as f:
-                config_tmpl = cast(Dict[str, Any], tomlkit.load(f))
-        except FileNotFoundError:
-            with open(asset_dir / "config" / "inventory.toml") as f:
-                config_tmpl = cast(Dict[str, Any], tomlkit.load(f))
+            config_tmpl = load_config(asset_dir / "config" / "inventory.toml")
         except Exception:
             config_tmpl = self.config
         config_tmpl["certificates"] = cert_files
@@ -246,7 +272,10 @@ class MainApp(npyscreen.NPSAppManaged):
     @property
     def _steps(self) -> list[str]:
         """Read the deployment-steps from the cache."""
-        return cast(List[str], self._read_cache("steps", ["core", "web", "db", "solr"]))
+        return cast(
+            List[str],
+            self._read_cache("steps", ["core", "web", "db", "freva_rest"]),
+        )
 
     def read_cert_file(self, key: str) -> str:
         """Read the certificate file from the cache."""

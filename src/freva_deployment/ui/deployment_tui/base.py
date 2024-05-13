@@ -156,8 +156,6 @@ class BaseForm(npyscreen.FormMultiPageWithMenus, npyscreen.FormWithMenus):
                     msg = f"MISSING ENTRY FOR {self.step}: {obj.name}"
                     npyscreen.notify_confirm(msg, title="ERROR")
                     return None
-                elif not value and not mandatory:
-                    continue
             config[key] = value
         cfg = dict(hosts=config.pop("hosts"))
         cfg["config"] = config
@@ -200,6 +198,8 @@ class BaseForm(npyscreen.FormMultiPageWithMenus, npyscreen.FormWithMenus):
             if self.name.lower().startswith(step):
                 name = step
                 break
+            elif "rest" in self.name.lower():
+                name = "freva_rest"
             elif self.name.lower().startswith("database"):
                 name = "db"
                 break
@@ -239,9 +239,9 @@ class BaseForm(npyscreen.FormMultiPageWithMenus, npyscreen.FormWithMenus):
 
     def create(self) -> None:
         """Setup the form."""
-        self.how_exited_handers[
-            npyscreen.wgwidget.EXITED_ESCAPE
-        ] = self.parentApp.exit_application
+        self.how_exited_handers[npyscreen.wgwidget.EXITED_ESCAPE] = (
+            self.parentApp.exit_application
+        )
         self.add_handlers({"^O": self.parentApp.load_dialog})
         self.add_handlers({"^S": self.parentApp.save_dialog})
         self.add_handlers({"^K": self.previews_form})
@@ -267,7 +267,13 @@ class BaseForm(npyscreen.FormMultiPageWithMenus, npyscreen.FormWithMenus):
                 ("Core Deployment", self._change_form, "c", "c", ("MAIN",)),
                 ("Web Deployment", self._change_form, "w", "w", ("SECOND",)),
                 ("DB Deployment", self._change_form, "d", "d", ("THIRD",)),
-                ("Solr Deployment", self._change_form, "s", "s", ("FOURTH",)),
+                (
+                    "Freva-Rest Deployment",
+                    self._change_form,
+                    "s",
+                    "s",
+                    ("FOURTH",),
+                ),
                 ("Run Deployment", self.run_deployment, "^R"),
             ]
         )

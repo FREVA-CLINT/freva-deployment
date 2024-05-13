@@ -1,25 +1,19 @@
 ---
 - hosts: vault
+  become: "{{ vault_ansible_become_user is defined and vault_ansible_become_user != '' }}"
   vars:
     ansible_python_interpreter: "{{ vault_ansible_python_interpreter }}"
-    use_become: "{{ vault_ansible_become_user is defined and vault_ansible_become_user != '' }}"
   tasks:
     - name: Copying docker/podman wrapper script
       copy:
         src: "{{ asset_dir }}/scripts/docker-or-podman"
         dest: /tmp/docker-or-podman
         mode: "0775"
-    - name: Deleting existing email secrets
-      become: "{{use_become}}"
-      shell: >
-        /tmp/docker-or-podman exec -it {{ vault_name }}
-        vault kv delete kv/email
     - name: Inserting email secrets
-      become: "{{use_become}}"
       shell: >
-        /tmp/docker-or-podman exec -it {{ vault_name }}
-        vault kv put kv/email username={{vault_email_user}}
-        password='{{vault_email_password}}'
+        /tmp/docker-or-podman exec {{ vault_name }} add-vault-secret email
+        -s username {{vault_email_user}}
+        -s password '{{vault_email_password}}'
     - name: Deleting tmporary files
       file:
         path: "{{item}}"
@@ -28,72 +22,64 @@
         - /tmp/create_systemd.py
         - /tmp/docker-or-podman
 - hosts: core
+  become: "{{ core_ansible_become_user is defined and core_ansible_become_user != '' }}"
   vars:
     ansible_python_interpreter: "{{ core_ansible_python_interpreter }}"
     ansible_become_user: "{{ core_ansible_become_user if core_ansible_become_user is defined else 'root' }}"
-    use_become: "{{ core_ansible_become_user is defined and core_ansible_become_user != '' }}"
   tasks:
-    - name: Creating share directory with admin group
+    - name: Creating share directory
       file:
-        path: "{{core_root_dir}}/freva/web"
+        path: "{{core_root_dir|regex_replace('^~', ansible_env.HOME)}}/freva/web"
         state: directory
-        mode: "2775"
-        group: "{{core_admin_group}}"
-      become: "{{use_become}}"
-      when: core_admin_group is defined
-    - name: Creating share directory without admin group
-      file:
-        path: "{{core_root_dir}}/freva/web"
-        state: directory
-        mode: "2775"
-        recurse: true
-      become: "{{use_become}}"
-      when: core_admin_group is not defined
+        mode: "{{ '2775' if core_admin_group is defined else '2755' }}"
+        group: "{{ core_admin_group if core_admin_group is defined else omit }}"
     - name: Adding freva web config to the core structure
       copy:
-        src: "{{ core_config_toml_file }}"
-        dest: "{{ core_root_dir }}/freva/web/freva_web_conf.toml"
-        mode: "2775"
-      become: "{{use_become}}"
+        src: "{{ core_config_toml_file | regex_replace('^~', ansible_env.HOME)}}"
+        dest: "{{ core_root_dir | regex_replace('^~', ansible_env.HOME)}}/freva/web/freva_web_conf.toml"
+        mode: "{{ '2664' if core_admin_group is defined else '2644' }}"
+        group: "{{ core_admin_group if core_admin_group is defined else omit}}"
 
 - hosts: web
 
+  become: "{{ web_ansible_become_user is defined and web_ansible_become_user != '' }}"
   vars:
     ansible_python_interpreter: "{{ web_ansible_python_interpreter }}"
-    service_dir: /opt/freva/{{project_name}}/web_service
-    docker_web_cmd: >
-        -p 8000:8000
-        --rm
-        -v {{ core_root_dir }}:{{ core_root_dir }}:ro
-        -v {{ core_scheduler_output_dir}}:{{ core_scheduler_output_dir }}:ro
-        -v /opt/freva/{{project_name}}/web_service/static:/opt/freva_web/static:z
-        -v {{core_base_dir_location}}:{{core_base_dir_location}}:ro
-        -e EVALUATION_SYSTEM_CONFIG_FILE={{core_root_dir}}/freva/evaluation_system.conf
-        -e LDAP_USER_DN={{web_ldap_user_dn}}
-        -e LDAP_USER_PW={{web_ldap_user_pw}}
-        -e DJANGO_SUPERUSER_PASSWORD={{ root_passwd }}
-        --name {{web_name}}
-        -t ghcr.io/freva-clint/freva-web
-    docker_apache_cmd: >
-        -v /opt/freva/{{project_name}}/web_service/freva_web.conf:/usr/local/apache2/conf/httpd.conf:z
-        -v /opt/freva/{{project_name}}/web_service/server-cert.crt:/etc/ssl/certs/server-cert.crt:z
-        -v /opt/freva/{{project_name}}/web_service/server-key.key:/etc/ssl/private/server-key.key:z
-        -v /opt/freva/{{project_name}}/web_service/cacert.pem:/etc/ssl/certs/cacert.pem:z
-        -v /opt/freva/{{project_name}}/web_service/static:/srv/static:z
-        -v /opt/freva/{{project_name}}/web_service/prepare-httpd:/usr/local/bin/prepare-httpd:z
-        -v {{ core_preview_path }}:/srv/static/preview:z
-        --rm
-        -e SCHEDULER_DIR={{core_scheduler_output_dir}}
-        -e UID=$(id -u {{ansible_user}})
-        -e GID=$(id -g {{ansible_user}})
-        --name "{{project_name}}-httpd"
-        --security-opt label=disable
-        -e FREVA_HOST="{{web_server_name}}" -p 80:80 -p 443:443
-        httpd:latest /usr/local/bin/prepare-httpd
+    become: "{{ web_ansible_become_user is defined and web_ansible_become_user != '' }}"
+    service_dir: "{{web_data_path|regex_replace('^~', ansible_env.HOME)}}/{{project_name}}/web_service"
+    compose_file: "{{web_data_path|regex_replace('^~', ansible_env.HOME)}}/compose_services/{{web_name}}-compose.yml"
+    web_config_file: "{{ core_root_dir | regex_replace('^~', ansible_env.HOME)}}/freva/web/freva_web_conf.toml"
+    web_volumes:
+      - "{{ core_root_dir | regex_replace('^~', ansible_env.HOME)}}:{{ core_root_dir | regex_replace('^~', ansible_env.HOME)}}:ro"
+      - "{{ core_scheduler_output_dir|regex_replace('^~', ansible_env.HOME)}}:{{ core_scheduler_output_dir | regex_replace('^~', ansible_env.HOME)}}:ro"
+      - "{{web_data_path|regex_replace('^~', ansible_env.HOME)}}/{{project_name}}/web_service/static:/opt/freva_web/static:z"
+      - "{{core_base_dir_location|regex_replace('^~', ansible_env.HOME)}}:{{core_base_dir_location|regex_replace('^~', ansible_env.HOME)}}:ro"
+    apache_volumes:
+      - "{{web_data_path|regex_replace('^~', ansible_env.HOME)}}/{{project_name}}/web_service/freva_web.conf:/usr/local/apache2/conf/httpd.conf:z"
+      - "{{web_data_path|regex_replace('^~', ansible_env.HOME)}}/{{project_name}}/web_service/server-cert.crt:/etc/ssl/certs/server-cert.crt:z"
+      - "{{web_data_path|regex_replace('^~', ansible_env.HOME)}}/{{project_name}}/web_service/server-key.key:/etc/ssl/private/server-key.key:z"
+      - "{{web_data_path|regex_replace('^~', ansible_env.HOME)}}/{{project_name}}/web_service/static:/srv/static:z"
+      - "{{web_data_path|regex_replace('^~', ansible_env.HOME)}}/{{project_name}}/web_service/prepare-httpd:/usr/local/bin/prepare-httpd:z"
+      - "{{ core_preview_path | regex_replace('^~', ansible_env.HOME)}}:/srv/static/preview:ro"
+    redis_volumes:
+      - "{{web_data_path|regex_replace('^~', ansible_env.HOME)}}/{{project_name}}/web_service/cache:/data:z"
     redis_name: "{{ project_name }}-redis"
     apache_name: "{{project_name}}-httpd"
-    use_become: "{{ web_ansible_become_user is defined and web_ansible_become_user != '' }}"
+    web_name: "{{project_name}}-web"
+    ansible_become_user: "{{ web_ansible_become_user if web_ansible_become_user is defined else 'root' }}"
+    web_port_httpd: "{{ '80' if web_ansible_become_user == 'root' or ansible_user == 'root' else '9080' }}"
+    web_port_httpsd: "{{ '443' if web_ansible_become_user == 'root' or ansible_user == 'root'  else '9443' }}"
   tasks:
+    - name: Get UID
+      command: id -u {{ ansible_user }}
+      register: uid_result
+    - name: Get GID
+      command: id -g {{ ansible_user }}
+      register: gid_result
+    - name: Set UID and GID as facts
+      set_fact:
+        uid: "{{ uid_result.stdout }}"
+        gid: "{{ gid_result.stdout }}"
     - name: Copying docker/podman wrapper script
       copy:
         src: "{{ asset_dir }}/scripts/docker-or-podman"
@@ -101,7 +87,7 @@
         mode: "0775"
     - name: Getting register to core dir
       stat:
-        path: "{{ core_root_dir }}/freva/evaluation_system.conf"
+        path: "{{ core_root_dir | regex_replace('^~', ansible_env.HOME)}}/freva/evaluation_system.conf"
       register: core
     - name: Registering systemctl path
       stat:
@@ -116,77 +102,81 @@
       when: core.stat.exists == false
     - name: Stopping services
       shell: >
-        systemctl stop {{ web_name }};
-        systemctl stop {{ redis_name }};
-        systemctl stop {{ apache_name }};
-        /tmp/docker-or-podman stop {{web_name}};
-        /tmp/docker-or-podman rm {{web_name}};
-        /tmp/docker-or-podman stop {{redis_name}};
-        /tmp/docker-or-podman rm {{redis_name}};
-        /tmp/docker-or-podman stop {{apache_name}};
-        /tmp/docker-or-podman rm {{apache_name}};
-        /tmp/docker-or-podman rmi -f docker.io/redis;
-        /tmp/docker-or-podman rmi -f ghcr.io/freva-clint/freva-web;
-        /tmp/docker-or-podman rmi -f docker.io/httpd; echo 0
+        systemctl stop {{ web_name }} {{ redis_name }} {{ apache_name }};
+        systemctl disable {{ web_name }} {{ redis_name }} {{ apache_name }};
+        systemctl reset-failed;
+        /tmp/docker-or-podman stop {{web_name}} {{apache_name}} {{redis_name}};
+        /tmp/docker-or-podman rm -f {{web_name}} {{redis_name}} {{apache_name}};
+        echo 0
       ignore_errors: true
-      become: "{{use_become}}"
-    - name: Deleting existing web-directory
-      file:
-        state: absent
-        path: "{{service_dir}}"
-      become: "{{use_become}}"
+    - name: Registering web data path
+      stat:
+        path: "{{service_dir|regex_replace('^~', ansible_env.HOME)}}"
+      register: data_path
     - name: Creating volume dir for web
-      become: "{{use_become}}"
       file:
-        path: "{{service_dir}}/static"
+        path: "{{service_dir|regex_replace('^~', ansible_env.HOME)}}/{{item}}"
         state: directory
-    - name: Copying httpd entrypoint script
-      become: "{{use_become}}"
-      copy:
-        src: "{{ asset_dir }}/scripts/prepare-httpd"
-        dest: "/opt/freva/{{project_name}}/web_service/prepare-httpd"
-        mode: "0775"
-    - name: Copying key files files
-      become: "{{use_become}}"
+        recurse: true
+        owner: "{{uid}}"
+        group: "{{gid}}"
+      with_items:
+        - "static"
+        - "cache"
+    - name: Creating compose directory structure
+      file:
+        path: "{{web_data_path|regex_replace('^~', ansible_env.HOME)}}/compose_services"
+        state: directory
+        recurse: true
+    - name: Copying  httpd files
       copy:
         src: "{{item.src}}"
         dest: "{{item.dest}}"
+        mode: "0775"
+        owner: "{{uid}}"
+        group: "{{gid}}"
       with_items:
-        - {src: "{{web_apache_config_file}}",
-           dest: "{{service_dir}}/freva_web.conf"}
-        - {src: "{{web_public_keyfile}}",
-           dest: "{{service_dir}}/server-cert.crt"}
-        - {src: "{{web_private_keyfile}}",
-           dest: "{{service_dir}}/server-key.key"}
-        - {src: "{{web_chain_keyfile}}",
-           dest: "{{service_dir}}/cacert.pem"}
+        - {src: "{{web_apache_config_file|regex_replace('^~', ansible_env.HOME)}}",
+           dest: "{{service_dir|regex_replace('^~', ansible_env.HOME)}}/freva_web.conf"}
+        - {src: "{{web_public_keyfile|regex_replace('^~', ansible_env.HOME)}}",
+           dest: "{{service_dir|regex_replace('^~', ansible_env.HOME)}}/server-cert.crt"}
+        - {src: "{{web_private_keyfile|regex_replace('^~', ansible_env.HOME)}}",
+           dest: "{{service_dir|regex_replace('^~', ansible_env.HOME)}}/server-key.key"}
+        - {src: "{{ asset_dir }}/scripts/prepare-httpd",
+           dest: "{{web_data_path|regex_replace('^~', ansible_env.HOME)}}/{{project_name}}/web_service/prepare-httpd"}
     - name: Pulling containers
-      become: "{{use_become}}"
       shell:
-        cmd: /tmp/docker-or-podman pull {{item}}
+        cmd: /tmp/docker-or-podman pull {{ item }}
       with_items:
         - "docker.io/redis:latest"
+        - "ghcr.io/freva-clint/freva-web:{{web_version}}"
         - "docker.io/httpd:latest"
-        - "ghcr.io/freva-clint/freva-web"
     - name: Copying systemd files
       copy:
         src: "{{ asset_dir }}/scripts/create_systemd.py"
         dest: /tmp/create_systemd.py
         mode: "0755"
+    - name: Creating compose file
+      template:
+        src: "{{ asset_dir }}/playbooks/web-server-compose-template.yml"
+        dest: "{{compose_file}}"
+    - name: Deleting potential exsiting containers
+      shell:
+        cmd: /tmp/docker-or-podman rm -f {{web_name}} {{redis_name}} {{apache_name}}
     - name: Creating system services
-      become: "{{use_become}}"
       shell: |
-          /tmp/create_systemd.py {{redis_name}} run --name {{redis_name}} --rm -p 6379:6379 redis:latest
-          /tmp/create_systemd.py {{apache_name}} run "{{docker_apache_cmd}}"
-          /tmp/create_systemd.py {{web_name}} run "{{docker_web_cmd}}" --requires {{redis_name}} {{apache_name}} --enable
+        /tmp/create_systemd.py {{web_name}} compose --enable --project-name {{web_name}} -f {{compose_file}} up --remove-orphans
+      environment:
+        DEBUG: '{{ debug }}'
       when: systemctl.stat.exists == true
     - pause: seconds=15
     - name: Restarting services
-      become: "{{use_become}}"
-      shell: systemctl restart {{item}}
-      with_items:
-        - "{{apache_name}}"
-        - "{{web_name}}"
+      shell: >
+         {% if (become == true and ansible_become_user == 'root') or ansible_user == 'root' %}
+            systemctl restart {{ web_name }}
+         {% else %}
+            systemctl --user restart {{ web_name }}
+         {% endif %}
       when: systemctl.stat.exists == true
     - name: Deleting tmporary files
       file:
@@ -196,3 +186,12 @@
         - /tmp/{{project_name}}_web
         - /tmp/create_systemd.py
         - /tmp/docker-or-podman
+    - name: Display message about Apache HTTPD ports
+      debug:
+        msg: >
+          Apache HTTPD is deployed on port {{ web_port_httpd }} instead of 80
+          and {{ web_port_httpsd }} instead of 443.
+          Since you are not running as root, consider setting up a reverse proxy
+          to forward connections from port 80 and 443 to ports {{ web_port_httpd }}
+          and {{ web_port_httpsd }} respectively.
+      when: ansible_become_user != 'root'

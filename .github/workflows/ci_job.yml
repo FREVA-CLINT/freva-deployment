@@ -1,17 +1,14 @@
 name: CLI Test
-run-name: ${{ github.actor }} is tesing the cli 🧉
+run-name: ${{ github.actor }} is testing the cli 🧉
 
-# Set the access for individual scopes, or use permissions: write-all
-permissions:
-  pull-requests: write
-on: [push, pull_request]
+on: [push, workflow_call]
 jobs:
-  lint:
+  linting-and-testing:
     runs-on: ubuntu-latest
     steps:
     -
       name: Checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
     -
       name: Set up Python 3.11
       uses: actions/setup-python@v4
@@ -20,56 +17,35 @@ jobs:
     -
       name: Install packages
       run: |
-        python3 -m pip install -e .[test]
+        python3 -m pip install tox
         mkdir .mypy_cache
     -
-      name: formating
-      run: isort -c --profile black -t py311 -l 79 src
-    -
-      name: type checking
-      run: mypy --install-types --non-interactive
+      name: Running tests with tox
+      run: tox -p 3 --parallel-no-spinner
 
-  cli_test:
+  vault-test:
+    name: Simple functional tests for the vault image
     runs-on: ubuntu-latest
     steps:
-    -
-      name: Checkout
-      uses: actions/checkout@v3
-    -
-      name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: "3.x"
-    -
-      name: Install packages
-      run: |
-        python3 -m pip install .
-    -
-      name: deploy-freva-cmd command checks
-      run: deploy-freva-cmd --help
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    - name: deploy-freva command check
-      run: deploy-freva --help
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
 
-  dependabot:
-    name: Merge PR by dependabot
-    runs-on: ubuntu-latest
-    needs: [cli_test, lint]
-    # Specifically check that dependabot (or another trusted party) created this pull-request, and that it has been labelled correctly.
-    if: github.event.pull_request.user.login == 'dependabot[bot]'
-    steps:
-      - name: Dependabot metadata
-        id: metadata
-        uses: dependabot/fetch-metadata@v1
+      - name: Build vault image
+        uses: docker/build-push-action@v4
         with:
-          github-token: "${{ secrets.GITHUB_TOKEN }}"
-      - name: Approve dependabot's PR
-        run: gh pr review --approve "$PR_URL"
-        env:
-          PR_URL: ${{github.event.pull_request.html_url}}
-          GITHUB_TOKEN: ${{secrets.TOKEN}}
-      - name: Auto-merge for dependabot's PR
-        run: gh pr merge --merge --auto "$PR_URL"
-        env:
-          PR_URL: ${{github.event.pull_request.html_url}}
-          GITHUB_TOKEN: ${{secrets.TOKEN}}
+          context: assets/share/freva/deployment/vault/
+          platforms: linux/amd64
+          push: false
+          load: true
+          tags: vault
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.x"
+
+      - name: Check vault image
+        run: python3 assets/share/freva/deployment/vault/checks.py

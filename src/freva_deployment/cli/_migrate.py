@@ -1,4 +1,5 @@
 """CLI to assist with migrating the system."""
+
 from __future__ import annotations
 
 import argparse
@@ -17,14 +18,8 @@ import toml
 
 from freva_deployment import __version__
 
-from ..utils import (
-    download_server_map,
-    get_setup_for_service,
-    guess_map_server,
-    logger,
-    read_db_credentials,
-    set_log_level,
-)
+from ..logger import logger, set_log_level
+from ..utils import read_db_credentials
 
 DUMP_SCRIPT = """#!{python_bin}
 import json
@@ -140,7 +135,9 @@ def _migrate_db(parser: argparse.Namespace) -> None:
 
 def _migrate_drs(parser: argparse.Namespace) -> None:
     python_path = parser.python_path or _get_python_path_from_env()
-    config = json.loads(execute_script_and_get_config(python_path, DUMP_SCRIPT))
+    config = json.loads(
+        execute_script_and_get_config(python_path, DUMP_SCRIPT)
+    )
     logger.debug("Writing toml file to drs_config.toml")
     this_file = (Path(".") / "drs_config.toml").absolute()
     with open(this_file, "w") as f_obj:
@@ -171,7 +168,9 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         action="version",
         version="%(prog)s {version}".format(version=__version__),
     )
-    subparsers = parser.add_subparsers(help="Migration commands:", required=True)
+    subparsers = parser.add_subparsers(
+        help="Migration commands:", required=True
+    )
     db_parser = subparsers.add_parser(
         "database",
         description="Freva database migration",

@@ -1,141 +1,147 @@
 ---
 - hosts: core
 
+  become: "{{ core_ansible_become_user is defined and core_ansible_become_user != '' }}"
   vars:
     ansible_python_interpreter: "{{ core_ansible_python_interpreter }}"
-    ansible_become_user: >
-        "{{ core_ansible_become_user
-        if core_ansible_become_user is defined else 'root' }}"
+    conda_bin: "{{ core_install_dir | regex_replace('^~', ansible_env.HOME) }}/bin"
+    pkg_mgr: "conda"
+    ansible_become_user: "{{ core_ansible_become_user  | default('root')}}"
     allow_world_readable_tmpfiles: true
-    use_become: "{{ core_ansible_become_user is defined and core_ansible_become_user != '' }}"
     conda_exec_path: >
         "{{ core_conda_exec_path
         if core_conda_exec_path is defined else '' }}"
     eval_path: "freva/evaluation_system.conf"
   tasks:
-    - name: Cleaning up temporary files
-      file:
-        state: absent
-        path: /tmp/evaluation_system
+    - name: Creating temp. dir
+      tempfile:
+        state: directory
+        prefix: evaluation_system
+      register: tempdir
     - name: Cloning the evluation_system reposiotry
       git:
         repo: "{{ core_git_url }}"
-        dest: /tmp/evaluation_system
-        executable: "{{core_git_path}}"
-      become: "{{use_become}}"
+        dest: "{{tempdir.path}}"
+        executable: "{{core_git_path | regex_replace('^~', ansible_env.HOME)}}"
+    - name: Getting status of the conda env
+      stat:
+        path: "{{ core_install_dir | regex_replace('^~', ansible_env.HOME)}}/bin/freva"
+      register: freva_path
+    - name: Installing temp micromamba
+      shell:
+        cmd: "curl -Ls https://micro.mamba.pm/api/micromamba/{{core_arch}}/latest | tar -xvj bin/micromamba"
+        chdir: "{{tempdir.path}}"
+      when: not freva_path.stat.exists
+    - name: Installing freva
+      command:
+        cmd: "bin/micromamba env create -y -q -p {{core_install_dir}} -c conda-forge freva={{core_version}} mamba conda"
+        chdir: "{{tempdir.path}}"
+        creates: "{{core_install_dir|regex_replace('^~', ansible_env.HOME)}}/bin/freva"
+      when: not freva_path.stat.exists
+    - name: Check if mamba exists
+      stat:
+        path: "{{ core_install_dir | regex_replace('^~', ansible_env.HOME)}}/bin/mamba"
+      register: mamba_check
+    - name: Set variable for package manager
+      set_fact:
+        pkg_mgr: "mamba"
+      when: mamba_check.stat.exists
+    - name: Updating existing freva
+      shell:
+        cmd: "{{conda_bin}}/{{pkg_mgr}} update -y -q -p {{core_install_dir}} -c conda-forge freva"
+      environment:
+        PATH: "{{conda_bin}}"
+      when: freva_path.stat.exists
     - name: Preparing creation of directory structure
       file:
-        path: "{{ core_root_dir }}"
+        path: "{{ core_root_dir | regex_replace('^~', ansible_env.HOME) }}"
         state: directory
-    - name: Creating directory structure with admin group
+    - name: Creating directory structure
       file:
         path: "{{ item }}"
         state: directory
-        mode: "2775"
-        group: "{{core_admin_group}}"
+        mode: "{{ '2775' if core_admin_group is defined else '2755' }}"
+        group: "{{ core_admin_group if core_admin_group is defined else omit}}"
       with_items:
-        - "{{ core_root_dir }}/freva/"
-        - "{{ core_root_dir }}/plugins/"
-      become: "{{use_become}}"
-      when: core_admin_group is defined
-    - name: Creating directory structure without admin group
-      file:
-        path: "{{ item }}"
-        state: directory
-        mode: "2775"
-      with_items:
-        - "{{ core_root_dir }}/freva/"
-        - "{{ core_root_dir }}/plugins/"
-      become: "{{use_become}}"
-      when: core_admin_group is not defined
+        - "{{ core_root_dir | regex_replace('^~', ansible_env.HOME) }}/freva/"
+        - "{{ core_root_dir | regex_replace('^~', ansible_env.HOME) }}/plugins/"
     - name: Creating user work directory
       file:
-        path: "{{core_base_dir_location}}"
+        path: "{{core_base_dir_location | regex_replace('^~', ansible_env.HOME)}}"
         state: directory
         mode: "3775"
-      become: "{{use_become}}"
       when: core_base_dir_location | length != 0
       ignore_errors: true
     - name: Creating workload manager output
       file:
-        path: "{{core_scheduler_output_dir}}"
+        path: "{{core_scheduler_output_dir | regex_replace('^~', ansible_env.HOME)}}"
         state: directory
         mode: "3775"
-      become: "{{use_become}}"
       ignore_errors: true
       when: core_scheduler_output_dir | length != 0
     - name: Creating preview path
       file:
-        path: "{{core_preview_path}}"
+        path: "{{core_preview_path | regex_replace('^~', ansible_env.HOME)}}"
         state: directory
         mode: "3775"
       when: core_preview_path | length != 0
-      become: "{{use_become}}"
       ignore_errors: true
     - name: Registering evaluation_sytem path
       stat:
-        path: "{{ core_root_dir }}/freva/evaluation_system.conf"
+        path: "{{ core_root_dir | regex_replace('^~', ansible_env.HOME)}}/freva/evaluation_system.conf"
       register: eval_conf
-    - name: Inserting evaluation_sytem.conf file without admin group
+    - name: Inserting evaluation_sytem.conf file
       copy:
         src: "{{ core_dump }}"
-        dest: "{{ core_root_dir }}/freva/evaluation_system.conf"
-        mode: "1644"
-      when: (eval_conf.stat.exists != true and core_admin_group is not defined)
+        dest: "{{ core_root_dir | regex_replace('^~', ansible_env.HOME) }}/freva/evaluation_system.conf"
+        mode: "{{ '2664' if core_admin_group is defined else '2644' }}"
+        group: "{{ core_admin_group if core_admin_group is defined else omit}}"
+      when: (eval_conf.stat.exists != true)
     - name: Inserting evaluation_system.config file to temp location
       copy:
         src: "{{ core_dump }}"
-        dest: /tmp/evaluation_system/evaluation_system.conf
-      become: "{{use_become}}"
-    - name: Deploying evaluation_system
-      shell:
-        cmd: $PYTHON3 deploy.py {{ core_install_dir }} -s --arch {{core_arch}} --packages freva
-        chdir: /tmp/evaluation_system
-      environment:
-        CONDA_EXEC_PATH: "{{ conda_exec_path }}"
-        PYTHON3: "{{ ansible_python_interpreter }}"
-        PYTHON_VERSION: ""
-        EVALUATION_SYSTEM_CONFIG_FILE: "/tmp/evaluation_system/evaluation_system.conf"
-      when: (core_install is true)
-      become: "{{use_become}}"
-    - name: Inserting evaluation_sytem.conf file with admin group
+        dest: "{{tempdir.path}}/evaluation_system.conf"
+    - name: Inserting evaluation_system.conf file
       copy:
-        src: "{{ core_dump }}"
-        dest: "{{ core_root_dir }}/freva/evaluation_system.conf"
-        mode: "1664"
-        group: "{{core_admin_group}}"
-      become: "{{use_become}}"
-      when: (eval_conf.stat.exists != true and core_admin_group is defined)
+        src: "{{tempdir.path}}/evaluation_system.conf"
+        dest: "{{ core_root_dir | regex_replace('^~', ansible_env.HOME)}}/freva/evaluation_system.conf"
+        remote_src: true
+        group: "{{ core_admin_group if core_admin_group is defined else omit}}"
+        mode: "{{ '2664' if core_admin_group is defined else '2644' }}"
+      when: not freva_path.stat.exists
     - name: Installing additional python packages
-      shell:
-        cmd: python -m pip install "{{item}}"
-      environment:
-        PATH: "{{core_install_dir}}/bin"
+      command:
+        cmd: "{{conda_bin}}/python -m pip install {{item}}"
       with_items:
-        - "git+https://gitlab.dkrz.de/k204230/install-kernelspec.git"
-      become: "{{use_become}}"
+        - "kernel-install"
+        - "metadata-inspector"
+    - name: Getting status of drs_config.toml file
+      stat:
+        path: "{{ core_root_dir | regex_replace('^~', ansible_env.HOME)}}/freva/drs_config.toml"
+      register: drs_path
     - name: Inserting drs_config.toml file
       copy:
-        src: "/tmp/evaluation_system/assets/drs_config.toml"
-        dest: "{{ core_root_dir }}/freva/drs_config.toml"
+        src: "{{tempdir.path}}/assets/drs_config.toml"
+        dest: "{{ core_root_dir | regex_replace('^~', ansible_env.HOME)}}/freva/drs_config.toml"
         remote_src: true
-      become: "{{use_become}}"
+        group: "{{ core_admin_group if core_admin_group is defined else omit}}"
+        mode: "{{ '2664' if core_admin_group is defined else '2644' }}"
+      when: not drs_path.stat.exists
     - name: Configuring evaluation_system
-      shell:
-        cmd: $PYTHON3 deploy.py {{ core_install_dir }} -s --no-conda
-        chdir: /tmp/evaluation_system
+      command:
+        cmd: "$PYTHON3 deploy.py {{ core_install_dir | regex_replace('^~', ansible_env.HOME) }} -s --no-conda"
+        chdir: "{{tempdir.path}}"
       environment:
         PYTHON3: "{{ ansible_python_interpreter }}"
-        EVALUATION_SYSTEM_CONFIG_FILE: "{{ core_root_dir }}/freva/evaluation_system.conf"
-        PYTHON_VERSION: ""
-      become: "{{use_become}}"
+        EVALUATION_SYSTEM_CONFIG_FILE: "{{ core_root_dir | regex_replace('^~', ansible_env.HOME) }}/freva/evaluation_system.conf"
+        PYTHON_VERSION: "{{core_python_version}}"
     - name: Copying Public key file
       copy:
         src: "{{ core_keyfile }}"
-        dest: "{{ core_root_dir }}/freva/{{ project_name }}.crt"
-        mode: "2644"
-      become: "{{use_become}}"
+        dest: "{{ core_root_dir | regex_replace('^~', ansible_env.HOME) }}/freva/{{ project_name }}.crt"
+        mode: "{{ '2664' if core_admin_group is defined else '2644' }}"
+        group: "{{ core_admin_group if core_admin_group is defined else omit}}"
     - name: Deleting temporary files
       file:
         state: absent
-        path: /tmp/evaluation_system
+        path: "{{tempdir.path}}"

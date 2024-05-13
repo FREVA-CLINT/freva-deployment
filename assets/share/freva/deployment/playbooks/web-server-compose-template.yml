@@ -1,0 +1,107 @@
+version: '3'
+services:
+  {{apache_name}}:
+    image: httpd:latest
+    user: root:0
+    container_name: {{apache_name}}
+    hostname: {{apache_name}}
+{% if debug %}
+    network_mode: host
+{% else %}
+    networks:
+      - {{web_name}}
+{% endif %}
+    environment:
+      - SCHEDULDER_DIR={{core_scheduler_output_dir|regex_replace('^~', ansible_env.HOME)}}
+      - UID={{uid}}
+      - GID={{gid}}
+{% if debug %}
+      - DATABROWSER_HOST=127.0.0.1
+      - FREVA_HOST=127.0.0.1
+{% else %}
+      - DATABROWSER_HOST={{web_freva_rest_host}}
+      - FREVA_HOST={{web_server_name}}
+{% endif %}
+      - HTTPD_PORT={{web_port_httpd}}
+      - HTTPDS_PORT={{web_port_httpsd}}
+    volumes:
+{% for volume in apache_volumes %}
+      - {{volume}}
+{% endfor %}
+    command: /usr/local/bin/prepare-httpd
+    ports:
+      - {{web_port_httpd}}:{{web_port_httpd}}
+      - {{web_port_httpsd}}:{{web_port_httpsd}}
+  {{redis_name}}:
+    user: {{uid}}:{{gid}}
+    image: redis
+    volumes:
+{% for volume in redis_volumes %}
+      - {{volume}}
+{% endfor %}
+
+{% if debug %}
+    network_mode: host
+{% else %}
+    networks:
+      - {{web_name}}
+{% endif %}
+    tty: true
+    container_name: {{redis_name}}
+    hostname: {{redis_name}}
+
+  {{web_name}}:
+    user: root:0
+    image: ghcr.io/freva-clint/freva-web:{{web_version}}
+    container_name: {{web_name}}
+    hostname: {{web_name}}
+{% if debug %}
+    network_mode: host
+{% else %}
+    networks:
+      - {{web_name}}
+{% endif %}
+    environment:
+      - EVALUATION_SYSTEM_CONFIG_FILE={{core_root_dir|regex_replace('^~', ansible_env.HOME)}}/freva/evaluation_system.conf
+      - LDAP_USER_DN={{web_ldap_user_dn}}
+      - LDAP_USER_PW={{web_ldap_user_pw}}
+      - DJANGO_SUPERUSER_PASSWORD={{ root_passwd }}
+      - FREVA_WEB_CONFIG_FILE={{web_config_file}}
+      - AUTH_LDAP_SERVER_URI={{web_auth_ldap_server_uri}}
+      - AUTH_LDAP_START_TLS={{ 1 if web_auth_ldap_start_tls else 0 }}
+      - ALLOWED_GROUP={{web_allowed_group}}
+      - ALLOWED_HOSTS={{web_allowed_hosts | join(',')}}
+      - LDAP_USER_BASE={{web_ldap_user_base}}
+      - LDAP_GROUP_BASE={{web_ldap_group_base}}
+      - LDAP_FIRSTNAME_FIELD={{web_ldap_first_name_field}}
+      - LDAP_LASTNAME_FIELD={{web_ldap_last_name_field}}
+      - LDAP_EMAIL_FIELD={{web_ldap_email_field}}
+      - LDAP_GROUP_CLASS={{web_ldap_group_class}}
+      - LDAP_GROUP_TYPE={{web_ldap_group_type}}
+      - LDAP_USER_DN={{web_ldap_user_dn}}
+      - LDAP_USER_PW={{web_ldap_user_pw}}
+      - LDAP_MODEL={{web_ldap_model}}
+      - SCHEDULER_HOST={{web_scheduler_host | join(',')}}
+      - REDIS_HOST={{web_redis_host}}
+      - EMAIL_HOST={{web_email_host}}
+      - CSRF_TRUSTED_ORIGINS={{web_csrf_trusted_origins | join(',')}}
+      - FREVA_BIN={{web_freva_bin}}
+    volumes:
+{% for volume in web_volumes %}
+      - {{volume}}
+{% endfor %}
+    tty: true
+    ports:
+      - 8000:8000
+    depends_on:
+      - {{redis_name}}
+      - {{apache_name}}
+
+networks:
+{% if debug %}
+  hostnet:
+    driver: host
+{% else %}
+  {{web_name}}:
+    driver: bridge
+{% endif %}

@@ -1,0 +1,175 @@
+---
+- hosts: freva_rest
+
+  become: "{{ freva_rest_ansible_become_user is defined and freva_rest_ansible_become_user != '' }}"
+  vars:
+    ansible_python_interpreter: "{{ freva_rest_ansible_python_interpreter }}"
+    freva_rest_name: "{{project_name}}-freva_rest"
+    databrowser_name: "{{project_name}}-databrowser"
+    compose_file: '{{freva_rest_data_path|regex_replace("^~", ansible_env.HOME)}}/compose_services/{{freva_rest_name}}-compose.yml'
+    solr_name: "{{project_name}}-solr"
+    mongo_name: "{{project_name}}-mongo"
+    data_path: '{{freva_rest_data_path|regex_replace("^~", ansible_env.HOME)}}/{{project_name}}/freva_rest'
+    databrowser_path: '{{freva_rest_data_path|regex_replace("^~", ansible_env.HOME)}}/{{project_name}}/databrowser'
+    solr_data: '{{freva_rest_data_path|regex_replace("^~", ansible_env.HOME)}}/{{project_name}}/solr_service'
+    solr_volumes:
+      - '{{freva_rest_data_path|regex_replace("^~", ansible_env.HOME)}}/{{project_name}}/solr_service:/var/solr:z'
+      - '{{freva_rest_data_path|regex_replace("^~", ansible_env.HOME)}}/freva-service-config/solr/managed-schema.xml:/opt/solr/managed-schema.xml:z'
+      - '{{freva_rest_data_path|regex_replace("^~", ansible_env.HOME)}}/freva-service-config/solr/create_cores.sh:/docker-entrypoint-initdb.d/create_cores.sh:z'
+      - '{{freva_rest_data_path|regex_replace("^~", ansible_env.HOME)}}/freva-service-config/solr/synonyms.txt:/opt/solr/synonyms.txt:z'
+      - '{{freva_rest_data_path|regex_replace("^~", ansible_env.HOME)}}/freva-service-config/solr/daily_backup.sh:/usr/local/bin/daily_backup:z'
+    mongo_volumes:
+      - '{{freva_rest_data_path|regex_replace("^~", ansible_env.HOME)}}/{{project_name}}/freva_rest/stats:/data/db:z'
+    ansible_become_user: "{{ freva_rest_ansible_become_user | default('root') }}"
+  tasks:
+    - name: Get UID
+      command: id -u {{ ansible_user }}
+      register: uid_result
+    - name: Get GID
+      command: id -g {{ ansible_user }}
+      register: gid_result
+    - name: Set UID and GID as facts
+      set_fact:
+        uid: "{{ uid_result.stdout }}"
+        gid: "{{ gid_result.stdout }}"
+    - name: Copying docker/podman wrapper script
+      copy:
+        src: "{{ asset_dir }}/scripts/docker-or-podman"
+        dest: /tmp/docker-or-podman
+        mode: "0775"
+    - name: Registering systemctl path
+      stat:
+        path: /usr/bin/systemctl
+      register: systemctl
+    - name: Registering anacron path
+      stat:
+        path: /etc/cron.daily
+      register: cron
+    - name: Stopping services and deleting existing containers
+      shell: >
+        systemctl stop {{solr_name}} {{mongo_name}} {{freva_rest_name}} {{databrowser_name}};
+        systemctl disable {{solr_name}} {{mongo_name}} {{freva_rest_name}} {{databrowser_name}};
+        systemctl reset-failed;
+        /tmp/docker-or-podman rm -f {{solr_name}} {{mongo_name}} {{freva_rest_name}} {{databrowser_name}};
+        exit 0
+      ignore_errors: true
+    - pause: seconds=5
+    - name: Deleting old systemd structure
+      file:
+        state: absent
+        path: "/etc/systemd/system/{{item}}.service"
+        force: true
+      with_items:
+        - "{{solr_name}}"
+        - "{{mongo_name}}"
+        - "{{freva_rest_name}}"
+        - "{{project_name}}-databrowser"
+      when: systemctl.stat.exists == true
+    - name: Deleting config file
+      file:
+        state: absent
+        force: true
+        path: '{{freva_rest_data_path|regex_replace("^~", ansible_env.HOME)}}/freva-service-config/'
+    - name: Cleaning existing directory structure
+      file:
+        path: "{{item}}"
+        state: absent
+      with_items:
+        - "{{freva_rest_data_path|regex_replace('^~', ansible_env.HOME)}}/{{ project_name }}/solr_service"
+        - "{{data_path}}"
+        - "{{databrowser_path}}"
+      when: freva_rest_wipe == true
+    - name: Adjusting old databrowser directory structure
+      command: mv "{{databrowser_path}}" "{{data_path}}"
+      args:
+        removes: "{{databrowser_path}}"
+        creates: "{{data_path}}"
+    - name: Creating service data directory structure
+      file:
+        path: "{{item}}"
+        state: directory
+        recurse: true
+        owner: "{{uid}}"
+        group: "{{gid}}"
+      with_items:
+        - '{{solr_data}}/data'
+        - '{{data_path}}'
+    - name: Creating compose directory structure
+      file:
+        path: '{{freva_rest_data_path|regex_replace("^~", ansible_env.HOME)}}/compose_services'
+        state: directory
+        recurse: true
+    - name: Deleting old compose files
+      file:
+        path: '{{freva_rest_data_path|regex_replace("^~", ansible_env.HOME)}}/{{databrowser_name}}-compose.yml'
+        state: absent
+    - name: Adjusting old solr directory structure
+      command: mv "{{solr_data}}/{{item}}" "{{solr_data}}/data/{{item}}"
+      args:
+        removes: "{{solr_data}}/{{item}}"
+        creates: "{{solr_data}}/data/{{item}}"
+      with_items:
+        - "files"
+        - "latest"
+    - name: Getting additional configurations
+      git:
+        repo: https://github.com/FREVA-CLINT/freva-service-config.git
+        dest: '{{freva_rest_data_path|regex_replace("^~", ansible_env.HOME)}}/freva-service-config'
+        update: true
+    - name: Adjusting configuration onwnership
+      file:
+        recurse: true
+        path: '{{item}}'
+        owner: "{{uid}}"
+        group: "{{gid}}"
+      with_items:
+        - "{{solr_data}}"
+        - '{{freva_rest_data_path|regex_replace("^~", ansible_env.HOME)}}/freva-service-config'
+    - name: Copy systemd files
+      copy:
+        src: "{{ asset_dir }}/scripts/create_systemd.py"
+        dest: /tmp/create_systemd.py
+        mode: "0755"
+    - name: Pulling container
+      shell:
+        cmd: /tmp/docker-or-podman pull {{item}}
+      with_items:
+        - "docker.io/solr:{{solr_version}}"
+        - "docker.io/mongo:latest"
+        - "ghcr.io/freva-clint/freva-rest-api:{{freva_rest_version}}"
+    - name: Copy cron create script to target machine
+      copy: src="{{ asset_dir }}/scripts/create_cron.sh" dest=/tmp/solr_service/
+    - name: Creating compose file
+      template:
+        src: "{{ asset_dir }}/playbooks/freva_rest-server-compose-template.yml"
+        dest: "{{compose_file}}"
+    - name: Creating systemd services
+      shell: |
+        /tmp/create_systemd.py {{freva_rest_name}} compose --enable --project-name {{freva_rest_name}} -f {{compose_file}} up --remove-orphans
+      environment:
+        DEBUG: '{{ debug }}'
+      when: systemctl.stat.exists == true
+    - pause: seconds=3
+    - name: Creating cron jobs
+      shell: >
+        sh /tmp/solr_service/create_cron.sh "{{ solr_name }}" "{{freva_rest_email}}"
+      when: cron.stat.exists == true and debug == false
+    - name: Deleting tmporary files
+      file:
+        path: "{{item}}"
+        state: absent
+      with_items:
+        - /tmp/docker-or-podman
+        - /tmp/create_systemd.py
+        - /tmp/solr_service
+- hosts: web
+  become: "{{ web_ansible_become_user is defined and web_ansible_become_user != '' }}"
+  vars:
+  tasks:
+    - name: Registering systemctl path
+      stat:
+        path: /usr/bin/systemctl
+      register: systemctl
+    - name: Restarting web container
+      shell: systemctl restart {{web_name}}; echo 0
+      when: systemctl.stat.exists == true

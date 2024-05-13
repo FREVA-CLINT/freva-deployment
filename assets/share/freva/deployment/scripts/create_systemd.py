@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 import argparse
-from pathlib import Path
 import os
 import shlex
-import sys
 import subprocess
+import sys
+from pathlib import Path
 from typing import Dict, List, Tuple
 
 SYSTEMD_TMPL = dict(
@@ -15,8 +15,9 @@ SYSTEMD_TMPL = dict(
     Service=dict(
         TimeoutStartSec="35s",
         TimeoutStopSec="35s",
-        ExecStartPre="{delete_command}",
+        ExecStartPre='/bin/sh -c "{delete_command}"',
         ExecStart='/bin/sh -c "{container_cmd} {container_args}"',
+        ExecStop='/bin/sh -c "{delete_command}"',
         Restart="no",
     ),
     Install=dict(WantedBy="default.target"),
@@ -38,7 +39,10 @@ def parse_args() -> Tuple[str, str, List[str], bool]:
     )
     app.add_argument("--requires", type=str, nargs="+", default=[])
     args, other = app.parse_known_args()
-    return " ".join(other), args.name, args.requires, args.enable
+    enable = args.enable
+    if os.environ.get("DEBUG", "false").lower() == "true":
+        enable = False
+    return " ".join(other), args.name, args.requires, enable
 
 
 def _parse_dict(tmp_dict: Dict[str, Dict[str, str]]) -> str:
@@ -86,21 +90,28 @@ def get_container_cmd(args: str) -> Tuple[str, str]:
         cmd,
         check=True,
         stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
         env=env,
     )
     out = res.stdout.decode().split()
     if out:
-        return out[0], " ".join(out[1:]).replace("%", "%%")
+        return out[0], " ".join(out[1:])
     return "", ""
 
 
-def create_unit(
-    args: str, unit: str, requires: List[str], enable: bool
-) -> None:
+def create_unit(args: str, unit: str, requires: List[str], enable: bool) -> None:
     """Create the systemd unit."""
     container_cmd, container_args = get_container_cmd(args)
-    _, delete_command = get_container_cmd("rm -f {}".format(unit))
+    cmd = args.split()
+    if "compose" in cmd and "up" in cmd:
+        new_cmd = []
+        for word in cmd:
+            if word == "up":
+                new_cmd.append("down")
+            elif word not in ("-d", "--detach"):
+                new_cmd.append(word)
+        _, delete_command = get_container_cmd(" ".join(new_cmd))
+    else:
+        _, delete_command = get_container_cmd("rm -f {}".format(unit))
     if delete_command:
         delete_command = "{} {}".format(container_cmd, delete_command)
     else:
@@ -108,15 +119,18 @@ def create_unit(
     if "docker" in container_cmd:
         SYSTEMD_TMPL["Unit"]["Requires"] = "docker.service"
         SYSTEMD_TMPL["Unit"]["After"] += " docker.service"
+    # else:
+    #    SYSTEMD_TMPL["Service"]["Environment"] = "PODMAN_USERNS=keep-id"
     for key in ("ExecStart",):
         SYSTEMD_TMPL["Service"][key] = SYSTEMD_TMPL["Service"][key].format(
             container_cmd=container_cmd,
             container_args=container_args,
             unit=unit,
         )
-    SYSTEMD_TMPL["Service"]["ExecStartPre"] = SYSTEMD_TMPL["Service"][
-        "ExecStartPre"
-    ].format(delete_command=delete_command)
+    for key in ("ExecStartPre", "ExecStop"):
+        SYSTEMD_TMPL["Service"][key] = SYSTEMD_TMPL["Service"][key].format(
+            delete_command=delete_command
+        )
     for service in requires:
         for key in ("After", "Requires"):
             try:

@@ -1,24 +1,17 @@
 #!/usr/bin/env python3
-"""A script that wraps docker/podman/apptainer commands."""
+"""A script that wraps docker/podman commands."""
 
 
 import abc
 import argparse
+import shlex
 import shutil
 import subprocess
 import sys
 from datetime import datetime
+from getpass import getuser
 from pathlib import Path
-from typing import (
-    Any,
-    ClassVar,
-    Dict,
-    List,
-    Optional,
-    Tuple,
-    Union,
-    cast,
-)
+from typing import ClassVar, Dict, List, Optional, Tuple, Union, cast
 
 FlagType = Union[str, List[str], bool, None]
 """Type for additional command line arguments."""
@@ -45,11 +38,50 @@ class CommandFactory(metaclass=abc.ABCMeta):
     @staticmethod
     def get_container_cmd() -> str:
         """Get the command of the container."""
-        for cmd in ("apptainer", "podman", "docker"):
+        engines = ["docker", "podman"]
+        if getuser() != "root":
+            engines = engines[::-1]
+        for cmd in engines:
             cont_cmd = shutil.which(cmd)
             if cont_cmd:
                 return cont_cmd
-        raise ValueError("Docker, Podman or Apptainer must be installed")
+        raise ValueError("Docker or Podman must be installed")
+
+    def compose(self, *args, **kwargs) -> List[str]:
+        """User the compose command.
+
+        Parameters
+        ----------
+        **kwargs: Any
+            Additional command line arguments
+        Returns
+        -------
+        list[str]: Constructed command line arguemnts.
+        """
+        container_cmd = Path(self.get_container_cmd()).name
+        command = shutil.which(f"{container_cmd}-compose")
+        if not command:
+            install_cmd = f"python3 -m pip install {container_cmd}-compose"
+            try:
+                subprocess.run(
+                    shlex.split(install_cmd),
+                    check=True,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                )
+            except subprocess.CalledProcessError:
+                txt = (
+                    f"{container_cmd} is available but not {container_cmd}-compose"
+                    " which should be installed on the system."
+                )
+                print(txt, file=sys.stderr)
+                raise ValueError(txt)
+            command = (
+                shutil.which(f"{container_cmd}-compose")
+                or f"{container_cmd}-compose"
+            )
+        _args = self._kwargs_to_list(**kwargs)
+        return [command] + _args + list(args)
 
     def network(self, sub_command: str, *flags: str) -> List[str]:
         """Interact with the network sub commands.
@@ -105,6 +137,32 @@ class CommandFactory(metaclass=abc.ABCMeta):
 
         cli_command = [self.get_container_cmd(), "pull"]
         return cli_command + self._kwargs_to_list(**kwargs) + self.images
+
+    def stop(self, time_out: Optional[int] = None) -> List[str]:
+        """Stop running containers."""
+
+        cli_command = [self.get_container_cmd(), "stop"]
+        if time_out is not None:
+            cli_command += ["-t", str(time_out)]
+        return cli_command + self.images
+
+    def inspect(self, **kwargs: FlagType) -> List[str]:
+        """Inspect images/containers.
+
+        Parameters
+        ----------
+        **kwargs:
+            Additional command line arguments
+
+        Returns
+        -------
+        list[str]: Constructed commmand line arguments.
+        """
+        return (
+            [self.get_container_cmd(), "inspect"]
+            + self._kwargs_to_list(**kwargs)
+            + self.images
+        )
 
     def rm(self, sub_command: str, **kwargs: FlagType) -> List[str]:
         """Remove images/containers.
@@ -175,89 +233,6 @@ class Podman(CommandFactory):
     """Wrapping the podman commands."""
 
     command = "podman"
-
-
-class Apptainer(CommandFactory):
-    """Wrapping the apptainer commands."""
-
-    command = "apptainer"
-
-    @property
-    def images(self) -> List[str]:
-        """Get the location of the image."""
-        return ["docker://{}".format(image) for image in self._images]
-
-    def network(self, sub_command: str, *flags: str) -> List[str]:
-        """The network sub command doesn't seem to work in apptainer."""
-        return []
-
-    def pull(self, **kwargs: FlagType) -> List[str]:
-        """Pull a container.
-
-        Parameters
-        ----------
-        **kwargs: Any
-            Additional command line arguments
-
-        Returns
-        -------
-        list[str]: Constructed commmand line arguments.
-        """
-        cli_command = [self.get_container_cmd(), "pull", "-F"]
-        return cli_command + self.images
-
-    def rm(self, sub_command: str, **kwargs: Any) -> List[str]:
-        """Remove images/containers.
-
-        Parameters
-        ----------
-        sub_command: str
-            The sub command used for deleting containers/images.
-        **kwargs:
-            Additional command line arguments
-
-        Returns
-        -------
-        list[str]: Constructed commmand line arguments.
-        """
-
-        if sub_command == "rmi":
-            new_command = ["delete"]
-        else:
-            # this is not ideal since 'oci' is for root only.
-            return []
-            # new_command = ["oci", "delete"]
-        cli_command = [self.get_container_cmd()] + new_command
-        return cli_command + self.images
-
-    def _translate(self, options: Dict[str, FlagType]) -> Dict[str, FlagType]:
-        """Translate the docker commands to an apptainer command."""
-        output: Dict[str, FlagType] = {
-            "env": options.get("env") or [],
-            "mount": [],
-            "dns": None,
-            "network-args": [],
-        }
-        for volume in cast(List[str], options.get("volume", [])) or []:
-            mounts = volume.split(":", 2)
-            cast(List[str], output["mount"]).append(
-                "type=bind,source={},destination={}".format(
-                    mounts[0], mounts[1]
-                )
-            )
-        for port in cast(List[str], options.get("publish", [])) or []:
-            in_port, _, out_port = port.partition(":")
-            cast(List[str], output["network-args"]).append(
-                "portmap={}:{}/tcp".format(in_port, out_port)
-            )
-        output = {k: v for (k, v) in output.items() if v}
-        if "net" in options:
-            output["network"] = "bridge"
-            output["fakeroot"] = True
-        if "network" in options or "network-args" in options:
-            output["net"] = True
-            output["fakeroot"] = True
-        return output
 
 
 def add_standard_args() -> argparse.ArgumentParser:
@@ -369,6 +344,30 @@ def parse_args() -> List[str]:
         action="store_true",
     )
 
+    # -------------------------- Compose commands -----------------------------
+    parser_compose = subparsers.add_parser(
+        "compose",
+        help="Define and run multi-container applications",
+    )
+    parser_compose.add_argument("-p", "--project-name", help="Project name")
+    parser_compose.add_argument(
+        "-f",
+        "--file",
+        help="Compose configuration files",
+    )
+    parser_compose.add_argument(
+        "--project-directory",
+        help=(
+            "Specify an alternate working directory "
+            "(default: the path of the, first specified, Compose file)"
+        ),
+    )
+    parser_compose.add_argument(
+        "command",
+        nargs=argparse.REMAINDER,
+        type=str,
+        metavar="command",
+    )
     # -------------------------- Exec commands --------------------------------
 
     _ = subparsers.add_parser(
@@ -400,6 +399,9 @@ def parse_args() -> List[str]:
     parser_run.add_argument("--name", help="Assign a name to the container")
     parser_run.add_argument(
         "--network", help="Connect a container to a network"
+    )
+    parser_run.add_argument(
+        "--network-alias", help="Add network-scoped alias for the container"
     )
     parser_run.add_argument(
         "-v", "--volume", help="Bind mount a volume", action="append"
@@ -436,6 +438,25 @@ def parse_args() -> List[str]:
         type=str,
         help="Linux capabilities",
         action="append",
+    )
+
+    # -------------------------- stop commands --------------------------------
+
+    parser_stop = subparsers.add_parser(
+        "stop", help="Stop one or more running containers"
+    )
+    parser_stop.add_argument(
+        "container",
+        nargs="+",
+        type=str,
+        metavar="CONTAINER",
+        help="Name of the container(s)",
+    )
+    parser_stop.add_argument(
+        "-t",
+        "--time-out",
+        type=int,
+        help="Timout",
     )
 
     # -------------------------- rm commands ----------------------------------
@@ -503,17 +524,42 @@ def parse_args() -> List[str]:
         metavar="flags",
     )
 
+    # -------------------------- inspect commands -----------------------------
+
+    parser_inspect = subparsers.add_parser(
+        "inspect",
+        help="Return low-level information on Docker objects",
+        add_help=False,
+    )
+    parser_inspect.add_argument(
+        "container",
+        nargs="+",
+        type=str,
+        metavar="CONTAINER",
+        help="Name of the images(s)",
+    )
+    parser_inspect.add_argument(
+        "--format",
+        "-f",
+        type=str,
+    )
+    parser_inspect.add_argument(
+        "--size",
+        "-s",
+        action="store_true",
+    )
+    parser_inspect.add_argument("--type", type=str)
+
     # -------------------------------------------------------------------------
 
     args = parser.parse_args()
     container_cmd = Path(Docker.get_container_cmd()).name
     container_cls = {
         "podman": Podman,
-        "apptainer": Apptainer,
         "docker": Docker,
     }
     container_inst = container_cls[container_cmd](
-        args.container, print_only=args.print_only
+        getattr(args, "container", None), print_only=args.print_only
     )
     kwargs = {
         k.replace("_", "-"): v
@@ -524,12 +570,18 @@ def parse_args() -> List[str]:
         cmd = container_inst.run(args.subcommand, *args.command, **kwargs)
     elif args.subcommand in ("rm", "rmi"):
         cmd = container_inst.rm(args.subcommand, **kwargs)
+    elif args.subcommand in ("inspect",):
+        cmd = container_inst.inspect(**kwargs)
+    elif args.subcommand in ("stop",):
+        cmd = container_inst.stop(args.time_out)
     elif args.subcommand in ("pull",):
         cmd = container_inst.pull(**kwargs)
     elif args.subcommand in ("network",):
         cmd = container_inst.network(
             args.subcommand, args.command, *args.flags
         )
+    elif args.subcommand in ("compose",):
+        cmd = container_inst.compose(*args.command, **kwargs)
     else:
         cmd = []
     if args.print_only:

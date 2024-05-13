@@ -20,28 +20,31 @@ dynamic = ["version"]
 description = "Deployment of the Free Evaluation Framework Freva"
 requires-python = ">=3.8"
 dependencies = [ "appdirs",
-             "ansible>=2.10",
+             "ansible",
+             "ansible-runner",
              "npyscreen",
-             "numpy",
              "PyMySQL",
              "PyYAML",
              "rich",
+             "rich-argparse",
              "toml",
              "tomlkit",
              "requests",
 ]
 [project.optional-dependencies]
-docs = [
-    "pydata-sphinx-theme",
-    "sphinx",
-    "sphinx-copybutton",
-    "nbsphinx",
-    "recommonmark",
-    "sphinx_rtd_theme",
-    "ipython",
-    "sphinxcontrib_github_alt",
+dev = ["flit", "tox"]
+doc = ["pydata-sphinx-theme",
+       "sphinx",
+       "sphinx-copybutton",
+       "recommonmark",
+       "sphinx_sitemap",
+       "sphinx_favicon",
+       "sphinx_togglebutton",
+       "myst-parser",
+       "sphinx-design",
+       "linkify",
+       "sphinx-execute-code-python3",
 ]
-test = ["mypy", "black", "isort", "types-toml", "types-PyMySQL"]
 
 [project.urls]
 Documentation = "https://freva-deployment.readthedocs.io/en/latest/"
@@ -51,8 +54,6 @@ Home = "https://freva-deployment.readthedocs.io/en/latest"
 
 [project.scripts]
 deploy-freva-cmd = "freva_deployment.cli:deploy"
-deploy-freva-map = "freva_deployment.cli:server_map"
-freva-service = "freva_deployment.cli:service"
 freva-migrate = "freva_deployment.cli:migrate"
 deploy-freva = "freva_deployment.ui.deployment_tui:tui"
 
@@ -62,3 +63,46 @@ include = ["assets/*"]
 
 [tool.flit.external-data]
 directory = "assets"
+
+[package-data]
+freva_deployment = ["py.typed", "versions.json"]
+
+[tool.tox]
+legacy_tox_ini = """
+[tox]
+min_version = 4.0
+env_list = types, lint, test
+[testenv]
+parallel_show_output = false
+[testenv:test]
+deps = -e .
+
+commands =
+    deploy-freva-cmd --help
+    deploy-freva --help
+
+[testenv:docs]
+deps = .[doc]
+allowlist_externals = make
+commands = make -C docs clean
+           make -C docs html
+[testenv:lint]
+deps = .
+       black
+       isort
+commands =
+    isort --check --profile black -t py311 -l 79 src
+[testenv:types]
+deps = .
+       mypy
+       types-toml
+       pytest-stub
+       types-PyMySQL
+commands = mypy --install-types --non-interactive
+[testenv:release]
+deps = git-python
+       packaging
+       tomli
+       requests
+commands = python3 release.py tag freva_deployment -b versions
+"""

@@ -1,0 +1,86 @@
+version: '3'
+services:
+  {{solr_name}}:
+    user: "{{uid}}:{{gid}}"
+    image: solr:{{solr_version}}
+    container_name: {{solr_name}}
+    hostname: {{solr_name}}
+{% if debug %}
+    network_mode: host
+{% else %}
+    networks:
+      - {{freva_rest_name}}
+{% endif %}
+    environment:
+      - CORE=files
+      - NUM_BACKUPS=7
+      - SOLR_HEAP={{freva_rest_solr_mem}}
+    volumes:
+{% for volume in solr_volumes %}
+      - {{volume}}
+{% endfor %}
+    tty: true
+    ports:
+      - 8983:8983
+
+  {{mongo_name}}:
+    user: "{{uid}}:{{gid}}"
+    image: docker.io/mongo:latest
+    container_name: {{mongo_name}}
+    hostname: {{mongo_name}}
+{% if debug %}
+    network_mode: host
+{% else %}
+    networks:
+      - {{freva_rest_name}}
+{% endif %}
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=mongo
+      - MONGO_INITDB_ROOT_PASSWORD={{root_passwd}}
+      - MONGO_INITDB_DATABASE=search_stats
+    volumes:
+{% for volume in mongo_volumes %}
+      - {{volume}}
+{% endfor %}
+    ports:
+      - 27017:27017
+    tty: true
+
+  {{freva_rest_name}}:
+    user: "{{uid}}:{{gid}}"
+    image: ghcr.io/freva-clint/freva-rest-api:{{freva_rest_version}}
+    hostname: {{freva_rest_name}}
+{% if debug %}
+    network_mode: host
+{% else %}
+    networks:
+      - {{freva_rest_name}}
+{% endif %}
+    environment:
+      - SOLR_CORE=files
+{% if debug %}
+      - SOLR_HOST=127.0.0.1:8983
+      - MONGO_HOST=127.0.0.1:27017
+{% else %}
+      - SOLR_HOST={{solr_name}}:8983
+      - MONGO_HOST={{mongo_name}}:27017
+{% endif %}
+      - MONGO_PASSWORD={{root_passwd}}
+      - MONGO_DB=search_stats
+      - MONGO_USER=mongo
+    ports:
+      - {{freva_rest_port}}:8080
+    container_name: {{freva_rest_name}}
+    depends_on:
+      - {{solr_name}}
+      - {{mongo_name}}
+    tty: true
+
+networks:
+{% if debug  %}
+  hostnet:
+    driver: host
+{% else %}
+  {{freva_rest_name}}:
+    driver: bridge
+{% endif %}

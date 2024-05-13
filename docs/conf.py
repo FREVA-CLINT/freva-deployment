@@ -13,6 +13,7 @@
 import os
 import sys
 from datetime import date
+
 from recommonmark.parser import CommonMarkParser
 
 sys.path.insert(0, os.path.abspath("."))
@@ -39,11 +40,9 @@ extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.intersphinx",
     "sphinx.ext.napoleon",
-    "nbsphinx",
     "recommonmark",
-    "sphinx.ext.viewcode",
-    "sphinxcontrib_github_alt",
     "sphinx_copybutton",
+    "sphinx_togglebutton",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -61,50 +60,70 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 # a list of builtin themes.
 #
 html_theme = "pydata_sphinx_theme"
-html_logo = "freva_owl.svg"
-html_favicon = "freva_owl.svg"
+html_logo = "_static/freva_owl.svg"
+html_favicon = "_static/freva_owl.svg"
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
+html_sidebars = {"pagename": []}
 html_static_path = ["_static"]
-html_theme_options = {
-    "icon_links": [
-        {
-            "name": "GitHub",
-            "url": "https://github.com/FREVA-CLINT/freva-deployment",
-            "icon": "fa-brands fa-github",
-        }
-    ],
-    "navigation_with_keys": True,
-    "collapse_navigation": False,
-    "top_of_page_button": "edit",
-    "navigation_depth": 4,
-    "navbar_align": "left",
-    "show_nav_level": 2,
-    "navigation_depth": 4,
-    #    "primary_sidebar_end": ["indices.html", "sidebar-ethical-ads.html"],
-    "navbar_center": ["navbar-nav"],
-    "secondary_sidebar_items": ["page-toc"],
-    "light_css_variables": {
-        "color-brand-primary": "tomato",
-    },
-}
 html_context = {
     "github_user": "FREVA-CLINT",
     "github_repo": "freva",
     "github_version": "main",
     "doc_path": "docs",
 }
-# html_sidebars = {
-#    "**": [
-#        "search-field.html",
-#        "sidebar-nav-bs.html",
-#        "sidebar-ethical-ads.html",
-#    ]
-# }
+html_sidebars = {
+    "community/index": [
+        "sidebar-nav-bs",
+        "custom-template",
+    ],  # This ensures we test for custom sidebars
+}
 
 source_parsers = {
     ".md": CommonMarkParser,
 }
+html_theme_options = {
+    "icon_links": [
+        {
+            "name": "GitHub",
+            "url": "https://github.com/FREVA-CLINT/freva-deployment",
+            "icon": "fa-brands fa-github",
+        },
+        {
+            "name": "PyPI",
+            "url": "https://pypi.org/project/freva-deployment",
+            "icon": "fa-custom fa-pypi",
+        },
+    ],
+    # "navbar_start": [],  # Remove navigation links from the top bar
+    "navbar_center": ["navbar-nav"],  # Add navigation links to the left sidebar
+    "collapse_navigation": False,
+    "navigation_depth": 4,
+    "navbar_align": "left",
+    "show_nav_level": 2,
+    "secondary_sidebar_items": ["page-toc"],
+}
+html_sidebars = {"**": ["sidebar-nav-bs", "sidebar-ethical-ads"]}
+
 
 source_suffix = [".rst", ".md"]
+
+
+# -- MyST options ------------------------------------------------------------
+
+# This allows us to use ::: to denote directives, useful for admonitions
+myst_enable_extensions = ["colon_fence", "linkify", "substitution"]
+myst_heading_anchors = 2
+myst_substitutions = {"rtd": "[Read the Docs](https://readthedocs.org/)"}
+
+# ReadTheDocs has its own way of generating sitemaps, etc.
+if not os.environ.get("READTHEDOCS"):
+    extensions += ["sphinx_sitemap"]
+
+    html_baseurl = os.environ.get("SITEMAP_URL_BASE", "http://127.0.0.1:8000/")
+    sitemap_locales = [None]
+    sitemap_url_scheme = "{link}"
+
+# specifying the natural language populates some key tags
+language = "en"

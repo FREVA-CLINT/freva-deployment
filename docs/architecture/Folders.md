@@ -1,4 +1,4 @@
-# Primer: Basic Freva configuration
+# Basic Freva configuration
 
 Because the framework consists of multiple parts, Freva has to be configured
 to work with those different parts. This is especially true for the web ui
@@ -14,7 +14,7 @@ is important for the interplay of the `evaluation_system` core and the web ui.
 The content of the initial `evaluation_system.conf` file looks like the
 following:
 
-```
+```ini
 [evaluation_system]
 # Freva - Free Evaluation System Framework configuration file
 # This file contains the necessary configuration information
