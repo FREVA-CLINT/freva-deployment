@@ -7,6 +7,12 @@ What's new
    :maxdepth: 0
    :titlesonly:
 
+v2405.0.0
+~~~~~~~~
+* Bumped version of freva_rest to 2403.0.3
+
+
+
 v2404.0.0
 ~~~~~~~~
 * Bumped version of django_evaluation to 2405.0.0

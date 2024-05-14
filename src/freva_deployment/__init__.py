@@ -1,6 +1,6 @@
 from urllib.request import urlretrieve
 
-__version__ = "2403.2.0"
+__version__ = "2405.0.0"
 FREVA_PYTHON_VERSION = "3.11"
 AVAILABLE_PYTHON_VERSIONS = ["3.8", "3.9", "3.10", "3.11", "3.12"]
 AVAILABLE_CONDA_ARCHS = [
