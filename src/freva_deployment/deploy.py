@@ -732,6 +732,8 @@ class DeployFactory:
                     "ansible_user", getuser()
                 ),
             }
+        config.setdefault("core", {})
+        config["core"].setdefault("vars", {})
         config["core"]["vars"]["core_install_dir"] = cfg["core"]["config"][
             "install_dir"
         ]
