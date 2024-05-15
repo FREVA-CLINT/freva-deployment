@@ -471,13 +471,11 @@ class DeployFactory:
         """Create a password for the database."""
         if self._db_pass:
             return self._db_pass
-        punctuations = "!@$^&*()_+-;:|,.%"
-        num_chars, num_digits, num_punctuations = 20, 4, 4
-        num_chars -= num_digits + num_punctuations
+        num_chars, num_digits = 30, 8
+        num_chars -= num_digits
         characters = [
             "".join([random.choice(string.ascii_letters) for i in range(num_chars)]),
             "".join([random.choice(string.digits) for i in range(num_digits)]),
-            "".join([random.choice(punctuations) for i in range(num_punctuations)]),
         ]
         str_characters = "".join(characters)
         _db_pass = "".join(random.sample(str_characters, len(str_characters)))

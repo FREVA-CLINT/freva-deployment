@@ -182,8 +182,7 @@
       when: cron.stat.exists == true and debug == false
     - pause: seconds=15
     - name: Inserting server infrastructure
-      shell: >
-        /tmp/docker-or-podman exec {{ vault_name }} add-vault-secret data -s db.container {{ vault_name }} -s db.host {{ vault_db_host }} -s db.port {{ vault_db_port }} -s db.passwd '{{ vault_passwd }}' -s db.user {{ vault_db_user }} -s db.db {{ vault_db }}
+      shell: /tmp/docker-or-podman exec {{ vault_name }} add-vault-secret data -s db.container {{ vault_name }} -s db.host {{ vault_db_host }} -s db.port {{ vault_db_port }} -s db.passwd '{{ vault_passwd }}' -s db.user {{ vault_db_user }} -s db.db {{ vault_db }}
     - name: Deleting auxillary files
       file:
         state: absent
