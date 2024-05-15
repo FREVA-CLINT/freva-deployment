@@ -56,7 +56,6 @@ jobs:
         name: Build and push deployment image
         uses: docker/build-push-action@v4
         with:
-          context: assets/share/freva/deployment/vault/
           push: true
           build-args: VERSION=${{steps.repository.outputs.tag}}
           tags: |
