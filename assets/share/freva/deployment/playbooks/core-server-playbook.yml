@@ -48,7 +48,7 @@
       when: mamba_check.stat.exists
     - name: Updating existing freva
       shell:
-        cmd: "{{conda_bin}}/{{pkg_mgr}} update -y -q -p {{core_install_dir}} -c conda-forge freva"
+        cmd: "{{conda_bin}}/{{pkg_mgr}} install -y -q -p {{core_install_dir}} -c conda-forge freva={{core_version}}"
       environment:
         PATH: "{{conda_bin}}"
       when: freva_path.stat.exists
@@ -115,6 +115,12 @@
       with_items:
         - "kernel-install"
         - "metadata-inspector"
+    - name: Installing metadata-crawler
+      ansible.builtin.script:
+        cmd: >
+          "{{asset_dir}}/scripts/download.py"
+          "https://swift.dkrz.de/v1/dkrz_6681fd49-d4e5-44f6-bf39-307a187ed22e/data-crawler/data-crawler-linux64"
+          "-o {{core_install_dir|regex_replace('^~', ansible_env.HOME)}}/sbin/data-crawler"
     - name: Getting status of drs_config.toml file
       stat:
         path: "{{ core_root_dir | regex_replace('^~', ansible_env.HOME)}}/freva/drs_config.toml"
