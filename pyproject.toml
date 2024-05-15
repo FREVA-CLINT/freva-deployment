@@ -104,5 +104,5 @@ deps = git-python
        packaging
        tomli
        requests
-commands = python3 release.py tag freva_deployment -b versions
+commands = python3 release.py tag freva_deployment
 """
