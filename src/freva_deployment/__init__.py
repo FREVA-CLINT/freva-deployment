@@ -1,6 +1,8 @@
+import argparse
 from urllib.request import urlretrieve
 
 __version__ = "2405.0.0"
+
 FREVA_PYTHON_VERSION = "3.11"
 AVAILABLE_PYTHON_VERSIONS = ["3.8", "3.9", "3.10", "3.11", "3.12"]
 AVAILABLE_CONDA_ARCHS = [
@@ -41,4 +43,10 @@ def download_auxiliry_data():
 
 
 if __name__ == "__main__":
-    download_auxiliry_data()
+    app = argparse.ArgumentParser()
+    app.add_argument("-v", "--version", action="store_true", default=False)
+    args = app.parse_args()
+    if args.version:
+        print(__version__)
+    else:
+        download_auxiliry_data()

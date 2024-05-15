@@ -9,28 +9,6 @@ Since we are using ansible we can use this deployment routine from any workstati
 computer (like a Mac-book). You do not need to run the deployment on the
 machines where things get installed. The only requirement is that you have to
 setup ansible and you can establish ssh connections to the servers.
-### Preparation on windows based system (without wsl).
-Currently ansible is not natively available on windows based systems. You can use the
-unix runtime environment [cygwin](https://www.cygwin.com) to download and install the
-needed software. Just follow the steps listed on the web page to setup
-cygwin on your windows system. In order to be able to install the freva-deployment
-program you'll first need to install the following packages via cygwin:
-
-- python3
-- python3-devel
-- git
-- make
-- python3.X-paramiko
-- libffi-devel
-- ansible
-
-We also recommend installing a command line based text editor like vim, nano, etc.
-
-After installing the above listed packages via cygwin you can install the freva-deployment:
-
-```console
-python3 -m pip install -U freva-deployment
-```
 ### Installation on \*nix systems or wsl.
 If you're using Linux, OsX or a Windows subsystem for Linux (WSL) it should be
 sufficient to issues the following commands:
@@ -46,6 +24,17 @@ This command installs ansible and all required python packages.
 ```console
 python3 -m pip install libselinux-python3
 ```
+## Using docker
+
+A pre-build docker image is available to run the deployment
+
+```console
+docker run -it -v /path/to/config:/opt/freva-deployment:z ghcr.io/freva-clint/freva-deployment
+```
+The `-it` flags are important in order to interact with the program. To use
+and save existing configurations you can mount the directories of the config
+files into the container.
+
 
 ## Commands after installation:
 The `pip install` command will create *three* different commands:
