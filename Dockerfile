@@ -4,7 +4,7 @@ LABEL org.opencontainers.image.authors="DRKZ-CLINT"
 LABEL org.opencontainers.image.source="https://github.com/FREVA-CLINT/freva-deployment.git"
 LABEL org.opencontainers.image.version="$VERSION"
 RUN set -ex &&\
-    apk add --no-cache python3 py3-pip &&\
+    apk add --no-cache python3 py3-pip openssh-client sshpass &&\
     mkdir -p /opt/freva-deployment &&\
     ln -sf python3 /usr/bin/python && \
     mkdir -p /tmp/deployment
