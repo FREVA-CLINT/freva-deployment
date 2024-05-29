@@ -63,8 +63,6 @@ services:
 {% endif %}
     environment:
       - EVALUATION_SYSTEM_CONFIG_FILE={{core_root_dir|regex_replace('^~', ansible_env.HOME)}}/freva/evaluation_system.conf
-      - LDAP_USER_DN={{web_ldap_user_dn}}
-      - LDAP_USER_PW={{web_ldap_user_pw}}
       - DJANGO_SUPERUSER_PASSWORD={{ root_passwd }}
       - FREVA_WEB_CONFIG_FILE={{web_config_file}}
       - AUTH_LDAP_SERVER_URI={{web_auth_ldap_server_uri}}

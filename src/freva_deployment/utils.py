@@ -192,14 +192,15 @@ def _create_new_config(inp_file: Path) -> Path:
     return inp_file
 
 
-def load_config(inp_file: str | Path) -> dict[str, Any]:
+def load_config(inp_file: str | Path, convert: bool = False) -> dict[str, Any]:
     """Load the inventory toml file and replace all environment variables."""
     inp_file = _create_new_config(Path(inp_file).expanduser().absolute())
     variables = cast(
         dict[str, str], tomlkit.loads(config_file.read_text())["variables"]
     )
     config = tomlkit.loads(inp_file.read_text())
-    _convert_dict(config, variables, inp_file.parent)
+    if convert:
+        _convert_dict(config, variables, inp_file.parent)
     return config
 
 
