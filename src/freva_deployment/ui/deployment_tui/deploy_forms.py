@@ -117,7 +117,9 @@ class CoreScreen(BaseForm):
                 self.add_widget_intelligent(
                     npyscreen.TitleCombo,
                     name=f"{self.num}Workload manger",
-                    value=self.scheduler_index(cast(str, cfg.get("scheduler_system"))),
+                    value=self.scheduler_index(
+                        cast(str, cfg.get("scheduler_system"))
+                    ),
                     values=self.scheduler_systems,
                 ),
                 True,
@@ -188,7 +190,9 @@ class CoreScreen(BaseForm):
                 self.add_widget_intelligent(
                     npyscreen.TitleFilename,
                     name=f"{self.num}Python path on remote machine:",
-                    value=cfg.get("ansible_python_interpreter", "/usr/bin/python3"),
+                    value=cfg.get(
+                        "ansible_python_interpreter", "/usr/bin/python3"
+                    ),
                 ),
                 False,
             ),
@@ -378,7 +382,9 @@ class WebScreen(BaseForm):
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
                     name=f"{self.num}A brief describtion of the project:",
-                    value=cfg.get("homepage_heading", "Lorem ipsum dolor sit amet"),
+                    value=cfg.get(
+                        "homepage_heading", "Lorem ipsum dolor sit amet"
+                    ),
                 ),
                 True,
             ),
@@ -543,7 +549,9 @@ class WebScreen(BaseForm):
             ldap_model=(
                 self.add_widget_intelligent(
                     npyscreen.TitleCombo,
-                    name=(f"{self.num}Ldap tools class to be used for authentication."),
+                    name=(
+                        f"{self.num}Ldap tools class to be used for authentication."
+                    ),
                     value=current_ldab_model,
                     values=availalbe_ldab_models,
                 ),
@@ -575,7 +583,9 @@ class WebScreen(BaseForm):
                 self.add_widget_intelligent(
                     npyscreen.TitleFilename,
                     name=f"{self.num}Pythonpath on remote machine:",
-                    value=cfg.get("ansible_python_interpreter", "/usr/bin/python3"),
+                    value=cfg.get(
+                        "ansible_python_interpreter", "/usr/bin/python3"
+                    ),
                 ),
                 False,
             ),
@@ -653,7 +663,9 @@ class DBScreen(BaseForm):
             data_path=(
                 self.add_widget_intelligent(
                     npyscreen.TitleText,
-                    name=(f"{self.num}Parent directory for any permanent data:"),
+                    name=(
+                        f"{self.num}Parent directory for any permanent data:"
+                    ),
                     value=cast(str, cfg.get("data_path", "/opt/freva")),
                 ),
                 True,
@@ -684,7 +696,9 @@ class DBScreen(BaseForm):
                 self.add_widget_intelligent(
                     npyscreen.TitleFilename,
                     name=f"{self.num}Pythonpath on remote machine:",
-                    value=cfg.get("ansible_python_interpreter", "/usr/bin/python3"),
+                    value=cfg.get(
+                        "ansible_python_interpreter", "/usr/bin/python3"
+                    ),
                 ),
                 False,
             ),
@@ -790,7 +804,9 @@ class FrevaRestScreen(BaseForm):
                 self.add_widget_intelligent(
                     npyscreen.TitleFilename,
                     name=f"{self.num}Pythonpath on remote machine:",
-                    value=cfg.get("ansible_python_interpreter", "/usr/bin/python3"),
+                    value=cfg.get(
+                        "ansible_python_interpreter", "/usr/bin/python3"
+                    ),
                 ),
                 False,
             ),
@@ -821,7 +837,9 @@ class RunForm(npyscreen.FormMultiPageAction):
 
         self.parentApp.thread_stop.set()
         if not self.project_name.value:
-            npyscreen.notify_confirm("You have to set a project name", title="ERROR")
+            npyscreen.notify_confirm(
+                "You have to set a project name", title="ERROR"
+            )
             return
         missing_form: None | str = self.parentApp.check_missing_config()
         if missing_form:
@@ -840,7 +858,9 @@ class RunForm(npyscreen.FormMultiPageAction):
         else:
             gen_keys = bool(self.gen_keys.value)
         for key_type, keyfile in cert_files.items():
-            key_file = Path(get_current_file_dir(save_file.parent, str(keyfile)))
+            key_file = Path(
+                get_current_file_dir(save_file.parent, str(keyfile))
+            )
             for step, deploy_form in self.parentApp._forms.items():
                 if not keyfile or not Path(key_file).is_file():
                     if (
@@ -849,11 +869,11 @@ class RunForm(npyscreen.FormMultiPageAction):
                         and gen_keys is False
                     ):
                         if keyfile:
-                            msg = (
-                                f"{key_type} certificate file `{key_file}` must exist."
-                            )
+                            msg = f"{key_type} certificate file `{key_file}` must exist."
                         else:
-                            msg = f"You must give a {key_type} certificate file."
+                            msg = (
+                                f"You must give a {key_type} certificate file."
+                            )
                         npyscreen.notify_confirm(msg, title="ERROR")
                         return
         _ = self.parentApp.save_config_to_file(
@@ -888,9 +908,9 @@ class RunForm(npyscreen.FormMultiPageAction):
 
     def create(self) -> None:
         """Custom definitions executed when the from gets created."""
-        self.how_exited_handers[npyscreen.wgwidget.EXITED_ESCAPE] = (
-            self.parentApp.exit_application
-        )
+        self.how_exited_handers[
+            npyscreen.wgwidget.EXITED_ESCAPE
+        ] = self.parentApp.exit_application
         self._add_widgets()
 
     def _add_widgets(self) -> None:

@@ -54,8 +54,12 @@ class AssetDir:
     this_module = "freva_deployment"
 
     def __init__(self):
-        self._user_asset_dir = Path(appdirs.user_data_dir()) / "freva" / "deployment"
-        self._user_config_dir = Path(appdirs.user_config_dir()) / "freva" / "deployment"
+        self._user_asset_dir = (
+            Path(appdirs.user_data_dir()) / "freva" / "deployment"
+        )
+        self._user_config_dir = (
+            Path(appdirs.user_config_dir()) / "freva" / "deployment"
+        )
 
     @staticmethod
     def get_dirs(user: bool = True, key: str = "data") -> Path:
@@ -100,7 +104,9 @@ class AssetDir:
             inventory_file.unlink()
         except FileNotFoundError:
             pass
-        shutil.copy2(self.asset_dir / "config" / "inventory.toml", inventory_file)
+        shutil.copy2(
+            self.asset_dir / "config" / "inventory.toml", inventory_file
+        )
         return self._user_config_dir
 
     @property
@@ -174,9 +180,9 @@ def _create_new_config(inp_file: Path) -> Path:
                     ]["config"].pop(key)
         else:
             config["freva_rest"] = config.pop("databrowser")
-            config["freva_rest"]["config"]["freva_rest_port"] = config["freva_rest"][
-                "config"
-            ].pop("databrowser_port", "")
+            config["freva_rest"]["config"]["freva_rest_port"] = config[
+                "freva_rest"
+            ]["config"].pop("databrowser_port", "")
             config["freva_rest"]["config"]["freva_rest_playbook"] = config[
                 "freva_rest"
             ]["config"].pop("databrowser_playbook", "")
@@ -204,7 +210,9 @@ def load_config(inp_file: str | Path, convert: bool = False) -> dict[str, Any]:
     return config
 
 
-def get_setup_for_service(service: str, setups: list[ServiceInfo]) -> tuple[str, str]:
+def get_setup_for_service(
+    service: str, setups: list[ServiceInfo]
+) -> tuple[str, str]:
     """Get the setup of a service configuration."""
     for setup in setups:
         if setup.name == service:
@@ -217,7 +225,9 @@ def read_db_credentials(
 ) -> dict[str, str]:
     """Read database config."""
     with cert_file.open() as f_obj:
-        key = "".join([k.strip() for k in f_obj.readlines() if not k.startswith("-")])
+        key = "".join(
+            [k.strip() for k in f_obj.readlines() if not k.startswith("-")]
+        )
         sha = hashlib.sha512(key.encode()).hexdigest()
     url = f"http://{db_host}:{port}/vault/data/{sha}"
     return requests.get(url).json()
@@ -242,11 +252,15 @@ def get_email_credentials() -> tuple[str, str]:
         if not username:
             username = Prompt.ask("[green b]Username[/] for mail server")
         if not password:
-            password = Prompt.ask("[green b]Password[/] for mail server", password=True)
+            password = Prompt.ask(
+                "[green b]Password[/] for mail server", password=True
+            )
     return username, password
 
 
-def get_passwd(master_pass: Optional[str] = None, min_characters: int = 8) -> str:
+def get_passwd(
+    master_pass: Optional[str] = None, min_characters: int = 8
+) -> str:
     """Create a secure pasword.
 
     Parameters
@@ -301,7 +315,9 @@ def _create_passwd(min_characters: int, msg: str = "") -> str:
     """Create passwords."""
     master_pass = Prompt.ask(msg or password_prompt, password=True)
     _passwd_is_good(master_pass, min_characters)
-    master_pass_2 = Prompt.ask("[bold green]re-enter[/] master password", password=True)
+    master_pass_2 = Prompt.ask(
+        "[bold green]re-enter[/] master password", password=True
+    )
     if master_pass != master_pass_2:
         raise ValueError("Passwords do not match")
     return master_pass
