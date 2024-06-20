@@ -64,12 +64,9 @@ and save existing configurations you can mount the directories of the config
 files into the container.
 
 ## Commands after installation:
-The `pip install` command will create *four* different commands:
-- `deploy-freva-map`: To setup a service that keeps track of all deployed
-   freva instances and their services.
+The `pip install` command will create *three* different commands:
 - `deploy-freva`: Text user interface to configure and run the deployment.
 - `deploy-freva-cmd`: Run already configured deployment.
-- `freva-service`: Start|Stop|Restart|Check services of freva instances.
 - `freva-migrate`: Command line interface to manage project migration from
    old freva systems to new ones.
 If you can't find the commands mentioned above pip was probably installing
@@ -86,7 +83,7 @@ export PATH=$PATH:$HOME/.local/bin
 Because the services of MariaDB, DatabrowserAPI and Apache httpd will be deployed
 on docker container images, docker needs to be available on the target servers.
 Since version *v2309.0.0* of the deployment the containers are set up
-using `doker-compose`. Hence `docker-compose` (or `podman-compose`) has to be
+using `docker-compose`. Hence `docker-compose` (or `podman-compose`) has to be
 installed on the host systems. Usually installing and running docker
 requires *root* privileges. Hence, on the servers that will be running docker
 you will need root access. There exists an option to install and run docker
@@ -157,7 +154,7 @@ If you already have a configuration saved in a toml base inventory file you can
 issue the `deploy-freva-cmd` command:
 
 ```bash
-eploy-freva-cmd --help
+deploy-freva-cmd --help
 usage: deploy-freva-cmd [-h] [--config CONFIG] [--steps {web,core,db,databrowser} [{web,core,db,databrowser} ...]] [--ask-pass] [--ssh-port SSH_PORT] [-v] [-l]
                         [--gen-keys] [-V]
 
@@ -181,7 +178,7 @@ options:
 
 The `--steps` flags can be used if not all services should be deployed.
 
-# Kown Issues:
+# Known Issues:
 Below are possible solutions to some known issues:
 
 ### SSH connection fails:
@@ -289,7 +286,7 @@ The following command will install freva along all with it's components to
 the local VM:
 
 ```console
-deploy-freva-cmd  assets/share/freva/deployment/config/inventory.toml --gen-keys --ssh-port 2222
+deploy-freva-cmd  --config assets/share/freva/deployment/config/inventory.toml --gen-keys --ssh-port 2222
 ```
 
 If you want to tear down the created VM you can either press CTRL+C in the
