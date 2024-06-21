@@ -26,7 +26,9 @@ class VersionAction(argparse._VersionAction):
 
 def display_versions() -> str:
     """Get all service versions for display."""
-    minimum_version = json.loads((Path(__file__).parent / "versions.json").read_text())
+    minimum_version = json.loads(
+        (Path(__file__).parent / "versions.json").read_text()
+    )
     lookup = {
         "freva_rest": "freva-rest API",
         "core": "freva-core",
@@ -52,7 +54,9 @@ def get_steps_from_versions(detected_versions: Dict[str, str]) -> List[str]:
     -------
     list: A list of services that should be updated.
     """
-    minimum_version = json.loads((Path(__file__).parent / "versions.json").read_text())
+    minimum_version = json.loads(
+        (Path(__file__).parent / "versions.json").read_text()
+    )
     steps = []
     lookup = {"solr": "freva_rest", "vault": "db"}
     for service, min_version in minimum_version.items():

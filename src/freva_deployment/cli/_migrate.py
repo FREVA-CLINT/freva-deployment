@@ -129,7 +129,16 @@ def _migrate_db(parser: argparse.Namespace) -> None:
                 "--tz-utc --no-create-db "
                 f"{parser.old_db}"
             )
-            exec_command(dump_command, stdout=f_obj)
+            try:
+                exec_command(dump_command, stdout=f_obj)
+            except CalledProcessError as error:
+                if "Unknown table \\'COLUMN_STATISTICS\\'" in str(
+                    error.stderr
+                ):
+                    dump_command = dump_command + " --column-statistics=0 "
+                    exec_command(dump_command, stdout=f_obj)
+                else:
+                    raise error
             _add_new_db(new_db_cfg, temp_file.name)
 
 
