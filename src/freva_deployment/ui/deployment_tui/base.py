@@ -10,10 +10,46 @@ from typing import Any, cast
 import npyscreen
 import tomlkit
 
-from freva_deployment.utils import asset_dir, config_file
+from freva_deployment.utils import AD, asset_dir, config_file
 
 logging.basicConfig(level=logging.DEBUG)
 logger: logging.Logger = logging.getLogger("deploy-freva-tui")
+
+
+class InfoMixin:
+    """Mixin class to extend npyscreen widgets with an infobox."""
+
+    def __init__(
+        self, *args: Any, section: str = "", key: str = "", **kwargs: Any
+    ) -> None:
+        name = kwargs.get("name", "Select")
+        kwargs["name"] = f"{name}. Press Strg+F for more info."
+        self.info = AD.get_config_info(section, key)
+        super().__init__(*args, **kwargs)
+
+    def edit(self) -> None:
+        self.parent.current_info = self.info
+        super().edit()
+
+
+class TextInfo(InfoMixin, npyscreen.TitleText):
+    """Extend the TitleText widget by an infobox."""
+
+
+class FileInfo(InfoMixin, npyscreen.TitleFilename):
+    """Extend the TitleFilename widget by an infobox."""
+
+
+class ComboInfo(InfoMixin, npyscreen.TitleCombo):
+    """Extend the TitleCombo widget by an infobox."""
+
+
+class PasswordInfo(InfoMixin, npyscreen.TitlePassword):
+    """Extend the TitlePassword widget by an infobox."""
+
+
+class CheckboxInfo(InfoMixin, npyscreen.RoundCheckBox):
+    """Extend the TitlePassword widget by an infobox."""
 
 
 class FileSelector(npyscreen.FileSelector):
@@ -111,6 +147,9 @@ class BaseForm(npyscreen.FormMultiPageWithMenus, npyscreen.FormWithMenus):
 
     playbook_dir: Path = asset_dir / "playbooks"
     """Default playbook location."""
+
+    current_info: Optional[str] = None
+    """The currently selected widget."""
 
     def get_config(self, key) -> dict[str, str | bool | list[str]]:
         """Read the configuration for a step."""
@@ -241,11 +280,19 @@ class BaseForm(npyscreen.FormMultiPageWithMenus, npyscreen.FormWithMenus):
         self.display()
         self.display()
 
+    def show_info(self, *args: Any, **kwargs: Any) -> None:
+        """Display an info if present."""
+        if isinstance(self.current_info, str):
+            npyscreen.notify_confirm(
+                self.current_info, title="Detailed Information"
+            )
+
     def create(self) -> None:
         """Setup the form."""
-        self.how_exited_handers[
-            npyscreen.wgwidget.EXITED_ESCAPE
-        ] = self.parentApp.exit_application
+        self.how_exited_handers[npyscreen.wgwidget.EXITED_ESCAPE] = (
+            self.parentApp.exit_application
+        )
+        self.add_handlers({"^F": self.show_info})
         self.add_handlers({"^O": self.parentApp.load_dialog})
         self.add_handlers({"^S": self.parentApp.save_dialog})
         self.add_handlers({"^K": self.previews_form})

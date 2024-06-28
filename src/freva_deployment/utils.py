@@ -54,6 +54,7 @@ class AssetDir:
     this_module = "freva_deployment"
 
     def __init__(self):
+        self._inventory_content = None
         self._user_asset_dir = (
             Path(appdirs.user_data_dir()) / "freva" / "deployment"
         )
@@ -93,6 +94,37 @@ class AssetDir:
     @property
     def inventory_file(self) -> Path:
         return self.asset_dir / "config" / "inventory.toml"
+
+    @property
+    def inventory_content(self) -> str:
+        if self._inventory_content is None:
+            self._inventory_content = self.inventory_file.read_text()
+        return self._inventory_content
+
+    def get_config_info(self, section: str, key: str) -> str:
+        """Get the information of a given config key in the config."""
+        if section not in self.inventory_content:
+            raise ValueError("SectionNotFound")
+        content = self.inventory_content.split(f"[{section}]")[-1].splitlines()
+        key_pos = None
+        # Find the line number of the specified key
+        for i, line in enumerate(content):
+            if line.strip().startswith(key):
+                key_pos = i
+                break
+        if key_pos is None:
+            return ""
+        # Collect the explanation block directly above the specified key
+        explanation = []
+        for i in range(key_pos - 1, -1, -1):
+            if content[i].strip().startswith("#"):
+                explanation.append(
+                    content[i].strip().replace("##", "#").strip("#").strip()
+                )
+            else:
+                break
+
+        return " ".join(reversed(explanation)).strip()
 
     @property
     def config_dir(self):

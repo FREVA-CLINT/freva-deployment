@@ -18,6 +18,7 @@ After opening the tui with the `deploy-freva` command you'll see a small
 navigation panel on the bottom. Navigation is done by shortcuts and similar
 to those used in the *nano* text editor. All shortcuts start with
 a `^` which indicates `CTRL+`, main shortcuts are:
+> `CTRL+f`: Further information on each configuration item.
 - `CTRL+x`: Enter main menu.
 - `CRTL+v`: Edit/Add environment variables.
 - `CTRL+o`: Load a saved configuration.
@@ -97,6 +98,9 @@ essential setup steps:
 17. Set the path to the `git` executable if not in default path
    such as `/usr/bin/git`.
 
+
+> ``📝`` Press CTRL+f for *f*urther information on each configuration item.
+
 ### Notes on the core setup
 It is good practice to use only one anaconda environment for multiple Freva
 instances. Each Freva instance only differs in its configuration
@@ -162,6 +166,8 @@ essential setup steps:
     to root. Leave blank if no special user is needed.
 30. Set the login user name for the remote machine.
 
+> ``📝`` Press CTRL+f for *f*urther information on each configuration item.
+
 ### Notes on the web ui setup
 Currently there are ties between the core running on the HPC machine and
 the web ui. These are:
@@ -198,7 +204,7 @@ vault service that gets deployed when setting up the database.
 
 
 
-## Databrowser server setup
+## Freva rest setup
 The third screen configures the setup databrowser server. At the top of
 the screen you'll see a tick box, which indicates whether or not this step is
 used for deployment. If this box is *un*ticked - tick/untick using the
@@ -222,7 +228,9 @@ following explains the essential setup steps:
    binary is not part of the `$PATH` variable.
 8. Set the login user name for the remote machine.
 
-### Notes on the databrowser setup
+> ``📝`` Press CTRL+f for *f*urther information on each configuration item.
+
+### Notes on the freva-rest setup
 Any existing data is *not* overridden if you deploy
 a new server and do not chose to delete any pre existing data. The
 data will be saved to `/opt/freva/<project_name>/databrowser_service/`
@@ -257,6 +265,8 @@ following explains the essential setup steps:
 9. Set the path to the `python3.4+` binary, this should be set if the python
     binary is not part of the `$PATH` variable.
 10. Set the login user name for the remote machine.
+
+> ``📝`` Press CTRL+f for *f*urther information on each configuration item.
 
 ### Notes on the database setup
 This step also includes the deployment of a vault service where all information
