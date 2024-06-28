@@ -7,39 +7,46 @@ What's new
    :maxdepth: 0
    :titlesonly:
 
+v2406.0.0
+~~~~~~~~~
+* Add info panel (access via CTRL+f) for further information on config items.
+* Bug fix reset mariadb root password script.
+
+
+
 v2405.1.1
-~~~~~~~~
+~~~~~~~~~
 * Minor bug fixing.
 
 
 
 v2405.1.0
-~~~~~~~~
+~~~~~~~~~
 * Bumped version of freva core to 2406.0.0
 
 
 
 v2405.0.0
-~~~~~~~~
+~~~~~~~~~
 * Bumped version of freva_rest to 2403.0.3
 
 
 
 v2404.0.0
-~~~~~~~~
+~~~~~~~~~
 * Bumped version of django_evaluation to 2405.0.0
 
 
 
 
 v2403.2.0
-~~~~~~~~
+~~~~~~~~~
 * Bumped version of databrowserAPI to 2403.0.3
 
 
 
 v2403.1.0
-~~~~~~~~
+~~~~~~~~~
 * Bumped version of databrowserAPI to 2403.0.2
 
 
