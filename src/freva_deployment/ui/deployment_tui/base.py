@@ -8,8 +8,8 @@ from pathlib import Path
 from typing import Any, Optional, cast
 
 import npyscreen
-from npyscreen.wgwidget import Widget
 import tomlkit
+from npyscreen.wgwidget import Widget
 
 from freva_deployment.utils import AD, asset_dir, config_file
 
