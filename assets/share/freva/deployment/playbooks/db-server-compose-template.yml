@@ -1,7 +1,6 @@
 version: '3'
 services:
   {{db_name}}:
-    user: {{uid}}:{{gid}}
     image: mariadb:latest
     hostname: {{db_name}}
 {% if debug %}

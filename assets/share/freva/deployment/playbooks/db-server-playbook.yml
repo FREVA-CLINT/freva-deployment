@@ -24,7 +24,7 @@
         -v '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/freva-service-config/mysql/daily_backup.sh:/usr/local/bin/daily_backup:z'
         --rm
         --name {{db_name}}
-        -t docker.io/mariadb:latest
+        -t docker.io/mariadb:{{ db_version }}
     skip_tables_cmd: >
         --network {{ project_name }} -v
         '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/{{project_name}}/db_service:/var/lib/mysql:z'
@@ -36,7 +36,7 @@
         -v '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/freva-service-config/mysql/create_tables.sql:/docker-entrypoint-initdb.d/002_create_tables.sql:z'
         -v '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/freva-service-config/mysql/daily_backup.sh:/usr/local/bin/daily_backup:z'
         -v /tmp/reset_root_pw.sh:/tmp/reset_root_pw.sh:z
-        -t docker.io/mariadb:latest mariadbd-safe --skip-grant-tables
+        -t docker.io/mariadb:{{ db_version }} mariadbd-safe --skip-grant-tables
     continer_name: "{{ db_name }}"
     vault_name: "{{project_name}}-vault"
   tasks:
@@ -98,7 +98,7 @@
     - name: Pulling container
       shell: /tmp/docker-or-podman pull {{item}}
       with_items:
-        - "docker.io/mariadb:latest"
+        - "docker.io/mariadb:{{db_version}}"
         - "ghcr.io/freva-clint/freva-vault:{{vault_version}}"
     - name: Creating docker network
       shell: >
@@ -149,13 +149,13 @@
         owner: "{{uid}}"
         group: "{{gid}}"
     - name: Preparing the root password reset I
-      shell: /tmp/docker-or-podman run --user {{uid}}:{{gid}} -d {{docker_cmd}}
+      shell: /tmp/docker-or-podman run -d {{docker_cmd}}
     - pause: seconds=5
     - name: Preparing the root password reset II
       shell: /tmp/docker-or-podman rm -f {{db_name}}
     - name: Resetting the root password
       shell: |
-        /tmp/docker-or-podman run --user {{uid}}:{{gid}} -d {{skip_tables_cmd}}
+        /tmp/docker-or-podman run -d {{skip_tables_cmd}}
         sleep 5
         /tmp/docker-or-podman exec {{db_name}} bash /tmp/reset_root_pw.sh
         /tmp/docker-or-podman exec {{db_name}} /bin/sh -c 'mariadb -u root {{db}} < /docker-entrypoint-initdb.d/002_create_tables.sql'

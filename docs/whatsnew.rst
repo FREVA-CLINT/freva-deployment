@@ -7,6 +7,10 @@ What's new
    :maxdepth: 0
    :titlesonly:
 
+v2406.0.1
+~~~~~~~~~
+* Keep track of mariadb version
+
 v2406.0.0
 ~~~~~~~~~
 * Add info panel (access via CTRL+f) for further information on config items.
