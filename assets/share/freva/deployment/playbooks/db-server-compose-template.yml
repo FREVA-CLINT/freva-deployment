@@ -28,7 +28,6 @@ services:
     tty: true
     ports:
       - {{db_port}}:3306
-    command: mariadbd-safe --skip-grant-tables
   {{vault_name}}:
     user: {{uid}}:{{gid}}
     image: ghcr.io/freva-clint/freva-vault:{{vault_version}}

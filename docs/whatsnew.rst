@@ -7,6 +7,12 @@ What's new
    :maxdepth: 0
    :titlesonly:
 
+v2406.0.2
+~~~~~~~~~
+* Bug fixing mariadb
+
+
+
 v2406.0.1
 ~~~~~~~~~
 * Keep track of mariadb version
