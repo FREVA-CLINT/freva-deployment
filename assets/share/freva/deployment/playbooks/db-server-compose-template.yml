@@ -10,6 +10,9 @@ services:
     networks:
       - {{db_name}}
 {% endif %}
+{% if command is defined %}
+    command: {{command}}
+{% endif %}
     environment:
       - ROOT_PW={{ root_passwd }}
       - HOST={{ db_host }}
@@ -24,6 +27,9 @@ services:
 {% for volume in db_volumes %}
       - {{volume}}
 {% endfor %}
+{% if command is defined %}
+      - /tmp/reset_root_pw.sh:/tmp/reset_root_pw.sh:z
+{% endif %}
     container_name: {{db_name}}
     tty: true
     ports:

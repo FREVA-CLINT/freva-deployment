@@ -13,30 +13,6 @@
       - '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/freva-service-config/mysql/create_tables.sql:/docker-entrypoint-initdb.d/002_create_tables.sql:z'
       - '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/freva-service-config/mysql/daily_backup.sh:/usr/local/bin/daily_backup:z'
       - '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/{{project_name}}/db_service:/var/lib/mysql:z'
-    docker_cmd: >
-        --network {{ project_name }} -v
-        '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/{{project_name}}/db_service:/var/lib/mysql:z'
-        -e MYSQL_USER={{db_user}}
-        -e MYSQL_PASSWORD='{{db_passwd}}'
-        -e MYSQL_DATABASE={{db}}
-        -e MYSQL_ROOT_PASSWORD={{ root_passwd }}
-        -v '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/freva-service-config/mysql/create_tables.sql:/docker-entrypoint-initdb.d/002_create_tables.sql:z'
-        -v '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/freva-service-config/mysql/daily_backup.sh:/usr/local/bin/daily_backup:z'
-        --rm
-        --name {{db_name}}
-        -t docker.io/mariadb:{{ db_version }}
-    skip_tables_cmd: >
-        --network {{ project_name }} -v
-        '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/{{project_name}}/db_service:/var/lib/mysql:z'
-        -e MYSQL_USER={{db_user}}
-        -e MYSQL_PASSWORD='{{db_passwd}}'
-        -e MYSQL_DATABASE={{db}}
-        --rm
-        --name {{db_name}}
-        -v '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/freva-service-config/mysql/create_tables.sql:/docker-entrypoint-initdb.d/002_create_tables.sql:z'
-        -v '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/freva-service-config/mysql/daily_backup.sh:/usr/local/bin/daily_backup:z'
-        -v /tmp/reset_root_pw.sh:/tmp/reset_root_pw.sh:z
-        -t docker.io/mariadb:{{ db_version }} mariadbd-safe --skip-grant-tables
     continer_name: "{{ db_name }}"
     vault_name: "{{project_name}}-vault"
   tasks:
@@ -148,25 +124,27 @@
         path: '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/freva-service-config'
         owner: "{{uid}}"
         group: "{{gid}}"
-    - name: Preparing the root password reset I
-      shell: /tmp/docker-or-podman run -d {{docker_cmd}}
-    - pause: seconds=5
-    - name: Preparing the root password reset II
-      shell: /tmp/docker-or-podman rm -f {{db_name}}
-    - name: Resetting the root password
-      shell: |
-        /tmp/docker-or-podman run -d {{skip_tables_cmd}}
-        sleep 5
-        /tmp/docker-or-podman exec {{db_name}} bash /tmp/reset_root_pw.sh
-        /tmp/docker-or-podman exec {{db_name}} /bin/sh -c 'mariadb -u root {{db}} < /docker-entrypoint-initdb.d/002_create_tables.sql'
-    - name: Deleting temp. container
-      shell: |
-        /tmp/docker-or-podman rm -f {{db_name}}
     - name: Creating compose directory structure
       file:
         path: '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/compose_services'
         state: directory
         recurse: true
+    - name: Creating compose file for root password rset
+      template:
+        src: "{{ asset_dir }}/playbooks/db-server-compose-template.yml"
+        dest: "{{db_data_path|regex_replace('^~', ansible_env.HOME)}}/compose_services/{{db_name}}-compose.yml"
+      vars:
+        command: "--skip-grant-tables"
+    - name: Starting the docker containers
+      shell: /tmp/docker-or-podman compose -f {{compose_file}} up -d
+    - pause: seconds=5
+    - name: Resetting the root password
+      shell: /tmp/docker-or-podman compose -f {{compose_file}} exec {{db_name}} {{item}}
+      with_items:
+        - "/bin/sh -c 'mariadb -u root {{db}} < /docker-entrypoint-initdb.d/002_create_tables.sql'"
+        - "/bin/sh /tmp/reset_root_pw.sh"
+    - name: Deleting temp. container
+      shell: /tmp/docker-or-podman compose -f {{compose_file}} down
     - name: Creating compose file
       template:
         src: "{{ asset_dir }}/playbooks/db-server-compose-template.yml"
