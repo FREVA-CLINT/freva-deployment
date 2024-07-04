@@ -1,8 +1,10 @@
 ---
-- hosts: freva_rest
+- name: Deploying freva restAPI
+  hosts: freva_rest
 
   become: "{{ freva_rest_ansible_become_user is defined and freva_rest_ansible_become_user != '' }}"
   vars:
+    become: "{{ freva_rest_ansible_become_user is defined and freva_rest_ansible_become_user != '' }}"
     ansible_python_interpreter: "{{ freva_rest_ansible_python_interpreter }}"
     freva_rest_name: "{{project_name}}-freva_rest"
     databrowser_name: "{{project_name}}-databrowser"
@@ -148,7 +150,10 @@
         /tmp/create_systemd.py {{freva_rest_name}} compose --enable --project-name {{freva_rest_name}} -f {{compose_file}} up --remove-orphans
       environment:
         DEBUG: '{{ debug }}'
-      when: systemctl.stat.exists == true
+      when: systemctl.stat.exists == true and debug == false
+    - name: Starting compose service
+      shell: /tmp/docker-or-podman compose -f {{compose_file}} up -d
+      when: systemctl.stat.exists == false or debug == true
     - pause: seconds=3
     - name: Creating cron jobs
       shell: >
@@ -162,14 +167,40 @@
         - /tmp/docker-or-podman
         - /tmp/create_systemd.py
         - /tmp/solr_service
-- hosts: web
+
+- name: Restarting the web service
+  hosts: web
   become: "{{ web_ansible_become_user is defined and web_ansible_become_user != '' }}"
   vars:
+    become: "{{ web_ansible_become_user is defined and web_ansible_become_user != '' }}"
+    compose_file: '{{web_data_path|regex_replace("^~", ansible_env.HOME)}}/compose_services/{{web_name}}-compose.yml'
   tasks:
     - name: Registering systemctl path
       stat:
         path: /usr/bin/systemctl
       register: systemctl
-    - name: Restarting web container
-      shell: systemctl restart {{web_name}}; echo 0
-      when: systemctl.stat.exists == true
+    - name: Copying docker/podman wrapper script
+      copy:
+        src: "{{ asset_dir }}/scripts/docker-or-podman"
+        dest: /tmp/docker-or-podman
+        mode: "0775"
+      when: systemctl.stat.exists == false or debug == true
+    - name: Restarting web container via systemd
+      shell: systemctl restart {{web_name}}
+      ignore_errors: true
+      failed_when: false
+      no_log: true
+      when: systemctl.stat.exists == true and debug == false
+    - name: Restarting compose service
+      shell: /tmp/docker-or-podman compose -f {{compose_file}} {{item}}
+      with_items:
+        - "down"
+        - "up -d"
+      when: systemctl.stat.exists == false or debug == true
+      failed_when: false
+      ignore_errors: true
+    - name: Deleting auxillary files
+      file:
+        state: absent
+        path: /tmp/docker-or-podman
+      when: systemctl.stat.exists == false or debug == true

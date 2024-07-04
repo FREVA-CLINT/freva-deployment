@@ -1,8 +1,10 @@
 ---
-- hosts: db
+- name: Deploying the database service
+  hosts: db
 
   become: "{{ db_ansible_become_user is defined and db_ansible_become_user != '' }}"
   vars:
+    become: "{{ db_ansible_become_user is defined and db_ansible_become_user != '' }}"
     ansible_python_interpreter: "{{ db_ansible_python_interpreter }}"
     ansible_become_user: "{{ db_ansible_become_user | default('root') }}"
     compose_file: '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/compose_services/{{db_name}}-compose.yml'
@@ -15,6 +17,7 @@
       - '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/{{project_name}}/db_service:/var/lib/mysql:z'
     continer_name: "{{ db_name }}"
     vault_name: "{{project_name}}-vault"
+    adminer_name: "{{project_name}}-adminer"
   tasks:
     - name: Get UID
       command: id -u {{ ansible_user }}
@@ -85,6 +88,13 @@
         path: '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/{{ project_name }}/db_service'
         state: absent
       when: db_wipe == true
+    - name: Registering db_service path
+      stat:
+        path: '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/{{ project_name }}/db_service'
+      register: db_service
+    - name:  Set db_service path exist facts
+      set_fact:
+        db_service_exist: "{{ db_service.stat.exists }}"
     - name: Creating service directory structure
       file:
         state: directory
@@ -129,22 +139,28 @@
         path: '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/compose_services'
         state: directory
         recurse: true
-    - name: Creating compose file for root password rset
+    - name: Creating compose file for root password reset
       template:
         src: "{{ asset_dir }}/playbooks/db-server-compose-template.yml"
         dest: "{{db_data_path|regex_replace('^~', ansible_env.HOME)}}/compose_services/{{db_name}}-compose.yml"
       vars:
         command: "--skip-grant-tables"
+        root_pw: true
+      when: db_service_exist == true
     - name: Starting the docker containers
       shell: /tmp/docker-or-podman compose -f {{compose_file}} up -d
+      when: db_service_exist == true
     - pause: seconds=5
+      when: db_service_exist == true
     - name: Resetting the root password
       shell: /tmp/docker-or-podman compose -f {{compose_file}} exec {{db_name}} {{item}}
       with_items:
         - "/bin/sh -c 'mariadb -u root {{db}} < /docker-entrypoint-initdb.d/002_create_tables.sql'"
         - "/bin/sh /tmp/reset_root_pw.sh"
+      when: db_service_exist == true
     - name: Deleting temp. container
       shell: /tmp/docker-or-podman compose -f {{compose_file}} down
+      when: db_service_exist == true
     - name: Creating compose file
       template:
         src: "{{ asset_dir }}/playbooks/db-server-compose-template.yml"
@@ -154,13 +170,21 @@
         cmd: /tmp/create_systemd.py {{db_name}} compose --enable --project-name {{db_name}} -f {{compose_file}} up --remove-orphans
       environment:
         DEBUG: '{{ debug }}'
-      when: systemctl.stat.exists == true
+      when: systemctl.stat.exists == true and debug == false
+    - name: Starting compose service
+      shell: /tmp/docker-or-podman compose -f {{compose_file}} up -d
+      when: systemctl.stat.exists == false or debug == true
     - name: Creating cron jobs
       shell: sh /tmp/create_cron.sh "{{ db_name }}" "{{db_email}}"
       when: cron.stat.exists == true and debug == false
     - pause: seconds=15
     - name: Inserting server infrastructure
-      shell: /tmp/docker-or-podman exec {{ vault_name }} add-vault-secret data -s db.container {{ vault_name }} -s db.host {{ vault_db_host }} -s db.port {{ vault_db_port }} -s db.passwd '{{ vault_passwd }}' -s db.user {{ vault_db_user }} -s db.db {{ vault_db }}
+      shell: >
+        /tmp/docker-or-podman exec {{ vault_name }} add-vault-secret
+        data -s db.container {{ vault_name }} -s db.host {{ vault_db_host }}
+        -s db.port {{ vault_db_port }} -s db.db {{ vault_db }}
+        -s db.passwd '{{ debug | ternary(root_passwd, vault_passwd) }}'
+        -s db.user {{ debug | ternary('root', vault_db_user) }}
     - name: Deleting auxillary files
       file:
         state: absent
@@ -170,14 +194,39 @@
         - /tmp/create_cron.sh
         - /tmp/reset_root_pw.sh
         - /tmp/docker-or-podman
-- hosts: web
+
+- name: Restarting the web service
+  hosts: web
   become: "{{ web_ansible_become_user is defined and web_ansible_become_user != '' }}"
   vars:
+    become: "{{ web_ansible_become_user is defined and web_ansible_become_user != '' }}"
+    compose_file: '{{web_data_path|regex_replace("^~", ansible_env.HOME)}}/compose_services/{{web_name}}-compose.yml'
   tasks:
     - name: Registering systemctl path
       stat:
         path: /usr/bin/systemctl
       register: systemctl
-    - name: Restarting web container
-      shell: systemctl restart {{web_name}}; echo 0
-      when: systemctl.stat.exists == true
+    - name: Copying docker/podman wrapper script
+      copy:
+        src: "{{ asset_dir }}/scripts/docker-or-podman"
+        dest: /tmp/docker-or-podman
+        mode: "0775"
+      when: systemctl.stat.exists == false or debug == true
+    - name: Restarting web container via systemd
+      shell: systemctl restart {{web_name}}
+      ignore_errors: true
+      failed_when: false
+      when: systemctl.stat.exists == true and debug == false
+    - name: Restarting compose service
+      shell: /tmp/docker-or-podman compose -f {{compose_file}} {{item}}
+      with_items:
+        - "down"
+        - "up -d"
+      when: systemctl.stat.exists == false or debug == true
+      ignore_errors: true
+      failed_when: false
+    - name: Deleting auxillary files
+      file:
+        state: absent
+        path: /tmp/docker-or-podman
+      when: systemctl.stat.exists == false or debug == true
