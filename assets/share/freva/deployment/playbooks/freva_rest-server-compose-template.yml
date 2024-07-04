@@ -1,7 +1,11 @@
 version: '3'
 services:
   {{solr_name}}:
-    user: "{{uid}}:{{gid}}"
+{% if (become == true and ansible_become_user == 'root') or ansible_user == 'root' %}
+    user: {{uid}}:{{gid}}
+{% else %}
+    user: root:0
+{% endif %}
     image: solr:{{solr_version}}
     container_name: {{solr_name}}
     hostname: {{solr_name}}
@@ -24,7 +28,11 @@ services:
       - 8983:8983
 
   {{mongo_name}}:
-    user: "{{uid}}:{{gid}}"
+{% if (become == true and ansible_become_user == 'root') or ansible_user == 'root' %}
+    user: {{uid}}:{{gid}}
+{% else %}
+    user: root:0
+{% endif %}
     image: docker.io/mongo:latest
     container_name: {{mongo_name}}
     hostname: {{mongo_name}}
@@ -47,7 +55,11 @@ services:
     tty: true
 
   {{freva_rest_name}}:
-    user: "{{uid}}:{{gid}}"
+{% if (become == true and ansible_become_user == 'root') or ansible_user == 'root' %}
+    user: {{uid}}:{{gid}}
+{% else %}
+    user: root:0
+{% endif %}
     image: ghcr.io/freva-clint/freva-rest-api:{{freva_rest_version}}
     hostname: {{freva_rest_name}}
 {% if debug %}
@@ -58,6 +70,7 @@ services:
 {% endif %}
     environment:
       - SOLR_CORE=files
+      - API_PORT={{freva_rest_port}}
 {% if debug %}
       - SOLR_HOST=127.0.0.1:8983
       - MONGO_HOST=127.0.0.1:27017
@@ -69,7 +82,7 @@ services:
       - MONGO_DB=search_stats
       - MONGO_USER=mongo
     ports:
-      - {{freva_rest_port}}:8080
+      - {{freva_rest_port}}:{{freva_rest_port}}
     container_name: {{freva_rest_name}}
     depends_on:
       - {{solr_name}}
@@ -78,8 +91,8 @@ services:
 
 networks:
 {% if debug  %}
-  hostnet:
-    driver: host
+    hostnet:
+      driver: host
 {% else %}
   {{freva_rest_name}}:
     driver: bridge

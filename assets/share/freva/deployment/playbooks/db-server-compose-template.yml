@@ -1,7 +1,11 @@
 version: '3'
 services:
   {{db_name}}:
+{% if (become == true and ansible_become_user == 'root') or ansible_user == 'root' %}
     user: {{uid}}:{{gid}}
+{% else %}
+    user: root:0
+{% endif %}
     image: mariadb:{{db_version}}
     hostname: {{db_name}}
 {% if debug %}
@@ -9,6 +13,9 @@ services:
 {% else %}
     networks:
       - {{db_name}}
+{% endif %}
+{% if command is defined %}
+    command: {{command}}
 {% endif %}
     environment:
       - ROOT_PW={{ root_passwd }}
@@ -19,18 +26,28 @@ services:
       - MYSQL_PASSWORD={{db_passwd}}
       - MYSQL_DATABASE={{db}}
       - MYSQL_ROOT_PASSWORD={{ root_passwd }}
+      - MARIADB_USER={{db_user}}
+      - MARIADB_PASSWORD={{db_passwd}}
+      - MARIADB_DATABASE={{db}}
+      - MARIADB_ROOT_PASSWORD={{ root_passwd }}
       - BACKUP_DIR=/var/lib/mysql/backup
     volumes:
 {% for volume in db_volumes %}
       - {{volume}}
 {% endfor %}
+{% if root_pw is defined %}
+      - /tmp/reset_root_pw.sh:/tmp/reset_root_pw.sh:z
+{% endif %}
     container_name: {{db_name}}
     tty: true
     ports:
       - {{db_port}}:3306
-    command: mariadbd-safe --skip-grant-tables
   {{vault_name}}:
+{% if (become == true and ansible_become_user == 'root') or ansible_user == 'root' %}
     user: {{uid}}:{{gid}}
+{% else %}
+    user: root:0
+{% endif %}
     image: ghcr.io/freva-clint/freva-vault:{{vault_version}}
     hostname: {{db_name}}
     cap_add:
@@ -59,8 +76,8 @@ services:
 
 networks:
 {% if debug %}
-    hostnet:
-      diver: host
+      hostnet:
+        driver: host
 {% else %}
     {{db_name}}:
       driver: bridge

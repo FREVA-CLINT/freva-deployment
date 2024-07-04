@@ -28,12 +28,18 @@ services:
 {% for volume in apache_volumes %}
       - {{volume}}
 {% endfor %}
+{% if (become == true and ansible_become_user == 'root') or ansible_user == 'root' %}
     command: /usr/local/bin/prepare-httpd
+{% endif %}
     ports:
       - {{web_port_httpd}}:{{web_port_httpd}}
       - {{web_port_httpsd}}:{{web_port_httpsd}}
   {{redis_name}}:
+{% if (become == true and ansible_become_user == 'root') or ansible_user == 'root' %}
     user: {{uid}}:{{gid}}
+{% else %}
+    user: root:0
+{% endif %}
     image: redis
     volumes:
 {% for volume in redis_volumes %}
@@ -97,8 +103,8 @@ services:
 
 networks:
 {% if debug %}
-  hostnet:
-    driver: host
+    hostnet:
+      driver: host
 {% else %}
   {{web_name}}:
     driver: bridge

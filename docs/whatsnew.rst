@@ -7,6 +7,17 @@ What's new
    :maxdepth: 0
    :titlesonly:
 
+v2407.0.0
+~~~~~~~~~
+* Improve local dev (debug) deployment mode.
+* Improve rootless deployment.
+
+v2406.0.2
+~~~~~~~~~
+* Bug fixing mariadb
+
+
+
 v2406.0.1
 ~~~~~~~~~
 * Keep track of mariadb version
