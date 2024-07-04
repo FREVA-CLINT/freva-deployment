@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import json
 import os
+import platform
 import random
+import shutil
 import signal
 import string
 import sys
@@ -17,6 +19,7 @@ from socket import gethostbyname, gethostname
 from typing import Any, cast
 from urllib.parse import urlparse
 
+import appdirs
 import tomlkit
 import yaml
 from ansible_runner import run
@@ -42,6 +45,57 @@ from .utils import (
     load_config,
 )
 from .versions import get_steps_from_versions
+
+
+def get_current_architecture() -> str:
+    """
+    Determines the current architecture and operating system
+    and maps it to one of the supported architectures.
+
+    Supported architectures:
+    - linux-64
+    - linux-aarch64
+    - linux-ppc64le
+    - linux-s390x
+    - osx-64
+    - osx-arm64
+
+    Returns:
+        str: The corresponding architecture for mamba installation.
+    """
+    system = platform.system().lower()
+    machine = platform.machine().lower()
+
+    if system == "linux":
+        if machine == "x86_64":
+            return "linux-64"
+        if machine in ("aarch64", "arm64"):
+            return "linux-aarch64"
+        if machine == "ppc64le":
+            return "linux-ppc64le"
+        if machine == "s390x":
+            return "linux-s390x"
+    elif system == "darwin":
+        if machine == "x86_64":
+            return "osx-64"
+        if machine == "arm64":
+            return "osx-arm64"
+    return "linux-64"
+
+
+def mamba_to_conda_arch(arch: str) -> str:
+    """Translate a mamba to a conda arch."""
+    translate = {
+        "linux-64": "Linux-x86_64",
+        "linux-aarch64": "Linux-aarch64",
+        "linux-ppc64le": "Linux-ppc64le",
+        "linux-s390x": "Linux-s390x",
+        "osx-64": "MacOSX-x86_64",
+        "osx-arm64": "MacOSX-arm64",
+    }
+    if arch in translate.values():
+        return arch
+    return translate.get(arch, "linux-64")
 
 
 class DeployFactory:
