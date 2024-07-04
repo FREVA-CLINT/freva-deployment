@@ -23,7 +23,9 @@ def reporthook(count: float, block_size: float, total_size: float) -> None:
     frac = count * block_size / total_size
     percent = int(100 * frac)
     bar = "#" * int(frac * 40)
-    msg = "Downloading: [{0:<{1}}] | {2}% Completed".format(bar, 40, round(percent, 2))
+    msg = "Downloading: [{0:<{1}}] | {2}% Completed".format(
+        bar, 40, round(percent, 2)
+    )
     print(msg, end="\r", flush=True)
     if frac >= 1:
         print()
@@ -62,12 +64,12 @@ def cli() -> Tuple[str, str]:
 
 def download(url: str, output: str) -> None:
     """Download a file."""
-    out = Path(output)
+    out = Path(output).expanduser()
     out.parent.mkdir(exist_ok=True, parents=True)
-    logger.debug("Downloading %s to %s", url, output)
+    logger.debug("Downloading %s to %s", url, out)
     urllib.request.urlretrieve(
         url,
-        filename=output,
+        filename=str(out),
         reporthook=reporthook,
     )
     out.chmod(0o755)
