@@ -3,6 +3,8 @@ services:
   {{solr_name}}:
 {% if (become == true and ansible_become_user == 'root') or ansible_user == 'root' %}
     user: {{uid}}:{{gid}}
+{% else %}
+    user: root:0
 {% endif %}
     image: solr:{{solr_version}}
     container_name: {{solr_name}}
@@ -28,6 +30,8 @@ services:
   {{mongo_name}}:
 {% if (become == true and ansible_become_user == 'root') or ansible_user == 'root' %}
     user: {{uid}}:{{gid}}
+{% else %}
+    user: root:0
 {% endif %}
     image: docker.io/mongo:latest
     container_name: {{mongo_name}}
@@ -53,6 +57,8 @@ services:
   {{freva_rest_name}}:
 {% if (become == true and ansible_become_user == 'root') or ansible_user == 'root' %}
     user: {{uid}}:{{gid}}
+{% else %}
+    user: root:0
 {% endif %}
     image: ghcr.io/freva-clint/freva-rest-api:{{freva_rest_version}}
     hostname: {{freva_rest_name}}

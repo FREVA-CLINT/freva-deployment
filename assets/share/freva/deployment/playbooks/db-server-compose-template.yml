@@ -3,6 +3,8 @@ services:
   {{db_name}}:
 {% if (become == true and ansible_become_user == 'root') or ansible_user == 'root' %}
     user: {{uid}}:{{gid}}
+{% else %}
+    user: root:0
 {% endif %}
     image: mariadb:{{db_version}}
     hostname: {{db_name}}
@@ -43,6 +45,8 @@ services:
   {{vault_name}}:
 {% if (become == true and ansible_become_user == 'root') or ansible_user == 'root' %}
     user: {{uid}}:{{gid}}
+{% else %}
+    user: root:0
 {% endif %}
     image: ghcr.io/freva-clint/freva-vault:{{vault_version}}
     hostname: {{db_name}}
