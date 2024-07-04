@@ -56,7 +56,7 @@ hosts = "localhost"
 hosts = "localhost"
 
 ### CONFIGURATION VARIABLES
-## The following section defines important variables required for 
+## The following section defines important variables required for
 ## correct system deployment.
 
 [db.config]
@@ -81,7 +81,8 @@ db = "frevadb"
 ansible_user = ""
 
 ## You can set the db_host separately; if none is given (default),
-## the one from the host names above will be used.
+## the one from the host names above will be used, this is mainly used
+## for local debugging purpose.
 db_host = ""
 
 ## Set the become (sudo) username to change to for installing the services.
@@ -162,10 +163,10 @@ install_dir = "/opt/freva/conda"
 ## The directory where the project configuration files will be stored.
 ## This can be useful if you want to set up multiple freva instances with
 ## the same software stack (Anaconda environment). Leave blank to use the
-## same directory as `install_dir`.
+## same directory as anaconda installation directory.
 root_dir = "/home/freva/freva-env"
 
-## If you do not wish to install a new freva Conda environment but only 
+## If you do not wish to install a new freva Conda environment but only
 ## (re)configure an already installed system, you can set the `install`
 ## variable to false. This can be useful if you have a central instance
 ## of freva deployed and want to set up a project-specific configuration
@@ -173,13 +174,15 @@ root_dir = "/home/freva/freva-env"
 install = true
 
 ## The directory where user-specific output will be stored.
-## If left blank, it defaults to `<root_dir>/work`.
+## If left blank, it defaults to the folder that holds the project
+## specific (config) data `<root_dir>/work`.
 base_dir_location = ""
 
 ## Set the directory holding user content, like plots, for the web user
 ## interface. Note: After a plugin application, display content of the plugin
 ## output will be copied to this directory. The default location of this
-## directory (if left blank) is <base_dir_location>/share/preview.
+## directory (if left blank) is the user-specific output dir
+## `<base_dir_location/share/preview`.
 preview_path = ""
 
 ## Set the workload manager system. Currently available options are:
@@ -188,12 +191,14 @@ scheduler_system = "local"
 
 ## Set the path to the directory that contains the stdout of the plugins.
 ## This directory must be accessible to the web UI. The workload manager
-## will write the stdout into this directory. Defaults to <base_dir_location>/share.
+## will write the stdout into this directory. Defaults to user-specific 
+## output dir `<base_dir_location>/share`.
 scheduler_output_dir = ""
 
 ## Set the target architecture of the system where the backend will be installed.
 ## You can choose from the following options:
-## Linux-x86_64 (default), Linux-aarch64, Linux-ppc64le, Linux-s390x, MacOSX-x86_64.
+## Linux-x86_64 (default), Linux-aarch64, Linux-ppc64le, Linux-s390x,
+## MacOSX-x86_64, MacOSX-arm64
 arch = "Linux-x86_64"
 
 ## If you need to install the core or its configuration as a different user,
@@ -367,4 +372,3 @@ web_playbook = ""
 ## Non-privileged installation means the system will be installed in the
 ## user space of the user that logs on to the system.
 ansible_become_user = "root"
-
