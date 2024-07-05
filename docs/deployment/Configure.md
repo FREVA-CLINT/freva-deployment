@@ -41,6 +41,7 @@ Options:
   -v, --verbose         Verbosity level (default: 0)
   -l, --local           Deploy services on the local machine, debug purpose. (default: False)
   -g, --gen-keys        Generate public and private web certs, use with caution. (default: False)
+   --skip-version-check  Skip the version check. Use with caution. (default: False)
   -V, --version         show program's version number and exit
 
 ```
@@ -133,6 +134,17 @@ This would redirect all traffic from http(s)://www.my-host.org to the
 apache httpd container that serves the web app without having the users to
 remember the specific ports. Similar configurations are available to other
 web server software.
+
+
+## Version checking
+Because the system consists of multiple micro services the software will
+perform a version check *before* the deployment to ensure that all versions
+fit together. If you for example want to deploy the rest api the system will
+also check an update of the freva cli if it finds that the cli library doesn't
+fit with the latest version of the rest api. This ensures that all parts of the
+system will work together.
+> **_Note:_** You can disable this version checking by using the
+  `--skip-version-check` flag. Use this flag with caution.
 
 
 
