@@ -58,10 +58,16 @@ def tui() -> None:
         ask_pass = setup.pop("ask_pass")
         steps = ", ".join(setup["steps"])
         ssh_port = setup.pop("ssh_port")
+        skip_version_check = setup.pop("skip_version_check", False)
         RichConsole.print(f"Playing steps: [i]{steps}[/] with ansible")
         with DeployFactory(**setup) as DF:
             try:
-                DF.play(ask_pass, verbosity, ssh_port=ssh_port)
+                DF.play(
+                    ask_pass,
+                    verbosity,
+                    ssh_port=ssh_port,
+                    skip_version_check=skip_version_check,
+                )
             except KeyboardInterrupt:
                 raise SystemExit(130)
             except DeploymentError:
