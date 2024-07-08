@@ -20,8 +20,10 @@
       - '{{freva_rest_data_path|regex_replace("^~", ansible_env.HOME)}}/freva-service-config/solr/create_cores.sh:/docker-entrypoint-initdb.d/create_cores.sh:z'
       - '{{freva_rest_data_path|regex_replace("^~", ansible_env.HOME)}}/freva-service-config/solr/synonyms.txt:/opt/solr/synonyms.txt:z'
       - '{{freva_rest_data_path|regex_replace("^~", ansible_env.HOME)}}/freva-service-config/solr/daily_backup.sh:/usr/local/bin/daily_backup:z'
+      - '{{freva_rest_data_path|regex_replace("^~", ansible_env.HOME)}}/{{ project_name }}/freva_rest/healthcheck.sh:/tmp/healthcheck.sh:z'
     mongo_volumes:
       - '{{freva_rest_data_path|regex_replace("^~", ansible_env.HOME)}}/{{project_name}}/freva_rest/stats:/data/db:z'
+      - '{{freva_rest_data_path|regex_replace("^~", ansible_env.HOME)}}/{{ project_name }}/freva_rest/rootless-entrypoint.sh:/tmp/entrypoint.sh:z'
     ansible_become_user: "{{ freva_rest_ansible_become_user | default('root') }}"
   tasks:
     - name: Get UID
@@ -96,6 +98,17 @@
       with_items:
         - '{{solr_data}}/data'
         - '{{data_path}}'
+    - name: Copy entrypoint wrapper script
+      copy:
+        src: "{{ asset_dir }}/scripts/{{item}}"
+        dest: '{{data_path}}/{{item}}'
+        owner: "{{uid}}"
+        group: "{{gid}}"
+        mode: "0755"
+      with_items:
+        - "rootless-entrypoint.sh"
+        - "healthcheck.sh"
+
     - name: Creating compose directory structure
       file:
         path: '{{freva_rest_data_path|regex_replace("^~", ansible_env.HOME)}}/compose_services'

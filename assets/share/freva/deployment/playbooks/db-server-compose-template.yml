@@ -5,8 +5,9 @@ services:
     user: {{uid}}:{{gid}}
 {% else %}
     user: root:0
+    entrypoint: /tmp/entrypoint.sh
 {% endif %}
-    image: mariadb:{{db_version}}
+    image: docker.io/mariadb:{{db_version}}
     hostname: {{db_name}}
 {% if debug %}
     network_mode: host
@@ -42,6 +43,9 @@ services:
     tty: true
     ports:
       - {{db_port}}:3306
+    depends_on:
+      - {{vault_name}}
+  
   {{vault_name}}:
 {% if (become == true and ansible_become_user == 'root') or ansible_user == 'root' %}
     user: {{uid}}:{{gid}}
@@ -72,7 +76,6 @@ services:
     tty: true
     ports:
       - 5002:5002
-
 
 networks:
 {% if debug %}

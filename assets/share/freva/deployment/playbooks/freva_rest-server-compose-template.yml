@@ -5,8 +5,9 @@ services:
     user: {{uid}}:{{gid}}
 {% else %}
     user: root:0
+    command: "-force"
 {% endif %}
-    image: solr:{{solr_version}}
+    image: docker.io/solr:{{solr_version}}
     container_name: {{solr_name}}
     hostname: {{solr_name}}
 {% if debug %}
@@ -32,6 +33,7 @@ services:
     user: {{uid}}:{{gid}}
 {% else %}
     user: root:0
+    entrypoint: /tmp/entrypoint.sh
 {% endif %}
     image: docker.io/mongo:latest
     container_name: {{mongo_name}}
@@ -88,6 +90,7 @@ services:
       - {{solr_name}}
       - {{mongo_name}}
     tty: true
+
 
 networks:
 {% if debug  %}
