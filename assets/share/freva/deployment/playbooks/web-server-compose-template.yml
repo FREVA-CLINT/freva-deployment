@@ -1,7 +1,7 @@
 version: '3'
 services:
   {{apache_name}}:
-    image: httpd:latest
+    image: docker.io/httpd:latest
     user: root:0
     container_name: {{apache_name}}
     hostname: {{apache_name}}
@@ -34,13 +34,16 @@ services:
     ports:
       - {{web_port_httpd}}:{{web_port_httpd}}
       - {{web_port_httpsd}}:{{web_port_httpsd}}
+
+
   {{redis_name}}:
 {% if (become == true and ansible_become_user == 'root') or ansible_user == 'root' %}
     user: {{uid}}:{{gid}}
 {% else %}
     user: root:0
+    entrypoint: /tmp/entrypoint.sh
 {% endif %}
-    image: redis
+    image: docker.io/redis:latest
     volumes:
 {% for volume in redis_volumes %}
       - {{volume}}
@@ -55,6 +58,7 @@ services:
     tty: true
     container_name: {{redis_name}}
     hostname: {{redis_name}}
+
 
   {{web_name}}:
     user: root:0

@@ -1,9 +1,9 @@
 import argparse
 from urllib.request import urlretrieve
 
-__version__ = "2407.0.0"
+__version__ = "2407.1.0"
 
-FREVA_PYTHON_VERSION = "3.11"
+FREVA_PYTHON_VERSION = "3.12"
 AVAILABLE_PYTHON_VERSIONS = ["3.8", "3.9", "3.10", "3.11", "3.12"]
 AVAILABLE_CONDA_ARCHS = [
     "linux-64",

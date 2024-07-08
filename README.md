@@ -21,7 +21,7 @@ used to open the vault. This public key will be saved in the `evaluation_system`
 backend root directory. Only if saved this key and the key in the vault match,
 secrets can be retrieved. Therefore it might be a good idea to deploy,
 the mariadb server (and with it the vault) and the `evaluation_system`
-backend togehter.
+backend together.
 
 On *CentOS* python SELinux libraries need to be installed. If you choose to
 install ansible via the `install_ansible` you'll have to use `conda` to
@@ -91,6 +91,17 @@ without root, information on a root-less docker option
 can be found [on the docker docs](https://docs.docker.com/engine/security/rootless/)
 > **_Note:_** Some systems use `podman` instead of `docker`. The deployment
 routine is able to distinguish and use the right service.
+
+## Version checking
+Because the system consists of multiple micro services the software will
+perform a version check *before* the deployment to ensure that all versions
+fit together. If you for example want to deploy the rest api the system will
+also check an update of the freva cli if it finds that the cli library doesn't
+fit with the latest version of the rest api. This ensures that all parts of the
+system will work together.
+> **_Note:_** You can disable this version checking by using the 
+  `--skip-version-check` flag. Use this flag with caution.
+
 
 # Configuring the deployment
 A complete freva instance will need the following services:
@@ -170,7 +181,8 @@ options:
   --ssh-port SSH_PORT   Set the ssh port, in 99.9% of the cases this should be 22 (default: 22)
   -v, --verbose         Verbosity level (default: 0)
   -l, --local           Deploy services on the local machine, debug purpose. (default: False)
-  --gen-keys            Generate public and private web certs, use with caution. (default: False)
+  -g, --gen-keys        Generate public and private web certs, use with caution. (default: False)
+  --skip-version-check  Skip the version check. Use with caution. (default: False)
   -V, --version         show program's version number and exit
 
 

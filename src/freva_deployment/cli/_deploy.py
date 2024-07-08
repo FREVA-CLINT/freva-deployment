@@ -74,12 +74,24 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
         default=False,
     )
     ap.add_argument(
+        "--skip-version-check",
+        help="Skip the version check. Use with caution.",
+        action="store_true",
+        default=False,
+    )
+    ap.add_argument(
         "-V",
         "--version",
         action=VersionAction,
         version="[b][red]%(prog)s[/red] {version}[/b]{services}".format(
             version=__version__, services=display_versions()
         ),
+    )
+    ap.add_argument(
+        "--cowsay",
+        action="store_true",
+        help="Let the cow speak!",
+        default=False,
     )
     return ap.parse_args()
 
@@ -93,9 +105,15 @@ def cli(argv: list[str] | None = None) -> None:
         config_file=args.config,
         local_debug=args.local,
         gen_keys=args.gen_keys,
+        _cowsay=args.cowsay,
     ) as DF:
         try:
-            _ = DF.play(args.ask_pass, args.verbose, ssh_port=args.ssh_port)
+            _ = DF.play(
+                args.ask_pass,
+                args.verbose,
+                ssh_port=args.ssh_port,
+                skip_version_check=args.skip_version_check,
+            )
         except KeyboardInterrupt:
             raise SystemExit(130)
         except DeploymentError:

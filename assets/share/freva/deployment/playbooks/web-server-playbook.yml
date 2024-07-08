@@ -60,18 +60,22 @@
       - "{{ core_scheduler_output_dir|regex_replace('^~', ansible_env.HOME)}}:{{ core_scheduler_output_dir | regex_replace('^~', ansible_env.HOME)}}:ro"
       - "{{web_data_path|regex_replace('^~', ansible_env.HOME)}}/{{project_name}}/web_service/static:/opt/freva_web/static:z"
       - "{{core_base_dir_location|regex_replace('^~', ansible_env.HOME)}}:{{core_base_dir_location|regex_replace('^~', ansible_env.HOME)}}:ro"
+      - "{{web_data_path|regex_replace('^~', ansible_env.HOME)}}/{{project_name}}/web_service/healthcheck.sh:/tmp/healthcheck.sh:z"
     apache_volumes:
       - "{{web_data_path|regex_replace('^~', ansible_env.HOME)}}/{{project_name}}/web_service/freva_web.conf:/usr/local/apache2/conf/httpd.conf:z"
       - "{{web_data_path|regex_replace('^~', ansible_env.HOME)}}/{{project_name}}/web_service/server-cert.crt:/etc/ssl/certs/server-cert.crt:z"
       - "{{web_data_path|regex_replace('^~', ansible_env.HOME)}}/{{project_name}}/web_service/server-key.key:/etc/ssl/private/server-key.key:z"
       - "{{web_data_path|regex_replace('^~', ansible_env.HOME)}}/{{project_name}}/web_service/static:/srv/static:z"
       - "{{web_data_path|regex_replace('^~', ansible_env.HOME)}}/{{project_name}}/web_service/prepare-httpd:/usr/local/bin/prepare-httpd:z"
+      - "{{web_data_path|regex_replace('^~', ansible_env.HOME)}}/{{project_name}}/web_service/healthcheck.sh:/tmp/healthcheck.sh:z"
       - "{{ core_preview_path | regex_replace('^~', ansible_env.HOME)}}:/srv/static/preview:ro"
     redis_volumes:
       - "{{web_data_path|regex_replace('^~', ansible_env.HOME)}}/{{project_name}}/web_service/cache:/data:z"
+      - "{{web_data_path|regex_replace('^~', ansible_env.HOME)}}/{{project_name}}/web_service/rootless-entrypoint.sh:/tmp/entrypoint.sh:z"
     redis_name: "{{ project_name }}-redis"
     apache_name: "{{project_name}}-httpd"
     web_name: "{{project_name}}-web"
+    service_path: "{{web_data_path|regex_replace('^~', ansible_env.HOME)}}/{{project_name}}/web_service/"
     ansible_become_user: "{{ web_ansible_become_user if web_ansible_become_user is defined else 'root' }}"
     web_port_httpd: "{{ '80' if web_ansible_become_user == 'root' or ansible_user == 'root' else '9080' }}"
     web_port_httpsd: "{{ '443' if web_ansible_become_user == 'root' or ansible_user == 'root'  else '9443' }}"
@@ -129,6 +133,19 @@
       with_items:
         - "static"
         - "cache"
+
+    - name: Copy entrypoint wrapper script
+      copy:
+        src: "{{ asset_dir }}/scripts/{{item}}"
+        dest: '{{service_path}}/{{item}}'
+        owner: "{{uid}}"
+        group: "{{gid}}"
+        mode: "0755"
+      with_items:
+        - "rootless-entrypoint.sh"
+        - "healthcheck.sh"
+
+
     - name: Creating compose directory structure
       file:
         path: "{{web_data_path|regex_replace('^~', ansible_env.HOME)}}/compose_services"

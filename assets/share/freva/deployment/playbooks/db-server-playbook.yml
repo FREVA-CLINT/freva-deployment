@@ -11,10 +11,13 @@
     vault_volumes:
       - '{{vault_data_path|regex_replace("^~", ansible_env.HOME)}}/{{project_name}}/vault_service/config:/data:z'
       - '{{vault_data_path|regex_replace("^~", ansible_env.HOME)}}/{{project_name}}/vault_service/files:/vault/file:z'
+      - '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/{{ project_name }}/db_service/healthcheck.sh:/tmp/healthcheck.sh:z'
     db_volumes:
       - '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/freva-service-config/mysql/create_tables.sql:/docker-entrypoint-initdb.d/002_create_tables.sql:z'
       - '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/freva-service-config/mysql/daily_backup.sh:/usr/local/bin/daily_backup:z'
       - '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/{{project_name}}/db_service:/var/lib/mysql:z'
+      - '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/{{ project_name }}/db_service/rootless-entrypoint.sh:/tmp/entrypoint.sh:z'
+    data_path: '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/{{ project_name }}/db_service'
     continer_name: "{{ db_name }}"
     vault_name: "{{project_name}}-vault"
     adminer_name: "{{project_name}}-adminer"
@@ -90,7 +93,7 @@
       when: db_wipe == true
     - name: Registering db_service path
       stat:
-        path: '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/{{ project_name }}/db_service'
+        path: '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/{{ project_name }}/db_service/{{db_name}}'
       register: db_service
     - name:  Set db_service path exist facts
       set_fact:
@@ -103,10 +106,20 @@
         group: "{{gid}}"
         recurse: true
       with_items:
-        - "{{vault_data_path|regex_replace('^~', ansible_env.HOME)}}/{{ project_name }}/vault_service"
-        - "{{vault_data_path|regex_replace('^~', ansible_env.HOME)}}/{{ project_name }}/vault_service/config"
-        - "{{vault_data_path|regex_replace('^~', ansible_env.HOME)}}/{{ project_name }}/vault_service/files"
+        - "{{db_data_path|regex_replace('^~', ansible_env.HOME)}}/{{ project_name }}/vault_service"
+        - "{{db_data_path|regex_replace('^~', ansible_env.HOME)}}/{{ project_name }}/vault_service/config"
+        - "{{db_data_path|regex_replace('^~', ansible_env.HOME)}}/{{ project_name }}/vault_service/files"
         - '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/{{ project_name }}/db_service'
+    - name: Copy entrypoint wrapper script
+      copy:
+        src: "{{ asset_dir }}/scripts/{{item}}"
+        dest: '{{data_path}}/{{item}}'
+        owner: "{{uid}}"
+        group: "{{gid}}"
+        mode: "0755"
+      with_items:
+        - "rootless-entrypoint.sh"
+        - "healthcheck.sh"
     - name: Copying public key file to target machine
       copy:
         src: "{{ vault_keyfile }}"
