@@ -132,7 +132,9 @@ class DeployFactory:
         config_file: Path | str | None = None,
         local_debug: bool = False,
         gen_keys: bool = False,
+        _cowsay: bool = False,
     ) -> None:
+        self._no_cowsay = str(int(_cowsay is False))
         self.gen_keys = gen_keys or local_debug
         self.local_debug = local_debug
         self._config_keys: list[str] = []
@@ -697,9 +699,9 @@ class DeployFactory:
                     new_key = f"{step.replace('-', '_')}_{key}"
                 config[step]["vars"][new_key] = value
             config[step]["vars"]["project_name"] = self.project_name
-            config[step]["vars"][
-                f"{step.replace('-', '_')}_version"
-            ] = versions.get(step, "")
+            config[step]["vars"][f"{step.replace('-', '_')}_version"] = (
+                versions.get(step, "")
+            )
             config[step]["vars"]["debug"] = self.local_debug
             # Add additional keys
             self._set_additional_config_values(step, config)
@@ -793,9 +795,9 @@ class DeployFactory:
                 if line.startswith("solr.host"):
                     lines[num] = f"solr.host={self.cfg[step]['hosts']}\n"
                 if line.startswith("db.host"):
-                    lines[
-                        num
-                    ] = f"db.host={self.cfg['db']['config']['host']}\n"
+                    lines[num] = (
+                        f"db.host={self.cfg['db']['config']['host']}\n"
+                    )
         dump_file = self._get_files_copy("core")
         if dump_file:
             with dump_file.open("w") as f_obj:
@@ -970,6 +972,7 @@ class DeployFactory:
         envvars: dict[str, str] = {
             "ANSIBLE_STDOUT_CALLBACK": "yaml",
             "ANSIBLE_CONFIG": self._td.ansible_config_file,
+            "ANSIBLE_NOCOWS": self._no_cowsay,
         }
         extravars: dict[str, str | int] = {
             "ansible_port": ssh_port,

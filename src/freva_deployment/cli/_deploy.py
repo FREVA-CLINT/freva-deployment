@@ -87,6 +87,12 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
             version=__version__, services=display_versions()
         ),
     )
+    ap.add_argument(
+        "--cowsay",
+        action="store_true",
+        help="Let the cow speak!",
+        default=False,
+    )
     return ap.parse_args()
 
 
@@ -99,6 +105,7 @@ def cli(argv: list[str] | None = None) -> None:
         config_file=args.config,
         local_debug=args.local,
         gen_keys=args.gen_keys,
+        _cowsay=args.cowsay,
     ) as DF:
         try:
             _ = DF.play(
