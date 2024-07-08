@@ -7,6 +7,14 @@ What's new
    :maxdepth: 0
    :titlesonly:
 
+v2407.1.0
+~~~~~~~~~
+* Add flag to skip version checks.
+* Improve root less deployment.
+* Add healthcheck scripts.
+
+
+
 v2407.0.0
 ~~~~~~~~~
 * Improve local dev (debug) deployment mode.
