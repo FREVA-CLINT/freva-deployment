@@ -234,26 +234,30 @@ when trying to pull/run container images:
 ERRO[0000] cannot find UID/GID for user foo: no subuid ranges found for user "foo" in /etc/subuid - check rootless mode in man pages.
 ```
 
-To fix this issue log on to the machine that that should run the container
-and update your `/etc/subuid` and `/etc/subgid` files to include a range of
-UIDs/GIDs that cover the necessary system operations inside the container.
-In most cases it is sufficient to to set these options in both files
-(`/etc/subuid` and `/etc/subgid`):
+To fix this issue you should set the `ignore_chown_errors` to `"true"`:
 
 ```console
-user_name:100000:65536
+grep ignore_chown_err /etc/containers/storage.conf
+# ignore_chown_errors can be set to allow a non privileged user running with
+ignore_chown_errors = "true"
 ```
-
-After that you will have to apply the following command
 
 ```console
-podman system migrate
+man storage.conf
+…
+       ignore_chown_errors = "false"
+         ignore_chown_errors can be set to allow a non privileged user
+         running with a  single UID within a user namespace to run containers.
+         The user can pull and use any image, even those with multiple uids.
+         Note multiple UIDs will be squashed down to the default uid in the
+         container.  These images will have no separation between the users
+         in the container. (default: false)
 ```
 
-You might want to read [this article](https://www.redhat.com/sysadmin/rootless-podman-user-namespace-modes)
+You might want to read [this article](https://www.redhat.com/sysadmin/controlling-access-rootless-podman-users)
 for more information.
 
-### Insufficient permissions when running in rootless mode (selinux)
+### Insufficient permissions when running in rootless mode (SELinux)
 When running containers in rootless mode you might see errors like this:
 
 ```console
