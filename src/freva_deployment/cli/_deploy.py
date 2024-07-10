@@ -108,7 +108,7 @@ def cli(argv: list[str] | None = None) -> None:
         _cowsay=args.cowsay,
     ) as DF:
         try:
-            _ = DF.play(
+            DF.play(
                 args.ask_pass,
                 args.verbose,
                 ssh_port=args.ssh_port,

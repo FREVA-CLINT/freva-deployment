@@ -21,7 +21,7 @@ description = "Deployment of the Free Evaluation Framework Freva"
 requires-python = ">=3.8"
 dependencies = [ "appdirs",
              "ansible",
-             "ansible-runner",
+             "ansible-core",
              "cowsay",
              "npyscreen",
              "PyMySQL",

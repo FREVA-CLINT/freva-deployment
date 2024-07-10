@@ -5,21 +5,34 @@
     ansible_user: "{{freva_rest_ansible_user}}"
   tasks:
     - name: Get freva-rest-api version
-      register: freva_rest
       ansible.builtin.script:
         cmd: "{{ asset_dir }}/scripts/inspect.sh ghcr.io/freva-clint/freva-rest-api"
       become: "{{ freva_rest_ansible_become_user | default('root') is defined and freva_rest_ansible_become_user | default('root') != '' }}"
-    - name: Display freva_rest version
-      debug:
-        msg: "{{ freva_rest.stdout }}"
+      register: freva_rest
+    - name: Set freva-rest-api version fact
+      set_fact:
+        freva_rest_version: "{{ freva_rest.stdout }}"
+    - name: Write the freva-rest version to file
+      ansible.builtin.lineinfile:
+        line: "freva_rest:{{freva_rest_version}}"
+        path: "{{ version_file_path }}"
+        create: true
+      delegate_to: localhost
     - name: Get apache solr version
       register: solr
       ansible.builtin.script:
         cmd: "{{ asset_dir }}/scripts/inspect.sh solr"
       become: "{{ freva_rest_ansible_become_user | default('root') is defined and freva_rest_ansible_become_user | default('root') != '' }}"
-    - name: Display solr version
-      debug:
-        msg: "{{ solr.stdout }}"
+    - name: Set solr version fact
+      set_fact:
+        solr_version: "{{ solr.stdout }}"
+    - name: Write the solr version to file
+      ansible.builtin.lineinfile:
+        line: "solr:{{solr_version}}"
+        path: "{{ version_file_path }}"
+        create: true
+      delegate_to: localhost
+
 - hosts: web
   vars:
     ansible_become_user: "{{ web_ansible_become_user | default('root') }}"
@@ -30,9 +43,16 @@
       ansible.builtin.script:
         cmd: "{{ asset_dir }}/scripts/inspect.sh ghcr.io/freva-clint/freva-web"
       become: "{{ web_ansible_become_user | default('root') is defined and web_ansible_become_user | default('root') != '' }}"
-    - name: Display web version
-      debug:
-        msg: "{{ web.stdout }}"
+    - name: Set web version fact
+      set_fact:
+        web_version: "{{ web.stdout }}"
+    - name: Write the web version to file
+      ansible.builtin.lineinfile:
+        line: "web:{{web_version}}"
+        path: "{{ version_file_path }}"
+        create: true
+      delegate_to: localhost
+
 - hosts: db
   vars:
     ansible_become_user: "{{ db_ansible_become_user | default('root') }}"
@@ -43,18 +63,45 @@
       ansible.builtin.script:
         cmd: "{{ asset_dir }}/scripts/inspect.sh ghcr.io/freva-clint/freva-vault"
       become: "{{ db_ansible_become_user | default('root') is defined and db_ansible_become_user | default('root') != '' }}"
-    - name: Display vault version
-      debug:
-        msg: "{{ vault.stdout }}"
+    - name: Set vault version fact
+      set_fact:
+        vault_version: "{{ vault.stdout }}"
+    - name: Write the vault version to file
+      ansible.builtin.lineinfile:
+        line: "vault:{{vault_version}}"
+        path: "{{ version_file_path }}"
+        create: true
+      delegate_to: localhost
+    - name: Get mariadb version
+      register: db
+      ansible.builtin.script:
+        cmd: "{{ asset_dir }}/scripts/inspect.sh mariadb"
+      become: "{{ db_ansible_become_user | default('root') is defined and db_ansible_become_user | default('root') != '' }}"
+    - name: Set mariadb version fact
+      set_fact:
+        db_version: "{{ db.stdout }}"
+    - name: Write the mariadb version to file
+      ansible.builtin.lineinfile:
+        line: "db:{{db_version}}"
+        path: "{{ version_file_path }}"
+        create: true
+      delegate_to: localhost
+
+
 - hosts: core
   vars:
     ansible_user: "{{core_ansible_user}}"
   tasks:
     - name: Get freva version
       register: core
-      tags: core
       shell:
         cmd: "{{ core_install_dir | regex_replace('^~', ansible_env.HOME) }}/bin/freva -V 2> /dev/null | awk '{print $NF}';"
-    - name: Display core version
-      debug:
-        msg: "{{ core.stdout }}"
+    - name: Set freva version fact
+      set_fact:
+        freva_version: "{{ freva.stdout }}"
+    - name: Write the freva version to file
+      ansible.builtin.lineinfile:
+        line: "freva:{{freva_version}}"
+        path: "{{ version_file_path }}"
+        create: true
+      delegate_to: localhost

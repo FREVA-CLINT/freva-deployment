@@ -62,6 +62,13 @@ class AssetDir:
             Path(appdirs.user_config_dir()) / "freva" / "deployment"
         )
 
+    @property
+    def is_bundeled(self) -> bool:
+        """Check if we are running a bundeled version of the code."""
+        if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
+            return True
+        return False
+
     @staticmethod
     def get_dirs(user: bool = True, key: str = "data") -> Path:
         """Get the 'scripts' and 'purelib' directories we'll install into.
@@ -82,6 +89,9 @@ class AssetDir:
 
     @property
     def asset_dir(self) -> Path:
+        if self.is_bundeled:
+            return Path(__file__).parent / "assets"
+
         data_dir = self.get_dirs(False) / "share" / "freva" / "deployment"
         user_dir = self.get_dirs(True) / "share" / "freva" / "deployment"
         for path in (data_dir, user_dir):
@@ -155,6 +165,7 @@ AD = AssetDir()
 asset_dir = AD.asset_dir
 config_dir = AD.config_dir
 config_file = AD.config_file
+is_bundeled = AD.is_bundeled
 
 
 def get_current_file_dir(inp_dir: str | Path, value: str) -> str:
