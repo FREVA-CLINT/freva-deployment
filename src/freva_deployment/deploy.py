@@ -693,9 +693,9 @@ class DeployFactory:
                     new_key = f"{step.replace('-', '_')}_{key}"
                 config[step]["vars"][new_key] = value
             config[step]["vars"]["project_name"] = self.project_name
-            config[step]["vars"][
-                f"{step.replace('-', '_')}_version"
-            ] = versions.get(step, "")
+            config[step]["vars"][f"{step.replace('-', '_')}_version"] = (
+                versions.get(step, "")
+            )
             config[step]["vars"]["debug"] = self.local_debug
             # Add additional keys
             self._set_additional_config_values(step, config)
@@ -789,9 +789,9 @@ class DeployFactory:
                 if line.startswith("solr.host"):
                     lines[num] = f"solr.host={self.cfg[step]['hosts']}\n"
                 if line.startswith("db.host"):
-                    lines[
-                        num
-                    ] = f"db.host={self.cfg['db']['config']['host']}\n"
+                    lines[num] = (
+                        f"db.host={self.cfg['db']['config']['host']}\n"
+                    )
         dump_file = self._get_files_copy("core")
         if dump_file:
             with dump_file.open("w") as f_obj:
@@ -863,7 +863,7 @@ class DeployFactory:
     def get_steps_from_versions(
         self,
         envvars: dict[str, str],
-        extravars: dict[str, str | int],
+        extravars: dict[str, str],
         cmdline: str,
         passwords: dict[str, str],
         verbosity: int,
@@ -948,8 +948,8 @@ class DeployFactory:
         else:
             envvars["ANSIBLE_STDOUT_CALLBACK"] = "yaml"
 
-        extravars: dict[str, str | int] = {
-            "ansible_port": ssh_port,
+        extravars: dict[str, str] = {
+            "ansible_port": str(ssh_port),
             "ansible_ssh_args": "-o ForwardX11=no",
         }
         if self.local_debug:
@@ -976,7 +976,7 @@ class DeployFactory:
         )
         logger.debug(self.playbooks)
         time.sleep(3)
-        _ = self._td.run_ansible_playbook(
+        self._td.run_ansible_playbook(
             playbook=str(self._td.playbook_file),
             inventory=inventory,
             envvars=envvars,
