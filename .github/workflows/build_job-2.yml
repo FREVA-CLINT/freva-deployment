@@ -50,18 +50,20 @@ jobs:
     strategy:
       matrix:
         include:
-          - ARCH: linux/amd64
+          - ARCH: amd64
             TARGET: linux-x64
-            ASSET_MIME: application/octet-stream
-          - ARCH: linux/arm64
-            ASSET_MIME: application/octet-stream
+          - ARCH: arm64v8
             TARGET: linux-arm64
-          - ARCH: linux/arm/v7
-            ASSET_MIME: application/octet-stream
+          - ARCH: arm64v7
             TARGET: linux-armvl7
-          - ARCH: linux/arm/v6
-            ASSET_MIME: application/octet-stream
-            TARGET: linux-armvl6
+          - ARCH: arm32v7
+            TARGET: linux-armvl7
+          - ARCH: ppc64le
+            TARGET: ppc64
+          - ARCH: s390x
+            TARGET: s390x
+          - ARCH: i386
+            TARGET: i386
 
     steps:
 
@@ -89,7 +91,7 @@ jobs:
       - name: Build Docker image
         uses: docker/build-push-action@v4
         with:
-          file: Dockerfile.pyinstaller
+          file: Dockerfile
           platforms: ${{ matrix.ARCH }}
           push: false
           load: true
