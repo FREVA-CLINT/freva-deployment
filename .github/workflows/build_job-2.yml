@@ -1,7 +1,6 @@
 name: Build the binary
 run-name: ${{ github.actor }} building the pyinstaller binary 🧉
 
-# Set the access for individual scopes, or use permissions: write-all
 permissions:
   pull-requests: write
   contents: write
@@ -13,54 +12,71 @@ on:
 jobs:
   build:
     name: Build packages
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         include:
-          - os: ubuntu-latest
-            TARGET: linux-64
+          - ARCH: linux/amd64
+            TARGET: linux-x64
             ASSET_MIME: application/octet-stream
-            EXTRA_ARG: ""
-            ARCHITECUTRE: x86_64
-          - os: macos-latest
-            TARGET: macos-64
+          - ARCH: linux/arm64
             ASSET_MIME: application/octet-stream
-            EXTRA_ARG: --target-architecture x86_64
-            ARCHITECUTRE: x86_64
-          - os: macos-latest
-            TARGET: macos-arm64
-            ARCHITECUTRE: arm64
+            TARGET: linux-arm64
+          - ARCH: linux/arm/v7
             ASSET_MIME: application/octet-stream
-            EXTRA_ARG: --target-architecture arm64
-          - os: windows-latest
-            TARGET: windows-64
+            TARGET: linux-armvl7
+          - ARCH: linux/arm/v6
+            ASSET_MIME: application/octet-stream
+            TARGET: linux-armvl6
+          - ARCH: darwin/amd64
+            ASSET_MIME: application/octet-stream
+            TARGET: osx-x64
+          - ARCH: darwin/arm64
+            ASSET_MIME: application/octet-stream
+            TARGET: osx-arm64
+          - ARCH: windows/amd64
             ASSET_MIME: application/vnd.microsoft.portable-executable
-            EXTRA_ARG: ""
-            ARCHITECUTRE: x86_64
-          - os: windows-latest
-            TARGET: windows-aarch64
+            TARGET: windows-x64
+          - ARCH: windows/arm64
             ASSET_MIME: application/vnd.microsoft.portable-executable
-            EXTRA_ARG: ""
-            ARCHITECUTRE: aarch64
+            TARGET: windows-arm64
 
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Python 3.X
-        uses: actions/setup-python@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
         with:
-          python-version: "3.X"
-          architecture: ${{matrix.ARCHITECUTRE}}
-      - name: Install dependencies
+          platforms: all
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+        with:
+          install: true
+
+      - name: Create Buildx builder
+        run: docker buildx create --use --name mybuilder
+
+      - name: Inspect Buildx builder
+        run: docker buildx inspect --bootstrap
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: Dockerfile.pyinstaller
+          platforms: ${{ matrix.TARGET }}
+          push: false
+          tags: pyinstaller-env:${{ matrix.TARGET }}
+
+      - name: Run PyInstaller in Docker
         run: |
-          python3 -m pip install --upgrade pip
-          python3 -m pip install pyinstaller ansible .
-      - name: Build with cmd pyinstaller for ${{ matrix.TARGET }}
-        run: >
-          pyinstaller pyinstaller/pyinstaller-deploy-freva.py
-          -c --name deploy-freva --onefile --clean -i docs/_static/freva_owl.ico
-          --add-data 'assets/share/freva/deployment:freva_deployment/assets'
+          docker run --rm -v $PWD:/src -w /src pyinstaller-env:${{ matrix.ARCH }} \
+          pyinstaller pyinstaller/pyinstaller-deploy-freva.py -c \
+          --name deploy-freva --onefile --clean -i docs/_static/freva_owl.ico \
+          --add-data 'assets/share/freva/deployment:freva_deployment/assets' \
           --add-data 'src/freva_deployment/versions.json:freva_deployment'
-          ${{ matrix.EXTRA_ARG }}
+
       - name: Upload cmd Asset
         uses: actions/upload-artifact@v3
         with:
