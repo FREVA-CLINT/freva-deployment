@@ -1,0 +1,20 @@
+# Use an appropriate base image for the target architecture
+FROM python:latest
+
+# Install required packages
+RUN apt-get update && apt-get install -y build-essential && \
+    mkdir -p /tmp/deployment && rm -rf /var/lib/apt/lists/* && \
+    mkdir -p /src
+WORKDIR /tmp/deployment
+COPY . .
+# Install Python dependencies
+RUN python -m pip install --upgrade pip && \
+    python -m pip install pyinstaller ansible &&\
+    python src/freva_deployment/__init__.py && \
+    python -m pip install --break-system-packages . && \
+    rm -rf /root/.cache/pip && \
+    rm -rf /var/cache/apk/* && \
+    rm -rf /root/build-deps && \
+    rm -rf /tmp/deployment
+WORKDIR /src
+VOLUME /src
