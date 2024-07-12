@@ -94,13 +94,3 @@ jobs:
           asset_path: ./dist/deploy-freva
           asset_name: deploy-freva-${{ matrix.target }}
           asset_content_type: ${{ matrix.ASSET_MIME}}
-      - name: Upload tui Asset
-        id: upload-release-asset
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.ASSET_TOKEN }}
-        with:
-          upload_url: ${{ steps.get_release_info.outputs.upload_url }}
-          asset_path: ./dist/${{ matrix.TUI_BIN}}
-          asset_name: ${{ matrix.TUI_BIN}}
-          asset_content_type: ${{ matrix.ASSET_MIME}}
