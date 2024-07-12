@@ -33,10 +33,10 @@ jobs:
           python3 -m pip install --upgrade pip
           python3 -m pip install pyinstaller ansible .
       - name: Build with cmd pyinstaller for ${{ matrix.target }}
-        run: |
-          pyinstaller pyinstaller/pyinstaller-deploy-freva.py -c \
-          --name deploy-freva --onefile --clean -i docs/_static/freva_owl.ico \
-          --add-data 'assets/share/freva/deployment:freva_deployment/assets' \
+        run: >
+          pyinstaller pyinstaller/pyinstaller-deploy-freva.py -c
+          --name deploy-freva --onefile --clean -i docs/_static/freva_owl.ico
+          --add-data 'assets/share/freva/deployment:freva_deployment/assets'
           --add-data 'src/freva_deployment/versions.json:freva_deployment'
       - name: Upload cmd Asset
         uses: actions/upload-artifact@v3
