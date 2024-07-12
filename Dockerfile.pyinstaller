@@ -2,16 +2,16 @@
 FROM python:latest
 
 # Install required packages
-RUN apt-get update && apt-get install -y build-essential && \
+RUN apt-get update && apt-get install -y build-essential python3-cryptography && \
     mkdir -p /tmp/deployment && rm -rf /var/lib/apt/lists/* && \
     mkdir -p /src
 WORKDIR /tmp/deployment
 COPY . .
 # Install Python dependencies
-RUN python -m pip install --upgrade pip && \
-    python -m pip install pyinstaller ansible &&\
-    python src/freva_deployment/__init__.py && \
-    python -m pip install --break-system-packages . && \
+RUN /usr/bin/python3 -m pip install --upgrade pip && \
+    /usr/bin/python3 -m pip install pyinstaller ansible &&\
+    /usr/bin/python3 src/freva_deployment/__init__.py && \
+    /usr/bin/python3 -m pip install --break-system-packages . && \
     rm -rf /root/.cache/pip && \
     rm -rf /var/cache/apk/* && \
     rm -rf /root/build-deps && \
