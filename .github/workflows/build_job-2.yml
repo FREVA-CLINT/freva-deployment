@@ -18,13 +18,13 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            TARGET: linux-x86_64
+            TARGET: linux-64
             ASSET_MIME: application/octet-stream
             EXTRA_ARG: ""
           - os: macos-latest
-            TARGET: macos-arm64
+            TARGET: macos-64
             ASSET_MIME: application/octet-stream
-            EXTRA_ARG: --target-architecture arm64
+            EXTRA_ARG: --target-architecture x86_64
           - os: macos-latest
             TARGET: macos-arm64
             ASSET_MIME: application/octet-stream
@@ -43,19 +43,15 @@ jobs:
         run: |
           python3 -m pip install --upgrade pip
           python3 -m pip install pyinstaller ansible .
-      - name: Build with cmd pyinstaller for ${{matrix.TARGET}}
+      - name: Build with cmd pyinstaller for ${{ matrix.TARGET }}
         run: >
           pyinstaller pyinstaller/pyinstaller-deploy-freva.py
           -c --name deploy-freva --onefile --clean -i docs/_static/freva_owl.ico
           --add-data 'assets/share/freva/deployment:freva_deployment/assets'
           --add-data 'src/freva_deployment/versions.json:freva_deployment'
-          ${{matrix.EXTRA_ARG}}
+          ${{ matrix.EXTRA_ARG }}
       - name: Upload cmd Asset
-        id: upload-release-asset
         uses: actions/upload-artifact@v3
-        env:
-          GITHUB_TOKEN: ${{ secrets.ASSET_TOKEN }}
         with:
-          path: ./dist/deploy-freva-${{matrix.TARGET}}
+          path: dist/
           name: deploy-freva-${{ matrix.TARGET }}
-          content_type: ${{ matrix.ASSET_MIME}}
