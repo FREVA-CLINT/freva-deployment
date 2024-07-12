@@ -15,6 +15,7 @@ COPY . .
 RUN set -ex &&\
     python3 src/freva_deployment/__init__.py &&\
     python3 -m pip install --break-system-packages . &&\
+    python3 -m pip install --break-system-packages pyinstaller &&\
     rm -rf /root/.cache/pip &&\
     rm -rf /var/cache/apk/* &&\
     apk del /root/build-deps &&\

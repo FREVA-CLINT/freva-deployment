@@ -50,20 +50,20 @@ jobs:
     strategy:
       matrix:
         include:
-          - ARCH: amd64
+          - ARCH: linux/amd64
             TARGET: linux-x64
-          - ARCH: arm64v8
+          - ARCH: linux/arm64
             TARGET: linux-arm64
-          - ARCH: arm64v7
+          - ARCH: linux/arm/v7
             TARGET: linux-armvl7
-          - ARCH: arm32v7
-            TARGET: linux-armvl7
-          - ARCH: ppc64le
+          - ARCH: linux/arm/v6
+            TARGET: linux-armvl6
+          - ARCH: linux/ppc64le
             TARGET: ppc64
           - ARCH: s390x
-            TARGET: s390x
+            TARGET: linux/s390x
           - ARCH: i386
-            TARGET: i386
+            TARGET: linuxi386
 
     steps:
 
