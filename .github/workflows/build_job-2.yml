@@ -15,10 +15,11 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        - os: macos-latest
-          target: osx-x64
-        - os: macos-latest-xlarge
-          target: osx-arm64
+        include:
+          - os: macos-latest
+            target: osx-x64
+          - os: macos-latest-xlarge
+            target: osx-arm64
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python "3.X" on ${{ matrix.os }}
