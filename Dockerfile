@@ -14,7 +14,7 @@ RUN set -ex &&\
     ln -sf python3 /usr/bin/python && \
     mkdir -p /tmp/deployment
 # Install pycrypto so --key can be used with PyInstaller
-RUN python3 -m pip install --break-system-packages pycrypto
+# RUN python3 -m pip install --break-system-packages pycrypto
 # Build bootloader for alpine
 RUN git clone https://github.com/pyinstaller/pyinstaller.git /tmp/pyinstaller \
     && cd /tmp/pyinstaller/bootloader \
