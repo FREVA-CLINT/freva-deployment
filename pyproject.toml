@@ -56,7 +56,7 @@ Home = "https://freva-deployment.readthedocs.io/en/latest"
 [project.scripts]
 deploy-freva-cmd = "freva_deployment.cli:deploy"
 freva-migrate = "freva_deployment.cli:migrate"
-deploy-freva = "freva_deployment.ui.deployment_tui:tui"
+deploy-freva = "freva_deployment.cli:main_cli"
 
 
 [tool.flit.sdist]

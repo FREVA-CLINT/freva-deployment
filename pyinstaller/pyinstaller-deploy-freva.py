@@ -1,5 +1,5 @@
-from freva_deployment.ui.deployment_tui import tui
+from freva_deployment.cli import main_cli
 import cowsay
 
 if __name__ == "__main__":
-    tui()
+    main_cli()
