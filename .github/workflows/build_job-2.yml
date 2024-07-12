@@ -1,5 +1,5 @@
-name: Create a new release
-run-name: ${{ github.actor }} creating a new release 🧉
+name: Build the binary
+run-name: ${{ github.actor }} building the pyinstaller binary 🧉
 
 # Set the access for individual scopes, or use permissions: write-all
 permissions:
@@ -11,32 +11,8 @@ on:
   push:
 
 jobs:
-  tests:
-    uses: ./.github/workflows/ci_job.yml
-  createrelease:
-    name: Create Release
-    runs-on: [ubuntu-latest]
-    steps:
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.ASSET_TOKEN }}
-        with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
-          draft: false
-          prerelease: false
-      - name: Output Release URL File
-        run: echo "${{ steps.create_release.outputs.upload_url }}" > release_url.txt
-      - name: Save Release URL File for publish
-        uses: actions/upload-artifact@v1
-        with:
-          name: release_url
-          path: release_url.txt
   build:
     name: Build packages
-    needs: [createrelease]
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -74,23 +50,12 @@ jobs:
           --add-data 'assets/share/freva/deployment:freva_deployment/assets'
           --add-data 'src/freva_deployment/versions.json:freva_deployment'
           ${{matrix.EXTRA_ARG}}
-      - name: Load Release URL File from release job
-        uses: actions/download-artifact@v1
-        with:
-          name: release_url
-      - name: Get Release File Name & Upload URL
-        id: get_release_info
-        shell: bash
-        run: |
-          value=`cat release_url/release_url.txt`
-          echo ::set-output name=upload_url::$value
       - name: Upload cmd Asset
         id: upload-release-asset
-        uses: actions/upload-release-asset@v1
+        uses: ctions/upload-artifact@v3
         env:
           GITHUB_TOKEN: ${{ secrets.ASSET_TOKEN }}
         with:
-          upload_url: ${{ steps.get_release_info.outputs.upload_url }}
-          asset_path: ./dist/deploy-freva
-          asset_name: deploy-freva-${{ matrix.target }}
-          asset_content_type: ${{ matrix.ASSET_MIME}}
+          path: ./dist/deploy-freva-${{matrix.TARGET}}
+          name: deploy-freva-${{ matrix.TARGET }}
+          content_type: ${{ matrix.ASSET_MIME}}
