@@ -65,9 +65,9 @@ jobs:
         with:
           context: .
           file: Dockerfile.pyinstaller
-          platforms: ${{ matrix.TARGET }}
+          platforms: ${{ matrix.ARCH }}
           push: false
-          tags: pyinstaller-env:${{ matrix.TARGET }}
+          tags: pyinstaller-env:${{ matrix.ARCH }}
 
       - name: Run PyInstaller in Docker
         run: |
