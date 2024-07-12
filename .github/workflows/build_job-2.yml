@@ -59,11 +59,11 @@ jobs:
           - ARCH: linux/arm/v6
             TARGET: linux-armvl6
           - ARCH: linux/ppc64le
-            TARGET: ppc64
-          - ARCH: s390x
-            TARGET: linux/s390x
+            TARGET: linux-ppc64
+          - ARCH: linux/s390x
+            TARGET: linux-s390x
           - ARCH: i386
-            TARGET: linuxi386
+            TARGET: linux-i386
 
     steps:
 
