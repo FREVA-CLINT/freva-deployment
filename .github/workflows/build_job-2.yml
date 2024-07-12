@@ -11,13 +11,17 @@ on:
 
 jobs:
   build-osx:
-    name: Build packages (OSx)
+    name: Build packages (non Linux)
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         include:
           - os: macos-latest
             target: osx-x64
+            asset_mime: application/octet-stream
+          - os: windows-latest
+            target: windows-x64
+            asset_mime: application/vnd.microsoft.portable-executable
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python "3.X" on ${{ matrix.os }}
@@ -38,10 +42,10 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           path: dist/deploy-freva
-          name: deploy-freva-${{ matrix.TARGET }}
+          name: deploy-freva-${{ matrix.target }}
 
   build:
-    name: Build packages (no OSx)
+    name: Build packages (Linux)
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -58,9 +62,6 @@ jobs:
           - ARCH: linux/arm/v6
             ASSET_MIME: application/octet-stream
             TARGET: linux-armvl6
-          - ARCH: windows/amd64
-            ASSET_MIME: application/vnd.microsoft.portable-executable
-            TARGET: windows-x64
 
     steps:
 
