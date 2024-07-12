@@ -67,11 +67,11 @@ jobs:
           file: Dockerfile.pyinstaller
           platforms: ${{ matrix.ARCH }}
           push: false
-          tags: pyinstaller-env:${{ matrix.ARCH }}
+          tags: pyinstaller-env:${{ matrix.TARGET }}
 
       - name: Run PyInstaller in Docker
         run: |
-          docker run --rm -v $PWD:/src -w /src pyinstaller-env:${{ matrix.ARCH }} \
+          docker run --rm -v $PWD:/src -w /src pyinstaller-env:${{ matrix.TARGET }} \
           pyinstaller pyinstaller/pyinstaller-deploy-freva.py -c \
           --name deploy-freva --onefile --clean -i docs/_static/freva_owl.ico \
           --add-data 'assets/share/freva/deployment:freva_deployment/assets' \
