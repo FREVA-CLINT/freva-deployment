@@ -21,24 +21,35 @@ jobs:
             TARGET: linux-64
             ASSET_MIME: application/octet-stream
             EXTRA_ARG: ""
+            ARCHITECUTRE: x86_64
           - os: macos-latest
             TARGET: macos-64
             ASSET_MIME: application/octet-stream
             EXTRA_ARG: --target-architecture x86_64
+            ARCHITECUTRE: x86_64
           - os: macos-latest
             TARGET: macos-arm64
+            ARCHITECUTRE: arm64
             ASSET_MIME: application/octet-stream
             EXTRA_ARG: --target-architecture arm64
           - os: windows-latest
-            TARGET: windows
+            TARGET: windows-64
             ASSET_MIME: application/vnd.microsoft.portable-executable
             EXTRA_ARG: ""
+            ARCHITECUTRE: x86_64
+          - os: windows-latest
+            TARGET: windows-aarch64
+            ASSET_MIME: application/vnd.microsoft.portable-executable
+            EXTRA_ARG: ""
+            ARCHITECUTRE: aarch64
+
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python 3.X
         uses: actions/setup-python@v4
         with:
           python-version: "3.X"
+          architecture: ${{matrix.ARCHITECUTRE}}
       - name: Install dependencies
         run: |
           python3 -m pip install --upgrade pip
