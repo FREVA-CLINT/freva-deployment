@@ -5,8 +5,7 @@ FROM debian:bullseye
 RUN apt-get update && apt-get install -y build-essential python3-cryptography \
     python3-dev openssh-client sshpass
 RUN apt-get install -y binutils libghc-zlib-dev musl-dev \
-    librust-libc-dev libc-devtools libffi-dev gcc g++ pwgen git \
-    rustup cargo
+    librust-libc-dev libc-devtools libffi-dev gcc g++ pwgen git cargo
 RUN apt-get install -y python3-appdirs python3-mysqldb python3-yaml \
     python3-toml python3-tomlkit python3-requests ansible && \
     mkdir -p /tmp/deployment && rm -rf /var/lib/apt/lists/* && \
