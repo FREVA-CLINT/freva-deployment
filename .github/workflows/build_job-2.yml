@@ -1,0 +1,106 @@
+name: Create a new release
+run-name: ${{ github.actor }} creating a new release 🧉
+
+# Set the access for individual scopes, or use permissions: write-all
+permissions:
+  pull-requests: write
+  contents: write
+  packages: write
+
+on:
+  push:
+
+jobs:
+  tests:
+    uses: ./.github/workflows/ci_job.yml
+  createrelease:
+    name: Create Release
+    runs-on: [ubuntu-latest]
+    steps:
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.ASSET_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: false
+          prerelease: false
+      - name: Output Release URL File
+        run: echo "${{ steps.create_release.outputs.upload_url }}" > release_url.txt
+      - name: Save Release URL File for publish
+        uses: actions/upload-artifact@v1
+        with:
+          name: release_url
+          path: release_url.txt
+  build:
+    name: Build packages
+    needs: [createrelease]
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            TARGET: linux-x86_64
+            ASSET_MIME: application/octet-stream
+            EXTRA_ARG: ""
+          - os: macos-latest
+            TARGET: macos-arm64
+            ASSET_MIME: application/octet-stream
+            EXTRA_ARG: --target-architecture arm64
+          - os: macos-latest
+            TARGET: macos-arm64
+            ASSET_MIME: application/octet-stream
+            EXTRA_ARG: --target-architecture arm64
+          - os: windows-latest
+            TARGET: windows
+            ASSET_MIME: application/vnd.microsoft.portable-executable
+            EXTRA_ARG: ""
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python 3.X
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.X"
+      - name: Install dependencies
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -m pip install pyinstaller ansible .
+      - name: Build with cmd pyinstaller for ${{matrix.TARGET}}
+        run: >
+          pyinstaller pyinstaller/pyinstaller-deploy-freva.py
+          -c --name deploy-freva --onefile --clean -i docs/_static/freva_owl.ico
+          --add-data 'assets/share/freva/deployment:freva_deployment/assets'
+          --add-data 'src/freva_deployment/versions.json:freva_deployment'
+          ${{matrix.EXTRA_ARG}}
+      - name: Load Release URL File from release job
+        uses: actions/download-artifact@v1
+        with:
+          name: release_url
+      - name: Get Release File Name & Upload URL
+        id: get_release_info
+        shell: bash
+        run: |
+          value=`cat release_url/release_url.txt`
+          echo ::set-output name=upload_url::$value
+      - name: Upload cmd Asset
+        id: upload-release-asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.ASSET_TOKEN }}
+        with:
+          upload_url: ${{ steps.get_release_info.outputs.upload_url }}
+          asset_path: ./dist/deploy-freva
+          asset_name: deploy-freva-${{ matrix.target }}
+          asset_content_type: ${{ matrix.ASSET_MIME}}
+      - name: Upload tui Asset
+        id: upload-release-asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.ASSET_TOKEN }}
+        with:
+          upload_url: ${{ steps.get_release_info.outputs.upload_url }}
+          asset_path: ./dist/${{ matrix.TUI_BIN}}
+          asset_name: ${{ matrix.TUI_BIN}}
+          asset_content_type: ${{ matrix.ASSET_MIME}}
