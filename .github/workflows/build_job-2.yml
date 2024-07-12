@@ -10,8 +10,39 @@ on:
   push:
 
 jobs:
+  build-osx:
+    name: Build packages (OSx)
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        - os: macos-latest
+          target: osx-x64
+        - os: macos-latest-xlarge
+          target: osx-arm64
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python "3.X" on ${{ matrix.os }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.X"
+      - name: Install dependencies
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -m pip install pyinstaller ansible .
+      - name: Build with cmd pyinstaller for ${{ matrix.target }}
+        run: |
+          pyinstaller pyinstaller/pyinstaller-deploy-freva.py -c \
+          --name deploy-freva --onefile --clean -i docs/_static/freva_owl.ico \
+          --add-data 'assets/share/freva/deployment:freva_deployment/assets' \
+          --add-data 'src/freva_deployment/versions.json:freva_deployment'
+      - name: Upload cmd Asset
+        uses: actions/upload-artifact@v3
+        with:
+          path: dist/deploy-freva
+          name: deploy-freva-${{ matrix.TARGET }}
+
   build:
-    name: Build packages
+    name: Build packages (no OSx)
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -28,18 +59,9 @@ jobs:
           - ARCH: linux/arm/v6
             ASSET_MIME: application/octet-stream
             TARGET: linux-armvl6
-          - ARCH: darwin/amd64
-            ASSET_MIME: application/octet-stream
-            TARGET: osx-x64
-          - ARCH: darwin/arm64
-            ASSET_MIME: application/octet-stream
-            TARGET: osx-arm64
           - ARCH: windows/amd64
             ASSET_MIME: application/vnd.microsoft.portable-executable
             TARGET: windows-x64
-          - ARCH: windows/arm64
-            ASSET_MIME: application/vnd.microsoft.portable-executable
-            TARGET: windows-arm64
 
     steps:
 
