@@ -22,12 +22,15 @@ class BatchParser:
     """Command line interface for batchmode deployment."""
 
     def __init__(
-        self, parser: Optional[argparse.ArgumentParser] = None
+        self,
+        parser: Optional[argparse.ArgumentParser] = None,
+        epilog: str = "",
     ) -> None:
         self.parser = parser or argparse.ArgumentParser(
             prog="deploy-freva-cmd",
             description="Deploy freva and its services on different machines.",
             formatter_class=ArgumentDefaultsRichHelpFormatter,
+            epilog=epilog,
         )
         self.parser.add_argument(
             "--config",
@@ -132,11 +135,11 @@ class BatchParser:
 
 def cli(argv: list[str] | None = None) -> None:
     """Run the command line interface."""
-    bp = BatchParser()
-    logger.warning(
-        "The command `deploy-freva-cmd` is a legacy command, please"
-        " consdider using `deploy-freva cmd` instead."
+    epilog = (
+        "[b]Note:[/b] The command `deploy-freva-cmd` is a legacy command,"
+        " please consdider using `deploy-freva cmd` instead."
     )
+    bp = BatchParser(epilog=epilog)
     args = bp.parse_args(argv)
     bp.run_cli(args)
 
