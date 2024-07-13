@@ -23,22 +23,33 @@ jobs:
         include:
           - os: macos-latest
             target: osx-x64
-            arch: x64
+            arch: x86_64
+            py_arch: x64
             asset_mime: application/octet-stream
             exe: deploy-freva
             hidden_import: --hidden-import curses --hidden-import cowsay
           - os: macos-latest
             target: osx-x64
             arch: arm64
+            py_arch: arm64
             asset_mime: application/octet-stream
             exe: deploy-freva
             hidden_import: --hidden-import curses --hidden-import cowsay
           - os: windows-latest
             target: windows-x64
-            arch: x64
+            arch: x86_64
+            py_arch: x64
             asset_mime: application/vnd.microsoft.portable-executable
             hidden_import: --hidden-import windows-curses --hidden-import cowsay
             exe: deploy-freva.exe
+          - os: windows-latest
+            target: windows-arm64
+            arch: arm64
+            py_arch: arm64
+            asset_mime: application/vnd.microsoft.portable-executable
+            hidden_import: --hidden-import windows-curses --hidden-import cowsay
+            exe: deploy-freva.exe
+
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python "3.X" on ${{ matrix.os }}
@@ -224,7 +235,11 @@ jobs:
             asset_mime: application/octet-stream
           - target: osx-x64
             asset_mime: application/octet-stream
+          - target: osx-arm64
+            asset_mime: application/octet-stream
           - target: windows-x64
+            asset_mime: application/vnd.microsoft.portable-executable
+          - target: windows-arm64
             asset_mime: application/vnd.microsoft.portable-executable
     if: startsWith(github.ref, 'refs/tags/')
     steps:
