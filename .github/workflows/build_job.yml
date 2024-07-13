@@ -29,7 +29,7 @@ jobs:
             exe: deploy-freva
             hidden_import: --hidden-import curses --hidden-import cowsay
             extra_pkg: cryptography
-          - os: macos-latest
+          - os: macos-14
             target: osx-arm64
             arch: arm64
             py_arch: arm64
@@ -37,7 +37,7 @@ jobs:
             exe: deploy-freva
             hidden_import: --hidden-import curses --hidden-import cowsay
             extra_pkg: cryptography
-          - os: windows-latest
+          - os: windows-2019
             target: windows-x64
             arch: x86_64
             py_arch: x64
