@@ -28,6 +28,7 @@ jobs:
             asset_mime: application/octet-stream
             exe: deploy-freva
             hidden_import: --hidden-import curses --hidden-import cowsay
+            extra_pkg: curses
           - os: macos-latest
             target: osx-arm64
             arch: arm64
@@ -35,12 +36,14 @@ jobs:
             asset_mime: application/octet-stream
             exe: deploy-freva
             hidden_import: --hidden-import curses --hidden-import cowsay
+            extra_pkg: curses
           - os: windows-latest
             target: windows-x64
             arch: x86_64
             py_arch: x64
             asset_mime: application/vnd.microsoft.portable-executable
             hidden_import: --hidden-import windows-curses --hidden-import cowsay
+            extra_pkg: windows-curses
             exe: deploy-freva.exe
 
     steps:
@@ -53,7 +56,7 @@ jobs:
       - name: Install dependencies
         run: |
           python3 -m pip install --upgrade pip
-          python3 -m pip install pyinstaller ansible .
+          python3 -m pip install pyinstaller ansible ${{ matrix.extra_pkg }} .
       - name: Build with cmd pyinstaller for ${{ matrix.target }}
         run: >
           pyinstaller pyinstaller/pyinstaller-deploy-freva.py -c
