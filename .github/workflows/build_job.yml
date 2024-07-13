@@ -71,7 +71,6 @@ jobs:
       - name: Upload cmd Asset
         uses: actions/upload-artifact@v3
         with:
-          compression-level: 9
           path: dist/${{matrix.exe}}
           name: deploy-freva-${{ matrix.target }}
           retention-days: 7
