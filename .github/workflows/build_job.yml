@@ -42,13 +42,6 @@ jobs:
             asset_mime: application/vnd.microsoft.portable-executable
             hidden_import: --hidden-import windows-curses --hidden-import cowsay
             exe: deploy-freva.exe
-          - os: windows-latest
-            target: windows-arm64
-            arch: arm64
-            py_arch: arm64
-            asset_mime: application/vnd.microsoft.portable-executable
-            hidden_import: --hidden-import windows-curses --hidden-import cowsay
-            exe: deploy-freva.exe
 
     steps:
       - uses: actions/checkout@v4
@@ -238,8 +231,6 @@ jobs:
           - target: osx-arm64
             asset_mime: application/octet-stream
           - target: windows-x64
-            asset_mime: application/vnd.microsoft.portable-executable
-          - target: windows-arm64
             asset_mime: application/vnd.microsoft.portable-executable
     if: startsWith(github.ref, 'refs/tags/')
     steps:
