@@ -22,11 +22,11 @@ deployment. Two examples of such deployment configurations can be found
 in the [example deployment configuration](Config) section.
 
 If you already have a configuration saved in a toml configuration file you can
-issue the `deploy-freva-cmd` command:
+issue the `deploy-freva cmd` command:
 
 ```bash
-deploy-freva-cmd --help
-Usage: deploy-freva-cmd [-h] [--config CONFIG] [--steps {web,core,db,databrowser,auto} [{web,core,db,databrowser,auto} ...]] [--ask-pass] [--ssh-port SSH_PORT] [-v] [-l]
+deploy-freva cmd --help
+Usage: deploy-freva cmd [-h] [--config CONFIG] [--steps {web,core,db,databrowser,auto} [{web,core,db,databrowser,auto} ...]] [--ask-pass] [--ssh-port SSH_PORT] [-v] [-l]
                         [-g] [-V]
 
 Deploy freva and its services on different machines.
@@ -43,6 +43,7 @@ Options:
   -g, --gen-keys        Generate public and private web certs, use with caution. (default: False)
    --skip-version-check  Skip the version check. Use with caution. (default: False)
   -V, --version         show program's version number and exit
+  --cowsay              Let the cow speak! (default: False)
 
 ```
 The `--steps` flags can be used if not all services should be deployed.
