@@ -25,9 +25,11 @@ jobs:
             target: osx-x64
             asset_mime: application/octet-stream
             exe: deploy-freva
+            hidden_import: --hidden-import curses --hidden-import cowsay
           - os: windows-latest
             target: windows-x64
             asset_mime: application/vnd.microsoft.portable-executable
+            hidden_import: --hidden-import windows-curses --hidden-import cowsay
             exe: deploy-freva.exe
     steps:
       - uses: actions/checkout@v4
@@ -45,6 +47,7 @@ jobs:
           --name deploy-freva --onefile --clean -i docs/_static/freva_owl.ico
           --add-data 'assets/share/freva/deployment:freva_deployment/assets'
           --add-data 'src/freva_deployment/versions.json:freva_deployment'
+          ${{matrix.hidden_import}}
           --exclude-module pycrypto --exclude-module PyInstaller
       - name: Upload cmd Asset
         uses: actions/upload-artifact@v3
@@ -106,13 +109,14 @@ jobs:
           tags: pyinstaller-env:${{ matrix.target }}
 
       - name: Run PyInstaller in Docker
-        run: |
-          docker run --rm -v $PWD:/src -w /src pyinstaller-env:${{ matrix.target }} \
-          pyinstaller pyinstaller/pyinstaller-deploy-freva.py -c \
-          --name deploy-freva --onefile --clean -i docs/_static/freva_owl.ico \
-          --add-data 'assets/share/freva/deployment:freva_deployment/assets' \
-          --add-data 'src/freva_deployment/versions.json:freva_deployment' \
-           --exclude-module pycrypto --exclude-module PyInstaller
+        run: >
+          docker run --rm -v $PWD:/src -w /src pyinstaller-env:${{ matrix.target }}
+          pyinstaller pyinstaller/pyinstaller-deploy-freva.py -c
+          --name deploy-freva --onefile --clean -i docs/_static/freva_owl.ico
+          --add-data 'assets/share/freva/deployment:freva_deployment/assets'
+          --add-data 'src/freva_deployment/versions.json:freva_deployment'
+          --hidden-import cowsay
+          --exclude-module pycrypto --exclude-module PyInstaller
 
       - name: Upload cmd Asset
         if: startsWith(github.ref, 'refs/tags/')
