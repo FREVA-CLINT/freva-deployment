@@ -28,7 +28,7 @@ jobs:
             asset_mime: application/octet-stream
             exe: deploy-freva
             hidden_import: --hidden-import curses --hidden-import cowsay
-            extra_pkg:
+            extra_pkg: cryptography
           - os: macos-latest
             target: osx-arm64
             arch: arm64
@@ -36,14 +36,14 @@ jobs:
             asset_mime: application/octet-stream
             exe: deploy-freva
             hidden_import: --hidden-import curses --hidden-import cowsay
-            extra_pkg:
+            extra_pkg: cryptography
           - os: windows-latest
             target: windows-x64
             arch: x86_64
             py_arch: x64
             asset_mime: application/vnd.microsoft.portable-executable
             hidden_import: --hidden-import windows-curses --hidden-import cowsay
-            extra_pkg: windows-curses
+            extra_pkg: windows-curses cryptography
             exe: deploy-freva.exe
 
     steps:
@@ -137,7 +137,7 @@ jobs:
           --name deploy-freva --onefile --clean -i docs/_static/freva_owl.ico
           --add-data 'assets/share/freva/deployment:freva_deployment/assets'
           --add-data 'src/freva_deployment/versions.json:freva_deployment'
-          --hidden-import cowsay
+          --hidden-import cowsay cryptography
           --exclude-module pycrypto --exclude-module PyInstaller
 
       - name: Test built bindary
