@@ -23,7 +23,7 @@ jobs:
         include:
           - os: macos-latest
             target: osx-x64
-            arch: x86_64
+            arch: x64
             asset_mime: application/octet-stream
             exe: deploy-freva
             hidden_import: --hidden-import curses --hidden-import cowsay
@@ -35,7 +35,7 @@ jobs:
             hidden_import: --hidden-import curses --hidden-import cowsay
           - os: windows-latest
             target: windows-x64
-            arch: x86_64
+            arch: x64
             asset_mime: application/vnd.microsoft.portable-executable
             hidden_import: --hidden-import windows-curses --hidden-import cowsay
             exe: deploy-freva.exe
