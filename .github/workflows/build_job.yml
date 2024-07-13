@@ -136,7 +136,7 @@ jobs:
           --name deploy-freva --onefile --clean -i docs/_static/freva_owl.ico
           --add-data 'assets/share/freva/deployment:freva_deployment/assets'
           --add-data 'src/freva_deployment/versions.json:freva_deployment'
-          --hidden-import cowsay cryptography
+          --hidden-import cowsay --hidden-import cryptography
           --exclude-module pycrypto --exclude-module PyInstaller
 
       - name: Test built bindary
