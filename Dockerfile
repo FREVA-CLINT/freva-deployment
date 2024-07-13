@@ -1,4 +1,4 @@
-FROM debian:buster
+FROM debian:bullseye
 ARG VERSION
 LABEL org.opencontainers.image.authors="DRKZ-CLINT"
 LABEL org.opencontainers.image.source="https://github.com/FREVA-CLINT/freva-deployment.git"
