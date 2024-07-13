@@ -1,7 +1,6 @@
-name: Create a new release
-run-name: ${{ github.actor }} creating a new release 🧉
+name: Build the binary
+run-name: ${{ github.actor }} building the pyinstaller binary 🧉
 
-# Set the access for individual scopes, or use permissions: write-all
 permissions:
   pull-requests: write
   contents: write
@@ -9,18 +8,126 @@ permissions:
 
 on:
   push:
+    branches: ["**"]
     tags:
       - "v*.*.*"
 
 jobs:
   tests:
     uses: ./.github/workflows/ci_job.yml
+  build-no-linux:
+    name: Build packages
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: macos-latest
+            target: osx-x64
+            asset_mime: application/octet-stream
+            exe: deploy-freva
+          - os: windows-latest
+            target: windows-x64
+            asset_mime: application/vnd.microsoft.portable-executable
+            exe: deploy-freva.exe
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python "3.X" on ${{ matrix.os }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.X"
+      - name: Install dependencies
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -m pip install pyinstaller ansible .
+      - name: Build with cmd pyinstaller for ${{ matrix.target }}
+        run: >
+          pyinstaller pyinstaller/pyinstaller-deploy-freva.py -c
+          --name deploy-freva --onefile --clean -i docs/_static/freva_owl.ico
+          --add-data 'assets/share/freva/deployment:freva_deployment/assets'
+          --add-data 'src/freva_deployment/versions.json:freva_deployment'
+          --exclude-module pycrypto --exclude-module PyInstaller
+      - name: Upload cmd Asset
+        uses: actions/upload-artifact@v3
+        with:
+          path: dist/${{matrix.exe}}
+          name: deploy-freva-${{ matrix.target }}
+
+  build-linux:
+    name: Build packages
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - ARCH: linux/amd64
+            target: linux-x64
+          - ARCH: linux/arm64
+            target: linux-arm64
+          - ARCH: linux/arm/v7
+            target: linux-armvl7
+          - ARCH: linux/arm/v6
+            target: linux-armvl6
+          - ARCH: linux/ppc64le
+            target: linux-ppc64
+          - ARCH: linux/s390x
+            target: linux-s390x
+          - ARCH: linux/i386
+            target: linux-i386
+
+    steps:
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+        with:
+          platforms: all
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+        with:
+          install: true
+
+      - name: Create Buildx builder
+        run: docker buildx create --use --name mybuilder
+
+      - name: Inspect Buildx builder
+        run: docker buildx inspect --bootstrap
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v4
+        with:
+          file: Dockerfile
+          platforms: ${{ matrix.ARCH }}
+          push: false
+          load: true
+          tags: pyinstaller-env:${{ matrix.target }}
+
+      - name: Run PyInstaller in Docker
+        run: |
+          docker run --rm -v $PWD:/src -w /src pyinstaller-env:${{ matrix.target }} \
+          pyinstaller pyinstaller/pyinstaller-deploy-freva.py -c \
+          --name deploy-freva --onefile --clean -i docs/_static/freva_owl.ico \
+          --add-data 'assets/share/freva/deployment:freva_deployment/assets' \
+          --add-data 'src/freva_deployment/versions.json:freva_deployment' \
+           --exclude-module pycrypto --exclude-module PyInstaller
+
+      - name: Upload cmd Asset
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: actions/upload-artifact@v4
+        with:
+          path: dist/
+          name: deploy-freva-${{ matrix.target }}
+
   pypi:
     name: Create Pip package
     permissions:
       id-token: write
-    needs: [tests]
+    needs: [tests, build-linux, build-no-linux]
     runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/foo/')
     steps:
       -
         name: Checkout
@@ -45,10 +152,12 @@ jobs:
           password: ${{ secrets.PYPI_API_TOKEN }}
           skip-existing: true
           verbose: true
-  createrelease:
+
+  release:
     name: Create Release
-    runs-on: [ubuntu-latest]
-    needs: pypi
+    needs: [build-no-linux, build-linux, pypi]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
     steps:
       - name: Create Release
         id: create_release
@@ -67,53 +176,48 @@ jobs:
         with:
           name: release_url
           path: release_url.txt
-  build:
-    name: Build packages
-    needs: [pypi, createrelease]
-    runs-on: ${{ matrix.os }}
+
+  upload-builds:
+    name: Add binaries to Release
+    needs: release
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         include:
-          - os: macos-latest
-            TARGET: macos
-            CMD_BUILD: >
-                pyinstaller pyinstaller/pyinstaller-script.py -c --name deploy-freva --onefile
-            OUT_FILE_NAME: deploy-freva
-            ASSET_MIME: application/octet-stream
-          - os: windows-latest
-            TARGET: windows
-            CMD_BUILD: pyinstaller pyinstaller/pyinstaller-script.py -c --name deploy-freva --onefile
-            OUT_FILE_NAME: deploy-freva.exe
-            ASSET_MIME: application/vnd.microsoft.portable-executable
+          - target: linux-x64
+            asset_mime: application/octet-stream
+          - target: linux-arm64
+            asset_mime: application/octet-stream
+          - target: linux-armvl7
+            asset_mime: application/octet-stream
+          - target: linux-armvl6
+            asset_mime: application/octet-stream
+          - target: linux-ppc64
+            asset_mime: application/octet-stream
+          - target: linux-s390x
+            asset_mime: application/octet-stream
+          - target: linux-i386
+            asset_mime: application/octet-stream
+          - target: osx-x64
+            asset_mime: application/octet-stream
+          - target: windows-x64
+            asset_mime: application/vnd.microsoft.portable-executable
+    if: startsWith(github.ref, 'refs/tags/')
     steps:
-      - uses: actions/checkout@v4
-      - name: Set up Python 3.X
-        uses: actions/setup-python@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v3
         with:
-          python-version: "3.X"
-      - name: Install dependencies
-        run: |
-          python3 -m pip install --upgrade pip
-          python3 -m pip install pyinstaller ansible .
-      - name: Build with pyinstaller for ${{matrix.TARGET}}
-        run: ${{matrix.CMD_BUILD}}
-      - name: Load Release URL File from release job
-        uses: actions/download-artifact@v1
-        with:
-          name: release_url
-      - name: Get Release File Name & Upload URL
-        id: get_release_info
-        shell: bash
-        run: |
-          value=`cat release_url/release_url.txt`
-          echo ::set-output name=upload_url::$value
-      - name: Upload Release Asset
-        id: upload-release-asset
+          path: ./artifacts
+
+      - name: Upload Release Assets
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.ASSET_TOKEN }}
         with:
-          upload_url: ${{ steps.get_release_info.outputs.upload_url }}
-          asset_path: ./dist/${{ matrix.OUT_FILE_NAME}}
-          asset_name: ${{ matrix.OUT_FILE_NAME}}
-          asset_content_type: ${{ matrix.ASSET_MIME}}
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./artifacts/deploy-freva-${{matrix.target}}
+          asset_name: deploy-freva-${{ matrix.target }}
+          asset_content_type: ${{matrix.asset_mime}}
