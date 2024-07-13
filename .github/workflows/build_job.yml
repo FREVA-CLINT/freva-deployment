@@ -1,5 +1,5 @@
-name: Build the binary
-run-name: ${{ github.actor }} building the pyinstaller binary 🧉
+name: Build binary & Create release
+run-name: ${{ github.actor }} building the pyinstaller binary and creating the release 🧉
 
 permissions:
   pull-requests: write
@@ -23,11 +23,19 @@ jobs:
         include:
           - os: macos-latest
             target: osx-x64
+            arch: amd64
+            asset_mime: application/octet-stream
+            exe: deploy-freva
+            hidden_import: --hidden-import curses --hidden-import cowsay
+          - os: macos-latest
+            target: osx-x64
+            arch: arm64
             asset_mime: application/octet-stream
             exe: deploy-freva
             hidden_import: --hidden-import curses --hidden-import cowsay
           - os: windows-latest
             target: windows-x64
+            arch: amd64
             asset_mime: application/vnd.microsoft.portable-executable
             hidden_import: --hidden-import windows-curses --hidden-import cowsay
             exe: deploy-freva.exe
@@ -37,6 +45,7 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: "3.X"
+          architecture: ${{ matrix.arch }}
       - name: Install dependencies
         run: |
           python3 -m pip install --upgrade pip
@@ -47,13 +56,18 @@ jobs:
           --name deploy-freva --onefile --clean -i docs/_static/freva_owl.ico
           --add-data 'assets/share/freva/deployment:freva_deployment/assets'
           --add-data 'src/freva_deployment/versions.json:freva_deployment'
+          --target-arch ${{matrix.arch}}
           ${{matrix.hidden_import}}
           --exclude-module pycrypto --exclude-module PyInstaller
+      - name: Test built bindary
+        run: ./dist/${{matrix.exe}} --help
       - name: Upload cmd Asset
         uses: actions/upload-artifact@v3
         with:
+          compression-level: 9
           path: dist/${{matrix.exe}}
           name: deploy-freva-${{ matrix.target }}
+          retention-days: 7
 
   build-linux:
     name: Build packages
@@ -61,19 +75,19 @@ jobs:
     strategy:
       matrix:
         include:
-          - ARCH: linux/amd64
+          - arch: linux/amd64
             target: linux-x64
-          - ARCH: linux/arm64
+          - arch: linux/arm64
             target: linux-arm64
-          - ARCH: linux/arm/v7
+          - arch: linux/arm/v7
             target: linux-armvl7
-          - ARCH: linux/arm/v6
+          - arch: linux/arm/v6
             target: linux-armvl6
-          - ARCH: linux/ppc64le
+          - arch: linux/ppc64le
             target: linux-ppc64
-          - ARCH: linux/s390x
+          - arch: linux/s390x
             target: linux-s390x
-          - ARCH: linux/i386
+          - arch: linux/i386
             target: linux-i386
 
     steps:
@@ -103,20 +117,25 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           file: Dockerfile
-          platforms: ${{ matrix.ARCH }}
+          platforms: ${{ matrix.arch }}
           push: false
           load: true
-          tags: pyinstaller-env:${{ matrix.target }}
+          tags: pyinstaller:${{ matrix.target }}
 
       - name: Run PyInstaller in Docker
         run: >
-          docker run --rm -v $PWD:/src -w /src pyinstaller-env:${{ matrix.target }}
+          docker run --rm -v $PWD:/src -w /src pyinstaller:${{ matrix.target }}
           pyinstaller pyinstaller/pyinstaller-deploy-freva.py -c
           --name deploy-freva --onefile --clean -i docs/_static/freva_owl.ico
           --add-data 'assets/share/freva/deployment:freva_deployment/assets'
           --add-data 'src/freva_deployment/versions.json:freva_deployment'
           --hidden-import cowsay
           --exclude-module pycrypto --exclude-module PyInstaller
+
+      - name: Test built bindary
+        run: >
+          docker run --rm -v $PWD:/src -w /src pyinstaller:${{ matrix.target }}
+          /src/dist/deploy-freva --help
 
       - name: Upload cmd Asset
         if: startsWith(github.ref, 'refs/tags/')
