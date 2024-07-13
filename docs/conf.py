@@ -37,6 +37,7 @@ release = __version__
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
+    "myst_parser",
     "sphinx.ext.autodoc",
     "sphinx.ext.intersphinx",
     "sphinx.ext.napoleon",
@@ -97,7 +98,9 @@ html_theme_options = {
         },
     ],
     # "navbar_start": [],  # Remove navigation links from the top bar
-    "navbar_center": ["navbar-nav"],  # Add navigation links to the left sidebar
+    "navbar_center": [
+        "navbar-nav"
+    ],  # Add navigation links to the left sidebar
     "collapse_navigation": False,
     "navigation_depth": 4,
     "navbar_align": "left",
@@ -115,7 +118,11 @@ source_suffix = [".rst", ".md"]
 # This allows us to use ::: to denote directives, useful for admonitions
 myst_enable_extensions = ["colon_fence", "linkify", "substitution"]
 myst_heading_anchors = 2
-myst_substitutions = {"rtd": "[Read the Docs](https://readthedocs.org/)"}
+myst_substitutions = {
+    "rtd": "[Read the Docs](https://readthedocs.org/)",
+    "|version|": __version__,
+}
+
 
 # ReadTheDocs has its own way of generating sitemaps, etc.
 if not os.environ.get("READTHEDOCS"):
