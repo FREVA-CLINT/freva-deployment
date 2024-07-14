@@ -39,12 +39,12 @@ doc = ["pydata-sphinx-theme",
        "sphinx-copybutton",
        "recommonmark",
        "linkify",
+       "linkify-it-py",
        "sphinx_sitemap",
        "sphinx_favicon",
        "sphinx_togglebutton",
        "myst-parser",
        "sphinx-design",
-       "linkify",
        "sphinx-execute-code-python3",
 ]
 
