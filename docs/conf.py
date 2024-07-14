@@ -14,7 +14,7 @@ import os
 import sys
 from datetime import date
 
-from recommonmark.parser import CommonMarkParser
+# from recommonmark.parser import CommonMarkParser
 
 sys.path.insert(0, os.path.abspath("."))
 sys.path.insert(0, os.path.abspath("../../src"))
@@ -41,7 +41,7 @@ extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.intersphinx",
     "sphinx.ext.napoleon",
-    "recommonmark",
+    #    "recommonmark",
     "sphinx_copybutton",
     "sphinx_togglebutton",
 ]
@@ -81,9 +81,10 @@ html_sidebars = {
     ],  # This ensures we test for custom sidebars
 }
 
-source_parsers = {
-    ".md": CommonMarkParser,
-}
+# source_parsers = {
+#    ".md": CommonMarkParser,
+# }
+# source_suffix = [".rst", ".md"]
 html_theme_options = {
     "icon_links": [
         {
@@ -98,9 +99,7 @@ html_theme_options = {
         },
     ],
     # "navbar_start": [],  # Remove navigation links from the top bar
-    "navbar_center": [
-        "navbar-nav"
-    ],  # Add navigation links to the left sidebar
+    "navbar_center": ["navbar-nav"],  # Add navigation links to the left sidebar
     "collapse_navigation": False,
     "navigation_depth": 4,
     "navbar_align": "left",
@@ -108,9 +107,6 @@ html_theme_options = {
     "secondary_sidebar_items": ["page-toc"],
 }
 html_sidebars = {"**": ["sidebar-nav-bs", "sidebar-ethical-ads"]}
-
-
-source_suffix = [".rst", ".md"]
 
 
 # -- MyST options ------------------------------------------------------------
@@ -122,7 +118,12 @@ myst_substitutions = {
     "rtd": "[Read the Docs](https://readthedocs.org/)",
     "|version|": __version__,
 }
-
+# Substitutions
+rst_prolog = """
+.. |version| replace:: {version}
+""".format(
+    version=__version__
+)
 
 # ReadTheDocs has its own way of generating sitemaps, etc.
 if not os.environ.get("READTHEDOCS"):
