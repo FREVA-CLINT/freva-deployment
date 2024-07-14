@@ -102,17 +102,17 @@ jobs:
           name: release_url
       - name: Get Release File Name & Upload URL
         if: startsWith(github.ref, 'refs/tags/')
+        id: release_url
         shell: bash
         run: |
-          value=`cat release_url/release_url.txt`
-          echo ::set-output name=upload_url::$value
+          echo "url=$(cat release_url/release_url.txt)" >> $GITHUB_OUTPUT
       - name: Upload Release Asset
         if: startsWith(github.ref, 'refs/tags/')
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.ASSET_TOKEN }}
         with:
-          upload_url: ${{ steps.get_release_info.outputs.upload_url }}
+          upload_url: ${{ steps.release_url.outputs.url }}
           asset_path: ./dist/${{ matrix.exe }}
           asset_name: deploy-freva-${{ matrix.target}}
           asset_content_type: ${{ matrix.asset_mime }}
@@ -195,16 +195,16 @@ jobs:
       - name: Get Release File Name & Upload URL
         if: startsWith(github.ref, 'refs/tags/')
         shell: bash
+        id: release_url
         run: |
-          value=`cat release_url/release_url.txt`
-          echo ::set-output name=upload_url::$value
+          echo "url=$(cat release_url/release_url.txt)" >> $GITHUB_OUTPUT
       - name: Upload Release Asset
         if: startsWith(github.ref, 'refs/tags/')
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.ASSET_TOKEN }}
         with:
-          upload_url: ${{ steps.get_release_info.outputs.upload_url }}
+          upload_url: ${{ steps.release_url.outputs.url }}
           asset_path: ./dist/deploy-freva
           asset_name: deploy-freva-${{ matrix.target}}
           asset_content_type: application/octet-stream
