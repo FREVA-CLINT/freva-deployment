@@ -37,7 +37,10 @@ You do not need to run the deployment on the machines where things get installed
 The only requirement is that you have to setup ansible and you can establish
 ssh connections to the servers.
 
-## Using pre-built binaries.
+# Installation
+There are different option to install the deployment software.
+
+## 1. Using pre-built binaries.
 You can download the pre-built binaries for your specific OS and architecture
 from the [release page]((https://github.com/FREVA-CLINT/freva-deployment/releases).
 
@@ -79,7 +82,7 @@ Options:
 
 ```
 
-## Installation via pip.
+## 2. Installation via pip.
 If you're using Linux, OsX or a Windows subsystem for Linux (WSL) you can
 use *pip* to install the deployment software:
 
@@ -94,7 +97,7 @@ This command installs ansible and all required python packages.
 ```console
 python3 -m pip install libselinux-python3
 ```
-## Using docker
+## 3. Using docker
 
 A pre-built docker image is available to run the deployment
 

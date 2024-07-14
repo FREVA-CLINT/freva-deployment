@@ -15,8 +15,35 @@ on:
 jobs:
   tests:
     uses: ./.github/workflows/ci_job.yml
+  release:
+    name: Create Release
+    needs: [tests]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create Release
+        if: startsWith(github.ref, 'refs/tags/')
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.ASSET_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: false
+          prerelease: false
+      - name: Output Release URL File
+        if: startsWith(github.ref, 'refs/tags/')
+        run: echo "${{ steps.create_release.outputs.upload_url }}" > release_url.txt
+      - name: Save Release URL File for publish
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: actions/upload-artifact@v1
+        with:
+          name: release_url
+          path: release_url.txt
+
   build-no-linux:
     name: Build packages
+    needs: [release]
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -68,16 +95,32 @@ jobs:
           --exclude-module pycrypto --exclude-module PyInstaller
       - name: Test built bindary
         run: ./dist/${{matrix.exe}} --help
-      - name: Upload cmd Asset
-        uses: actions/upload-artifact@v3
+      - name: Load Release URL File from release job
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: actions/download-artifact@v1
         with:
-          path: dist/${{matrix.exe}}
-          name: deploy-freva-${{ matrix.target }}
-          retention-days: 7
+          name: release_url
+      - name: Get Release File Name & Upload URL
+        if: startsWith(github.ref, 'refs/tags/')
+        id: release_url
+        shell: bash
+        run: |
+          echo "url=$(cat release_url/release_url.txt)" >> $GITHUB_OUTPUT
+      - name: Upload Release Asset
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.ASSET_TOKEN }}
+        with:
+          upload_url: ${{ steps.release_url.outputs.url }}
+          asset_path: ./dist/${{ matrix.exe }}
+          asset_name: deploy-freva-${{ matrix.target}}
+          asset_content_type: ${{ matrix.asset_mime }}
 
   build-linux:
     name: Build packages
     runs-on: ubuntu-latest
+    needs: [release]
     strategy:
       matrix:
         include:
@@ -144,12 +187,28 @@ jobs:
           docker run --rm -v $PWD:/src -w /src --platform ${{ matrix.arch }}
           pyinstaller:${{ matrix.target }} /src/dist/deploy-freva --help
 
-      - name: Upload cmd Asset
+      - name: Load Release URL File from release job
         if: startsWith(github.ref, 'refs/tags/')
-        uses: actions/upload-artifact@v4
+        uses: actions/download-artifact@v1
         with:
-          path: dist/
-          name: deploy-freva-${{ matrix.target }}
+          name: release_url
+      - name: Get Release File Name & Upload URL
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: bash
+        id: release_url
+        run: |
+          echo "url=$(cat release_url/release_url.txt)" >> $GITHUB_OUTPUT
+      - name: Upload Release Asset
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.ASSET_TOKEN }}
+        with:
+          upload_url: ${{ steps.release_url.outputs.url }}
+          asset_path: ./dist/deploy-freva
+          asset_name: deploy-freva-${{ matrix.target}}
+          asset_content_type: application/octet-stream
+
 
   pypi:
     name: Create Pip package
@@ -182,74 +241,3 @@ jobs:
           password: ${{ secrets.PYPI_API_TOKEN }}
           skip-existing: true
           verbose: true
-
-  release:
-    name: Create Release
-    needs: [build-no-linux, build-linux]
-    runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/')
-    steps:
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.ASSET_TOKEN }}
-        with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
-          draft: false
-          prerelease: false
-      - name: Output Release URL File
-        run: echo "${{ steps.create_release.outputs.upload_url }}" > release_url.txt
-      - name: Save Release URL File for publish
-        uses: actions/upload-artifact@v1
-        with:
-          name: release_url
-          path: release_url.txt
-
-  upload-builds:
-    name: Add binaries to Release
-    needs: release
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        include:
-          - target: linux-x64
-            asset_mime: application/octet-stream
-          - target: linux-arm64
-            asset_mime: application/octet-stream
-          - target: linux-armvl7
-            asset_mime: application/octet-stream
-          - target: linux-armvl6
-            asset_mime: application/octet-stream
-          - target: linux-ppc64
-            asset_mime: application/octet-stream
-          - target: linux-s390x
-            asset_mime: application/octet-stream
-          - target: linux-i386
-            asset_mime: application/octet-stream
-          - target: osx-x64
-            asset_mime: application/octet-stream
-          - target: osx-arm64
-            asset_mime: application/octet-stream
-          - target: windows-x64
-            asset_mime: application/vnd.microsoft.portable-executable
-    if: startsWith(github.ref, 'refs/tags/')
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Download artifacts
-        uses: actions/download-artifact@v3
-        with:
-          path: ./artifacts
-
-      - name: Upload Release Assets
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.ASSET_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./artifacts/deploy-freva-${{matrix.target}}
-          asset_name: deploy-freva-${{ matrix.target }}
-          asset_content_type: ${{matrix.asset_mime}}

@@ -7,7 +7,7 @@ What's new
    :maxdepth: 0
    :titlesonly:
 
-v2407.2.0
+v2407.2.1
 ~~~~~~~~~
 * Introduce now ``cmd`` sub command to ``deploy-freva`` cli.
 * Build pre-built binaries.
