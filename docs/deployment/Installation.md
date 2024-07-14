@@ -18,20 +18,20 @@ from the [release page](release:{{version}}).
 ### Available Binaries
 
 - **Linux**
-  - amd64 (`linux-x64`)
-  - arm64 (`linux-arm64`)
-  - armv7 (`linux-armv7`)
-  - armv6 (`linux-armv6`)
-  - ppc64le (`linux-ppc64le`)
-  - s390x (`linux-s390x`)
-  - i386 (`linux-i386`)
+  - [amd64](exe:linux-x64)
+  - [arm64](exe:linux-arm64)
+  - [armv7](exe:linux-armv7)
+  - [armv6](exe:linux-armv6)
+  - [ppc64le](exe:linux-ppc64le)
+  - [s390x](exe:linux-s390x)
+  - [i386](exe:linux-i386)
 
 - **Windows**
-  - amd64 (`windows-x64`)
+  - [amd64](exe:windows-x64)
 
 - **macOS**
-  - amd64 (`macos-x64`)
-  - arm64 (`macos-arm64`)
+  - [amd64](exe:osx-x64)
+  - [arm64](exe:osx-arm64)
 
 After downloading version {{version}} file for your operating system and architecture,
 you can run the `deploy-freva` (`deploy-freva.exe` on windows) command:
