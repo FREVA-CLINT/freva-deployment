@@ -7,6 +7,12 @@ What's new
    :maxdepth: 0
    :titlesonly:
 
+v2407.2.0
+~~~~~~~~~
+* Introduce now ``cmd`` sub command to ``deploy-freva`` cli.
+* Build pre-built binaries.
+
+
 v2407.1.0
 ~~~~~~~~~
 * Add flag to skip version checks.

@@ -21,7 +21,7 @@ description = "Deployment of the Free Evaluation Framework Freva"
 requires-python = ">=3.8"
 dependencies = [ "appdirs",
              "ansible",
-             "ansible-runner",
+             "ansible-core",
              "cowsay",
              "npyscreen",
              "PyMySQL",
@@ -38,12 +38,13 @@ doc = ["pydata-sphinx-theme",
        "sphinx",
        "sphinx-copybutton",
        "recommonmark",
+       "linkify",
+       "linkify-it-py",
        "sphinx_sitemap",
        "sphinx_favicon",
        "sphinx_togglebutton",
        "myst-parser",
        "sphinx-design",
-       "linkify",
        "sphinx-execute-code-python3",
 ]
 
@@ -56,7 +57,7 @@ Home = "https://freva-deployment.readthedocs.io/en/latest"
 [project.scripts]
 deploy-freva-cmd = "freva_deployment.cli:deploy"
 freva-migrate = "freva_deployment.cli:migrate"
-deploy-freva = "freva_deployment.ui.deployment_tui:tui"
+deploy-freva = "freva_deployment.cli:main_cli"
 
 
 [tool.flit.sdist]

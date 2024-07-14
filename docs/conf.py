@@ -14,7 +14,7 @@ import os
 import sys
 from datetime import date
 
-from recommonmark.parser import CommonMarkParser
+# from recommonmark.parser import CommonMarkParser
 
 sys.path.insert(0, os.path.abspath("."))
 sys.path.insert(0, os.path.abspath("../../src"))
@@ -37,10 +37,11 @@ release = __version__
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
+    "myst_parser",
     "sphinx.ext.autodoc",
     "sphinx.ext.intersphinx",
     "sphinx.ext.napoleon",
-    "recommonmark",
+    #    "recommonmark",
     "sphinx_copybutton",
     "sphinx_togglebutton",
 ]
@@ -80,9 +81,10 @@ html_sidebars = {
     ],  # This ensures we test for custom sidebars
 }
 
-source_parsers = {
-    ".md": CommonMarkParser,
-}
+# source_parsers = {
+#    ".md": CommonMarkParser,
+# }
+# source_suffix = [".rst", ".md"]
 html_theme_options = {
     "icon_links": [
         {
@@ -107,15 +109,26 @@ html_theme_options = {
 html_sidebars = {"**": ["sidebar-nav-bs", "sidebar-ethical-ads"]}
 
 
-source_suffix = [".rst", ".md"]
-
-
 # -- MyST options ------------------------------------------------------------
 
 # This allows us to use ::: to denote directives, useful for admonitions
 myst_enable_extensions = ["colon_fence", "linkify", "substitution"]
 myst_heading_anchors = 2
-myst_substitutions = {"rtd": "[Read the Docs](https://readthedocs.org/)"}
+myst_substitutions = {
+    "rtd": "[Read the Docs](https://readthedocs.org/)",
+    "version": __version__,
+}
+myst_url_schemes = {
+    "http": None,
+    "https": None,
+    "release": f"https://github.com/FREVA-CLINT/freva-deployment/releases/tag/v{release}",
+}
+# Substitutions
+rst_prolog = """
+.. version replace:: {version}
+""".format(
+    version=__version__
+)
 
 # ReadTheDocs has its own way of generating sitemaps, etc.
 if not os.environ.get("READTHEDOCS"):

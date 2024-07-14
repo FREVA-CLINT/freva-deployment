@@ -7,13 +7,11 @@ import os
 import platform
 import random
 import shutil
-import signal
 import string
 import sys
 import time
 from copy import deepcopy
 from getpass import getuser
-from io import StringIO
 from pathlib import Path
 from socket import gethostbyname, gethostname
 from typing import Any, cast
@@ -22,17 +20,12 @@ from urllib.parse import urlparse
 import appdirs
 import tomlkit
 import yaml
-from ansible_runner import run
-from ansible_runner.runner import Runner
 from rich import print as pprint
-from rich.console import Console
-from rich.live import Live
 from rich.prompt import Prompt
-from rich.spinner import Spinner
 
 from freva_deployment import FREVA_PYTHON_VERSION
 
-from .error import ConfigurationError, DeploymentError, handled_exception
+from .error import ConfigurationError, handled_exception
 from .keys import RandomKeys
 from .logger import logger
 from .runner import RunnerDir
@@ -42,6 +35,7 @@ from .utils import (
     config_dir,
     get_email_credentials,
     get_passwd,
+    is_bundeled,
     load_config,
 )
 from .versions import get_steps_from_versions
@@ -814,6 +808,8 @@ class DeployFactory:
         passwords = {}
         sudo_key = "^BECOME password.*:\\s*?$"
         ssh_key = "^SSH password:\\s*?$"
+        ssh_key = "anslibe_ssh_pass"
+        sudo_key = "ansible_become_pass"
         passwords[sudo_key] = (
             os.environ.get("ANSIBLE_BECOME_PASSWORD", "") or ""
         )
@@ -837,7 +833,7 @@ class DeployFactory:
         verbosity: int = 0,
         ssh_port: int = 22,
         skip_version_check: bool = False,
-    ) -> Runner | None:
+    ) -> None:
         """Play the ansible playbook.
 
         Parameters
@@ -853,22 +849,21 @@ class DeployFactory:
             Skip the version check, use with caution
         """
         try:
-            return self._play(
+            self._play(
                 ask_pass=ask_pass,
                 verbosity=verbosity,
                 ssh_port=ssh_port,
                 skip_version_check=skip_version_check,
             )
-        except KeyboardInterrupt:
-            pprint(
-                " [red][ERROR]: User interrupted execution[/]", file=sys.stderr
-            )
+        except KeyboardInterrupt as error:
+            if str(error):
+                pprint(f" [red][ERROR]: {error}[/]", file=sys.stderr)
             raise KeyboardInterrupt() from None
 
     def get_steps_from_versions(
         self,
         envvars: dict[str, str],
-        extravars: dict[str, str | int],
+        extravars: dict[str, str],
         cmdline: str,
         passwords: dict[str, str],
         verbosity: int,
@@ -882,6 +877,7 @@ class DeployFactory:
         cfg = deepcopy(self.cfg)
         if cfg.get("freva_rest") is None:
             cfg["freva_rest"] = cfg.get("databrowser", cfg.get("solr", {}))
+        version_path = self._td.parent_dir / "versions.txt"
         for step in steps:
             config[step] = {}
             config[step]["hosts"] = cfg[step]["hosts"]
@@ -895,56 +891,30 @@ class DeployFactory:
                 f"{step}_ansible_user": cfg[step]["config"].get(
                     "ansible_user", getuser()
                 ),
+                "version_file_path": str(version_path),
             }
         config.setdefault("core", {})
         config["core"].setdefault("vars", {})
         config["core"]["vars"]["core_install_dir"] = cfg["core"]["config"][
             "install_dir"
         ]
-        stdout = sys.stdout
-        buffer = StringIO()
-        sig_handler = signal.getsignal(signal.SIGINT)
-        text = "Getting versions of micro-services ..."
-        spinner = Spinner("weather", text=text)
-        status_text = {
-            "successful": " [green]ok[/green]",
-            "canceled": " [yellow]canceled[/yellow]",
-            "failed": " [red]failed[/red]",
-        }
-        with Live(spinner, refresh_per_second=3, console=Console(stderr=True)):
-            extravars["forks"] = 4
-            try:
-                sys.stdout = buffer
-                sys.stdout.write("\n")
-                event = run(
-                    playbook=str(asset_dir / "playbooks" / "versions.yaml"),
-                    inventory=config,
-                    envvars=envvars,
-                    passwords=passwords,
-                    extravars=extravars,
-                    cmdline=cmdline,
-                    verbosity=verbosity,
-                    forks=4,
-                )
-            finally:
-                sys.stdout = stdout
-                signal.signal(signal.SIGINT, sig_handler)
-            spinner.update(
-                text=text + status_text.get(event.status, " [red]failed[/red]")
-            )
-        if event.status not in ["successful", "canceled"]:
-            raise DeploymentError(buffer.getvalue()) from None
-        if event.status == "canceled":
-            raise KeyboardInterrupt() from None
-        if verbosity > 0:
-            print(buffer.getvalue())
+        self._td.run_ansible_playbook(
+            playbook=str(asset_dir / "playbooks" / "versions.yaml"),
+            inventory=config,
+            envvars=envvars,
+            passwords=passwords,
+            extravars=extravars,
+            cmdline=cmdline,
+            verbosity=verbosity,
+            hide_output=True,
+            text="Getting versions of micro-services ...",
+        )
         versions = {}
-        for res in event.events:
-            msg = res.get("event_data", {}).get("res", {}).get("msg")
-            title = res.get("event_data", {}).get("task", "").lower()
-            if msg is not None and title.startswith("display"):
-                service = res.get("event_data", {}).get("task", "").split()[1]
-                versions[service] = msg.strip()
+        version_path.touch()
+        for line in version_path.read_text().splitlines():
+            service, _, version = line.partition(":")
+            if service.strip() and version.strip():
+                versions[service.strip()] = version.strip()
         additional_steps = get_steps_from_versions(versions)
         return additional_steps
 
@@ -954,7 +924,7 @@ class DeployFactory:
         verbosity: int = 0,
         ssh_port: int = 22,
         skip_version_check: bool = False,
-    ) -> Runner | None:
+    ) -> None:
         """Play the ansible playbook.
 
         Parameters
@@ -970,27 +940,28 @@ class DeployFactory:
             Skip version check, use with caution.
         """
         envvars: dict[str, str] = {
-            "ANSIBLE_STDOUT_CALLBACK": "yaml",
             "ANSIBLE_CONFIG": self._td.ansible_config_file,
             "ANSIBLE_NOCOWS": self._no_cowsay,
         }
-        extravars: dict[str, str | int] = {
-            "ansible_port": ssh_port,
+        if is_bundeled:
+            envvars["ANSIBLE_STDOUT_CALLBACK"] = "default"
+        else:
+            envvars["ANSIBLE_STDOUT_CALLBACK"] = "yaml"
+
+        extravars: dict[str, str] = {
+            "ansible_port": str(ssh_port),
             "ansible_ssh_args": "-o ForwardX11=no",
         }
         if self.local_debug:
             extravars["ansible_connection"] = "local"
 
-        cmdline = "--ask-become"
-        if ask_pass:
-            cmdline += " --ask-pass"
         passwords = self.get_ansible_password(ask_pass)
         steps = []
         if skip_version_check is False:
             steps = self.get_steps_from_versions(
                 envvars.copy(),
                 extravars.copy(),
-                cmdline,
+                "",
                 passwords.copy(),
                 verbosity,
             )
@@ -1005,24 +976,11 @@ class DeployFactory:
         )
         logger.debug(self.playbooks)
         time.sleep(3)
-        sig_handler = signal.getsignal(signal.SIGINT)
-        try:
-            result = run(
-                private_data_dir=str(self._td.parent_dir),
-                playbook=str(self._td.playbook_file),
-                inventory=inventory,
-                envvars=envvars,
-                passwords=passwords,
-                extravars=extravars,
-                cmdline=cmdline,
-                verbosity=verbosity,
-            )
-        finally:
-            signal.signal(signal.SIGINT, sig_handler)
-        if result.status in ("timeout", "failed"):
-            raise DeploymentError(
-                f"Deployment not successful: {result.status}"
-            )
-        elif result.status == "canceled":
-            raise KeyboardInterrupt() from None
-        return result
+        self._td.run_ansible_playbook(
+            playbook=str(self._td.playbook_file),
+            inventory=inventory,
+            envvars=envvars,
+            passwords=passwords,
+            extravars=extravars,
+            verbosity=verbosity,
+        )

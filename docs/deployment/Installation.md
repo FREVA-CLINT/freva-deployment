@@ -2,16 +2,58 @@
 This section gives an overview over how to install the deployment software for
 freva.
 
-## Pre-Requisites
 The main work will be done by [ansible](https://docs.ansible.com/ansible/latest/index.html),
 hence some level of familiarity with ansible is advantageous but not necessary.
 Since we are using ansible we can use this deployment routine from any workstation
 computer (like a Mac-book). You do not need to run the deployment on the
 machines where things get installed. The only requirement is that you have to
 setup ansible and you can establish ssh connections to the servers.
-### Installation on \*nix systems or wsl.
-If you're using Linux, OsX or a Windows subsystem for Linux (WSL) it should be
-sufficient to issues the following commands:
+
+## Using pre-built binaries.
+You can download the pre-built binaries for your specific OS and architecture
+from the [release page](release:{{version}}).
+
+### Available Binaries
+
+- **Linux**
+  - amd64 (`linux-x64`)
+  - arm64 (`linux-arm64`)
+  - armv7 (`linux-armv7`)
+  - armv6 (`linux-armv6`)
+  - ppc64le (`linux-ppc64le`)
+  - s390x (`linux-s390x`)
+  - i386 (`linux-i386`)
+
+- **Windows**
+  - amd64 (`windows-x64`)
+
+- **macOS**
+  - amd64 (`macos-x64`)
+  - arm64 (`macos-arm64`)
+
+After downloading version {{version}} file for your operating system and architecture,
+you can run the `deploy-freva` (`deploy-freva.exe` on windows) command:
+
+```console
+Usage: deploy-freva [-h] [-v] [-V] [--cowsay] {cmd} ...
+
+Run the freva deployment
+
+Positional Arguments:
+  {cmd}
+    cmd          Run deployment in batch mode.
+
+Options:
+  -h, --help     show this help message and exit
+  -v, --verbose  Verbosity level (default: 0)
+  -V, --version  show program's version number and exit
+  --cowsay       Let the cow speak! (default: False)
+
+```
+
+## Installation via pip.
+If you're using Linux, OsX or a Windows subsystem for Linux (WSL) you can
+use *pip* to install the deployment software:
 
 ```console
 python3 -m pip install -U freva-deployment
@@ -26,7 +68,7 @@ python3 -m pip install libselinux-python3
 ```
 ## Using docker
 
-A pre-build docker image is available to run the deployment
+A pre-built docker image is available to run the deployment
 
 ```console
 docker run -it -v /path/to/config:/opt/freva-deployment:z ghcr.io/freva-clint/freva-deployment
@@ -38,19 +80,14 @@ files into the container.
 
 ## Commands after installation:
 The `pip install` command will create *three* different commands:
-- `deploy-freva`: Text user interface to configure and run the deployment.
-- `deploy-freva-cmd`: Run already configured deployment.
+- `deploy-freva`: Main deployment command.
+- `deploy-freva-cmd`: Run already configured deployment. This is a legacy command
+   please use `deploy-freva cmd` instead.
 - `freva-migrate`: Command line interface to manage project migration from
-   old freva systems to new ones.
-If you can't find the commands mentioned above pip was probably installing
-them in the user space. In that case you need to append your `PATH`
-environment variable by `~/.local/bin`. If you use bash for example, add
-the following command to your local `.bashrc`:
+   old freva systems to new ones. This command is only available in the docker
+   container image and if the software was installed via *pip*
 
-```console
-export PATH=$PATH:$HOME/.local/bin
-```
-> **_Note:_** You can use the `-l` flag of the `deploy-freva-cmd` command
+> **_Note:_** You can use the `-l` flag of the `deploy-freva cmd` command
 or tick the *local deployment only* box in the setup page of the text user
 interface if you only want to try out the deployment on your local machine.
 Without having to install anything on remote machines.

@@ -36,12 +36,55 @@ use this deployment routine from a workstation computer (like a Mac-book).
 You do not need to run the deployment on the machines where things get installed.
 The only requirement is that you have to setup ansible and you can establish
 ssh connections to the servers.
-## Installation on \*nix systems or wsl.
-If you're using Linux, OsX or a Windows subsystem for Linux (WSL) it should
-be sufficient to issues the following commands:
+
+## Using pre-built binaries.
+You can download the pre-built binaries for your specific OS and architecture
+from the [release page]((https://github.com/FREVA-CLINT/freva-deployment/releases).
+
+### Available Binaries
+
+- **Linux**
+  - amd64 (`linux-x64`)
+  - arm64 (`linux-arm64`)
+  - armv7 (`linux-armv7`)
+  - armv6 (`linux-armv6`)
+  - ppc64le (`linux-ppc64le`)
+  - s390x (`linux-s390x`)
+  - i386 (`linux-i386`)
+
+- **Windows**
+  - amd64 (`windows-x64`)
+
+- **macOS**
+  - amd64 (`macos-x64`)
+  - arm64 (`macos-arm64`)
+
+After downloading and extracting the zip file for your operating system and architecture,
+you can run the `deploy-freva` command.
 
 ```console
-python3 pip install -U freva-deployment
+Usage: deploy-freva [-h] [-v] [-V] [--cowsay] {cmd} ...
+
+Run the freva deployment
+
+Positional Arguments:
+  {cmd}
+    cmd          Run deployment in batch mode.
+
+Options:
+  -h, --help     show this help message and exit
+  -v, --verbose  Verbosity level (default: 0)
+  -V, --version  show program's version number and exit
+  --cowsay       Let the cow speak! (default: False)
+
+```
+
+## Installation via pip.
+If you're using Linux, OsX or a Windows subsystem for Linux (WSL) you can
+use *pip* to install the deployment software:
+
+```console
+python3 -m pip install -U freva-deployment
 ```
 
 This command installs ansible and all required python packages.
@@ -51,10 +94,9 @@ This command installs ansible and all required python packages.
 ```console
 python3 -m pip install libselinux-python3
 ```
-
 ## Using docker
 
-A pre-build docker image is available to run the deployment
+A pre-built docker image is available to run the deployment
 
 ```console
 docker run -it -v /path/to/config:/opt/freva-deployment:z ghcr.io/freva-clint/freva-deployment
@@ -63,20 +105,22 @@ The `-it` flags are important in order to interact with the program. To use
 and save existing configurations you can mount the directories of the config
 files into the container.
 
+
 ## Commands after installation:
 The `pip install` command will create *three* different commands:
-- `deploy-freva`: Text user interface to configure and run the deployment.
-- `deploy-freva-cmd`: Run already configured deployment.
+- `deploy-freva`: Main deployment command.
+- `deploy-freva-cmd`: Run already configured deployment. This is a legacy command
+   please use `deploy-freva cmd` instead.
 - `freva-migrate`: Command line interface to manage project migration from
-   old freva systems to new ones.
-If you can't find the commands mentioned above pip was probably installing
-them in the user space. In that case you need to append your `PATH`
-environment variable by `~/.local/bin`.If you use bash for example, add
-the following command to your local `.bashrc`:
+   old freva systems to new ones. This command is only available in the docker
+   container image and if the software was installed via *pip*
 
-```console
-export PATH=$PATH:$HOME/.local/bin
-```
+> **_Note:_** You can use the `-l` flag of the `deploy-freva cmd` command
+or tick the *local deployment only* box in the setup page of the text user
+interface if you only want to try out the deployment on your local machine.
+Without having to install anything on remote machines.
+
+
 
 
 ## Installing docker-compose/podman-compose and sudo access to the service servers
@@ -99,7 +143,7 @@ fit together. If you for example want to deploy the rest api the system will
 also check an update of the freva cli if it finds that the cli library doesn't
 fit with the latest version of the rest api. This ensures that all parts of the
 system will work together.
-> **_Note:_** You can disable this version checking by using the 
+> **_Note:_** You can disable this version checking by using the
   `--skip-version-check` flag. Use this flag with caution.
 
 
