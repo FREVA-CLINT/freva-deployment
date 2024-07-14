@@ -116,11 +116,16 @@ myst_enable_extensions = ["colon_fence", "linkify", "substitution"]
 myst_heading_anchors = 2
 myst_substitutions = {
     "rtd": "[Read the Docs](https://readthedocs.org/)",
-    "|version|": __version__,
+    "version": __version__,
+}
+myst_url_schemes = {
+    "http": None,
+    "https": None,
+    "release": f"https://github.com/FREVA-CLINT/freva-deployment/releases/tag/v{release}",
 }
 # Substitutions
 rst_prolog = """
-.. |version| replace:: {version}
+.. version replace:: {version}
 """.format(
     version=__version__
 )

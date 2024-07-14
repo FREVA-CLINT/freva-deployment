@@ -11,7 +11,7 @@ setup ansible and you can establish ssh connections to the servers.
 
 ## Using pre-built binaries.
 You can download the pre-built binaries for your specific OS and architecture
-from the [release page](https://github.com/FREVA-CLINT/freva-deployment/releases/tag/v|version|).
+from the [release page](release:{{version}}).
 
 ### Available Binaries
 
@@ -31,7 +31,7 @@ from the [release page](https://github.com/FREVA-CLINT/freva-deployment/releases
   - amd64 (`macos-x64`)
   - arm64 (`macos-arm64`)
 
-After downloading version |version| file for your operating system and architecture,
+After downloading version {{version}} file for your operating system and architecture,
 you can run the `deploy-freva` (`deploy-freva.exe` on windows) command:
 
 ```console
