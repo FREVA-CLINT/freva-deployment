@@ -64,7 +64,7 @@ jobs:
             hidden_import: --hidden-import curses --hidden-import cowsay
             extra_pkg: cryptography
           - os: windows-2019
-            target: windows-x64
+            target: windows-x64.exe
             arch: x86_64
             py_arch: x64
             asset_mime: application/vnd.microsoft.portable-executable
@@ -119,6 +119,12 @@ jobs:
           asset_path: ./dist/${{ matrix.exe }}
           asset_name: deploy-freva-${{ matrix.target}}
           asset_content_type: ${{ matrix.asset_mime }}
+      - name: Upload cmd Asset
+        uses: actions/upload-artifact@v3
+        with:
+          path: dist/${{matrix.exe}}
+          name: deploy-freva-${{ matrix.target }}
+          retention-days: 7
 
   build-linux:
     name: Build packages
@@ -220,6 +226,12 @@ jobs:
           asset_path: ./dist/deploy-freva
           asset_name: deploy-freva-${{ matrix.target}}
           asset_content_type: application/octet-stream
+      - name: Upload cmd Asset
+        uses: actions/upload-artifact@v3
+        with:
+          path: dist/deploy-freva
+          name: deploy-freva-${{ matrix.target }}
+          retention-days: 7
 
 
   pypi:
