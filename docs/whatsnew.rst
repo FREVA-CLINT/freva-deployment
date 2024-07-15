@@ -7,9 +7,16 @@ What's new
    :maxdepth: 0
    :titlesonly:
 
+v2407.2.2
+~~~~~~~~~
+* Improve error messages for too small tui terminal windows.
+* Small bug fixes in build pipeline.
+
+
+
 v2407.2.1
 ~~~~~~~~~
-* Introduce now ``cmd`` sub command to ``deploy-freva`` cli.
+* Introduce new ``cmd`` sub command to ``deploy-freva`` cli.
 * Build pre-built binaries.
 
 
