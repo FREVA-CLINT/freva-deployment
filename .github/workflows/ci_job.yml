@@ -30,8 +30,21 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+        with:
+          platforms: all
+
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
+        uses: docker/setup-buildx-action@v2
+        with:
+          install: true
+
+      - name: Create Buildx builder
+        run: docker buildx create --use --name mybuilder --driver docker-container
+
+      - name: Inspect Buildx builder
+        run: docker buildx inspect --bootstrap
 
       - name: Build vault image
         uses: docker/build-push-action@v4
