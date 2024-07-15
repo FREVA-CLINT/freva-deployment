@@ -49,9 +49,7 @@ def _check_container(process: subprocess.Popen) -> None:
         logger.critical("The container failed: %s", error)
         raise RuntimeError(error) from None
     if json_req.get("status") != "unsealed":
-        logger.critical(
-            "Vault did not unseal: %s", json_req.get("status", "500")
-        )
+        logger.critical("Vault did not unseal: %s", json_req.get("status", "500"))
         raise ValueError("Vault did not unseal")
     process.terminate()
     logger.info("Container seems to work!")
@@ -63,7 +61,7 @@ def check_container(container_name: str = "vault") -> None:
     time.sleep(5)
     for _ in range(10):
         try:
-            check_container(proc)
+            _check_container(proc)
             return
         except RuntimeError:
             time.sleep(5)
