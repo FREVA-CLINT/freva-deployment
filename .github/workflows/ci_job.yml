@@ -28,8 +28,9 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        - arch: linux/amd64
-        - arch: linux/arm64
+        include:
+          - arch: linux/amd64
+          - arch: linux/arm64
 
     steps:
       - name: Checkout
