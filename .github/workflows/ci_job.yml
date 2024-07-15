@@ -26,6 +26,11 @@ jobs:
   vault-test:
     name: Simple functional tests for the vault image
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        - arch: linux/amd64
+        - arch: linux/arm64
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -50,7 +55,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: assets/share/freva/deployment/vault/
-          platforms: linux/amd64,linux/arm64
+          platforms: ${{matrix.arch}}
           push: false
           load: true
           tags: vault
