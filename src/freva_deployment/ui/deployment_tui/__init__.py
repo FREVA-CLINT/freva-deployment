@@ -6,7 +6,7 @@ import argparse
 
 from freva_deployment.deploy import DeployFactory
 from freva_deployment.error import DeploymentError
-from freva_deployment.logger import set_log_level
+from freva_deployment.logger import logger, set_log_level
 from freva_deployment.utils import RichConsole
 
 from .main_window import MainApp
@@ -18,7 +18,8 @@ def tui(args: argparse.Namespace) -> None:
     try:
         main_app = MainApp()
         main_app.run()
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt, Exception) as error:
+        print(isinstance(error, KeyboardInterrupt))
         try:
             main_app.thread_stop.set()
             main_app.save_config_to_file(
@@ -26,6 +27,14 @@ def tui(args: argparse.Namespace) -> None:
             )
         except AttributeError:
             pass
+        if not isinstance(error, KeyboardInterrupt):
+            msg = str(error)
+            if "addwstr" in msg:
+                msg = (
+                    "Cloud not display content, try "
+                    "increasing your terminal size"
+                )
+            logger.error("Exiting App: %s", msg)
         return
     setup = main_app.setup
     main_app.thread_stop.set()
