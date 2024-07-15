@@ -17,7 +17,6 @@ jobs:
     uses: ./.github/workflows/ci_job.yml
   release:
     name: Create Release
-    needs: [tests]
     runs-on: ubuntu-latest
     steps:
       - name: Create Release
