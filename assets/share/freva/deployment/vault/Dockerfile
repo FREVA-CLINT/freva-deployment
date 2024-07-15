@@ -19,8 +19,8 @@ COPY --chown=vault:vault vault-server-tls.hcl /opt/vault/
 COPY --chown=vault:vault policy-file.hcl /opt/vault/
 
 RUN python3 -m ensurepip
-RUN pip3 install --no-cache --upgrade pip setuptools &&\
-    pip3 install ----no-cache hvac requests pyopenssl fastapi uvicorn &&\
+RUN pip3 install --no-cache-dir --upgrade pip setuptools &&\
+    pip3 install --no-cache-dir hvac requests pyopenssl fastapi uvicorn &&\
     rm -rf /root/.cache/pip /var/cache/apk/* /tmp/*
 
 EXPOSE 5002
