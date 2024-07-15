@@ -204,7 +204,7 @@ jobs:
         with:
           fetch-depth: 0
 
-    - name: Set up Python "3.X"
+      - name: Set up Python "3.X"
         uses: actions/setup-python@v4
         with:
           python-version: "3.X"
