@@ -2,31 +2,99 @@
 
 import json
 import os
-import subprocess
+import sys
+from copy import deepcopy
+from functools import partial
+from io import StringIO, TextIOWrapper
+from multiprocessing import Process, get_context
 from pathlib import Path
 from tempfile import NamedTemporaryFile, TemporaryDirectory
 from typing import Any, Dict, List, Optional, Union
 
 import yaml
+from rich import print as pprint
 from rich.console import Console
 from rich.live import Live
 from rich.spinner import Spinner
 
 from .error import DeploymentError
 from .logger import logger
+from .utils import is_bundeled
+
+
+class SubProcess:
+    """Class that holds the exitcode and the stdout of a process."""
+
+    def __init__(self, exitcode: int, stdout: str = "", log: str = "") -> None:
+
+        self.returncode = exitcode
+        self.stdout = stdout
+        self.log = log
+
+    @classmethod
+    def run_ansible_playbook(
+        cls,
+        command: List[str],
+        stderr_buffer: Optional[TextIOWrapper] = None,
+    ) -> None:
+        from ansible.cli.playbook import main
+
+        stderr = sys.stderr
+        try:
+            sys.stderr = stderr_buffer or sys.stderr
+            main(command)
+        finally:
+            sys.stderr = stderr
+
+
+def run_command(
+    command: List[str],
+    env: Optional[Dict[str, str]] = None,
+    capture_output: bool = False,
+):
+
+    os_env = deepcopy(os.environ)
+    env = env or {}
+    stdout = sys.stdout
+    with TemporaryDirectory(prefix="AnsibleRunner") as temp_dir:
+        logger_file = Path(temp_dir) / "logger.log"
+        logger_file.touch()
+        stdout_file = Path(temp_dir) / "stdout.log"
+        env["DEPLOYMENT_LOG_PATH"] = str(logger_file)
+        stdout_buffer = stdout_file.open("w")
+        try:
+            os.environ.update(env)
+            kwargs = {}
+            if capture_output:
+                sys.stdout = stdout_buffer
+                kwargs["stderr_buffer"] = stdout_buffer
+            proc = Process(
+                target=SubProcess.run_ansible_playbook,
+                args=(command,),
+                kwargs=kwargs,
+            )
+            proc.start()
+            proc.join()
+        finally:
+            os.environ = os_env
+            sys.stdout = stdout
+            stdout_buffer.close()
+        return SubProcess(
+            proc.exitcode or 0,
+            stdout=stdout_file.read_text(),
+            log=logger_file.read_text(),
+        )
 
 
 def run_command_with_spinner(
-    command: list, env: dict, text: str
-) -> subprocess.CompletedProcess:
+    command: List[str], env: Dict[str, str], text: str
+) -> SubProcess:
     console = Console(stderr=True)
     spinner = Spinner("weather", text=text)
 
     with Live(spinner, refresh_per_second=3, console=console):
         try:
-            result = subprocess.run(
-                command, env=env, capture_output=True, text=True
-            )
+            result = run_command(command, env=env, capture_output=True)
         except KeyboardInterrupt:
             spinner.update(text=text + " [yellow]canceled[/yellow]")
             raise KeyboardInterrupt("User interrupted execution") from None
@@ -35,7 +103,6 @@ def run_command_with_spinner(
             spinner.update(text=text + " [green]ok[/green]")
         else:
             spinner.update(text=text + " [red]failed[/red]")
-            print(result.stdout)
     return result
 
 
@@ -73,6 +140,19 @@ class RunnerDir(TemporaryDirectory):
         content_str = yaml.safe_dump(content)
         self.playbook_file.write_text(content_str)
         return content_str
+
+    @property
+    def ansible_exe(self) -> str:
+        """Get the path to the ansible-playbook command."""
+        exe = ""
+        if sys.platform.lower().startswith("win"):
+            exe = ".exe"
+        if is_bundeled:
+            return str(
+                Path(__file__).parent / "bin" / f"ansible-playbook{exe}"
+            )
+        else:
+            return "ansible-playbook"
 
     @property
     def inventory_file(self) -> Path:
@@ -127,9 +207,9 @@ class RunnerDir(TemporaryDirectory):
         hide_output: bool = False,
         text: str = "Running playbook ...",
         output: str = "",
-    ) -> None:
+    ) -> str:
         """
-        Run an Ansible playbook using subprocess.
+        Run an Ansible playbook using multiprocessing.
 
         Parameters:
         playbook_path (str): Path to the playbook.
@@ -152,12 +232,9 @@ class RunnerDir(TemporaryDirectory):
         command = ["ansible-playbook", playbook_path, "-i", inventory_path]
 
         # Set environment variables
-        env = os.environ.copy()
         for key, passwd in passwords.items():
             envvars[key.upper()] = passwd
             extravars[key] = f'{{{{ lookup("env", "{key.upper()}") }}}}'
-
-        env.update(envvars)
         # Add extra variables
         for key, value in extravars.items():
             command.append(f"-e {key}='{value}'")
@@ -172,14 +249,14 @@ class RunnerDir(TemporaryDirectory):
         logger.debug("Running ansible command %s", " ".join(command))
         # Run the command
         if hide_output and verbosity == 0:
-            result = run_command_with_spinner(command, env, text)
+            result = run_command_with_spinner(command, envvars, text)
         else:
-            result = subprocess.run(
-                command, env=env, capture_output=False, text=True
-            )
+            result = run_command(command, env=envvars, capture_output=False)
 
         # Determine if the command was successful
         success = result.returncode == 0
         # Raise an error if the playbook execution failed
         if not success:
+            pprint(result.stdout)
             raise DeploymentError("Deployment failed!")
+        return result.log
