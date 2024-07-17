@@ -1,5 +1,6 @@
 ansible/*
 *.img
+*.spec
 cloud-init/temp
 test.conf
 freva_web.toml
