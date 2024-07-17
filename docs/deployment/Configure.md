@@ -9,7 +9,7 @@ A complete Freva instance will need the following services:
 ## Running the deployment
 The command `deploy-freva` opens a text user interface (tui) that will walk
 you through the setup of the deployment.
-> **_Note:_** Navigation is similar to the one of the *nano* text editor.
+> ``📝``: Navigation is similar to the one of the *nano* text editor.
 The shortcuts start with a `^` which indicates `CTRL+`.
 
 Please refer to the [usage of the text user interface section](TuiHowto)
@@ -144,7 +144,7 @@ fit together. If you for example want to deploy the rest api the system will
 also check an update of the freva cli if it finds that the cli library doesn't
 fit with the latest version of the rest api. This ensures that all parts of the
 system will work together.
-> **_Note:_** You can disable this version checking by using the
+> ``📝`` You can disable this version checking by using the
   `--skip-version-check` flag. Use this flag with caution.
 
 
