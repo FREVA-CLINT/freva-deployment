@@ -4,7 +4,7 @@ LABEL org.opencontainers.image.authors="DRKZ-CLINT"
 LABEL org.opencontainers.image.source="https://github.com/FREVA-CLINT/freva-deployment.git"
 LABEL org.opencontainers.image.version="$VERSION"
 RUN apt-get update && apt-get install -y build-essential python3-cryptography \
-    python3-dev python3-pip openssh-client sshpass
+    python3-dev python3-pip openssh-client sshpass golang git
 RUN apt-get install -y binutils libghc-zlib-dev musl-dev \
     librust-libc-dev libc-devtools libffi-dev gcc g++
 RUN apt-get install -y python3-appdirs python3-mysqldb python3-yaml \
@@ -16,7 +16,7 @@ WORKDIR /tmp/deployment
 COPY . .
 # Install Python dependencies
 RUN python3 -m pip install --upgrade pip && \
-    python3 -m pip install pyinstaller ansible cryptography &&\
+    python3 -m pip install tox cryptography &&\
     python3 src/freva_deployment/__init__.py && \
     python3 -m pip install --break-system-packages . && \
     rm -rf /root/.cache/pip && \
