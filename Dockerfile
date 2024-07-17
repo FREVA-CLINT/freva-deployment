@@ -4,7 +4,7 @@ LABEL org.opencontainers.image.authors="DRKZ-CLINT"
 LABEL org.opencontainers.image.source="https://github.com/FREVA-CLINT/freva-deployment.git"
 LABEL org.opencontainers.image.version="$VERSION"
 RUN apt-get update && apt-get install -y build-essential python3-cryptography \
-    python3-dev python3-pip openssh-client sshpass golang git
+    python3-dev python3-pip openssh-client sshpass git
 RUN apt-get install -y binutils libghc-zlib-dev musl-dev \
     librust-libc-dev libc-devtools libffi-dev gcc g++
 RUN apt-get install -y python3-appdirs python3-mysqldb python3-yaml \
