@@ -1,6 +1,7 @@
 ansible/*
 *.img
 *.spec
+pyinstaller/cowsay
 cloud-init/temp
 test.conf
 freva_web.toml
