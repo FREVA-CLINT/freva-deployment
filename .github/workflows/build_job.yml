@@ -265,7 +265,7 @@ jobs:
       - name: Run PyInstaller in Docker
         run: >
           docker run --rm -v $PWD:/src -w /src --platform ${{ matrix.arch }}
-          pyinstaller deploy-freva-all.spec
+          pyinstaller:${{ matrix.target }} pyinstaller deploy-freva-all.spec
 
       - name: Test built bindary
         run: >
