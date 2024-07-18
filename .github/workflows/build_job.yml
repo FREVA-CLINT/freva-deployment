@@ -60,7 +60,9 @@ jobs:
           post-cleanup: 'all'
           environment-name: build
           create-args: >
+            python=3.11
             appdirs
+            ansible-core
             pymysql
             mysql-common
             pyyaml
