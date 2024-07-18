@@ -55,7 +55,7 @@ jobs:
       - name: Create conda env
         uses: mamba-org/setup-micromamba@v1
         with:
-          init-shell: bash powershell
+          init-shell: pwsh
           cache-environment: true
           post-cleanup: 'all'
           environment-name: build
