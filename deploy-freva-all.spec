@@ -5,8 +5,10 @@ import mock
 
 if sys.platform.lower().startswith("win"):
     cowsay = ('pyinstaller/cowsay.exe', 'bin')
+    hiddenimports = ['cryptography', 'ansible_pylibssh', 'windows-curses']
 else:
     cowsay = ('pyinstaller/cowsay', 'bin')
+    hiddenimports = ['cryptography', 'ansible_pylibssh']
 
 datas = [
     ('assets/share/freva/deployment', 'freva_deployment/assets'),
@@ -15,12 +17,6 @@ datas = [
     cowsay,
 ]
 binaries = []
-hiddenimports = ['windows-curses',
-                 'curses',
-                 'cryptography',
-                 'ansible_pylibssh',
-                 'pkg_resources.extern'
-]
 tmp_ret = collect_all('ansible')
 datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
 tmp_ret = collect_all('ansible_collections')
