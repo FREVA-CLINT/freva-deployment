@@ -44,11 +44,12 @@ jobs:
     needs: [release]
     runs-on: ${{matrix.os}}
     strategy:
-      include:
-        - os: windows-2019
-          target: windows-x64.exe
-          py_arch: x64
-          url: https://github.com/Code-Hex/Neo-cowsay/releases/download/v2.0.4/cowsay_2.0.4_Windows_x86_64.zip
+      matrix:
+        include:
+          - os: windows-2019
+            target: windows-x64.exe
+            py_arch: x64
+            url: https://github.com/Code-Hex/Neo-cowsay/releases/download/v2.0.4/cowsay_2.0.4_Windows_x86_64.zip
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python "3.X" on ${{ matrix.os }}
