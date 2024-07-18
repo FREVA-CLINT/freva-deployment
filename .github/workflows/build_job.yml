@@ -59,10 +59,13 @@ jobs:
           architecture: ${{ matrix.py_arch }}
 
       - name: Set UTF-8 Code Page
-        run: chcp 65001
+        run: |
+          chcp 65001
 
       - name: Set Locale Environment Variables
         run: |
+          Set-WinSystemLocale en-US.UTF-8
+          Set-WinUserLanguageList en-US.UTF-8
           setx LANG en_US.UTF-8
           setx LC_ALL en_US.UTF-8
 
