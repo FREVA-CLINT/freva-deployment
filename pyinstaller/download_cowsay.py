@@ -15,9 +15,7 @@ def reporthook(count, block_size, total_size):
     frac = count * block_size / total_size
     percent = int(100 * frac)
     bar = "#" * int(frac * 40)
-    msg = "Downloading: [{0:<{1}}] | {2}% Completed".format(
-        bar, 40, round(percent, 2)
-    )
+    msg = "Downloading: [{0:<{1}}] | {2}% Completed".format(bar, 40, round(percent, 2))
     print(msg, end="\r", flush=True)
     if frac >= 1:
         print()
@@ -49,9 +47,7 @@ class CowsayExtractor:
         Path
             The path to the downloaded archive.
         """
-        urlretrieve(
-            self.url, filename=self.temp_file.name, reporthook=reporthook
-        )
+        urlretrieve(self.url, filename=self.temp_file.name, reporthook=reporthook)
         return Path(self.temp_file.name)
 
     def extract_cowsay(self, archive_path: Path) -> Path:
@@ -81,9 +77,7 @@ class CowsayExtractor:
                         extracted_path = self.script_dir / member.name
                         break
         else:
-            raise ValueError(
-                "Unsupported archive format. Must be .zip or .tar.gz."
-            )
+            raise ValueError("Unsupported archive format. Must be .zip or .tar.gz.")
         if extracted_path.suffix != ".exe" and os.name != "nt":
             try:
                 os.chmod(extracted_path, 0o755)
@@ -94,7 +88,6 @@ class CowsayExtractor:
         """Main function to download and extract the cowsay binary."""
         archive_path = self.download_file()
         self.extract_cowsay(archive_path)
-        archive_path.unlink()
 
 
 if __name__ == "__main__":
