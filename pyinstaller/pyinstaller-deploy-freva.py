@@ -23,8 +23,12 @@ def main():
 
 if __name__ == "__main__":
     sys.argv[0] = re.sub(r"(-script\.pyw|\.exe)?$", "", sys.argv[0])
-    dummy, encoding = locale.getlocale()
-    if encoding.lower() not in ("utf-8", "utf8"):
+    try:
+        locale.setlocale(locale.LC_ALL, "")
+        dummy, encoding = locale.getlocale()
+    except (locale.Error, ValueError):
+        encoding = "unknown"
+    if (encoding or "unknown").lower() not in ("utf-8", "utf8"):
         pprint(
             f"[red][b]WARNING[/b] - Your locale encoding is {encoding} "
             "Ansible might not work correctly. Consider changing your "
