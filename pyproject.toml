@@ -35,7 +35,7 @@ dependencies = [ "appdirs",
 [project.optional-dependencies]
 dev = ["flit", "tox"]
 win = ["cryptography", "windows-curses", "pyinstaller"]
-osx = ["cryptography", "curses", "pyinstaller"]
+osx = ["cryptography", "pyinstaller"]
 doc = ["pydata-sphinx-theme",
        "sphinx",
        "sphinx-copybutton",
@@ -127,7 +127,7 @@ commands =
           --add-data 'src/freva_deployment/versions.json:freva_deployment' \
           --add-data 'src/freva_deployment/callback_plugins:freva_deployment/callback_plugins' \
           --add-data 'pyinstaller/{env:COW_EXE:cowsay}:bin' \
-          --hidden-import cursers \
+          --hidden-import curses \
           --hidden-import windows-curses \
           --hidden-import cryptography \
           --hidden-import ansible_pylibssh \
