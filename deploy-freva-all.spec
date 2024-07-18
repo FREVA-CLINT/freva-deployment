@@ -1,7 +1,11 @@
 # -*- mode: python ; coding: utf-8 -*-
 from PyInstaller.utils.hooks import collect_all
+from pathlib import Path
+import sys
 import sys
 import mock
+
+
 
 if sys.platform.lower().startswith("win"):
     cowsay = ('pyinstaller/cowsay.exe', 'bin')
@@ -24,6 +28,11 @@ datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
 
 with mock.patch("locale.getlocale", lambda: ("utf-8", "utf-8")):
     with mock.patch("sys.getfilesystemencoding", lambda: "utf-8"):
+        import ansible.cli
+        ansible_cli_path = Path(ansible.cli.__file__)
+        ansibl_cli_path.write_text(
+            re.sub("raise SystemExit", "print", ansible_cli.path.read_text())
+        )
         a = Analysis(
             ['pyinstaller/pyinstaller-deploy-freva.py'],
             pathex=[],
