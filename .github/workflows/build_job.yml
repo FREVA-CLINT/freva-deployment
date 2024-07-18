@@ -52,6 +52,11 @@ jobs:
             url: https://github.com/Code-Hex/Neo-cowsay/releases/download/v2.0.4/cowsay_2.0.4_Windows_x86_64.zip
     steps:
       - uses: actions/checkout@v4
+      - name: Set up Python "3.11" on ${{ matrix.os }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+          architecture: ${{ matrix.py_arch }}
       - name: Create conda env
         uses: mamba-org/setup-micromamba@v1
         with:
