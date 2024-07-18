@@ -75,6 +75,7 @@ jobs:
             url: https://github.com/Code-Hex/Neo-cowsay/releases/download/v2.0.4/cowsay_2.0.4_Windows_x86_64.zip
             cowsay: cowsay.exe
 
+
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python "3.X" on ${{ matrix.os }}
@@ -82,6 +83,23 @@ jobs:
         with:
           python-version: "3.X"
           architecture: ${{ matrix.py_arch }}
+
+      - name: Set UTF-8 Code Page
+        if: $${ matrix.pipenv }} == win
+        run: chcp 65001
+
+      - name: Set Locale Environment Variables
+        if: $${ matrix.pipenv }} == win
+        run: |
+          setx LANG en_US.UTF-8
+          setx LC_ALL en_US.UTF-8
+
+      - name: Verify Locale and Code Page
+        if: $${ matrix.pipenv }} == win
+        run: |
+          chcp
+          echo %LANG%
+          echo %LC_ALL%
 
       - name: Adding the evaluation config file
         run: python src/freva_deployment/__init__.py
