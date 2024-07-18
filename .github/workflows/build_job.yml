@@ -79,8 +79,6 @@ jobs:
 
       - name: Set Locale Environment Variables
         run: |
-          Set-WinSystemLocale en-US.UTF-8
-          Set-WinUserLanguageList en-US.UTF-8
           setx LANG en_US.UTF-8
           setx LC_ALL en_US.UTF-8
         shell: pwsh
@@ -98,14 +96,15 @@ jobs:
 
       - name: Install dependencies
         run: |
+          chcp 65001
           micromamba run -n build python3 -m pip install --upgrade pip
           micromamba run -n build python3 -m pip install .[win]
         shell: pwsh
 
       - name: Download cowsay
-        run: >
-          micromamba run -n build
-          python pyinstaller/download_cowsay.py ${{ matrix.url }}
+        run: |
+          chcp 65001
+          micromamba run -n build python pyinstaller/download_cowsay.py ${{ matrix.url }}
         shell: pwsh
 
       - name: Build with cmd pyinstaller for deploy-freva.exe
