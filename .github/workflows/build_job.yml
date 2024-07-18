@@ -55,6 +55,7 @@ jobs:
             exe: deploy-freva
             url: https://github.com/Code-Hex/Neo-cowsay/releases/download/v2.0.4/cowsay_2.0.4_macOS_x86_64.tar.gz
             pipenv: osx
+            cowsay: cowsay
           - os: macos-14
             target: osx-arm64
             arch: arm64
@@ -63,6 +64,7 @@ jobs:
             exe: deploy-freva
             pipenv: osx
             url: https://github.com/Code-Hex/Neo-cowsay/releases/download/v2.0.4/cowsay_2.0.4_macOS_arm64.tar.gz
+            cowsay: cowsay
           - os: windows-2019
             target: windows-x64.exe
             arch: x86_64
@@ -71,6 +73,7 @@ jobs:
             exe: deploy-freva.exe
             pipenv: win
             url: https://github.com/Code-Hex/Neo-cowsay/releases/download/v2.0.4/cowsay_2.0.4_Windows_x86_64.zip
+            cowsay: cowsay.exe
 
     steps:
       - uses: actions/checkout@v4
@@ -88,13 +91,8 @@ jobs:
           python3 -m pip install --upgrade pip
           python3 -m pip install tox
 
-      - name: Set environment variable (Non-windows)
-        if: ${{matrix.pipenv}} != 'win'
-        run: echo "COW_EXE=cowsay" >> $GITHUB_ENV
-
-      - name: Set environment variable (Windows)
-        if: ${{matrix.pipenv}} == 'win'
-        run: echo COW_EXE=cowsay.exe | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8
+      - name: Set environment variable
+        run: echo "COW_EXE=${{matrix.cowsay}}" >> $GITHUB_ENV
 
       - name: Build with cmd pyinstaller for ${{ matrix.target }}
         run: >
