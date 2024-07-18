@@ -1,6 +1,7 @@
 # -*- mode: python ; coding: utf-8 -*-
 from PyInstaller.utils.hooks import collect_all
 from pathlib import Path
+import re
 import sys
 import sys
 import mock
