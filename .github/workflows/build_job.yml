@@ -97,6 +97,8 @@ jobs:
       - name: Build with cmd pyinstaller for ${{ matrix.target }}
         env:
           PYTHONIOENCODING: utf-8
+          LANG: en_US.UTF-8
+          LC_ALL: en_US.UTF-8
         run: >
           pyinstaller pyinstaller/pyinstaller-deploy-freva.py -c
           --name deploy-freva --onefile --clean -i docs/_static/freva_owl.ico
@@ -108,9 +110,9 @@ jobs:
           --hidden-import windows-curses
           --hidden-import cryptography
           --hidden-import ansible_pylibssh
-          --hidden-import ansible
-          --hidden-import ansible_core
-          --hidden-import ansible_collections
+          --collect-all ansible
+          --collect-all ansible_core
+          --collect-all ansible_collections
           --hidden-import pkg_resources.extern
           --exclude-module pycrypto
           --exclude-module PyInstaller
