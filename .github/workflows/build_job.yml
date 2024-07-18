@@ -200,7 +200,7 @@ jobs:
 
       - name: Build cowsay binary with golang
         run: >
-          docker run --rm -v $PWD/src -e GOBIN=/src/pyinstaller
+          docker run --rm -v $PWD:/src -e GOBIN=/src/pyinstaller
           -w /src --platform ${{ matrix.arch }} golang:latest
           go install github.com/Code-Hex/Neo-cowsay/cmd/v2/cowsay@latest
 
