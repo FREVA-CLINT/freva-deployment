@@ -80,14 +80,6 @@ jobs:
           python-version: "3.X"
           architecture: ${{ matrix.py_arch }}
 
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: 'stable'
-
-      - name: Install dependencies
-        run: go mod tidy
-
       - name: Adding the evaluation config file
         run: python src/freva_deployment/__init__.py
 
