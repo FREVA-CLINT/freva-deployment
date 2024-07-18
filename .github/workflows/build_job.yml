@@ -40,42 +40,15 @@ jobs:
           name: release_url
           path: release_url.txt
 
-  build-no-linux:
-    name: Build packages
+  build-windows:
     needs: [release]
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{matrix.os}}
     strategy:
-      matrix:
-        include:
-          - os: macos-12
-            target: osx-x64
-            arch: x86_64
-            py_arch: x64
-            asset_mime: application/octet-stream
-            exe: deploy-freva
-            url: https://github.com/Code-Hex/Neo-cowsay/releases/download/v2.0.4/cowsay_2.0.4_macOS_x86_64.tar.gz
-            pipenv: osx
-            cowsay: cowsay
-          - os: macos-14
-            target: osx-arm64
-            arch: arm64
-            py_arch: arm64
-            asset_mime: application/octet-stream
-            exe: deploy-freva
-            pipenv: osx
-            url: https://github.com/Code-Hex/Neo-cowsay/releases/download/v2.0.4/cowsay_2.0.4_macOS_arm64.tar.gz
-            cowsay: cowsay
-          - os: windows-2019
-            target: windows-x64.exe
-            arch: x86_64
-            py_arch: x64
-            asset_mime: application/vnd.microsoft.portable-executable
-            exe: deploy-freva.exe
-            pipenv: win
-            url: https://github.com/Code-Hex/Neo-cowsay/releases/download/v2.0.4/cowsay_2.0.4_Windows_x86_64.zip
-            cowsay: cowsay.exe
-
-
+      include:
+        - os: windows-2019
+          target: windows-x64.exe
+          py_arch: x64
+          url: https://github.com/Code-Hex/Neo-cowsay/releases/download/v2.0.4/cowsay_2.0.4_Windows_x86_64.zip
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python "3.X" on ${{ matrix.os }}
@@ -85,17 +58,14 @@ jobs:
           architecture: ${{ matrix.py_arch }}
 
       - name: Set UTF-8 Code Page
-        if: ${{ matrix.pipenv }} == win
         run: chcp 65001
 
       - name: Set Locale Environment Variables
-        if: ${{ matrix.pipenv }} == win
         run: |
           setx LANG en_US.UTF-8
           setx LC_ALL en_US.UTF-8
 
       - name: Verify Locale and Code Page
-        if: ${{ matrix.pipenv }} == win
         run: |
           chcp
           echo %LANG%
@@ -107,12 +77,12 @@ jobs:
       - name: Install dependencies
         run: |
           python3 -m pip install --upgrade pip
-          python3 -m pip install .[${{matrix.pipenv}}]
+          python3 -m pip install .[win]
 
       - name: Download cowsay
         run: python pyinstaller/download_cowsay.py ${{ matrix.url }}
 
-      - name: Build with cmd pyinstaller for ${{ matrix.target }}
+      - name: Build with cmd pyinstaller for deploy-freva.exe
         env:
           PYTHONIOENCODING: utf-8
           LANG: en_US.UTF-8
@@ -123,7 +93,7 @@ jobs:
           --add-data 'assets/share/freva/deployment:freva_deployment/assets'
           --add-data 'src/freva_deployment/versions.json:freva_deployment'
           --add-data 'src/freva_deployment/callback_plugins:freva_deployment/callback_plugins'
-          --add-data 'pyinstaller/${{matrix.cowsay}}:bin'
+          --add-data 'pyinstaller/cowsay.exe:bin'
           --hidden-import curses
           --hidden-import windows-curses
           --hidden-import cryptography
@@ -137,7 +107,7 @@ jobs:
           --exclude-module cowsay
 
       - name: Test built bindary
-        run: ./dist/${{matrix.exe}} --help
+        run: ./dist/deploy-freva.exe --help
       - name: Load Release URL File from release job
         if: startsWith(github.ref, 'refs/tags/')
         uses: actions/download-artifact@v1
@@ -156,13 +126,104 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.ASSET_TOKEN }}
         with:
           upload_url: ${{ steps.release_url.outputs.url }}
-          asset_path: ./dist/${{ matrix.exe }}
-          asset_name: deploy-freva-${{ matrix.target}}
-          asset_content_type: ${{ matrix.asset_mime }}
+          asset_path: ./dist/deploy-freva.exe
+          asset_name: deploy-freva-${{ matrix.target }}
+          asset_content_type: application/vnd.microsoft.portable-executable
       - name: Upload cmd Asset
         uses: actions/upload-artifact@v3
         with:
-          path: dist/${{matrix.exe}}
+          path: dist/deploy-freva.exe
+          name: deploy-freva-${{ matrix.target }}
+          retention-days: 7
+
+
+  build-osx:
+    name: Build packages
+    needs: [release]
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: macos-12
+            target: osx-x64
+            arch: x86_64
+            py_arch: x64
+            url: https://github.com/Code-Hex/Neo-cowsay/releases/download/v2.0.4/cowsay_2.0.4_macOS_x86_64.tar.gz
+          - os: macos-14
+            target: osx-arm64
+            arch: arm64
+            py_arch: arm64
+            url: https://github.com/Code-Hex/Neo-cowsay/releases/download/v2.0.4/cowsay_2.0.4_macOS_arm64.tar.gz
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python "3.X" on ${{ matrix.os }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.X"
+          architecture: ${{ matrix.py_arch }}
+
+      - name: Adding the evaluation config file
+        run: python src/freva_deployment/__init__.py
+
+      - name: Install dependencies
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -m pip install .[osx]
+
+      - name: Download cowsay
+        run: python pyinstaller/download_cowsay.py ${{ matrix.url }}
+
+      - name: Build with cmd pyinstaller for ${{ matrix.target }}
+        env:
+          PYTHONIOENCODING: utf-8
+          LANG: en_US.UTF-8
+          LC_ALL: en_US.UTF-8
+        run: >
+          pyinstaller pyinstaller/pyinstaller-deploy-freva.py -c
+          --name deploy-freva --onefile --clean -i docs/_static/freva_owl.ico
+          --add-data 'assets/share/freva/deployment:freva_deployment/assets'
+          --add-data 'src/freva_deployment/versions.json:freva_deployment'
+          --add-data 'src/freva_deployment/callback_plugins:freva_deployment/callback_plugins'
+          --add-data 'pyinstaller/cowsay:bin'
+          --hidden-import curses
+          --hidden-import cryptography
+          --hidden-import ansible_pylibssh
+          --collect-all ansible
+          --collect-all ansible_core
+          --collect-all ansible_collections
+          --hidden-import pkg_resources.extern
+          --exclude-module pycrypto
+          --exclude-module PyInstaller
+          --exclude-module cowsay
+
+      - name: Test built bindary
+        run: ./dist/deploy-freva --help
+      - name: Load Release URL File from release job
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: actions/download-artifact@v1
+        with:
+          name: release_url
+      - name: Get Release File Name & Upload URL
+        if: startsWith(github.ref, 'refs/tags/')
+        id: release_url
+        shell: bash
+        run: |
+          echo "url=$(cat release_url/release_url.txt)" >> $GITHUB_OUTPUT
+      - name: Upload Release Asset
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.ASSET_TOKEN }}
+        with:
+          upload_url: ${{ steps.release_url.outputs.url }}
+          asset_path: ./dist/deploy-freva
+          asset_name: deploy-freva-${{ matrix.target}}
+          asset_content_type: application/octet-stream
+      - name: Upload cmd Asset
+        uses: actions/upload-artifact@v3
+        with:
+          path: dist/deploy-freva
           name: deploy-freva-${{ matrix.target }}
           retention-days: 7
 
@@ -291,7 +352,7 @@ jobs:
     name: Create Pip package
     permissions:
       id-token: write
-    needs: [tests, build-linux, build-no-linux]
+    needs: [tests, build-linux, build-windows, build-osx]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
     steps:
