@@ -85,17 +85,17 @@ jobs:
           architecture: ${{ matrix.py_arch }}
 
       - name: Set UTF-8 Code Page
-        if: $${ matrix.pipenv }} == win
+        if: ${ matrix.pipenv }} == win
         run: chcp 65001
 
       - name: Set Locale Environment Variables
-        if: $${ matrix.pipenv }} == win
+        if: ${ matrix.pipenv }} == win
         run: |
           setx LANG en_US.UTF-8
           setx LC_ALL en_US.UTF-8
 
       - name: Verify Locale and Code Page
-        if: $${ matrix.pipenv }} == win
+        if: ${ matrix.pipenv }} == win
         run: |
           chcp
           echo %LANG%
