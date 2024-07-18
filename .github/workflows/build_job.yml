@@ -234,6 +234,8 @@ jobs:
             target: linux-arm64
           - arch: linux/arm/v7
             target: linux-armvl7
+          - arch: linux/arm/v6
+            target: linux-armvl6
           - arch: linux/ppc64le
             target: linux-ppc64
           - arch: linux/s390x
@@ -276,7 +278,7 @@ jobs:
       - name: Build cowsay binary with golang
         run: >
           docker run --rm -v $PWD:/src -e GOBIN=/src/pyinstaller
-          -w /src --platform ${{ matrix.arch }} golang:latest
+          -w /src --platform ${{ matrix.arch }} golang:1.22-alpine
           go install github.com/Code-Hex/Neo-cowsay/cmd/v2/cowsay@latest
 
       - name: Build Docker image
