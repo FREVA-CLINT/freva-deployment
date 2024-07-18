@@ -17,6 +17,7 @@ def main():
         if os.path.isfile(cow_exe):
             os.environ["ANSIBLE_COW_PATH"] = os.path.join(exe)
             break
+    os.environ["PYTHONIOENCODING"] = "utf-8"
     os.environ["PATH"] = path + os.pathsep + os.environ["PATH"]
     main_cli()
 

@@ -8,7 +8,6 @@ import locale
 
 import mock
 
-
 if sys.platform.lower().startswith("win"):
     cowsay = ('pyinstaller/cowsay.exe', 'bin')
     hiddenimports = ['cryptography', 'ansible_pylibssh', 'windows-curses']
@@ -43,6 +42,7 @@ finally:
 ansible_cli_path.write_text(
     re.sub("raise SystemExit", "print", ansible_cli_path.read_text())
 )
+
 a = Analysis(
     ['pyinstaller/pyinstaller-deploy-freva.py'],
     pathex=[],

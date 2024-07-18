@@ -52,15 +52,32 @@ jobs:
             url: https://github.com/Code-Hex/Neo-cowsay/releases/download/v2.0.4/cowsay_2.0.4_Windows_x86_64.zip
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Python "3.X" on ${{ matrix.os }}
-        uses: actions/setup-python@v4
+      - name: Create conda env
+        uses: mamba-org/setup-micromamba@v1
         with:
-          python-version: "3.X"
-          architecture: ${{ matrix.py_arch }}
+          init-shell: bash powershell
+          cache-environment: true
+          post-cleanup: 'all'
+          environment-name: build
+          create-args: >
+            ansible
+            appdirs
+            pymysql
+            mysql-common
+            pyyaml
+            rich
+            toml
+            tomlkit
+            requests
+            cryptography
+            windows-curses
+            mock
+            pyinstaller
 
       - name: Set UTF-8 Code Page
         run: |
           chcp 65001
+        shell: pwsh
 
       - name: Set Locale Environment Variables
         run: |
@@ -68,33 +85,42 @@ jobs:
           Set-WinUserLanguageList en-US.UTF-8
           setx LANG en_US.UTF-8
           setx LC_ALL en_US.UTF-8
+        shell: pwsh
 
       - name: Verify Locale and Code Page
         run: |
           chcp
           echo %LANG%
           echo %LC_ALL%
+        shell: pwsh
 
       - name: Adding the evaluation config file
-        run: python src/freva_deployment/__init__.py
+        run: micromamba run -n build python src/freva_deployment/__init__.py
+        shell: pwsh
 
       - name: Install dependencies
         run: |
-          python3 -m pip install --upgrade pip
-          python3 -m pip install .[win]
+          micromamba run -n build python3 -m pip install --upgrade pip
+          micromamba run -n build python3 -m pip install .[win]
+        shell: pwsh
 
       - name: Download cowsay
-        run: python pyinstaller/download_cowsay.py ${{ matrix.url }}
+        run: >
+          micromamba run -n build
+          python pyinstaller/download_cowsay.py ${{ matrix.url }}
+        shell: pwsh
 
       - name: Build with cmd pyinstaller for deploy-freva.exe
         env:
           PYTHONIOENCODING: utf-8
           LANG: en_US.UTF-8
           LC_ALL: en_US.UTF-8
-        run:  pyinstaller deploy-freva-all.spec
+        run:  micromamba run -n build pyinstaller deploy-freva-all.spec
+        shell: pwsh
 
       - name: Test built bindary
         run: ./dist/deploy-freva.exe --help
+        shell: pwsh
       - name: Load Release URL File from release job
         if: startsWith(github.ref, 'refs/tags/')
         uses: actions/download-artifact@v1
