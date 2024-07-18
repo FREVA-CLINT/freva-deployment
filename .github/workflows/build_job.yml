@@ -94,10 +94,9 @@ jobs:
       - name: Download cowsay
         run: python pyinstaller/download_cowsay.py ${{ matrix.url }}
 
-      - name: Set UTF-8 locale for Ansible
-        run: echo PYTHONIOENCODING=utf-8 >> $GITHUB_ENV
-
       - name: Build with cmd pyinstaller for ${{ matrix.target }}
+        env:
+          PYTHONIOENCODING: utf-8
         run: >
           pyinstaller pyinstaller/pyinstaller-deploy-freva.py -c
           --name deploy-freva --onefile --clean -i docs/_static/freva_owl.ico
