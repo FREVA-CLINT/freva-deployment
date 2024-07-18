@@ -53,6 +53,7 @@ jobs:
             py_arch: x64
             asset_mime: application/octet-stream
             exe: deploy-freva
+            url: https://github.com/Code-Hex/Neo-cowsay/releases/download/v2.0.4/cowsay_2.0.4_macOS_x86_64.tar.gz
             pipenv: osx
           - os: macos-14
             target: osx-arm64
@@ -61,6 +62,7 @@ jobs:
             asset_mime: application/octet-stream
             exe: deploy-freva
             pipenv: osx
+            url: https://github.com/Code-Hex/Neo-cowsay/releases/download/v2.0.4/cowsay_2.0.4_macOS_arm64.tar.gz
           - os: windows-2019
             target: windows-x64.exe
             arch: x86_64
@@ -68,6 +70,7 @@ jobs:
             asset_mime: application/vnd.microsoft.portable-executable
             exe: deploy-freva.exe
             pipenv: win
+            url: https://github.com/Code-Hex/Neo-cowsay/releases/download/v2.0.4/cowsay_2.0.4_Windows_x86_64.zip
 
     steps:
       - uses: actions/checkout@v4
@@ -78,7 +81,9 @@ jobs:
           architecture: ${{ matrix.py_arch }}
 
       - name: Set up Go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v5
+        with:
+          go-version: 'stable'
 
       - name: Install dependencies
         run: go mod tidy
@@ -90,8 +95,21 @@ jobs:
         run: |
           python3 -m pip install --upgrade pip
           python3 -m pip install tox
+
+      - name: Set environment variable (Non-windows)
+        if: ${{matrix.pipenv}} != 'win'
+        run: echo "COW_EXE=cowsay" >> $GITHUB_ENV
+
+      - name: Set environment variable (Windows)
+        if: ${{matrix.pipenv}} == 'win'
+        run: echo COW_EXE=cowsay.exe | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8
+
       - name: Build with cmd pyinstaller for ${{ matrix.target }}
-        run: tox -e build -x testenv:build.deps='.[${{matrix.pipenv}}]'
+        run: >
+          tox -e build
+          -x testenv:build.deps='.[${{matrix.pipenv}}]'
+          -x testenv:build.commands_pre='python pyinstaller/download_cowsay.py ${{matrix.url}}'
+
       - name: Test built bindary
         run: ./dist/${{matrix.exe}} --help
       - name: Load Release URL File from release job
@@ -135,8 +153,6 @@ jobs:
             target: linux-arm64
           - arch: linux/arm/v7
             target: linux-armvl7
-          - arch: linux/arm/v6
-            target: linux-armvl6
           - arch: linux/ppc64le
             target: linux-ppc64
           - arch: linux/s390x
