@@ -8,7 +8,7 @@ RUN apt-get update && apt-get install -y build-essential python3-cryptography \
 RUN apt-get install -y binutils libghc-zlib-dev musl-dev \
     librust-libc-dev libc-devtools libffi-dev gcc g++
 RUN apt-get install -y python3-appdirs python3-mysqldb python3-yaml \
-    python3-toml python3-tomlkit python3-requests ansible && \
+    python3-toml python3-tomlkit python3-requests ansible python3-mock && \
     mkdir -p /opt/freva-deployment &&\
     mkdir -p /tmp/deployment && rm -rf /var/lib/apt/lists/* && \
     mkdir -p /src
