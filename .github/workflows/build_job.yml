@@ -60,7 +60,6 @@ jobs:
           post-cleanup: 'all'
           environment-name: build
           create-args: >
-            ansible
             appdirs
             pymysql
             mysql-common
@@ -70,7 +69,6 @@ jobs:
             tomlkit
             requests
             cryptography
-            windows-curses
             mock
             pyinstaller
 
