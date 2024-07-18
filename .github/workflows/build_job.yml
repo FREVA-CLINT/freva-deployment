@@ -170,7 +170,7 @@ jobs:
       - name: Install dependencies
         run: |
           python3 -m pip install --upgrade pip
-          python3 -m pip install .[osx]
+          python3 -m pip install .[unix]
 
       - name: Download cowsay
         run: python pyinstaller/download_cowsay.py ${{ matrix.url }}
