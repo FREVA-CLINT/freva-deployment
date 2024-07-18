@@ -29,13 +29,20 @@ install libselinux for your CentOS version.
 For example : `conda install -c conda-forge  libselinux-cos7-x86_64`
 
 # Pre-Requisites
-The main work will be done by
-[ansible](https://docs.ansible.com/ansible/latest/index.html), hence some level
-of familiarity with ansible is advantageous. Since we are using ansible we can
-use this deployment routine from a workstation computer (like a Mac-book).
-You do not need to run the deployment on the machines where things get installed.
-The only requirement is that you have to setup ansible and you can establish
-ssh connections to the servers.
+
+The main work will be done by [ansible](https://docs.ansible.com/ansible/latest/index.html),
+hence some level of familiarity with ansible is advantageous but not necessary.
+Since we are using ansible we can use this deployment routine from any workstation
+computer (like a Mac-book). You do not need to run the deployment on the
+machines where things get installed. The only requirement is
+you can establish ssh connections to the servers via openSSH.
+
+> ``📝``: In most cases openSSH clients should be available on your local machine. 
+> Windows users may refer to the
+> [openSSH install page](https://learn.microsoft.com/en-us/windows-server/administration/openssh/openssh_install_firstuse?tabs=gui)
+> for setting up openSSH on windows.
+
+
 
 # Installation
 There are different option to install the deployment software.
@@ -50,7 +57,6 @@ from the [release page]((https://github.com/FREVA-CLINT/freva-deployment/release
   - amd64 (`linux-x64`)
   - arm64 (`linux-arm64`)
   - armv7 (`linux-armv7`)
-  - armv6 (`linux-armv6`)
   - ppc64le (`linux-ppc64le`)
   - s390x (`linux-s390x`)
   - i386 (`linux-i386`)

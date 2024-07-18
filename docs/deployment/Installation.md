@@ -26,7 +26,6 @@ from the [release page](release:{{version}}).
   - [amd64](exe:linux-x64)
   - [arm64](exe:linux-arm64)
   - [armv7](exe:linux-armv7)
-  - [armv6](exe:linux-armv6)
   - [ppc64le](exe:linux-ppc64le)
   - [s390x](exe:linux-s390x)
   - [i386](exe:linux-i386)
