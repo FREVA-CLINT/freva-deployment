@@ -51,8 +51,7 @@ WORKDIR /tmp/deployment
 COPY . .
 
 # Install Python dependencies
-RUN python3 -m pip install --root-user-action --upgrade pip && \
-    python3 src/freva_deployment/__init__.py && \
+RUN python3 src/freva_deployment/__init__.py && \
     python3 -m pip install --root-user-action pyinstaller . && \
     rm -rf /root/.cache/pip && \
     rm -rf /root/build-deps && \

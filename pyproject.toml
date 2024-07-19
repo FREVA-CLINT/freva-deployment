@@ -126,7 +126,7 @@ commands =
           --add-data 'assets/share/freva/deployment:freva_deployment/assets' \
           --add-data 'src/freva_deployment/versions.json:freva_deployment' \
           --add-data 'src/freva_deployment/callback_plugins:freva_deployment/callback_plugins' \
-          --add-data 'pyinstaller/{env:COW_EXE:cowsay}:bin' \
+          --add-binary 'pyinstaller/{env:COW_EXE:cowsay}:bin' \
           --hidden-import curses \
           --hidden-import windows-curses \
           --hidden-import cryptography \

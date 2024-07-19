@@ -306,7 +306,7 @@ jobs:
           --add-data 'assets/share/freva/deployment:freva_deployment/assets'
           --add-data 'src/freva_deployment/versions.json:freva_deployment'
           --add-data 'src/freva_deployment/callback_plugins:freva_deployment/callback_plugins'
-          --add-data 'pyinstaller/cowsay:bin'
+          --add-binary 'pyinstaller/cowsay:bin'
           --hidden-import curses
           --hidden-import cryptography
           --hidden-import ansible_pylibssh
