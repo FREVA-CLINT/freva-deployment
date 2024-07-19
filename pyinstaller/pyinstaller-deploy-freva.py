@@ -3,7 +3,6 @@ import re
 import locale
 import sys
 
-import mock
 from rich import print as pprint
 
 
@@ -17,7 +16,6 @@ def main():
         if os.path.isfile(cow_exe):
             os.environ["ANSIBLE_COW_PATH"] = os.path.join(exe)
             break
-    os.environ["PYTHONIOENCODING"] = "utf-8"
     os.environ["PATH"] = path + os.pathsep + os.environ["PATH"]
     main_cli()
 
@@ -37,4 +35,5 @@ if __name__ == "__main__":
         )
         locale.getlocale = lambda: ("UTF-8", "UTF-8")
         sys.getfilesystemencoding = lambda: "utf-8"
+        os.environ["PYTHONIOENCODING"] = "utf-8"
     main()
