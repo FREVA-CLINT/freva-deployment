@@ -100,16 +100,11 @@ jobs:
         shell: pwsh
 
       - name: Install dependencies
-        run: |
-          chcp 65001
-          python3 -m pip install --upgrade pip
-          python3 -m pip install .[win]
+        run: python3 -m pip install .[win]
         shell: pwsh
 
       - name: Download cowsay
-        run: |
-          chcp 65001
-          python pyinstaller/download_cowsay.py ${{ matrix.url }}
+        run: python pyinstaller/download_cowsay.py ${{ matrix.url }}
         shell: pwsh
 
       - name: Build with cmd pyinstaller for deploy-freva.exe
@@ -117,7 +112,7 @@ jobs:
           PYTHONIOENCODING: utf-8
           LANG: en_US.UTF-8
           LC_ALL: en_US.UTF-8
-        run:  micromamba run -n build pyinstaller deploy-freva-all.spec
+        run: micromamba run -n build pyinstaller deploy-freva-all.spec
         shell: pwsh
 
       - name: Test built bindary
