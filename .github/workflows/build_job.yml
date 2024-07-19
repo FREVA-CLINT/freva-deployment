@@ -106,7 +106,7 @@ jobs:
         shell: pwsh
 
       - name: Download cowsay
-        run: micromamba run -n python pyinstaller/download_cowsay.py ${{ matrix.url }}
+        run: micromamba run -n build python pyinstaller/download_cowsay.py ${{ matrix.url }}
         shell: pwsh
 
       - name: Build with cmd pyinstaller for deploy-freva.exe
