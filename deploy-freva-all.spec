@@ -4,10 +4,6 @@ from PyInstaller.utils.hooks import collect_all
 from pathlib import Path
 import re
 import sys
-import sys
-import locale
-
-import mock
 
 if sys.platform.lower().startswith("win"):
     cowsay = ("pyinstaller/cowsay.exe", "bin")
@@ -20,9 +16,8 @@ datas = [
     ("assets/share/freva/deployment", "freva_deployment/assets"),
     ("src/freva_deployment/versions.json", "freva_deployment"),
     ("src/freva_deployment/callback_plugins", "freva_deployment/callback_plugins"),
-    cowsay,
 ]
-binaries = []
+binaries = [cowsay,]
 tmp_ret = collect_all("ansible")
 datas += tmp_ret[0]
 binaries += tmp_ret[1]
