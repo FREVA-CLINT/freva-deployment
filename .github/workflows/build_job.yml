@@ -102,7 +102,9 @@ jobs:
         shell: pwsh
 
       - name: Install dependencies
-        run: micromamba run -n build python -m pip install  .[win]
+        run: >
+          micromamba run -n build
+          python -m pip install --upgrade-strategy only-if-needed .[win]
         shell: pwsh
 
       - name: Download cowsay
