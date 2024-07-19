@@ -65,4 +65,4 @@ VOLUME /opt/freva-deployment
 VOLUME /src
 
 # Define the default command
-CMD ["/usr/bin/deploy-freva"]
+CMD ["/usr/local/bin/deploy-freva"]
