@@ -99,7 +99,7 @@ jobs:
         shell: pwsh
 
       - name: Install dependencies
-        run: micromamba run -n build python3 -m pip --no-deps install .
+        run: micromamba run -n build python3 -m pip install --no-deps .
         shell: pwsh
 
       - name: Download cowsay
