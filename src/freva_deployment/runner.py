@@ -1,12 +1,12 @@
 """Ansible runner interaction."""
 
+import atexit
 import json
+from concurrent.futures import ThreadPoolExecutor
 import os
 import sys
 from copy import deepcopy
-from functools import partial
-from io import StringIO, TextIOWrapper
-from multiprocessing import Process, get_context
+from io import TextIOWrapper
 from pathlib import Path
 from tempfile import NamedTemporaryFile, TemporaryDirectory
 from typing import Any, Dict, List, Optional, Union
@@ -20,6 +20,15 @@ from rich.spinner import Spinner
 from .error import DeploymentError
 from .logger import logger
 from .utils import is_bundeled
+
+
+def _del_path(inp_path: Path) -> None:
+    tmp_path = inp_path.with_suffix(".cfg.tmp")
+    if inp_path.is_file():
+        inp_path.unlink()
+    if tmp_path.is_file():
+        inp_path.write_text(tmp_path.read_text())
+        tmp_path.unlink()
 
 
 class SubProcess:
@@ -36,15 +45,23 @@ class SubProcess:
         cls,
         command: List[str],
         stderr_buffer: Optional[TextIOWrapper] = None,
-    ) -> None:
+    ) -> int:
         from ansible.cli.playbook import main
 
         stderr = sys.stderr
         try:
             sys.stderr = stderr_buffer or sys.stderr
             main(command)
+        except Exception as error:
+            stderr.write(str(error))
+            return 1
+        except SystemExit as error:
+            if error.code:
+                stderr.write(error.code)
+                return 1
         finally:
             sys.stderr = stderr
+        return 0
 
 
 def run_command(
@@ -56,6 +73,7 @@ def run_command(
     os_env = deepcopy(os.environ)
     env = env or {}
     stdout = sys.stdout
+    result = 1
     with TemporaryDirectory(prefix="AnsibleRunner") as temp_dir:
         logger_file = Path(temp_dir) / "logger.log"
         logger_file.touch()
@@ -68,19 +86,13 @@ def run_command(
             if capture_output:
                 sys.stdout = stdout_buffer
                 kwargs["stderr_buffer"] = stdout_buffer
-            proc = Process(
-                target=SubProcess.run_ansible_playbook,
-                args=(command,),
-                kwargs=kwargs,
-            )
-            proc.start()
-            proc.join()
+            result = SubProcess.run_ansible_playbook(command, **kwargs)
         finally:
             os.environ = os_env
             sys.stdout = stdout
             stdout_buffer.close()
         return SubProcess(
-            proc.exitcode or 0,
+            result,
             stdout=stdout_file.read_text(),
             log=logger_file.read_text(),
         )
@@ -117,10 +129,19 @@ class RunnerDir(TemporaryDirectory):
         self.project_dir = self.parent_dir / "project"
         for _dir in (self.env_dir, self.inventory_dir, self.project_dir):
             _dir.mkdir(exist_ok=True, parents=True)
-        self.ansible_config_file = str(self.parent_dir / "ansible.cfg")
+
+        self.ansible_config_file = Path(
+            os.getenv("ANSIBLE_CONFIG") or self.parent_dir / "ansible.cfg"
+        )
+        if self.ansible_config_file.is_file():
+            self.ansible_config_file.with_suffix(".cfg.tmp").write_text(
+                self.ansible_config_file.read_text()
+            )
+        atexit.register(_del_path, self.ansible_config_file)
 
     def create_config(self, **kwargs: str) -> None:
         """Create an ansible config."""
+        self.ansible_config_file.parent.mkdir(exist_ok=True, parents=True)
         with open(self.ansible_config_file, "w", encoding="utf-8") as stream:
             stream.write("[defaults]\n")
             for key, value in kwargs.items():
