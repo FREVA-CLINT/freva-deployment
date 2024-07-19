@@ -63,8 +63,9 @@ jobs:
           init-shell: powershell
           cache-environment: true
           post-cleanup: 'all'
-          environment-name: build
-          create-args: >
+      - name: Install packages
+        run: >
+            mamba install -y 
             python=3.11
             appdirs
             ansible-core
@@ -78,6 +79,7 @@ jobs:
             cryptography
             mock
             pyinstaller
+        shell: pwsh
 
       - name: Set UTF-8 Code Page
         run: |
@@ -98,20 +100,20 @@ jobs:
         shell: pwsh
 
       - name: Adding the evaluation config file
-        run: micromamba run -n build python src/freva_deployment/__init__.py
+        run: python3 src/freva_deployment/__init__.py
         shell: pwsh
 
       - name: Install dependencies
         run: |
           chcp 65001
-          micromamba run -n build python3 -m pip install --upgrade pip
-          micromamba run -n build python3 -m pip install .[win]
+          python3 -m pip install --upgrade pip
+          python3 -m pip install .[win]
         shell: pwsh
 
       - name: Download cowsay
         run: |
           chcp 65001
-          micromamba run -n build python pyinstaller/download_cowsay.py ${{ matrix.url }}
+          python pyinstaller/download_cowsay.py ${{ matrix.url }}
         shell: pwsh
 
       - name: Build with cmd pyinstaller for deploy-freva.exe
