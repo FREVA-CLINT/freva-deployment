@@ -77,7 +77,6 @@ jobs:
             cryptography
             mock
             pyinstaller
-        shell: pwsh
 
       - name: Set UTF-8 Code Page
         run: |
