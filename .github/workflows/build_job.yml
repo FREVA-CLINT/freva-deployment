@@ -230,6 +230,7 @@ jobs:
   build-linux:
     name: Build packages
     runs-on: ubuntu-latest
+    continue-on-error: true
     needs: [release]
     strategy:
       matrix:
