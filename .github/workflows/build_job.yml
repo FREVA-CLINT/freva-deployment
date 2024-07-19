@@ -300,7 +300,7 @@ jobs:
         run: >
           docker run --rm -v $PWD:/src -w /src --platform ${{ matrix.arch }}
           pyinstaller:${{ matrix.target }}
-          pyinstaller pyinstaller/pyinstaller-deploy-freva.py -c
+          pyinstaller pyinstaller/pyinstaller-deploy-freva.py -c --debug all
           --name deploy-freva --onefile --clean -i docs/_static/freva_owl.ico
           --add-data 'assets/share/freva/deployment:freva_deployment/assets'
           --add-data 'src/freva_deployment/versions.json:freva_deployment'
