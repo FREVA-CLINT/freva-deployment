@@ -52,11 +52,6 @@ jobs:
             url: https://github.com/Code-Hex/Neo-cowsay/releases/download/v2.0.4/cowsay_2.0.4_Windows_x86_64.zip
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Python "3.11" on ${{ matrix.os }}
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.11"
-          architecture: ${{ matrix.py_arch }}
       - name: Create conda env
         uses: mamba-org/setup-micromamba@v1
         with:
@@ -79,7 +74,7 @@ jobs:
             pyinstaller
 
       - name: Setup deps with pip
-        run: python3 -m pip install ansible windows-curses npyscreen
+        run: micromamba run -n build python3 -m pip install ansible windows-curses npyscreen
         shell: pwsh
 
       - name: Set UTF-8 Code Page
@@ -100,15 +95,15 @@ jobs:
         shell: pwsh
 
       - name: Adding the evaluation config file
-        run: python3 src/freva_deployment/__init__.py
+        run: micromamba run -n build python3 src/freva_deployment/__init__.py
         shell: pwsh
 
       - name: Install dependencies
-        run: python3 -m pip --no-deps install .
+        run: micromamba run -n build python3 -m pip --no-deps install .
         shell: pwsh
 
       - name: Download cowsay
-        run: python pyinstaller/download_cowsay.py ${{ matrix.url }}
+        run: micromamba run -n build python pyinstaller/download_cowsay.py ${{ matrix.url }}
         shell: pwsh
 
       - name: Build with cmd pyinstaller for deploy-freva.exe
