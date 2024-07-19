@@ -299,7 +299,22 @@ jobs:
       - name: Run PyInstaller in Docker
         run: >
           docker run --rm -v $PWD:/src -w /src --platform ${{ matrix.arch }}
-          pyinstaller:${{ matrix.target }} pyinstaller deploy-freva-all.spec
+          pyinstaller:${{ matrix.target }}
+          pyinstaller pyinstaller/pyinstaller-deploy-freva.py -c
+          --name deploy-freva --onefile --clean -i docs/_static/freva_owl.ico
+          --add-data 'assets/share/freva/deployment:freva_deployment/assets'
+          --add-data 'src/freva_deployment/versions.json:freva_deployment'
+          --add-data 'src/freva_deployment/callback_plugins:freva_deployment/callback_plugins'
+          --add-data 'pyinstaller/cowsay:bin'
+          --hidden-import curses
+          --hidden-import cryptography
+          --hidden-import ansible_pylibssh
+          --collect-all ansible
+          --collect-all ansible_collections
+          --hidden-import pkg_resources.extern
+          --exclude-module pycrypto
+          --exclude-module PyInstaller
+          --exclude-module cowsay
 
       - name: Test built bindary
         run: >
