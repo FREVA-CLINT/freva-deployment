@@ -23,8 +23,8 @@ if sys.platform.lower().startswith("win"):
     try:
         import ansible
 
-        ansible_cli_path = Path(ansible.__file__) / "cli" / "__init__.py"
-        ansible_temp_path = Path(ansible.__file__) / "template" / "__init__.py"
+        ansible_cli_path = Path(ansible.__file__).parent / "cli" / "__init__.py"
+        ansible_temp_path = Path(ansible.__file__).parent / "template" / "__init__.py"
     finally:
         sys.getfilesystemencoding = getfilesystemencoding
         locale.getlocale = getlocale
