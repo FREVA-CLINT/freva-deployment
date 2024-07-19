@@ -75,11 +75,11 @@ jobs:
 
       - name: Setup deps with pip
         run: micromamba run -n build python3 -m pip install ansible windows-curses npyscreen
-        shell: pwsh
 
       - name: Set UTF-8 Code Page
         run: |
           chcp 65001
+        shell: pwsh
 
       - name: Set Locale Environment Variables
         run: |
@@ -96,15 +96,12 @@ jobs:
 
       - name: Adding the evaluation config file
         run: micromamba run -n build python3 src/freva_deployment/__init__.py
-        shell: pwsh
 
       - name: Install dependencies
         run: micromamba run -n build python3 -m pip install --no-deps .
-        shell: pwsh
 
       - name: Download cowsay
         run: micromamba run -n build python pyinstaller/download_cowsay.py ${{ matrix.url }}
-        shell: pwsh
 
       - name: Build with cmd pyinstaller for deploy-freva.exe
         env:
@@ -112,7 +109,6 @@ jobs:
           LANG: en_US.UTF-8
           LC_ALL: en_US.UTF-8
         run: micromamba run -n build pyinstaller deploy-freva-all.spec
-        shell: pwsh
 
       - name: Test built bindary
         run: ./dist/deploy-freva.exe --help
