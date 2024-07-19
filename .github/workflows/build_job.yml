@@ -299,7 +299,7 @@ jobs:
       - name: Run PyInstaller in Docker
         run: >
           docker run --rm -v $PWD:/src -w /src --platform ${{ matrix.arch }}
-          -e PYTHONIOENCODING=utf-8 -e LC_ALL=en_US.UTF-8 pyinstaller:${{ matrix.target }}
+          -e PYTHONIOENCODING=utf-8 -e LANG=C pyinstaller:${{ matrix.target }}
           pyinstaller pyinstaller/pyinstaller-deploy-freva.py -c --debug all
           --name deploy-freva --onefile --clean -i docs/_static/freva_owl.ico
           --add-data 'assets/share/freva/deployment:freva_deployment/assets'
