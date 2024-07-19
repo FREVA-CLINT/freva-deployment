@@ -27,21 +27,26 @@ datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
 tmp_ret = collect_all('ansible_collections')
 datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
 
-getlocale = locale.getlocale
-getfilesystemencoding = sys.getfilesystemencoding
-locale.getlocale = lambda: ("utf-8", "utf-8")
-sys.getfilesystemencoding = lambda: "utf-8"
-try:
-    with mock.patch("locale.getlocale", lambda: ("utf-8", "utf-8")):
-        with mock.patch("sys.getfilesystemencoding", lambda: "utf-8"):
-            import ansible.cli
-            ansible_cli_path = Path(ansible.cli.__file__)
-finally:
-    sys.getfilesystemencoding = getfilesystemencoding
-    locale.getlocale = getlocale
-ansible_cli_path.write_text(
-    re.sub("raise SystemExit", "print", ansible_cli_path.read_text())
-)
+if sys.platform.lower().startswith("win"):
+    getlocale = locale.getlocale
+    getfilesystemencoding = sys.getfilesystemencoding
+    locale.getlocale = lambda: ("utf-8", "utf-8")
+    sys.getfilesystemencoding = lambda: "utf-8"
+    get_blocking = os.get_blocking
+    os.get_blocking = lambda x: True
+    try:
+        with mock.patch("locale.getlocale", lambda: ("utf-8", "utf-8")):
+            with mock.patch("sys.getfilesystemencoding", lambda: "utf-8"):
+                with mock.patch("os.get_blocking", lambda x: True):
+                import ansible.cli
+                    ansible_cli_path = Path(ansible.cli.__file__)
+    finally:
+        sys.getfilesystemencoding = getfilesystemencoding
+        locale.getlocale = getlocale
+        os.get_blocking = get_blocking
+    ansible_cli_path.write_text(
+        re.sub("raise SystemExit", "print", ansible_cli_path.read_text())
+    )
 
 a = Analysis(
     ['pyinstaller/pyinstaller-deploy-freva.py'],
