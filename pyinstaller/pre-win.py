@@ -23,8 +23,12 @@ if sys.platform.lower().startswith("win"):
     try:
         import ansible
 
-        ansible_cli_path = Path(ansible.__file__).parent / "cli" / "__init__.py"
-        ansible_temp_path = Path(ansible.__file__).parent / "template" / "__init__.py"
+        ansible_cli_path = (
+            Path(ansible.__file__).parent / "cli" / "__init__.py"
+        )
+        ansible_temp_path = (
+            Path(ansible.__file__).parent / "template" / "__init__.py"
+        )
     finally:
         sys.getfilesystemencoding = getfilesystemencoding
         locale.getlocale = getlocale
@@ -33,4 +37,15 @@ if sys.platform.lower().startswith("win"):
     )
     ansible_temp_path.write_text(
         re.sub("import pwd", repr_pwd, ansible_temp_path.read_text())
+    )
+else:
+    import PyInstaller.depend.bindepend
+
+    bindepend = Path(PyInstaller.depend.bindepend.__file__)
+    bindepend.write_text(
+        re.sub(
+            "encoding='utf-8',",
+            "encoding='utf-8', errors='ignore',",
+            bindepend.read_text(),
+        )
     )
