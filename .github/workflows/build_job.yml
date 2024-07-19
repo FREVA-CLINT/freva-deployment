@@ -116,7 +116,9 @@ jobs:
           PYTHONIOENCODING: utf-8
           LANG: en_US.UTF-8
           LC_ALL: en_US.UTF-8
-        run: micromamba run -n build pyinstaller deploy-freva-all.spec
+        run: |
+          micromamba run -n build python pyinstaller/pre-win.py
+          micromamba run -n build pyinstaller deploy-freva-all.spec
         shell: pwsh
 
       - name: Test built bindary
