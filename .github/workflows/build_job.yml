@@ -78,6 +78,10 @@ jobs:
             mock
             pyinstaller
 
+      - name: Setup deps with pip
+        run: python3 -m pip install ansible windows-curses npyscreen
+        shell: pwsh
+
       - name: Set UTF-8 Code Page
         run: |
           chcp 65001
@@ -100,7 +104,7 @@ jobs:
         shell: pwsh
 
       - name: Install dependencies
-        run: python3 -m pip install .[win]
+        run: python3 -m pip --no-deps install .
         shell: pwsh
 
       - name: Download cowsay
