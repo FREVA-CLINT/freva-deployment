@@ -73,6 +73,12 @@ jobs:
             mock
             pyinstaller
 
+      - name: Activate micromamba env
+        run: |
+          micromamba activate build
+          micromamba shell init -s powershell -p build
+          micromamba shell init -s cmd.exe -p build
+
       - name: Setup deps with pip
         run: micromamba run -n build python3 -m pip install ansible windows-curses npyscreen
 
