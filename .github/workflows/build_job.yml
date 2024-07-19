@@ -61,11 +61,10 @@ jobs:
         uses: mamba-org/setup-micromamba@v1
         with:
           init-shell: powershell
-          cache-environment: true
           post-cleanup: 'all'
       - name: Install packages
         run: >
-            mamba install -y 
+            micromamba install -y 
             python=3.11
             appdirs
             ansible-core
