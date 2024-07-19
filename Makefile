@@ -3,11 +3,11 @@ all: develop
 
 develop: prepare
 	python3 -m pip uninstall -y freva-deployment
-	flit install -s --deps=all
+	flit install -s --deps=develop
 
 install: prepare
 	python3 -m pip uninstall -y freva-deloyment
-	flit install --deps=all
+	flit install --deps=develop
 
 prepare:
 	python3 -m pip install flit
