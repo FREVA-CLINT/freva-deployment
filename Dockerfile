@@ -15,10 +15,9 @@ RUN apt-get install -y python3-appdirs python3-mysqldb python3-yaml \
 WORKDIR /tmp/deployment
 COPY . .
 # Install Python dependencies
-RUN python3 -m pip install --upgrade pip && \
-    python3 -m pip install  pyinstaller &&\
+RUN python3 -m pip install --break-system-packages --upgrade pip && \
     python3 src/freva_deployment/__init__.py && \
-    python3 -m pip install --break-system-packages . && \
+    python3 -m pip install --break-system-packages pyinstaller . && \
     rm -rf /root/.cache/pip && \
     rm -rf /root/build-deps && \
     rm -rf /tmp/deployment
