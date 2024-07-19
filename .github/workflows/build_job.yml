@@ -302,7 +302,7 @@ jobs:
           docker run --rm -v $PWD:/src -w /src --platform ${{ matrix.arch }}
           -e PYTHONIOENCODING=utf-8 -e LANG=C pyinstaller:${{ matrix.target }}
           pyinstaller pyinstaller/pyinstaller-deploy-freva.py -c --debug all
-          --name deploy-freva --onefile --clean -i docs/_static/freva_owl.ico
+          --name deploy-freva --onedir --clean -i docs/_static/freva_owl.ico
           --add-data 'assets/share/freva/deployment:freva_deployment/assets'
           --add-data 'src/freva_deployment/versions.json:freva_deployment'
           --add-data 'src/freva_deployment/callback_plugins:freva_deployment/callback_plugins'
