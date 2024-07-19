@@ -55,7 +55,7 @@ jobs:
       - name: Create conda env
         uses: mamba-org/setup-micromamba@v1
         with:
-          init-shell: powershell
+          init-shell: powershell cmd.exe
           environment-name: build
           post-cleanup: 'all'
           create-args: >
