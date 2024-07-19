@@ -19,7 +19,6 @@ if sys.platform.lower().startswith("win"):
     getfilesystemencoding = sys.getfilesystemencoding
     locale.getlocale = lambda: ("utf-8", "utf-8")
     sys.getfilesystemencoding = lambda: "utf-8"
-    get_blocking = os.get_blocking
     os.get_blocking = lambda x: True
     try:
         import ansible
@@ -29,7 +28,6 @@ if sys.platform.lower().startswith("win"):
     finally:
         sys.getfilesystemencoding = getfilesystemencoding
         locale.getlocale = getlocale
-        os.get_blocking = get_blocking
     ansible_cli_path.write_text(
         re.sub("raise SystemExit", "print", ansible_cli_path.read_text())
     )

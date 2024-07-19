@@ -35,6 +35,6 @@ if __name__ == "__main__":
             "Ansible might not work correctly. Consider changing your "
             "locale encoding (LC_ALL) to UTF-8[/red]"
         )
-    with mock.patch("locale.getlocale", lambda: ("utf-8", "utf-8")):
-        with mock.patch("sys.getfilesystemencoding", lambda: "utf-8"):
-            main()
+        locale.getlocale = lambda: ("UTF-8", "UTF-8")
+        sys.getfilesystemencoding = lambda: "utf-8"
+    main()
