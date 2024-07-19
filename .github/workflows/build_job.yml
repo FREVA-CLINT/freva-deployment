@@ -79,10 +79,6 @@ jobs:
           micromamba activate build
         shell: pwsh
 
-      - name: Setup deps with pip
-        run: micromamba run -n build python -m pip install ansible windows-curses npyscreen
-        shell: pwsh
-
       - name: Set UTF-8 Code Page
         run: |
           chcp 65001
