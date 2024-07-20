@@ -36,4 +36,6 @@ if __name__ == "__main__":
         locale.getlocale = lambda: ("UTF-8", "UTF-8")
         sys.getfilesystemencoding = lambda: "utf-8"
         os.environ["PYTHONIOENCODING"] = "utf-8"
+    if not hasattr(os, "get_blocking"):
+        os.get_blocking = lambda x: False
     main()
