@@ -13,6 +13,23 @@ except ImportError:
             raise TypeError("NaA")
 """
 
+repr_fcntl = """try:
+    import fcntl
+except ImportError:
+
+    class fcntl:
+        @staticmethod
+        def fcntl(*args, **kwargs):
+            return 0
+
+        @staticmethod
+        def lockf(*args, **kwargs):
+            pass
+
+        @staticmethod
+        def ioctl(*args, mutable_flag=True, **kwargs):
+            return 0 if mutable_flag else ''
+"""
 
 if sys.platform.lower().startswith("win"):
     getlocale = locale.getlocale
@@ -35,9 +52,11 @@ if sys.platform.lower().startswith("win"):
     ansible_cli_path.write_text(
         re.sub("raise SystemExit", "print", ansible_cli_path.read_text())
     )
-    ansible_temp_path.write_text(
-        re.sub("import pwd", repr_pwd, ansible_temp_path.read_text())
-    )
+    for source_file in Path(ansible.__file__).parent.rglob("*.py"):
+        for mod, repr_ in (("fcntl", repr_fcntl), ("pwd", "repr_pwd")):
+            source_file.write_text(
+                re.sub(f"import {mod}", repr_, source_file.read_text())
+            )
 else:
     import PyInstaller.depend.bindepend
 
