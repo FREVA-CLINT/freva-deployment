@@ -221,7 +221,7 @@ jobs:
         shell: bash
 
       - name: Download cowsay
-        run: micromamba run -n buil python pyinstaller/download_cowsay.py ${{ matrix.url }}
+        run: micromamba run -n build python pyinstaller/download_cowsay.py ${{ matrix.url }}
         shell: bash
 
       - name: Build with cmd pyinstaller for ${{ matrix.target }}
