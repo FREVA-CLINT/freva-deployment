@@ -98,7 +98,7 @@ jobs:
         shell: pwsh
 
       - name: Adding the evaluation config file
-        run:  micromamba run -n build python src/freva_deployment/__init__.py
+        run: micromamba run -n build python src/freva_deployment/__init__.py
         shell: pwsh
 
       - name: Install dependencies
@@ -129,8 +129,8 @@ jobs:
         uses: actions/download-artifact@v1
         with:
           name: release_url
-       - name: Create ZIP archive of the folder
-         run: >
+      - name: Create ZIP archive of the folder
+        run: >
            powershell Compress-Archive -Path .\dist\deploy-freva\*
            -DestinationPath deploy-freva-${{matrix.target}}.zip
       - name: Get Release File Name & Upload URL
