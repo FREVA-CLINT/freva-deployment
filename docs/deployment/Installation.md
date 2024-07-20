@@ -9,7 +9,7 @@ computer (like a Mac-book). You do not need to run the deployment on the
 machines where things get installed. The only requirement is
 you can establish ssh connections to the servers via openSSH.
 
-> ``📝``: In most cases openSSH clients should be available on your local machine. 
+> ``📝``: In most cases openSSH clients should be available on your local machine.
 > Windows users may refer to the
 > [openSSH install page](https://learn.microsoft.com/en-us/windows-server/administration/openssh/openssh_install_firstuse?tabs=gui)
 > for setting up openSSH on windows.
@@ -41,20 +41,20 @@ After downloading version {{version}} file for your operating system and archite
 you can run the `deploy-freva` (`deploy-freva.exe` on windows) command:
 
 ```console
-Usage: deploy-freva [-h] [-v] [-V] [--cowsay] {cmd} ...
+Usage: deploy-freva [-h] [-v] [-V] [--cowsay] {cmd,migrate} ...
 
 Run the freva deployment
 
 Positional Arguments:
-  {cmd}
+  {cmd,migrate}
     cmd          Run deployment in batch mode.
+    migrate      Utilities to handle migrations from old freva systems.
 
 Options:
   -h, --help     show this help message and exit
   -v, --verbose  Verbosity level (default: 0)
   -V, --version  show program's version number and exit
   --cowsay       Let the cow speak! (default: False)
-
 ```
 
 ## 2. Installation via pip.
@@ -84,14 +84,12 @@ and save existing configurations you can mount the directories of the config
 files into the container.
 
 
-## Commands after installation:
-The `pip install` command will create *three* different commands:
-- `deploy-freva`: Main deployment command.
-- `deploy-freva-cmd`: Run already configured deployment. This is a legacy command
-   please use `deploy-freva cmd` instead.
-- `freva-migrate`: Command line interface to manage project migration from
-   old freva systems to new ones. This command is only available in the docker
-   container image and if the software was installed via *pip*
+## Sub Commands after installation:
+The deployment software consists of *three* different sub-commands:
+- `deploy-freva`: Main deployment command via text user interface (tui).
+- `deploy-freva cmd`: Run already configured deployment.
+- `deploy-freva migrate`: Command line interface to manage project migration from
+   old freva systems to new ones.
 
 > ``📝``: You can use the `-l` flag of the `deploy-freva cmd` command
 or tick the *local deployment only* box in the setup page of the text user
@@ -109,7 +107,7 @@ using `doker-compose` or `podman-compose`. The deployment will install,
 
 
 Hence, on the servers that will be running docker
-l need root access. There exists an option to install and run docker
+you will need root access. There exists an option to install and run docker
 without root, information on a root-less docker option
 can be found [on the docker docs](https://docs.docker.com/engine/security/rootless/)
 > ``📝``: The deployment will automatically check the availability of docker

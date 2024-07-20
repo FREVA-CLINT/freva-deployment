@@ -34,8 +34,8 @@ dependencies = [ "appdirs",
 ]
 [project.optional-dependencies]
 dev = ["flit", "tox"]
-win = ["cryptography", "windows-curses", "pyinstaller", "mock"]
-unix = ["cryptography", "pyinstaller", "mock"]
+win = ["cryptography", "windows-curses", "pyinstaller", "mock", "mysqlclient"]
+unix = ["cryptography", "pyinstaller", "mock", "mysqlclient"]
 doc = ["pydata-sphinx-theme",
        "sphinx",
        "sphinx-copybutton",

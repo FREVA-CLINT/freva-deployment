@@ -5,17 +5,17 @@ The following serves as a guide to transition an existing Freva instance
 
 
 ## Transition to new Database
-We have created a small command line interface (`freva-migrate`) that
+We have created a small command line interface (`deploy-freva migrate`) that
 helps migrating content of an existing Freva framework to the new one.
-The `freva-migrate` command has currently one sub commands:
+The `deploy-freva migrate` sub command has currently one sub commands:
 
 The new system has witnessed small changes to the database structure. The `database`
-sub-command of the `freva-migrate` command helps to transition to this new
+sub-command of the `deploy-freva migrate` sub command helps to transition to this new
 database structure. To migrate a database of an old installation of the Freva
 system to a freshly deployed Freva instance use the following command:
 
 ```
-usage: freva-migrate database [-h] [--old-port OLD_PORT] [--old-db OLD_DB] [--old-pw OLD_PW] [--old-user OLD_USER]
+usage: deploy-freva migrate database [-h] [--old-port OLD_PORT] [--old-db OLD_DB] [--old-pw OLD_PW] [--old-user OLD_USER]
                               new_hostname old_hostname cert-file
 
 Freva database migration
@@ -44,6 +44,8 @@ name for your institution as a unique identifier.
 After the command has been applied the new database with its "old" content from
 the previous Freva instance will be ready for use.
 
+> ``📝``: The migrate database sub command uses `mysqldump`. This program needs
+> to be available on your system. Please make sure that it is installed.
 
 ## Transition to new DRS Config
 

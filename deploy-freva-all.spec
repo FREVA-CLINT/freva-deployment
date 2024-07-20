@@ -4,6 +4,14 @@ from PyInstaller.utils.hooks import collect_all
 from pathlib import Path
 import re
 import sys
+import shutil
+
+bins = []
+for bin in ("mysqldump",):
+    exe = shutil.which(bin)
+    if exe:
+        bins.append((exe, "bin"))
+
 
 if sys.platform.lower().startswith("win"):
     cowsay = ("pyinstaller/cowsay.exe", "bin")
@@ -17,7 +25,7 @@ datas = [
     ("src/freva_deployment/versions.json", "freva_deployment"),
     ("src/freva_deployment/callback_plugins", "freva_deployment/callback_plugins"),
 ]
-binaries = [cowsay,]
+binaries = bins + [cowsay]
 tmp_ret = collect_all("ansible")
 datas += tmp_ret[0]
 binaries += tmp_ret[1]
@@ -26,6 +34,7 @@ tmp_ret = collect_all("ansible_collections")
 datas += tmp_ret[0]
 binaries += tmp_ret[1]
 hiddenimports += tmp_ret[2]
+
 
 a = Analysis(
     ["pyinstaller/pyinstaller-deploy-freva.py"],
