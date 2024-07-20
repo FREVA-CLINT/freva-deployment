@@ -44,7 +44,7 @@ name for your institution as a unique identifier.
 After the command has been applied the new database with its "old" content from
 the previous Freva instance will be ready for use.
 
-> ``📝``: The migrate database sub command uses `mysqldump`. This program needs
+> ``💡`` The migrate database sub command uses `mysqldump`. This program needs
 > to be available on your system. Please make sure that it is installed.
 
 ## Transition to new DRS Config

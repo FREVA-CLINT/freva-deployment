@@ -139,12 +139,12 @@ in the `evaluation_system` section:
   the login node, similar to an interactive job. This means that load
   balancing for local jobs is not available.
 - *preview_path*: The path to the directory holding the user content,
-   like plots, for display in the web ui. ``📝``: after plugin application, display
+   like plots, for display in the web ui. ``💡`` after plugin application, display
    content of the plugin output will be copied to this directory. The default
    location of this directory `<base_dir_location>/share/preview`
 - *db.host*: The host name where database and vault are running.
 - *solr.host*, *solr.core*, *solr.port*: The apache solr connection information.
-  ``📝``: The *solr.core* variable might be subject to removal in the future.
+  ``💡`` The *solr.core* variable might be subject to removal in the future.
   Therefore it is recommended to set this variable to its default value: *files*.
 
 ## Configuring the `scheduler_options` section

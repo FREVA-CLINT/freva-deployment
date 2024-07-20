@@ -9,7 +9,7 @@ computer (like a Mac-book). You do not need to run the deployment on the
 machines where things get installed. The only requirement is
 you can establish ssh connections to the servers via openSSH.
 
-> ``📝``: In most cases openSSH clients should be available on your local machine.
+> ``💡`` In most cases openSSH clients should be available on your local machine.
 > Windows users may refer to the
 > [openSSH install page](https://learn.microsoft.com/en-us/windows-server/administration/openssh/openssh_install_firstuse?tabs=gui)
 > for setting up openSSH on windows.
@@ -68,7 +68,7 @@ python3 -m pip install -U freva-deployment
 ```
 
 This command installs ansible and all required python packages.
-> ``📝``:  On *CentOS* python SELinux libraries need to be installed.
+> ``💡``  On *CentOS* python SELinux libraries need to be installed.
 > You will need to install libselinux for your CentOS version.
 
 ```console
@@ -93,7 +93,7 @@ The deployment software consists of *three* different sub-commands:
 - `deploy-freva migrate`: Command line interface to manage project migration from
    old freva systems to new ones.
 
-> ``📝``: You can use the `-l` flag of the `deploy-freva cmd` command
+> ``💡`` You can use the `-l` flag of the `deploy-freva cmd` command
 or tick the *local deployment only* box in the setup page of the text user
 interface if you only want to try out the deployment on your local machine.
 Without having to install anything on remote machines.
@@ -112,5 +112,5 @@ Hence, on the servers that will be running docker
 you will need root access. There exists an option to install and run docker
 without root, information on a root-less docker option
 can be found [on the docker docs](https://docs.docker.com/engine/security/rootless/)
-> ``📝``: The deployment will automatically check the availability of docker
+> ``💡`` The deployment will automatically check the availability of docker
 or podman and chose the software that is available on each server.

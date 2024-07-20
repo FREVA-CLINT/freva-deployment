@@ -14,7 +14,7 @@ environments. The general strategy is to split the deployment into
 - Deploy web front end ([freva_web](https://github.com/FREVA-CLINT/freva-web))
 
 
-> ``📝``: A vault server is auto deployed once the mariadb server is deployed.
+> ``💡`` A vault server is auto deployed once the mariadb server is deployed.
 The vault centrally stores all passwords and other sensitive data.
 During the deployment of the vault server a public key is generated which is
 used to open the vault. This public key will be saved in the `evaluation_system`
@@ -37,7 +37,7 @@ computer (like a Mac-book). You do not need to run the deployment on the
 machines where things get installed. The only requirement is
 you can establish ssh connections to the servers via openSSH.
 
-> ``📝``: In most cases openSSH clients should be available on your local machine. 
+> ``💡`` In most cases openSSH clients should be available on your local machine. 
 > Windows users may refer to the
 > [openSSH install page](https://learn.microsoft.com/en-us/windows-server/administration/openssh/openssh_install_firstuse?tabs=gui)
 > for setting up openSSH on windows.
@@ -97,7 +97,7 @@ python3 -m pip install -U freva-deployment
 ```
 
 This command installs ansible and all required python packages.
-> ``📝``: On *CentOS* python SELinux libraries need to be installed.
+> ``💡`` On *CentOS* python SELinux libraries need to be installed.
 > You will need to install libselinux for your CentOS version.
 
 ```console
@@ -122,7 +122,7 @@ The deployment software consists of *three* different sub-commands:
 - `deploy-freva migrate`: Command line interface to manage project migration from
    old freva systems to new ones.
 
-> ``📝``: You can use the `-l` flag of the `deploy-freva cmd` command
+> ``💡`` You can use the `-l` flag of the `deploy-freva cmd` command
 or tick the *local deployment only* box in the setup page of the text user
 interface if you only want to try out the deployment on your local machine.
 Without having to install anything on remote machines.
@@ -141,7 +141,7 @@ requires *root* privileges. Hence, on the servers that will be running docker
 you will need root access. There exists an option to install and run docker
 without root, information on a root-less docker option
 can be found [on the docker docs](https://docs.docker.com/engine/security/rootless/)
-> ``📝`` Some systems use `podman` instead of `docker`. The deployment
+> ``💡`` Some systems use `podman` instead of `docker`. The deployment
 routine is able to distinguish and use the right service.
 
 ## Version checking
@@ -151,7 +151,7 @@ fit together. If you for example want to deploy the rest api the system will
 also check an update of the freva cli if it finds that the cli library doesn't
 fit with the latest version of the rest api. This ensures that all parts of the
 system will work together.
-> ``📝`` You can disable this version checking by using the
+> ``💡`` You can disable this version checking by using the
   `--skip-version-check` flag. Use this flag with caution.
 
 
@@ -191,7 +191,7 @@ The command `deploy-freva` opens a text user interface (tui) that will walk
 you through the setup of the deployment.
 The tui allows to edit, save, load and run a configuration file
 
-> ``📝``: Navigation is similar to the one of the *nano* text editor.
+> ``💡`` Navigation is similar to the one of the *nano* text editor.
 > The shortcuts start with a `^` which indicates `CTRL+`.
 > * the pop up menus (e.g. `Exit`) must be navigated pressing `tab` to
 > select the options and then `Enter`.
@@ -336,7 +336,7 @@ Options:
   -p, --port     Set the port of the service that is used to configure the VM default: 8000
 ```
 
-> ``📝``: *Before* running the script you will have to install [qemu](https://www.qemu.org/docs/master/).
+> ``💡`` *Before* running the script you will have to install [qemu](https://www.qemu.org/docs/master/).
 > The script has only been tested on Linux systems.
 
 You can then make use of the pre configured inventory file in
