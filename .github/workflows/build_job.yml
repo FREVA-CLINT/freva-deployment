@@ -209,7 +209,6 @@ jobs:
       - name: Activate micromamba env
         run: |
           micromamba shell init --shell bash --root-prefix=~/micromamba
-          micromamba activate build
         shell: bash
 
       - name: Adding the evaluation config file
