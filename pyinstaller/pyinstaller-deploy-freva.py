@@ -14,7 +14,7 @@ def main():
     for exe in ("cowsay", "cowsay.exe"):
         cow_exe = os.path.join(path, exe)
         if os.path.isfile(cow_exe):
-            os.environ["ANSIBLE_COW_PATH"] = os.path.join(exe)
+            os.environ["ANSIBLE_COW_PATH"] = cow_exe
             break
     os.environ["PATH"] = os.environ["PATH"] + os.pathsep + path
     main_cli()
@@ -37,5 +37,5 @@ if __name__ == "__main__":
         sys.getfilesystemencoding = lambda: "utf-8"
         os.environ["PYTHONIOENCODING"] = "utf-8"
     if not hasattr(os, "get_blocking"):
-        os.get_blocking = lambda x: False
+        os.get_blocking = lambda x: True
     main()
