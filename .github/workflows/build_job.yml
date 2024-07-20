@@ -158,8 +158,8 @@ jobs:
       - name: Upload cmd Asset
         uses: actions/upload-artifact@v3
         with:
-          path: dist/deploy-freva
-          name: deploy-freva-${{ matrix.target }}.zip
+          path: doploy-freva-${{steps.version.outputs.tag}}-${{matrix.target}}.zip
+          name: doploy-freva-${{steps.version.outputs.tag}}-${{matrix.target}}.zip
           retention-days: 7
 
 
@@ -247,8 +247,8 @@ jobs:
       - name: Upload cmd Asset
         uses: actions/upload-artifact@v3
         with:
-          path: dist/deploy-freva
-          name: deploy-freva-${{ matrix.target }}.zip
+          path: doploy-freva-${{steps.version.outputs.tag}}-${{matrix.target}}.tar.gz
+          name: doploy-freva-${{steps.version.outputs.tag}}-${{matrix.target}}.tar.gz
           retention-days: 7
 
   build-linux:
@@ -382,8 +382,8 @@ jobs:
       - name: Upload cmd Asset
         uses: actions/upload-artifact@v3
         with:
-          path: dist/deploy-freva
-          name: deploy-freva-${{ matrix.target }}.zip
+          path: doploy-freva-${{steps.version.outputs.tag}}-${{matrix.target}}.tar.gz
+          name: doploy-freva-${{steps.version.outputs.tag}}-${{matrix.target}}.tar.gz
           retention-days: 7
 
 
