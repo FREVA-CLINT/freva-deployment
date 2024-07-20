@@ -1,12 +1,12 @@
 """Download and extract cowsay binary from an archive."""
 
-import os
-import zipfile
-import tarfile
-from urllib.request import urlretrieve
 import argparse
-from pathlib import Path
+import os
+import tarfile
 import tempfile
+import zipfile
+from pathlib import Path
+from urllib.request import urlretrieve
 
 
 def reporthook(count, block_size, total_size):

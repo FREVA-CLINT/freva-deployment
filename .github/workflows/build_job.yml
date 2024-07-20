@@ -47,7 +47,7 @@ jobs:
       matrix:
         include:
           - os: windows-2019
-            target: windows-x64.exe
+            target: windows-x64
             py_arch: x64
             url: https://github.com/Code-Hex/Neo-cowsay/releases/download/v2.0.4/cowsay_2.0.4_Windows_x86_64.zip
     steps:
@@ -122,13 +122,17 @@ jobs:
         shell: pwsh
 
       - name: Test built bindary
-        run: ./dist/deploy-freva.exe --help
+        run: ./dist/deploy-freva/deploy-freva.exe --help
         shell: pwsh
       - name: Load Release URL File from release job
         if: startsWith(github.ref, 'refs/tags/')
         uses: actions/download-artifact@v1
         with:
           name: release_url
+       - name: Create ZIP archive of the folder
+         run: >
+           powershell Compress-Archive -Path .\dist\deploy-freva\*
+           -DestinationPath deploy-freva-${{matrix.target}}.zip
       - name: Get Release File Name & Upload URL
         if: startsWith(github.ref, 'refs/tags/')
         id: release_url
@@ -142,14 +146,14 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.ASSET_TOKEN }}
         with:
           upload_url: ${{ steps.release_url.outputs.url }}
-          asset_path: ./dist/deploy-freva.exe
-          asset_name: deploy-freva-${{ matrix.target }}
+          asset_path: deploy-freva-${{ matrix.target }}.zip
+          asset_name: deploy-freva-${{ matrix.target }}.zip
           asset_content_type: application/vnd.microsoft.portable-executable
       - name: Upload cmd Asset
         uses: actions/upload-artifact@v3
         with:
-          path: dist/deploy-freva.exe
-          name: deploy-freva-${{ matrix.target }}
+          path: dist/deploy-freva
+          name: deploy-freva-${{ matrix.target }}.zip
           retention-days: 7
 
 
@@ -198,7 +202,11 @@ jobs:
         run: pyinstaller deploy-freva-all.spec
 
       - name: Test built bindary
-        run: ./dist/deploy-freva --help
+        run: ./dist/deploy-freva/deploy-freva --help
+
+      - name: Create tar.gz archive of the folder
+        run: tar -czvf doploy-freva-${matrix.target}.tar.gz -C ./dist /deploy-freva
+
       - name: Load Release URL File from release job
         if: startsWith(github.ref, 'refs/tags/')
         uses: actions/download-artifact@v1
@@ -210,6 +218,7 @@ jobs:
         shell: bash
         run: |
           echo "url=$(cat release_url/release_url.txt)" >> $GITHUB_OUTPUT
+
       - name: Upload Release Asset
         if: startsWith(github.ref, 'refs/tags/')
         uses: actions/upload-release-asset@v1
@@ -217,14 +226,14 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.ASSET_TOKEN }}
         with:
           upload_url: ${{ steps.release_url.outputs.url }}
-          asset_path: ./dist/deploy-freva
-          asset_name: deploy-freva-${{ matrix.target}}
+          asset_path: deploy-freva-${{matrix.target}}.tar.gz
+          asset_name: deploy-freva-${{ matrix.target}}.tar.gz
           asset_content_type: application/octet-stream
       - name: Upload cmd Asset
         uses: actions/upload-artifact@v3
         with:
           path: dist/deploy-freva
-          name: deploy-freva-${{ matrix.target }}
+          name: deploy-freva-${{ matrix.target }}.zip
           retention-days: 7
 
   build-linux:
@@ -320,7 +329,10 @@ jobs:
       - name: Test built bindary
         run: >
           docker run --rm -v $PWD:/src -w /src --platform ${{ matrix.arch }}
-          pyinstaller:${{ matrix.target }} /src/dist/deploy-freva --help
+          pyinstaller:${{ matrix.target }} /src/dist/deploy-freva/deploy-freva --help
+
+      - name: Create tar.gz archive of the folder
+        run: tar -czvf doploy-freva-${matrix.target}.tar.gz -C ./dist /deploy-freva
 
       - name: Load Release URL File from release job
         if: startsWith(github.ref, 'refs/tags/')
@@ -340,14 +352,15 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.ASSET_TOKEN }}
         with:
           upload_url: ${{ steps.release_url.outputs.url }}
-          asset_path: ./dist/deploy-freva
-          asset_name: deploy-freva-${{ matrix.target}}
+          asset_path: deploy-freva-${{matrix.target}}.tar.gz
+          asset_name: deploy-freva-${{ matrix.target}}.tar.gz
           asset_content_type: application/octet-stream
+
       - name: Upload cmd Asset
         uses: actions/upload-artifact@v3
         with:
           path: dist/deploy-freva
-          name: deploy-freva-${{ matrix.target }}
+          name: deploy-freva-${{ matrix.target }}.zip
           retention-days: 7
 
 

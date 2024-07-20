@@ -2,9 +2,9 @@
 
 import atexit
 import json
-from concurrent.futures import ThreadPoolExecutor
 import os
 import sys
+from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
 from io import TextIOWrapper
 from pathlib import Path
