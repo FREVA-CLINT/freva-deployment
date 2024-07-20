@@ -30,7 +30,7 @@ RUN apt-get update && apt-get install -y \
     python3-requests \
     ansible \
     python3-mock \
-    mysql-client \
+    mysql-common \
     locales && \
     rm -rf /var/lib/apt/lists/*
 

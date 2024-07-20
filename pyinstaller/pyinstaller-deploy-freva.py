@@ -16,7 +16,7 @@ def main():
         if os.path.isfile(cow_exe):
             os.environ["ANSIBLE_COW_PATH"] = os.path.join(exe)
             break
-    os.environ["PATH"] = path + os.pathsep + os.environ["PATH"]
+    os.environ["PATH"] = os.environ["PATH"] + os.pathsep + path
     main_cli()
 
 
