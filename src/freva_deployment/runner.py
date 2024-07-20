@@ -44,23 +44,16 @@ class SubProcess:
     def run_ansible_playbook(
         cls,
         command: List[str],
-        stderr_buffer: Optional[TextIOWrapper] = None,
     ) -> int:
         from ansible.cli.playbook import main
 
-        stderr = sys.stderr
         try:
-            sys.stderr = stderr_buffer or sys.stderr
             main(command)
         except Exception as error:
-            stderr.write(str(error))
             return 1
         except SystemExit as error:
             if error.code:
-                stderr.write(str(error.code))
                 return 1
-        finally:
-            sys.stderr = stderr
         return 0
 
 
@@ -82,11 +75,9 @@ def run_command(
         stdout_buffer = stdout_file.open("w")
         try:
             os.environ.update(env)
-            kwargs = {}
             if capture_output:
                 sys.stdout = stdout_buffer
-                kwargs["stderr_buffer"] = stdout_buffer
-            result = SubProcess.run_ansible_playbook(command, **kwargs)
+            result = SubProcess.run_ansible_playbook(command)
         finally:
             os.environ = os_env
             sys.stdout = stdout
@@ -153,9 +144,7 @@ class RunnerDir(TemporaryDirectory):
             host = step["hosts"]
             for tt, task in enumerate(step["tasks"]):
                 try:
-                    content[nn]["tasks"][tt][
-                        "name"
-                    ] = f"{host} - {task['name']}"
+                    content[nn]["tasks"][tt]["name"] = f"{host} - {task['name']}"
                 except KeyError:
                     pass
         content_str = yaml.safe_dump(content)
@@ -169,9 +158,7 @@ class RunnerDir(TemporaryDirectory):
         if sys.platform.lower().startswith("win"):
             exe = ".exe"
         if is_bundeled:
-            return str(
-                Path(__file__).parent / "bin" / f"ansible-playbook{exe}"
-            )
+            return str(Path(__file__).parent / "bin" / f"ansible-playbook{exe}")
         else:
             return "ansible-playbook"
 
