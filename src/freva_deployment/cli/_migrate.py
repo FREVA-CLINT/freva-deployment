@@ -11,10 +11,11 @@ import sys
 from pathlib import Path
 from subprocess import PIPE, CalledProcessError, run
 from tempfile import NamedTemporaryFile, TemporaryDirectory
-from typing import TextIO, cast
+from typing import Optional, TextIO, cast
 
 import pymysql
 import toml
+from rich_argparse import ArgumentDefaultsRichHelpFormatter
 
 from freva_deployment import __version__
 
@@ -161,12 +162,16 @@ def _migrate_drs(parser: argparse.Namespace) -> None:
     )
 
 
-def parse_args(argv: list[str]) -> argparse.Namespace:
+def create_parser(
+    epilog: str = "",
+    parser: Optional[argparse.ArgumentParser] = None,
+) -> argparse.ArgumentParser:
     """Construct command line argument parser."""
-    parser = argparse.ArgumentParser(
+    parser = parser or argparse.ArgumentParser(
         prog="freva-migrate",
         description="Utilities to handle migrations from old freva systems.",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        formatter_class=ArgumentDefaultsRichHelpFormatter,
+        epilog=epilog,
     )
     parser.add_argument(
         "-v", "--verbose", action="count", help="Verbosity level", default=0
@@ -177,15 +182,14 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         action="version",
         version="%(prog)s {version}".format(version=__version__),
     )
-    subparsers = parser.add_subparsers(
-        help="Migration commands:", required=True
-    )
+    subparsers = parser.add_subparsers(required=False)
     db_parser = subparsers.add_parser(
         "database",
         description="Freva database migration",
         help="Use this command to migrate an existing freva database "
         "to a recently set up system.",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        epilog=epilog,
+        formatter_class=ArgumentDefaultsRichHelpFormatter,
     )
     db_parser.add_argument(
         "new_hostname",
@@ -229,12 +233,17 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         default="evaluationsystem",
         help="The old database user",
     )
-    db_parser.set_defaults(apply_func=_migrate_db)
-    return parser.parse_args(argv)
+    db_parser.set_defaults(cli=_migrate_db)
+    return parser
 
 
 def cli() -> None:
     """Run the command line interface."""
-    arg = parse_args(sys.argv[1:])
+    epilog = (
+        "[red][b]Note:[/b] The command `freva-migrate` is a legacy command,"
+        " please consdider using `deploy-freva migrate` instead.[/red]"
+    )
+
+    arg = create_parser(epilog).parse_args(sys.argv[1:])
     set_log_level(arg.verbose)
-    arg.apply_func(arg)
+    arg.cli(arg)

@@ -13,6 +13,7 @@ from freva_deployment.versions import VersionAction, display_versions
 from ._deploy import BatchParser
 from ._deploy import cli as deploy
 from ._migrate import cli as migrate
+from ._migrate import create_parser as migrate_parser
 
 __all__ = ["deploy", "migrate"]
 
@@ -55,6 +56,13 @@ def main_cli(argv: Optional[List[str]] = None) -> None:
             name="cmd",
             help="Run deployment in batch mode.",
             description="Run deployment in batch mode.",
+            formatter_class=ArgumentDefaultsRichHelpFormatter,
+        )
+    )
+    migrate_parser(
+        parser=subparser.add_parser(
+            name="migrate",
+            help="Utilities to handle migrations from old freva systems.",
             formatter_class=ArgumentDefaultsRichHelpFormatter,
         )
     )
