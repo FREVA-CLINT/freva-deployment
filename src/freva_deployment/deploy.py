@@ -947,9 +947,8 @@ class DeployFactory:
             "ANSIBLE_CONFIG": str(self._td.ansible_config_file),
             "ANSIBLE_NOCOWS": self._no_cowsay,
             "ANSIBLE_COW_PATH": os.getenv(
-                "ANSIBLE_COW_PATH", shutil.which("cowsay")
-            )
-            or "",
+                "ANSIBLE_COW_PATH", shutil.which("cowsay") or ""
+            ),
         }
         self._td.create_config(
             cowsay_enabled_stencils="default,sheep,moose",
@@ -958,8 +957,9 @@ class DeployFactory:
             host_key_checking="False",
             retry_files_enabled="False",
             nocows=str(bool(int(self._no_cowsay))),
-            cowpath=os.getenv("ANSIBLE_COW_PATH", shutil.which("cowsay"))
-            or "",
+            cowpath=os.getenv(
+                "ANSIBLE_COW_PATH", shutil.which("cowsay") or ""
+            ),
             cow_selection="random",
             timeout="5",
         )

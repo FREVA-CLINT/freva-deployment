@@ -57,7 +57,7 @@ class SubProcess:
             return 1
         except SystemExit as error:
             if error.code:
-                stderr.write(error.code)
+                stderr.write(str(error.code))
                 return 1
         finally:
             sys.stderr = stderr
