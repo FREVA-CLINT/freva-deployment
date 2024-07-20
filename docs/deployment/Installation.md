@@ -23,22 +23,24 @@ from the [release page](release:{{version}}).
 ### Available Binaries
 
 - **Linux**
-  - [amd64](exe:linux-x64)
-  - [arm64](exe:linux-arm64)
-  - [armv7](exe:linux-armv7)
-  - [ppc64le](exe:linux-ppc64le)
-  - [s390x](exe:linux-s390x)
-  - [i386](exe:linux-i386)
+  - [amd64](exe:linux-x64.tar.gz)
+  - [arm64](exe:linux-arm64.tar.gz)
+  - [armv7](exe:linux-armv7.tar.gz)
+  - [ppc64le](exe:linux-ppc64le.tar.gz)
+  - [s390x](exe:linux-s390x.tar.gz)
+  - [i386](exe:linux-i386.tar.gz)
 
 - **Windows**
-  - [amd64](exe:windows-x64)
+  - [amd64](exe:windows-x64.zip)
 
 - **macOS**
-  - [amd64](exe:osx-x64)
-  - [arm64](exe:osx-arm64)
+  - [amd64](exe:osx-x64.tar.gz)
+  - [arm64](exe:osx-arm64.tar.gz)
 
 After downloading version {{version}} file for your operating system and architecture,
-you can run the `deploy-freva` (`deploy-freva.exe` on windows) command:
+you can you have to extract the archived folder (zip on windows, tar.gz on Unix)
+and run the run the `deploy-freva` (`deploy-freva.exe` on windows) command
+in the folder:
 
 ```console
 Usage: deploy-freva [-h] [-v] [-V] [--cowsay] {cmd,migrate} ...
