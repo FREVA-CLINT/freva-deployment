@@ -48,8 +48,16 @@ jobs:
         include:
           - os: windows-2019
             target: windows-x64
-            py_arch: x64
             url: https://github.com/Code-Hex/Neo-cowsay/releases/download/v2.0.4/cowsay_2.0.4_Windows_x86_64.zip
+            shell: pwsh
+            conda_init: micromamba shell hook -s powershell | Out-String | Invoke-Expression
+            extra: win
+          - os: windows-2019
+            target: windows-x64-wsl
+            url: https://github.com/Code-Hex/Neo-cowsay/releases/download/v2.0.4/cowsay_2.0.4_Windows_x86_64.zip
+            shell: bash
+            conda_init: micromamba shell init --shell bash --root-prefix=~/micromamba
+            extra: unix
     steps:
       - uses: actions/checkout@v4
       - name: Create conda env
@@ -75,10 +83,8 @@ jobs:
             pyinstaller
 
       - name: Activate micromamba env
-        run: |
-          micromamba shell hook -s powershell | Out-String | Invoke-Expression
-          micromamba activate build
-        shell: pwsh
+        run: ${{matrix.conda_init}}
+        shell: ${{matrix.shell}}
 
       - name: Set UTF-8 Code Page
         run: |
@@ -100,17 +106,17 @@ jobs:
 
       - name: Adding the evaluation config file
         run: micromamba run -n build python src/freva_deployment/__init__.py
-        shell: pwsh
+        shell: ${{matrix.shell}}
 
       - name: Install dependencies
         run: >
           micromamba run -n build
-          python -m pip install --upgrade-strategy only-if-needed .[win]
-        shell: pwsh
+          python -m pip install --upgrade-strategy only-if-needed .[${{matrix.extra}}]
+        shell: ${{matrix.shell}}
 
       - name: Download cowsay
         run: micromamba run -n build python pyinstaller/download_cowsay.py ${{ matrix.url }}
-        shell: pwsh
+        shell: ${{matrix.shell}}
 
       - name: Build with cmd pyinstaller for deploy-freva.exe
         env:
@@ -120,11 +126,11 @@ jobs:
         run: |
           micromamba run -n build python pyinstaller/pre-win.py
           micromamba run -n build pyinstaller --noconfirm deploy-freva-all.spec
-        shell: pwsh
+        shell: ${{matrix.shell}}
 
       - name: Test built bindary
         run: ./dist/deploy-freva/deploy-freva.exe --help
-        shell: pwsh
+        shell: ${{matrix.shell}}
       - name: Load Release URL File from release job
         if: startsWith(github.ref, 'refs/tags/')
         uses: actions/download-artifact@v1
@@ -174,12 +180,10 @@ jobs:
           - os: macos-12
             target: osx-x64
             arch: x86_64
-            py_arch: x64
             url: https://github.com/Code-Hex/Neo-cowsay/releases/download/v2.0.4/cowsay_2.0.4_macOS_x86_64.tar.gz
           - os: macos-14
             target: osx-arm64
             arch: arm64
-            py_arch: arm64
             url: https://github.com/Code-Hex/Neo-cowsay/releases/download/v2.0.4/cowsay_2.0.4_macOS_arm64.tar.gz
 
     steps:
@@ -306,12 +310,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
-      - name: Set up Python "3.X"
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.X"
-          architecture: ${{ matrix.py_arch }}
 
       - name: Adding the evaluation config file
         run: python src/freva_deployment/__init__.py
