@@ -13,25 +13,93 @@ except ImportError:
             raise TypeError("NaA")
 """
 
-repr_fcntl = """try:
+repr_fcntl = """
+try:
     import fcntl
 except ImportError:
+    import os
+    import struct
+    import msvcrt
+    import pywintypes
+    import win32file
+    import win32con
+    import win32api
+    from ctypes import c_char
 
     class fcntl:
-        @staticmethod
-        def fcntl(*args, **kwargs):
-            return 0
+        LOCK_SH = 0  # Shared lock
+        LOCK_EX = 1  # Exclusive lock
+        LOCK_NB = 2  # Non-blocking
+        LOCK_UN = 3  # Unlock
+        F_SETFL  = 4
+        F_GETFL = 3
+        F_GETFD = 4
+
 
         @staticmethod
-        def lockf(*args, **kwargs):
-            pass
+        def fcntl(fd, cmd, arg=0):
+            handle = msvcrt.get_osfhandle(fd)
+            if cmd == fcntl.F_GETFL:
+                flags = win32file.GetFileType(handle)
+                return flags
+            elif cmd == fcntl.F_SETFL:
+                if arg & os.O_NONBLOCK:
+                    win32file.SetFileAttributes(handle, win32con.FILE_FLAG_OVERLAPPED)
+                else:
+                    win32file.SetFileAttributes(handle, win32con.FILE_ATTRIBUTE_NORMAL)
+            else:
+                raise NotImplementedError(f"Command {cmd} not implemented in this fcntl simulation.")
 
         @staticmethod
-        def ioctl(*args, mutable_flag=True, **kwargs):
-            return 0 if mutable_flag else ''
+        def lockf(fd, cmd, length=0, start=0, whence=os.SEEK_SET):
+            handle = msvcrt.get_osfhandle(fd)
+            overlapped = pywintypes.OVERLAPPED()
+            overlapped.Offset = start
+
+            if cmd == fcntl.LOCK_SH:
+                # Shared lock
+                flags = win32con.LOCKFILE_FAIL_IMMEDIATELY if fcntl.LOCK_NB else 0
+                win32file.LockFileEx(
+                    handle,
+                    flags,
+                    0,
+                    length,
+                    overlapped
+                )
+            elif cmd == fcntl.LOCK_EX:
+                # Exclusive lock
+                flags = win32con.LOCKFILE_EXCLUSIVE_LOCK | (win32con.LOCKFILE_FAIL_IMMEDIATELY if fcntl.LOCK_NB else 0)
+                win32file.LockFileEx(
+                    handle,
+                    flags,
+                    0,
+                    length,
+                    overlapped
+                )
+            elif cmd == fcntl.LOCK_UN:
+                # Unlock
+                win32file.UnlockFileEx(
+                    handle,
+                    0,
+                    length,
+                    overlapped
+                )
+            else:
+                raise NotImplementedError(f"Command {cmd} not implemented in this lockf simulation.")
+
+        @staticmethod
+        def ioctl(fd, request, arg=0, mutable_flag=True):
+            handle = msvcrt.get_osfhandle(fd)
+            if mutable_flag:
+                arg_buf = bytearray(arg)
+            else:
+                arg_buf = bytes(arg)
+            buf = (c_char * len(arg_buf)).from_buffer(arg_buf)
+            win32api.DeviceIoControl(handle, request, buf, None)
+            return buf
 """
 
-if sys.platform.lower().startswith("win"):
+if not sys.platform.lower().startswith("win"):
     getlocale = locale.getlocale
     getfilesystemencoding = sys.getfilesystemencoding
     locale.getlocale = lambda: ("utf-8", "utf-8")
@@ -53,7 +121,7 @@ if sys.platform.lower().startswith("win"):
         re.sub("raise SystemExit", "print", ansible_cli_path.read_text())
     )
     for source_file in Path(ansible.__file__).parent.rglob("*.py"):
-        for mod, repr_ in (("fcntl", repr_fcntl), ("pwd", "repr_pwd")):
+        for mod, repr_ in (("fcntl", repr_fcntl), ("pwd", repr_pwd)):
             source_file.write_text(
                 re.sub(f"import {mod}", repr_, source_file.read_text())
             )
