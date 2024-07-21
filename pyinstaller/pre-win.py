@@ -165,7 +165,7 @@ except ImportError:
             return buf
 """
 
-if not sys.platform.lower().startswith("win"):
+if sys.platform.lower().startswith("win"):
     getlocale = locale.getlocale
     getfilesystemencoding = sys.getfilesystemencoding
     locale.getlocale = lambda: ("utf-8", "utf-8")
