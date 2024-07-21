@@ -4,13 +4,79 @@ from pathlib import Path
 import re
 import sys
 
-repr_pwd = """try:
-    import pwds as pwd
+repr_pwd = """
+try:
+    import pwd
 except ImportError:
+    import os
+    import win32api
+    import win32security
+    import pywintypes
 
     class pwd:
-        def __init__(self, *args, **kwargs):
-            raise TypeError("NaA")
+        class struct_passwd:
+            def __init__(self, pw_name, pw_passwd, pw_uid, pw_gid, pw_gecos, pw_dir, pw_shell):
+                self.pw_name = pw_name
+                self.pw_passwd = pw_passwd
+                self.pw_uid = pw_uid
+                self.pw_gid = pw_gid
+                self.pw_gecos = pw_gecos
+                self.pw_dir = pw_dir
+                self.pw_shell = pw_shell
+
+        @staticmethod
+        def getpwnam(username):
+            try:
+                user_info = win32security.LookupAccountName(None, username)
+                sid, domain, account_type = user_info
+                user_sid = win32security.ConvertSidToStringSid(sid)
+                user_profile_path = win32api.GetUserProfileDirectory(sid)
+
+                return pwd.struct_passwd(
+                    pw_name=username,
+                    pw_passwd='x',
+                    pw_uid=user_sid,
+                    pw_gid=None,  # Windows does not use gid
+                    pw_gecos='',
+                    pw_dir=user_profile_path,
+                    pw_shell=None  # Windows does not use shell
+                )
+            except win32security.error:
+                raise KeyError(f"getpwnam(): name not found: '{username}'")
+
+        @staticmethod
+        def getpwuid(uid):
+            try:
+                sid = win32security.ConvertStringSidToSid(uid)
+                user_info = win32security.LookupAccountSid(None, sid)
+                username, domain, account_type = user_info
+                user_profile_path = win32api.GetUserProfileDirectory(sid)
+
+                return pwd.struct_passwd(
+                    pw_name=username,
+                    pw_passwd='x',
+                    pw_uid=sid,
+                    pw_gid=None,  # Windows does not use gid
+                    pw_gecos='',
+                    pw_dir=user_profile_path,
+                    pw_shell=None  # Windows does not use shell
+                )
+            except win32security.error:
+                raise KeyError(f"getpwuid(): uid not found: '{uid}'")
+
+        @staticmethod
+        def getpwall():
+            users = []
+            try:
+                logon_sessions = win32security.LsaEnumerateLogonSessions()
+                for luid in logon_sessions:
+                    session_data = win32security.LsaGetLogonSessionData(luid)
+                    username = session_data['UserName']
+                    if username:
+                        users.append(pwd.getpwnam(username))
+            except win32security.error:
+                pass
+            return users
 """
 
 repr_fcntl = """
@@ -108,12 +174,8 @@ if not sys.platform.lower().startswith("win"):
     try:
         import ansible
 
-        ansible_cli_path = (
-            Path(ansible.__file__).parent / "cli" / "__init__.py"
-        )
-        ansible_temp_path = (
-            Path(ansible.__file__).parent / "template" / "__init__.py"
-        )
+        ansible_cli_path = Path(ansible.__file__).parent / "cli" / "__init__.py"
+        ansible_temp_path = Path(ansible.__file__).parent / "template" / "__init__.py"
     finally:
         sys.getfilesystemencoding = getfilesystemencoding
         locale.getlocale = getlocale
