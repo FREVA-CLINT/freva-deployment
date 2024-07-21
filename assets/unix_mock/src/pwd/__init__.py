@@ -4,6 +4,7 @@ import os
 
 import pywintypes
 import win32api
+import win32profile
 import win32security
 
 
@@ -27,7 +28,7 @@ def getpwnam(username):
         user_info = win32security.LookupAccountName(None, username)
         sid, domain, account_type = user_info
         user_sid = win32security.ConvertSidToStringSid(sid)
-        user_profile_path = win32api.GetUserProfileDirectory(sid)
+        user_profile_path = win32profile.GetDefaultUserProfileDirectory()
 
         return struct_passwd(
             pw_name=username,
@@ -49,7 +50,7 @@ def getpwuid(uid):
         sid = win32security.ConvertStringSidToSid(uid)
         user_info = win32security.LookupAccountSid(None, sid)
         username, domain, account_type = user_info
-        user_profile_path = win32api.GetUserProfileDirectory(sid)
+        user_profile_path = win32profile.GetDefaultUserProfileDirectory()
 
         return struct_passwd(
             pw_name=username,
