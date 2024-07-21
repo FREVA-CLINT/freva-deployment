@@ -64,6 +64,7 @@ deploy-freva = "freva_deployment.cli:main_cli"
 
 [tool.flit.sdist]
 include = ["assets/*"]
+exclude = ["assets/unix_mock"]
 
 [tool.flit.external-data]
 directory = "assets"
