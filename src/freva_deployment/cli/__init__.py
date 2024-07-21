@@ -2,7 +2,13 @@
 
 import argparse
 import importlib
+import os
+import shutil
 from typing import List, Optional
+
+os.environ["ANSIBLE_COW_PATH"] = (
+    os.getenv("ANSIBLE_COW_PATH", shutil.which("cowsay")) or ""
+)
 
 from rich_argparse import ArgumentDefaultsRichHelpFormatter
 
