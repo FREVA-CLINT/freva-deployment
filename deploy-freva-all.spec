@@ -15,7 +15,7 @@ for bin in ("mysqldump",):
 
 if sys.platform.lower().startswith("win"):
     cowsay = ("pyinstaller/cowsay.exe", "bin")
-    hiddenimports = ["cryptography", "ansible_pylibssh", "windows-curses"]
+    hiddenimports = ["cryptography", "ansible_pylibssh", "windows-curses", "pwd", "fcntl"]
 else:
     cowsay = ("pyinstaller/cowsay", "bin")
     hiddenimports = ["cryptography", "ansible_pylibssh"]

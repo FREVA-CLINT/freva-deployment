@@ -104,9 +104,9 @@ jobs:
         shell: pwsh
 
       - name: Install dependencies
-        run: >
-          micromamba run -n build
-          python -m pip install --upgrade-strategy only-if-needed .[${{matrix.extra}}]
+        run: |
+          micromamba run -n build python -m pip install --upgrade-strategy only-if-needed .[${{matrix.extra}}]
+          micromamba run -n build python -m pip install assets/unix_mock
         shell: pwsh
 
       - name: Download cowsay
