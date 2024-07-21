@@ -174,8 +174,12 @@ if not sys.platform.lower().startswith("win"):
     try:
         import ansible
 
-        ansible_cli_path = Path(ansible.__file__).parent / "cli" / "__init__.py"
-        ansible_temp_path = Path(ansible.__file__).parent / "template" / "__init__.py"
+        ansible_cli_path = (
+            Path(ansible.__file__).parent / "cli" / "__init__.py"
+        )
+        ansible_temp_path = (
+            Path(ansible.__file__).parent / "template" / "__init__.py"
+        )
     finally:
         sys.getfilesystemencoding = getfilesystemencoding
         locale.getlocale = getlocale
@@ -183,10 +187,16 @@ if not sys.platform.lower().startswith("win"):
         re.sub("raise SystemExit", "print", ansible_cli_path.read_text())
     )
     for source_file in Path(ansible.__file__).parent.rglob("*.py"):
-        for mod, repr_ in (("fcntl", repr_fcntl), ("pwd", repr_pwd)):
-            source_file.write_text(
-                re.sub(f"import {mod}", repr_, source_file.read_text())
+        source = source_file.read_text()
+        if "from pwd import getpwnam, getpwuid" in source:
+            source = source.replace(
+                "from pwd import getpwnam, getpwuid", "import pwd"
             )
+            source = source.replace("getpwnam", "pwd.getpwnam")
+            source = source.replace("getpwuid", "pwd.getpwuid")
+
+        for mod, repr_ in (("fcntl", repr_fcntl), ("pwd", repr_pwd)):
+            source_file.write_text(re.sub(f"import {mod}", repr_, source))
 else:
     import PyInstaller.depend.bindepend
 
