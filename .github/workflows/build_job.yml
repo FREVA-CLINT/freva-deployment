@@ -49,13 +49,13 @@ jobs:
           - os: windows-2019
             target: windows-x64
             url: https://github.com/Code-Hex/Neo-cowsay/releases/download/v2.0.4/cowsay_2.0.4_Windows_x86_64.zip
-            shell: pwsh
+            sh: pwsh
             conda_init: micromamba shell hook -s powershell | Out-String | Invoke-Expression
             extra: win
           - os: windows-2019
             target: windows-x64-wsl
             url: https://github.com/Code-Hex/Neo-cowsay/releases/download/v2.0.4/cowsay_2.0.4_Windows_x86_64.zip
-            shell: bash
+            sh: bash
             conda_init: micromamba shell init --shell bash --root-prefix=~/micromamba
             extra: unix
     steps:
@@ -84,7 +84,7 @@ jobs:
 
       - name: Activate micromamba env
         run: ${{matrix.conda_init}}
-        shell: ${{matrix.shell}}
+        shell: ${{matrix.sh}}
 
       - name: Set UTF-8 Code Page
         run: |
@@ -106,17 +106,17 @@ jobs:
 
       - name: Adding the evaluation config file
         run: micromamba run -n build python src/freva_deployment/__init__.py
-        shell: ${{matrix.shell}}
+        shell: ${{matrix.sh}}
 
       - name: Install dependencies
         run: >
           micromamba run -n build
           python -m pip install --upgrade-strategy only-if-needed .[${{matrix.extra}}]
-        shell: ${{matrix.shell}}
+        shell: ${{matrix.sh}}
 
       - name: Download cowsay
         run: micromamba run -n build python pyinstaller/download_cowsay.py ${{ matrix.url }}
-        shell: ${{matrix.shell}}
+        shell: ${{matrix.sh}}
 
       - name: Build with cmd pyinstaller for deploy-freva.exe
         env:
@@ -126,11 +126,11 @@ jobs:
         run: |
           micromamba run -n build python pyinstaller/pre-win.py
           micromamba run -n build pyinstaller --noconfirm deploy-freva-all.spec
-        shell: ${{matrix.shell}}
+        shell: ${{matrix.sh}}
 
       - name: Test built bindary
         run: ./dist/deploy-freva/deploy-freva.exe --help
-        shell: ${{matrix.shell}}
+        shell: ${{matrix.sh}}
       - name: Load Release URL File from release job
         if: startsWith(github.ref, 'refs/tags/')
         uses: actions/download-artifact@v1
