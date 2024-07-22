@@ -23,16 +23,16 @@ if sys.platform.lower().startswith("win"):
         re.sub("raise SystemExit", "print", ansible_cli_path.read_text())
     )
     for inp_file in Path(ansible.__file__).parent.rglob("*.py"):
-        content = inp_file.read_text()
+        content = inp_file.read_text(encoding="utf-8")
         write = False
-        for call in ("os.isatty", "os.get_blocking"):
-            if call in content:
+        for call in ("isatty", "get_blocking"):
+            if f"os.{call}" in content:
                 write = True
                 if "import os, tty" not in content:
                     content = content.replace("import os", "import os, tty")
                 content = content.replace(f"os.{call}", f"tty.{call}")
         if write:
-            inp_file.write_text(content)
+            inp_file.write_text(content, encoding="utf-8")
 else:
     import PyInstaller.depend.bindepend
 
