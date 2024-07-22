@@ -6,6 +6,7 @@ import struct
 from ctypes import c_char
 
 import pywintypes
+import wcwidth as ww
 import win32api
 import win32con
 import win32file
@@ -17,6 +18,14 @@ LOCK_UN = 3  # Unlock
 F_SETFL = 4
 F_GETFL = 3
 F_GETFD = 4
+
+
+def wcwidth(text):
+    return ww.wcwidth(text)
+
+
+def wcswidth(text, num=None):
+    return ww.wcswidth(text)
 
 
 def fcntl(fd, cmd, arg=0):
