@@ -47,16 +47,21 @@ if sys.platform.lower().startswith("win"):
         if write:
             inp_file.write_text(content, encoding="utf-8")
     display = Path(ansible.__file__).parent / "utils" / "display.py"
-    content = "\n".join(
-        [
-            l
-            for l in display.read_text(encoding="utf-8").splitlines()
-            if not l.startswith("_LIBC =")
-        ]
+    content_l = []
+    for line in display.read_text(encoding="utf-8").splitlines():
+        if line.startswith("_LIBC ="):
+            line = ""
+        if "fcntl.ioctl" in line:
+            line = line.replace(
+                line.strip(), f"tty_size = os.get_terminal_size().lines"
+            )
+        content_l.append(line)
+
+    content = (
+        "\n".join(content_l)
+        .replace("import ctypes.util", "import ctypes.util\nimport wcwidth")
+        .replace("_LIBC", "wcwidth")
     )
-    content = content.replace(
-        "import ctypes.util", "import ctypes.util\nimport wcwidth"
-    ).replace("_LIBC", "wcwidth")
     display.write_text(content, encoding="utf-8")
 else:
     import PyInstaller.depend.bindepend
