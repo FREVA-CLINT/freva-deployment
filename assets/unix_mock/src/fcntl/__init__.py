@@ -30,7 +30,7 @@ def wcswidth(text, num=None):
 
 def get_terminal_size():
     try:
-        return os.get_terminal_size()
+        return os.get_terminal_size().lines
     except Exception:
         return 0
 

@@ -13,9 +13,7 @@ if sys.platform.lower().startswith("win"):
     try:
         import ansible
 
-        ansible_cli_path = (
-            Path(ansible.__file__).parent / "cli" / "__init__.py"
-        )
+        ansible_cli_path = Path(ansible.__file__).parent / "cli" / "__init__.py"
     finally:
         sys.getfilesystemencoding = getfilesystemencoding
         locale.getlocale = getlocale
@@ -29,28 +27,17 @@ if sys.platform.lower().startswith("win"):
             if f"os.{call}" in content:
                 write = True
                 if "import os, termios" not in content:
-                    content = content.replace(
-                        "import os", "import os, termios"
-                    )
+                    content = content.replace("import os", "import os, termios")
                 content = content.replace(f"os.{call}", f"termios.{call}")
-        if (
-            "get_context('fork')" in content
-            or 'get_context("fork")' in content
-        ):
+        if "get_context('fork')" in content or 'get_context("fork")' in content:
             write = True
-            content = content.replace(
-                "get_context('fork')", "get_context('spawn')"
-            )
-            content = content.replace(
-                'get_context("fork")', 'get_context("spwan")'
-            )
+            content = content.replace("get_context('fork')", "get_context('spawn')")
+            content = content.replace('get_context("fork")', 'get_context("spwan")')
         if "RE_TASKS =" in content:
             for line in content.splitlines():
                 if line.startswith("RE_TASKS"):
                     break
-            content = content.replace(
-                line, "RE_TASKS = re.compile(u'(?:^|)+tasks?$')"
-            )
+            content = content.replace(line, "RE_TASKS = re.compile(u'(?:^|)+tasks?$')")
             write = True
         if write:
             inp_file.write_text(content, encoding="utf-8")
@@ -60,9 +47,7 @@ if sys.platform.lower().startswith("win"):
         if line.startswith("_LIBC ="):
             line = ""
         if "fcntl.ioctl" in line:
-            line = line.replace(
-                line.strip(), f"tty_size = fcntl.get_terminal_size().lines"
-            )
+            line = line.replace(line.strip(), f"tty_size = fcntl.get_terminal_size()")
         content_l.append(line)
 
     content = (
