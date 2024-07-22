@@ -55,8 +55,8 @@ if sys.platform.lower().startswith("win"):
         ]
     )
     content = content.replace(
-        "import ctypes.util", "ctypes.util\nimport wcwidth"
-    )
+        "import ctypes.util", "import ctypes.util\nimport wcwidth"
+    ).replace("_LIBC", "wcwidth")
     display.write_text(content, encoding="utf-8")
 else:
     import PyInstaller.depend.bindepend
