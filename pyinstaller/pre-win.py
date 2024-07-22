@@ -48,7 +48,9 @@ if sys.platform.lower().startswith("win"):
             for line in content.splitlines():
                 if line.startswith("RE_TASKS"):
                     break
-            content.replace(line, "RE_TASKS = re.compile(u'(?:^|)+tasks?$')")
+            content = content.replace(
+                line, "RE_TASKS = re.compile(u'(?:^|)+tasks?$')"
+            )
             write = True
         if write:
             inp_file.write_text(content, encoding="utf-8")
