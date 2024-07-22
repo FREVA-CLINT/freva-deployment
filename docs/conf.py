@@ -99,9 +99,7 @@ html_theme_options = {
         },
     ],
     # "navbar_start": [],  # Remove navigation links from the top bar
-    "navbar_center": [
-        "navbar-nav"
-    ],  # Add navigation links to the left sidebar
+    "navbar_center": ["navbar-nav"],  # Add navigation links to the left sidebar
     "collapse_navigation": False,
     "navigation_depth": 4,
     "navbar_align": "left",
@@ -124,7 +122,7 @@ myst_url_schemes = {
     "http": None,
     "https": None,
     "release": f"https://github.com/FREVA-CLINT/freva-deployment/releases/tag/v{release}",
-    "exe": f"https://github.com/FREVA-CLINT/freva-deployment/releases/download/v{release}/deploy-freva-{{{{path}}}}",
+    "exe": f"https://github.com/FREVA-CLINT/freva-deployment/releases/download/v{release}/deploy-freva-v{release}-{{{{path}}}}",
 }
 # Substitutions
 rst_prolog = """

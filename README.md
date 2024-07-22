@@ -14,7 +14,7 @@ environments. The general strategy is to split the deployment into
 - Deploy web front end ([freva_web](https://github.com/FREVA-CLINT/freva-web))
 
 
-> **_Note:_** A vault server is auto deployed once the mariadb server is deployed.
+> ``💡`` A vault server is auto deployed once the mariadb server is deployed.
 The vault centrally stores all passwords and other sensitive data.
 During the deployment of the vault server a public key is generated which is
 used to open the vault. This public key will be saved in the `evaluation_system`
@@ -29,13 +29,20 @@ install libselinux for your CentOS version.
 For example : `conda install -c conda-forge  libselinux-cos7-x86_64`
 
 # Pre-Requisites
-The main work will be done by
-[ansible](https://docs.ansible.com/ansible/latest/index.html), hence some level
-of familiarity with ansible is advantageous. Since we are using ansible we can
-use this deployment routine from a workstation computer (like a Mac-book).
-You do not need to run the deployment on the machines where things get installed.
-The only requirement is that you have to setup ansible and you can establish
-ssh connections to the servers.
+
+The main work will be done by [ansible](https://docs.ansible.com/ansible/latest/index.html),
+hence some level of familiarity with ansible is advantageous but not necessary.
+Since we are using ansible we can use this deployment routine from any workstation
+computer (like a Mac-book). You do not need to run the deployment on the
+machines where things get installed. The only requirement is
+you can establish ssh connections to the servers via openSSH.
+
+> ``💡`` In most cases openSSH clients should be available on your local machine. 
+> Windows users may refer to the
+> [openSSH install page](https://learn.microsoft.com/en-us/windows-server/administration/openssh/openssh_install_firstuse?tabs=gui)
+> for setting up openSSH on windows.
+
+
 
 # Installation
 There are different option to install the deployment software.
@@ -50,7 +57,6 @@ from the [release page]((https://github.com/FREVA-CLINT/freva-deployment/release
   - amd64 (`linux-x64`)
   - arm64 (`linux-arm64`)
   - armv7 (`linux-armv7`)
-  - armv6 (`linux-armv6`)
   - ppc64le (`linux-ppc64le`)
   - s390x (`linux-s390x`)
   - i386 (`linux-i386`)
@@ -66,20 +72,20 @@ After downloading and extracting the zip file for your operating system and arch
 you can run the `deploy-freva` command.
 
 ```console
-Usage: deploy-freva [-h] [-v] [-V] [--cowsay] {cmd} ...
+Usage: deploy-freva [-h] [-v] [-V] [--cowsay] {cmd,migrate} ...
 
 Run the freva deployment
 
 Positional Arguments:
-  {cmd}
+  {cmd,migrate}
     cmd          Run deployment in batch mode.
+    migrate      Utilities to handle migrations from old freva systems.
 
 Options:
   -h, --help     show this help message and exit
   -v, --verbose  Verbosity level (default: 0)
   -V, --version  show program's version number and exit
   --cowsay       Let the cow speak! (default: False)
-
 ```
 
 ## 2. Installation via pip.
@@ -91,7 +97,7 @@ python3 -m pip install -U freva-deployment
 ```
 
 This command installs ansible and all required python packages.
-> **_Note:_** On *CentOS* python SELinux libraries need to be installed.
+> ``💡`` On *CentOS* python SELinux libraries need to be installed.
 > You will need to install libselinux for your CentOS version.
 
 ```console
@@ -109,19 +115,18 @@ and save existing configurations you can mount the directories of the config
 files into the container.
 
 
-## Commands after installation:
-The `pip install` command will create *three* different commands:
-- `deploy-freva`: Main deployment command.
-- `deploy-freva-cmd`: Run already configured deployment. This is a legacy command
-   please use `deploy-freva cmd` instead.
-- `freva-migrate`: Command line interface to manage project migration from
-   old freva systems to new ones. This command is only available in the docker
-   container image and if the software was installed via *pip*
+## Sub Commands after installation:
+The deployment software consists of *three* different sub-commands:
+- `deploy-freva`: Main deployment command via text user interface (tui).
+- `deploy-freva cmd`: Run already configured deployment.
+- `deploy-freva migrate`: Command line interface to manage project migration from
+   old freva systems to new ones.
 
-> **_Note:_** You can use the `-l` flag of the `deploy-freva cmd` command
+> ``💡`` You can use the `-l` flag of the `deploy-freva cmd` command
 or tick the *local deployment only* box in the setup page of the text user
 interface if you only want to try out the deployment on your local machine.
 Without having to install anything on remote machines.
+
 
 
 
@@ -136,7 +141,7 @@ requires *root* privileges. Hence, on the servers that will be running docker
 you will need root access. There exists an option to install and run docker
 without root, information on a root-less docker option
 can be found [on the docker docs](https://docs.docker.com/engine/security/rootless/)
-> **_Note:_** Some systems use `podman` instead of `docker`. The deployment
+> ``💡`` Some systems use `podman` instead of `docker`. The deployment
 routine is able to distinguish and use the right service.
 
 ## Version checking
@@ -146,7 +151,7 @@ fit together. If you for example want to deploy the rest api the system will
 also check an update of the freva cli if it finds that the cli library doesn't
 fit with the latest version of the rest api. This ensures that all parts of the
 system will work together.
-> **_Note:_** You can disable this version checking by using the
+> ``💡`` You can disable this version checking by using the
   `--skip-version-check` flag. Use this flag with caution.
 
 
@@ -186,11 +191,11 @@ The command `deploy-freva` opens a text user interface (tui) that will walk
 you through the setup of the deployment.
 The tui allows to edit, save, load and run a configuration file
 
-> **_Note:_** Navigation is similar to the one of the *nano* text editor.
+> ``💡`` Navigation is similar to the one of the *nano* text editor.
 > The shortcuts start with a `^` which indicates `CTRL+`.
 > * the pop up menus (e.g. `Exit`) must be navigated pressing `tab` to
 > select the options and then `Enter`.
-> * the configuration files must be saved as a `.toml` as the the tui
+> * the configuration files must be saved as a `.toml` as the tui
 > only recognises this extension.
 > * to paste with the mouse (\*nix style), double middle click.
 
@@ -209,21 +214,20 @@ Please remember to set the correct domain flag for `deployment`, `servicing` and
 
 ## Deployment with existing configuration.
 If you already have a configuration saved in a toml base inventory file you can
-issue the `deploy-freva-cmd` command:
+issue the `deploy-freva cmd` sub-command:
 
-```bash
-deploy-freva-cmd --help
-usage: deploy-freva-cmd [-h] [--config CONFIG] [--steps {web,core,db,databrowser} [{web,core,db,databrowser} ...]] [--ask-pass] [--ssh-port SSH_PORT] [-v] [-l]
-                        [--gen-keys] [-V]
+```console
+deploy-freva cmd --help                                                                                                                                      (python3_12)
+Usage: deploy-freva cmd [-h] [--config CONFIG] [--steps {web,core,db,freva-rest,auto} [{web,core,db,freva-rest,auto} ...]] [--ask-pass] [--ssh-port SSH_PORT] [-v] [-l]
+                        [-g] [--skip-version-check] [-V] [--cowsay]
 
-Deploy freva and its services on different machines.
+Run deployment in batch mode.
 
-options:
+Options:
   -h, --help            show this help message and exit
-  --config CONFIG, -c CONFIG
-                        Path to ansible inventory file. (default: /home/wilfred/.anaconda3/share/freva/deployment/inventory.toml)
-  --steps {web,core,db,databrowser} [{web,core,db,databrowser} ...]
-                        The services/code stack to be deployed (default: ['db', 'databrowser', 'web', 'core'])
+  --config, -c CONFIG   Path to ansible inventory file. (default: /home/wilfred/.anaconda3/envs/python3_12/share/freva/deployment/inventory.toml)
+  --steps, -s {web,core,db,freva-rest,auto} [{web,core,db,freva-rest,auto} ...]
+                        The services/code stack to be deployed. Use auto to only deploy outdated services (default: ['db', 'freva-rest', 'web', 'core'])
   --ask-pass            Connect to server via ssh passwd instead of public key. (default: False)
   --ssh-port SSH_PORT   Set the ssh port, in 99.9% of the cases this should be 22 (default: 22)
   -v, --verbose         Verbosity level (default: 0)
@@ -231,8 +235,7 @@ options:
   -g, --gen-keys        Generate public and private web certs, use with caution. (default: False)
   --skip-version-check  Skip the version check. Use with caution. (default: False)
   -V, --version         show program's version number and exit
-
-
+  --cowsay              Let the cow speak! (default: False)
 ```
 
 The `--steps` flags can be used if not all services should be deployed.
@@ -333,7 +336,7 @@ Options:
   -p, --port     Set the port of the service that is used to configure the VM default: 8000
 ```
 
-> **_Note:_** *Before* running the script you will have to install [qemu](https://www.qemu.org/docs/master/).
+> ``💡`` *Before* running the script you will have to install [qemu](https://www.qemu.org/docs/master/).
 > The script has only been tested on Linux systems.
 
 You can then make use of the pre configured inventory file in

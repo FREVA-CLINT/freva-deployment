@@ -18,7 +18,7 @@ After opening the tui with the `deploy-freva` command you'll see a small
 navigation panel on the bottom. Navigation is done by shortcuts and similar
 to those used in the *nano* text editor. All shortcuts start with
 a `^` which indicates `CTRL+`, main shortcuts are:
-> `CTRL+f`: Further information on each configuration item.
+- `CTRL+f`: Further information on each configuration item.
 - `CTRL+x`: Enter main menu.
 - `CRTL+v`: Edit/Add environment variables.
 - `CTRL+o`: Load a saved configuration.
@@ -28,7 +28,7 @@ a `^` which indicates `CTRL+`, main shortcuts are:
 - `CTRL+r`: Got to the *run* screen.
 - `CTRL+d`: Clear the application cache.
 - `CTRL+e`: Exit application.
-> **_Note:_** The load/save forms can be exited by pressing the `<TAB>` key
+> ``💡`` The load/save forms can be exited by pressing the `<TAB>` key
 which will get you to input field at the bottom of the screen. If the input
 field has text delete it an press the `<ESC>` key, this will bring you get to
 the screen where you started.
@@ -61,7 +61,7 @@ essential setup steps:
    [basic configuration section](Folders.html#configuring-the-evaluation-system-section).
 1. Set the workload manager system from the dropdown menu.
 1. Set the output directory of the `stdout`/`stderr` of the workload manger.
-   __Note__: the workload manager type, like pbs, will be automatically
+   ``💡`` the workload manager type, like pbs, will be automatically
    appended to this directory.
 1. Set the user names (comma separated) of the Freva admins of this project.
 1. If you have a special user group for Freva admins you can set this this key
@@ -81,7 +81,7 @@ essential setup steps:
    blank (default) will cause the deployment to temporary download and create
    an anaconda install script - which will get deleted afterwards.
 1. Select a pre-defined target architecture for the anaconda environment.\
-   _Note_: The Freva installation has only been tested for MacOSX-x86_64,
+   ``💡`` The Freva installation has only been tested for MacOSX-x86_64,
    Linux-x86_64 (including Windows wsl2) and Linux-aarch64 (arm).
 1. If you want to customise the installation process you can set the path
     to a custom ansible playbook here. If this is set then the deployment
@@ -95,7 +95,7 @@ essential setup steps:
    such as `/usr/bin/git`.
 
 
-> ``📝`` Press CTRL+f for *f*urther information on each configuration item.
+> ``💡`` Press CTRL+f for *f*urther information on each configuration item.
 
 ### Notes on the core setup
 It is good practice to use only one anaconda environment for multiple Freva
@@ -151,7 +151,7 @@ essential setup steps:
 1. Set the ldap search key for finding the last name entries
 1. Set the ldap search key for finding email addresses
 1. Set the type of ldap object class name
-1. Set the type of ldap group type (nested or posix). Note: This is a
+1. Set the type of ldap group type (nested or posix). ``💡`` This is a
     dropdown menu, hit enter to select the options.
 1. Set the evaluation_system ldap class that handles the ldap connections
 1. If you want to customise the installation process you can set the path
@@ -164,7 +164,7 @@ essential setup steps:
    to root. Leave blank if no special user is needed.
 1. Set the login user name for the remote machine.
 
-> ``📝`` Press CTRL+f for *f*urther information on each configuration item.
+> ``💡`` Press CTRL+f for *f*urther information on each configuration item.
 
 ### Notes on the web ui setup
 Currently there are ties between the core running on the HPC machine and
@@ -229,7 +229,7 @@ following explains the essential setup steps:
    binary is not part of the `$PATH` variable.
 1. Set the login user name for the remote machine.
 
-> ``📝`` Press CTRL+f for *f*urther information on each configuration item.
+> ``💡`` Press CTRL+f for *f*urther information on each configuration item.
 
 ### Notes on the freva-rest setup
 Any existing data is *not* overridden if you deploy
@@ -265,7 +265,7 @@ following explains the essential setup steps:
    binary is not part of the `$PATH` variable.
 1. Set the login user name for the remote machine.
 
-> ``📝`` Press CTRL+f for *f*urther information on each configuration item.
+> ``💡`` Press CTRL+f for *f*urther information on each configuration item.
 
 ### Notes on the database setup
 This step also includes the deployment of a vault service where all information

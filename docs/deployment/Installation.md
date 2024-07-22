@@ -6,10 +6,15 @@ The main work will be done by [ansible](https://docs.ansible.com/ansible/latest/
 hence some level of familiarity with ansible is advantageous but not necessary.
 Since we are using ansible we can use this deployment routine from any workstation
 computer (like a Mac-book). You do not need to run the deployment on the
-machines where things get installed. The only requirement is that you have to
-setup ansible and you can establish ssh connections to the servers.
+machines where things get installed. The only requirement is
+you can establish ssh connections to the servers via openSSH.
 
-There are different ways to install the deployment software.
+> ``💡`` In most cases openSSH clients should be available on your local machine.
+> Windows users may refer to the
+> [openSSH install page](https://learn.microsoft.com/en-us/windows-server/administration/openssh/openssh_install_firstuse?tabs=gui)
+> for setting up openSSH on windows.
+
+There are different ways to install the deployment software:
 
 ## 1. Using pre-built binaries.
 You can download the pre-built binaries for your specific OS and architecture
@@ -18,40 +23,44 @@ from the [release page](release:{{version}}).
 ### Available Binaries
 
 - **Linux**
-  - [amd64](exe:linux-x64)
-  - [arm64](exe:linux-arm64)
-  - [armv7](exe:linux-armv7)
-  - [armv6](exe:linux-armv6)
-  - [ppc64le](exe:linux-ppc64le)
-  - [s390x](exe:linux-s390x)
-  - [i386](exe:linux-i386)
+  - [amd64](exe:linux-x64.tar.gz)
+  - [arm64](exe:linux-arm64.tar.gz)
+  - [armv7](exe:linux-armv7.tar.gz)
+  - [ppc64le](exe:linux-ppc64le.tar.gz)
+  - [s390x](exe:linux-s390x.tar.gz)
+  - [i386](exe:linux-i386.tar.gz)
 
 - **Windows**
-  - [amd64](exe:windows-x64)
+  - [amd64](exe:windows-x64.zip)
+  > ``💡`` This version uses a patched version of ansible. We can't guaranty
+  > a working deployment software on windows.
 
 - **macOS**
-  - [amd64](exe:osx-x64)
-  - [arm64](exe:osx-arm64)
+  - [amd64](exe:osx-x64.tar.gz)
+  - [arm64](exe:osx-arm64.tar.gz)
 
-After downloading version {{version}} file for your operating system and architecture,
-you can run the `deploy-freva` (`deploy-freva.exe` on windows) command:
+After downloading version {{version}} file for your operating system and
+architecture, you have to extract the archived folder (zip on windows,
+tar.gz on Unix) and run the `deploy-freva` (`deploy-freva.exe` on windows)
+command in the extracted folder:
 
 ```console
-Usage: deploy-freva [-h] [-v] [-V] [--cowsay] {cmd} ...
+Usage: deploy-freva [-h] [-v] [-V] [--cowsay] {cmd,migrate} ...
 
 Run the freva deployment
 
 Positional Arguments:
-  {cmd}
+  {cmd,migrate}
     cmd          Run deployment in batch mode.
+    migrate      Utilities to handle migrations from old freva systems.
 
 Options:
   -h, --help     show this help message and exit
   -v, --verbose  Verbosity level (default: 0)
   -V, --version  show program's version number and exit
   --cowsay       Let the cow speak! (default: False)
-
 ```
+
 
 ## 2. Installation via pip.
 If you're using Linux, OsX or a Windows subsystem for Linux (WSL) you can
@@ -62,8 +71,12 @@ python3 -m pip install -U freva-deployment
 ```
 
 This command installs ansible and all required python packages.
-> **_Note:_** On *CentOS* python SELinux libraries need to be installed.
+> ``💡``  On *CentOS* python SELinux libraries need to be installed.
 > You will need to install libselinux for your CentOS version.
+>
+> The ansible library is not supported on *Windows* and needs to be patched.
+> you can either use the above mentioned pre compiled windows binary or install
+> the deployment software on Windows Subsystem for Linux - WSL (preferred).
 
 ```console
 python3 -m pip install libselinux-python3
@@ -80,16 +93,14 @@ and save existing configurations you can mount the directories of the config
 files into the container.
 
 
-## Commands after installation:
-The `pip install` command will create *three* different commands:
-- `deploy-freva`: Main deployment command.
-- `deploy-freva-cmd`: Run already configured deployment. This is a legacy command
-   please use `deploy-freva cmd` instead.
-- `freva-migrate`: Command line interface to manage project migration from
-   old freva systems to new ones. This command is only available in the docker
-   container image and if the software was installed via *pip*
+## Sub Commands after installation:
+The deployment software consists of *three* different sub-commands:
+- `deploy-freva`: Main deployment command via text user interface (tui).
+- `deploy-freva cmd`: Run already configured deployment.
+- `deploy-freva migrate`: Command line interface to manage project migration from
+   old freva systems to new ones.
 
-> **_Note:_** You can use the `-l` flag of the `deploy-freva cmd` command
+> ``💡`` You can use the `-l` flag of the `deploy-freva cmd` command
 or tick the *local deployment only* box in the setup page of the text user
 interface if you only want to try out the deployment on your local machine.
 Without having to install anything on remote machines.
@@ -105,8 +116,8 @@ using `doker-compose` or `podman-compose`. The deployment will install,
 
 
 Hence, on the servers that will be running docker
-l need root access. There exists an option to install and run docker
+you will need root access. There exists an option to install and run docker
 without root, information on a root-less docker option
 can be found [on the docker docs](https://docs.docker.com/engine/security/rootless/)
-> **_Note:_** The deployment will automatically check the availability of docker
+> ``💡`` The deployment will automatically check the availability of docker
 or podman and chose the software that is available on each server.

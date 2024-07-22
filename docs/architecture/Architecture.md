@@ -60,7 +60,7 @@ ui container is running on. This can usually be achieved by mounting the
 content via a network based file system, such as nfs, or a cluster file
 system such as gpfs to the web ui machine.
 
-> **_Note:_** The web ui contains of three different parts: a django web
+> ``💡`` The web ui contains of three different parts: a django web
 application container that runs the web sites code, a redis container acting
 as database cache and a apache httpd container as a reverse proxy forwarding
 client requests to the django web application.

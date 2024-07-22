@@ -23,6 +23,7 @@ import yaml
 from rich import print as pprint
 from rich.prompt import Prompt
 
+import freva_deployment.callback_plugins
 from freva_deployment import FREVA_PYTHON_VERSION
 
 from .error import ConfigurationError, handled_exception
@@ -898,7 +899,7 @@ class DeployFactory:
         config["core"]["vars"]["core_install_dir"] = cfg["core"]["config"][
             "install_dir"
         ]
-        self._td.run_ansible_playbook(
+        result = self._td.run_ansible_playbook(
             playbook=str(asset_dir / "playbooks" / "versions.yaml"),
             inventory=config,
             envvars=envvars,
@@ -910,11 +911,13 @@ class DeployFactory:
             text="Getting versions of micro-services ...",
         )
         versions = {}
-        version_path.touch()
-        for line in version_path.read_text().splitlines():
-            service, _, version = line.partition(":")
-            if service.strip() and version.strip():
+        for line in result.splitlines():
+            jline = json.loads(line)
+            if "msg" in jline["result"]:
+                service = jline["task"].split()[1].lower()
+                version = jline["result"]["msg"].strip()
                 versions[service.strip()] = version.strip()
+        logger.debug("Detected versions: %s", versions)
         additional_steps = get_steps_from_versions(versions)
         return additional_steps
 
@@ -939,18 +942,32 @@ class DeployFactory:
         skip_version_check: bool, default: False
             Skip version check, use with caution.
         """
+        plugin_path = Path(freva_deployment.callback_plugins.__file__).parent
         envvars: dict[str, str] = {
-            "ANSIBLE_CONFIG": self._td.ansible_config_file,
+            "ANSIBLE_CONFIG": str(self._td.ansible_config_file),
             "ANSIBLE_NOCOWS": self._no_cowsay,
+            "ANSIBLE_COW_PATH": os.getenv(
+                "ANSIBLE_COW_PATH", shutil.which("cowsay") or ""
+            ),
         }
-        if is_bundeled:
-            envvars["ANSIBLE_STDOUT_CALLBACK"] = "default"
-        else:
-            envvars["ANSIBLE_STDOUT_CALLBACK"] = "yaml"
-
+        self._td.create_config(
+            cowsay_enabled_stencils="default,sheep,moose",
+            stdout_callback="deployment_plugin",
+            callback_plugins=str(plugin_path),
+            host_key_checking="False",
+            retry_files_enabled="False",
+            nocows=str(bool(int(self._no_cowsay))),
+            cowpath=os.getenv(
+                "ANSIBLE_COW_PATH", shutil.which("cowsay") or ""
+            ),
+            cow_selection="random",
+            timeout="5",
+        )
+        logger.debug("CONFIG\n%s", self._td.ansible_config_file.read_text())
         extravars: dict[str, str] = {
             "ansible_port": str(ssh_port),
-            "ansible_ssh_args": "-o ForwardX11=no",
+            "ansible_config": str(self._td.ansible_config_file),
+            "ansible_ssh_args": "-o ForwardX11=no -o StrictHostKeyChecking=no",
         }
         if self.local_debug:
             extravars["ansible_connection"] = "local"

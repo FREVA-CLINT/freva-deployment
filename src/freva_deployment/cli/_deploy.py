@@ -136,8 +136,8 @@ class BatchParser:
 def cli(argv: list[str] | None = None) -> None:
     """Run the command line interface."""
     epilog = (
-        "[b]Note:[/b] The command `deploy-freva-cmd` is a legacy command,"
-        " please consdider using `deploy-freva cmd` instead."
+        "[red][b]Note:[/b] The command `deploy-freva-cmd` is a legacy command,"
+        " please consdider using `deploy-freva cmd` instead.[/red]"
     )
     bp = BatchParser(epilog=epilog)
     args = bp.parse_args(argv)

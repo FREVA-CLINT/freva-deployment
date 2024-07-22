@@ -15,7 +15,6 @@ on:
 
 
 jobs:
-
   deployment-image-linux:
     runs-on: ubuntu-latest
     permissions:

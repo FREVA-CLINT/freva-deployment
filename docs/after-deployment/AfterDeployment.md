@@ -22,7 +22,7 @@ key was set to `clex-ces` then the following services are created:
 - databrowser: `clex-ces-databrowser.service`
 - web ui: `clex-ces-web.service`
 
-> **_Note:_** If you have set up the services as an unprivileged user you need
+> ``💡`` If you have set up the services as an unprivileged user you need
 to access the services with help of the ``--user`` flag for example:
 
 ```console
@@ -68,7 +68,7 @@ rudimentary backup strategy by deleting the backup scripts in `/etc/cron.daily`
 and replace it by a more sophisticated backup mechanism.
 
 
-> **_Note:_** If you have set up the services as an unprivileged user you can
+> ``💡`` If you have set up the services as an unprivileged user you can
 access the backup scripts using the `crontab` command.
 
 ## The web UI admin Panel

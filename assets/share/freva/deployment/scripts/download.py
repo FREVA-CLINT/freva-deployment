@@ -3,8 +3,8 @@
 
 import argparse
 import logging
-from pathlib import Path
 import urllib.request
+from pathlib import Path
 from typing import Tuple
 
 logging.basicConfig(

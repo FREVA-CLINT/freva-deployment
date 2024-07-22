@@ -17,7 +17,6 @@ jobs:
     uses: ./.github/workflows/ci_job.yml
   release:
     name: Create Release
-    needs: [tests]
     runs-on: ubuntu-latest
     steps:
       - name: Create Release
@@ -41,65 +40,108 @@ jobs:
           name: release_url
           path: release_url.txt
 
-  build-no-linux:
-    name: Build packages
+  build-windows:
     needs: [release]
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{matrix.os}}
     strategy:
       matrix:
         include:
-          - os: macos-12
-            target: osx-x64
-            arch: x86_64
-            py_arch: x64
-            asset_mime: application/octet-stream
-            exe: deploy-freva
-            hidden_import: --hidden-import curses --hidden-import cowsay
-            extra_pkg: cryptography
-          - os: macos-14
-            target: osx-arm64
-            arch: arm64
-            py_arch: arm64
-            asset_mime: application/octet-stream
-            exe: deploy-freva
-            hidden_import: --hidden-import curses --hidden-import cowsay
-            extra_pkg: cryptography
           - os: windows-2019
             target: windows-x64
-            arch: x86_64
-            py_arch: x64
-            asset_mime: application/vnd.microsoft.portable-executable
-            hidden_import: --hidden-import windows-curses --hidden-import cowsay
-            extra_pkg: windows-curses cryptography
-            exe: deploy-freva.exe
-
+            url: https://github.com/Code-Hex/Neo-cowsay/releases/download/v2.0.4/cowsay_2.0.4_Windows_x86_64.zip
+            sh: pwsh
+            extra: win
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Python "3.X" on ${{ matrix.os }}
-        uses: actions/setup-python@v4
+      - name: Create conda env
+        uses: mamba-org/setup-micromamba@v1
         with:
-          python-version: "3.X"
-          architecture: ${{ matrix.py_arch }}
+          init-shell: powershell bash cmd.exe
+          environment-name: build
+          post-cleanup: 'all'
+          create-args: >
+            python=3.11
+            appdirs
+            ansible-core
+            libclang
+            pymysql
+            mysql-common
+            mysql-client
+            pyyaml
+            rich
+            toml
+            tomlkit
+            requests
+            cryptography
+            mock
+            pyinstaller
+
+      - name: Activate micromamba env
+        run: |
+          micromamba shell hook -s powershell | Out-String | Invoke-Expression
+          micromamba activate
+        shell: pwsh
+
+      - name: Set UTF-8 Code Page
+        run: |
+          chcp 65001
+        shell: pwsh
+
+      - name: Set Locale Environment Variables
+        run: |
+          setx LANG en_US.UTF-8
+          setx LC_ALL en_US.UTF-8
+        shell: pwsh
+
+      - name: Verify Locale and Code Page
+        run: |
+          chcp
+          echo %LANG%
+          echo %LC_ALL%
+        shell: pwsh
+
+      - name: Adding the evaluation config file
+        run: micromamba run -n build python src/freva_deployment/__init__.py
+        shell: pwsh
+
       - name: Install dependencies
         run: |
-          python3 -m pip install --upgrade pip
-          python3 -m pip install pyinstaller ansible ${{ matrix.extra_pkg }} .
-      - name: Build with cmd pyinstaller for ${{ matrix.target }}
-        run: >
-          pyinstaller pyinstaller/pyinstaller-deploy-freva.py -c
-          --name deploy-freva --onefile --clean -i docs/_static/freva_owl.ico
-          --add-data 'assets/share/freva/deployment:freva_deployment/assets'
-          --add-data 'src/freva_deployment/versions.json:freva_deployment'
-          --target-arch ${{matrix.arch}}
-          ${{matrix.hidden_import}}
-          --exclude-module pycrypto --exclude-module PyInstaller
+          micromamba run -n build python -m pip install --upgrade-strategy only-if-needed .[${{matrix.extra}}]
+          micromamba run -n build python -m pip install assets/unix_mock
+        shell: pwsh
+
+      - name: Download cowsay
+        run: micromamba run -n build python pyinstaller/download_cowsay.py ${{ matrix.url }}
+        shell: pwsh
+
+      - name: Build with cmd pyinstaller for deploy-freva.exe
+        env:
+          PYTHONIOENCODING: utf-8
+          LANG: en_US.UTF-8
+          LC_ALL: en_US.UTF-8
+        run: |
+          micromamba run -n build python pyinstaller/pre-win.py
+          micromamba run -n build pyinstaller --noconfirm deploy-freva-all.spec
+        shell: pwsh
+
       - name: Test built bindary
-        run: ./dist/${{matrix.exe}} --help
+        run: ./dist/deploy-freva/deploy-freva.exe --help
+        shell: pwsh
       - name: Load Release URL File from release job
         if: startsWith(github.ref, 'refs/tags/')
         uses: actions/download-artifact@v1
         with:
           name: release_url
+      - name: Get version
+        id: version
+        run: |
+          echo "tag=$(python src/freva_deployment/__init__.py -v)" >> $GITHUB_OUTPUT
+        shell: bash
+      - name: Create ZIP archive of the folder
+        run: >
+          Compress-Archive -Path .\dist\deploy-freva\*
+          -DestinationPath  .\deploy-freva-v${{steps.version.outputs.tag}}-${{matrix.target}}.zip
+        shell: pwsh
       - name: Get Release File Name & Upload URL
         if: startsWith(github.ref, 'refs/tags/')
         id: release_url
@@ -113,13 +155,132 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.ASSET_TOKEN }}
         with:
           upload_url: ${{ steps.release_url.outputs.url }}
-          asset_path: ./dist/${{ matrix.exe }}
-          asset_name: deploy-freva-${{ matrix.target}}
-          asset_content_type: ${{ matrix.asset_mime }}
+          asset_path: doploy-freva-v${{steps.version.outputs.tag}}-${{matrix.target}}.zip
+          asset_name: doploy-freva-v${{steps.version.outputs.tag}}-${{matrix.target}}.zip
+          asset_content_type: application/zip
+      - name: Upload cmd Asset
+        uses: actions/upload-artifact@v3
+        with:
+          path: deploy-freva-v${{steps.version.outputs.tag}}-${{matrix.target}}.zip
+          name: deploy-freva-v${{steps.version.outputs.tag}}-${{matrix.target}}.zip
+          retention-days: 7
+
+
+  build-osx:
+    name: Build packages
+    needs: [release]
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: macos-12
+            target: osx-x64
+            arch: x86_64
+            url: https://github.com/Code-Hex/Neo-cowsay/releases/download/v2.0.4/cowsay_2.0.4_macOS_x86_64.tar.gz
+          - os: macos-14
+            target: osx-arm64
+            arch: arm64
+            url: https://github.com/Code-Hex/Neo-cowsay/releases/download/v2.0.4/cowsay_2.0.4_macOS_arm64.tar.gz
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create conda env
+        uses: mamba-org/setup-micromamba@v1
+        with:
+          init-shell: bash
+          environment-name: build
+          post-cleanup: 'all'
+          create-args: >
+            python=3.11
+            appdirs
+            ansible-core
+            pymysql
+            mysql-common
+            mysql-client
+            pyyaml
+            rich
+            toml
+            tomlkit
+            requests
+            cryptography
+            mock
+            pyinstaller
+
+      - name: Activate micromamba env
+        run: |
+          micromamba shell init --shell bash --root-prefix=~/micromamba
+        shell: bash
+
+      - name: Adding the evaluation config file
+        run: micromamba run -n build python src/freva_deployment/__init__.py
+        shell: bash
+
+      - name: Install dependencies
+        run: |
+          micromamba run -n build python -m pip install .[unix]
+        shell: bash
+
+      - name: Download cowsay
+        run: micromamba run -n build python pyinstaller/download_cowsay.py ${{ matrix.url }}
+        shell: bash
+
+      - name: Build with cmd pyinstaller for ${{ matrix.target }}
+        env:
+          PYTHONIOENCODING: utf-8
+          LANG: en_US.UTF-8
+          LC_ALL: en_US.UTF-8
+        run: >
+          micromamba run -n build pyinstaller --noconfirm deploy-freva-all.spec
+        shell: bash
+
+      - name: Test built bindary
+        run: ./dist/deploy-freva/deploy-freva --help
+
+      - name: Get version
+        id: version
+        run: |
+          echo "tag=$(python src/freva_deployment/__init__.py -v)" >> $GITHUB_OUTPUT
+        shell: bash
+
+      - name: Create tar.gz archive of the folder
+        run: >
+          tar -czvf
+          doploy-freva-v${{steps.version.outputs.tag}}-${{matrix.target}}.tar.gz
+          -C ./dist deploy-freva
+
+      - name: Load Release URL File from release job
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: actions/download-artifact@v1
+        with:
+          name: release_url
+      - name: Get Release File Name & Upload URL
+        if: startsWith(github.ref, 'refs/tags/')
+        id: release_url
+        shell: bash
+        run: |
+          echo "url=$(cat release_url/release_url.txt)" >> $GITHUB_OUTPUT
+
+      - name: Upload Release Asset
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.ASSET_TOKEN }}
+        with:
+          upload_url: ${{ steps.release_url.outputs.url }}
+          asset_path: doploy-freva-v${{steps.version.outputs.tag}}-${{matrix.target}}.tar.gz
+          asset_name: doploy-freva-v${{steps.version.outputs.tag}}-${{matrix.target}}.tar.gz
+          asset_content_type: application/gzip
+      - name: Upload cmd Asset
+        uses: actions/upload-artifact@v3
+        with:
+          path: doploy-freva-v${{steps.version.outputs.tag}}-${{matrix.target}}.tar.gz
+          name: doploy-freva-v${{steps.version.outputs.tag}}-${{matrix.target}}.tar.gz
+          retention-days: 7
 
   build-linux:
     name: Build packages
     runs-on: ubuntu-latest
+    continue-on-error: false
     needs: [release]
     strategy:
       matrix:
@@ -146,6 +307,9 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Adding the evaluation config file
+        run: python src/freva_deployment/__init__.py
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
         with:
@@ -162,6 +326,12 @@ jobs:
       - name: Inspect Buildx builder
         run: docker buildx inspect --bootstrap
 
+      - name: Build cowsay binary with golang
+        run: >
+          docker run --rm -v $PWD:/src -e GOBIN=/src/pyinstaller
+          -w /src --platform ${{ matrix.arch }} golang:1.22-alpine
+          go install github.com/Code-Hex/Neo-cowsay/cmd/v2/cowsay@latest
+
       - name: Build Docker image
         uses: docker/build-push-action@v4
         with:
@@ -174,19 +344,25 @@ jobs:
       - name: Run PyInstaller in Docker
         run: >
           docker run --rm -v $PWD:/src -w /src --platform ${{ matrix.arch }}
-          pyinstaller:${{ matrix.target }} pyinstaller
-          pyinstaller/pyinstaller-deploy-freva.py -c
-          --name deploy-freva --onefile --clean -i docs/_static/freva_owl.ico
-          --add-data 'assets/share/freva/deployment:freva_deployment/assets'
-          --add-data 'src/freva_deployment/versions.json:freva_deployment'
-          --hidden-import cowsay --hidden-import cryptography
-          --exclude-module pycrypto --exclude-module PyInstaller
+          -e PYTHONIOENCODING=utf-8 -e LANG=C pyinstaller:${{ matrix.target }}
+          pyinstaller --noconfirm deploy-freva-all.spec
 
       - name: Test built bindary
         run: >
           docker run --rm -v $PWD:/src -w /src --platform ${{ matrix.arch }}
-          pyinstaller:${{ matrix.target }} /src/dist/deploy-freva --help
+          pyinstaller:${{ matrix.target }} /src/dist/deploy-freva/deploy-freva --help
 
+      - name: Get version
+        id: version
+        run: |
+          echo "tag=$(python src/freva_deployment/__init__.py -v)" >> $GITHUB_OUTPUT
+        shell: bash
+
+      - name: Create tar.gz archive of the folder
+        run: >
+          tar -czvf
+          doploy-freva-v${{steps.version.outputs.tag}}-${{matrix.target}}.tar.gz
+          -C ./dist deploy-freva
       - name: Load Release URL File from release job
         if: startsWith(github.ref, 'refs/tags/')
         uses: actions/download-artifact@v1
@@ -205,16 +381,23 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.ASSET_TOKEN }}
         with:
           upload_url: ${{ steps.release_url.outputs.url }}
-          asset_path: ./dist/deploy-freva
-          asset_name: deploy-freva-${{ matrix.target}}
-          asset_content_type: application/octet-stream
+          asset_path: doploy-freva-v${{steps.version.outputs.tag}}-${{matrix.target}}.tar.gz
+          asset_name: doploy-freva-v${{steps.version.outputs.tag}}-${{matrix.target}}.tar.gz
+          asset_content_type: application/gzip
+
+      - name: Upload cmd Asset
+        uses: actions/upload-artifact@v3
+        with:
+          path: doploy-freva-v${{steps.version.outputs.tag}}-${{matrix.target}}.tar.gz
+          name: doploy-freva-v${{steps.version.outputs.tag}}-${{matrix.target}}.tar.gz
+          retention-days: 7
 
 
   pypi:
     name: Create Pip package
     permissions:
       id-token: write
-    needs: [tests, build-linux, build-no-linux]
+    needs: [tests, build-linux, build-windows, build-osx]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
     steps:
@@ -226,7 +409,8 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: "3.x"
-      - name: Adding the evaluation config file
+      -
+        name: Adding the evaluation config file
         run: python src/freva_deployment/__init__.py
       -
         name: Install flit
