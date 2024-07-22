@@ -1,6 +1,6 @@
+import locale
 import os
 import re
-import locale
 import sys
 
 from rich import print as pprint

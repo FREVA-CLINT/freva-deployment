@@ -1,9 +1,8 @@
 import locale
 import os
-from pathlib import Path
 import re
 import sys
-
+from pathlib import Path
 
 if sys.platform.lower().startswith("win"):
     getlocale = locale.getlocale
