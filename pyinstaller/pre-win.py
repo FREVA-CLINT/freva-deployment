@@ -13,9 +13,7 @@ if sys.platform.lower().startswith("win"):
     try:
         import ansible
 
-        ansible_cli_path = (
-            Path(ansible.__file__).parent / "cli" / "__init__.py"
-        )
+        ansible_cli_path = Path(ansible.__file__).parent / "cli" / "__init__.py"
     finally:
         sys.getfilesystemencoding = getfilesystemencoding
         locale.getlocale = getlocale
@@ -29,35 +27,24 @@ if sys.platform.lower().startswith("win"):
             if f"os.{call}" in content:
                 write = True
                 if "import os, termios" not in content:
-                    content = content.replace(
-                        "import os", "import os, termios"
-                    )
+                    content = content.replace("import os", "import os, termios")
                 content = content.replace(f"os.{call}", f"termios.{call}")
-        if (
-            "get_context('fork')" in content
-            or 'get_context("fork")' in content
-        ):
+        if "get_context('fork')" in content or 'get_context("fork")' in content:
             write = True
-            content = content.replace(
-                "get_context('fork')", "get_context('spawn')"
-            )
-            content = content.replace(
-                'get_context("fork")', 'get_context("spwan")'
-            )
+            content = content.replace("get_context('fork')", "get_context('spawn')")
+            content = content.replace('get_context("fork")', 'get_context("spwan")')
         if write:
             inp_file.write_text(content, encoding="utf-8")
     display = Path(ansible.__file__) / "utils" / "display.py"
     content = "\n".join(
         [
             l
-            for l in display.read_text().splitlines()
+            for l in display.read_text(encoding="utf-8").splitlines()
             if not l.startswith("_LIBC =")
         ]
     )
-    content = content.replace(
-        "import ctypes.util", "ctypes.util\nimport wcwidth"
-    )
-    display.write_text(content)
+    content = content.replace("import ctypes.util", "ctypes.util\nimport wcwidth")
+    display.write_text(content, encoding="utf-8")
 else:
     import PyInstaller.depend.bindepend
 
