@@ -13,9 +13,7 @@ if sys.platform.lower().startswith("win"):
     try:
         import ansible
 
-        ansible_cli_path = (
-            Path(ansible.__file__).parent / "cli" / "__init__.py"
-        )
+        ansible_cli_path = Path(ansible.__file__).parent / "cli" / "__init__.py"
     finally:
         sys.getfilesystemencoding = getfilesystemencoding
         locale.getlocale = getlocale
@@ -28,9 +26,9 @@ if sys.platform.lower().startswith("win"):
         for call in ("isatty", "get_blocking"):
             if f"os.{call}" in content:
                 write = True
-                if "import os, tty" not in content:
-                    content = content.replace("import os", "import os, tty")
-                content = content.replace(f"os.{call}", f"tty.{call}")
+                if "import os, termios" not in content:
+                    content = content.replace("import os", "import os, termios")
+                content = content.replace(f"os.{call}", f"termios.{call}")
         if write:
             inp_file.write_text(content, encoding="utf-8")
 else:

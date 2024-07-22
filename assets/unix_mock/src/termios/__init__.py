@@ -1,5 +1,7 @@
 """Simulation of the termios unix library for Windows."""
 
+import msvcrt
+
 # Constants for when argument in tcsetattr()
 TCSANOW = 0
 TCSADRAIN = 1
@@ -47,6 +49,20 @@ default_mode[LFLAG] = 0
 default_mode[ISPEED] = 0
 default_mode[OSPEED] = 0
 default_mode[CC] = [0] * 32
+
+
+def isatty(fd):
+    """Check if the file descriptor is a terminal."""
+
+    try:
+        return msvcrt.get_osfhandle(fd) is not None
+    except Exception:
+        return False
+
+
+def get_blocking(fd):
+    """The os.get_blocking functionality from unix."""
+    return True
 
 
 def tcgetattr(fd):

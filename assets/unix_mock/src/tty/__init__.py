@@ -1,28 +1,12 @@
 """Simulation of the tty unix library for Windows."""
 
-import msvcrt
 import termios
-
 
 IFLAG = termios.IFLAG
 OFLAG = termios.OFLAG
 CFLAG = termios.CFLAG
 LFLAG = termios.LFLAG
 CC = termios.CC
-
-
-def isatty(fd):
-    """Check if the file descriptor is a terminal."""
-
-    try:
-        return msvcrt.get_osfhandle(fd) is not None
-    except Exception:
-        return False
-
-
-def get_blocking(fd):
-    """The os.get_blocking functionality from unix."""
-    return True
 
 
 def setraw(fd, when=termios.TCSANOW):
