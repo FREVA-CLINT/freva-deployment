@@ -53,7 +53,7 @@ if sys.platform.lower().startswith("win"):
             line = ""
         if "fcntl.ioctl" in line:
             line = line.replace(
-                line.strip(), f"tty_size = os.get_terminal_size().lines"
+                line.strip(), f"tty_size = fcntl.get_terminal_size().lines"
             )
         content_l.append(line)
 

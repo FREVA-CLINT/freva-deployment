@@ -28,6 +28,13 @@ def wcswidth(text, num=None):
     return ww.wcswidth(text)
 
 
+def get_terminal_size():
+    try:
+        return os.get_terminal_size()
+    except Exception:
+        return 0
+
+
 def fcntl(fd, cmd, arg=0):
     """Perform the operation `cmd` on file descriptor fd.
 
