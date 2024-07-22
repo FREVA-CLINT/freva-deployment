@@ -32,15 +32,17 @@ from the [release page](release:{{version}}).
 
 - **Windows**
   - [amd64](exe:windows-x64.zip)
+  > ``💡`` This version uses a patched version of ansible. We can't guaranty
+  > a working deployment software on windows.
 
 - **macOS**
   - [amd64](exe:osx-x64.tar.gz)
   - [arm64](exe:osx-arm64.tar.gz)
 
-After downloading version {{version}} file for your operating system and architecture,
-you can you have to extract the archived folder (zip on windows, tar.gz on Unix)
-and run the run the `deploy-freva` (`deploy-freva.exe` on windows) command
-in the folder:
+After downloading version {{version}} file for your operating system and
+architecture, you have to extract the archived folder (zip on windows,
+tar.gz on Unix) and run the `deploy-freva` (`deploy-freva.exe` on windows)
+command in the extracted folder:
 
 ```console
 Usage: deploy-freva [-h] [-v] [-V] [--cowsay] {cmd,migrate} ...
@@ -59,6 +61,7 @@ Options:
   --cowsay       Let the cow speak! (default: False)
 ```
 
+
 ## 2. Installation via pip.
 If you're using Linux, OsX or a Windows subsystem for Linux (WSL) you can
 use *pip* to install the deployment software:
@@ -70,6 +73,10 @@ python3 -m pip install -U freva-deployment
 This command installs ansible and all required python packages.
 > ``💡``  On *CentOS* python SELinux libraries need to be installed.
 > You will need to install libselinux for your CentOS version.
+>
+> The ansible library is not supported on *Windows* and needs to be patched.
+> you can either use the above mentioned pre compiled windows binary or install
+> the deployment software on Windows Subsystem for Linux - WSL (preferred).
 
 ```console
 python3 -m pip install libselinux-python3
