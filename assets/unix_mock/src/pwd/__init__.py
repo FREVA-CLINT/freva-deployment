@@ -9,9 +9,7 @@ import win32security
 
 
 class struct_passwd:
-    def __init__(
-        self, pw_name, pw_passwd, pw_uid, pw_gid, pw_gecos, pw_dir, pw_shell
-    ):
+    def __init__(self, pw_name, pw_passwd, pw_uid, pw_gid, pw_gecos, pw_dir, pw_shell):
         self.pw_name = pw_name
         self.pw_passwd = pw_passwd
         self.pw_uid = pw_uid
@@ -34,7 +32,7 @@ def getpwnam(username):
             pw_name=username,
             pw_passwd="x",
             pw_uid=user_sid,
-            pw_gid=None,  # Windows does not use gid
+            pw_gid=0,  # Windows does not use gid
             pw_gecos="",
             pw_dir=user_profile_path,
             pw_shell=None,  # Windows does not use shell
@@ -56,7 +54,7 @@ def getpwuid(uid):
             pw_name=username,
             pw_passwd="x",
             pw_uid=sid,
-            pw_gid=None,  # Windows does not use gid
+            pw_gid=0,  # Windows does not use gid
             pw_gecos="",
             pw_dir=user_profile_path,
             pw_shell=None,  # Windows does not use shell
