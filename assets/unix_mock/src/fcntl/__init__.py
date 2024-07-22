@@ -140,5 +140,5 @@ def ioctl(fd, request, arg=0, mutable_flag=True):
     else:
         arg_buf = bytes(arg)
     buf = (c_char * len(arg_buf)).from_buffer(arg_buf)
-    win32api.DeviceIoControl(handle, request, buf, None)
+    win32file.DeviceIoControl(handle, request, buf, None)
     return buf
