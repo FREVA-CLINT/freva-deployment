@@ -1,6 +1,8 @@
 """Simulation of the tty unix library for Windows."""
 
+import msvcrt
 import termios
+
 
 IFLAG = termios.IFLAG
 OFLAG = termios.OFLAG
@@ -9,14 +11,34 @@ LFLAG = termios.LFLAG
 CC = termios.CC
 
 
+def isatty(fd):
+    """Check if the file descriptor is a terminal."""
+
+    try:
+        return msvcrt.get_osfhandle(fd) is not None
+    except Exception:
+        return False
+
+
+def get_blocking(fd):
+    """The os.get_blocking functionality from unix."""
+    return True
+
+
 def setraw(fd, when=termios.TCSANOW):
     """Put terminal into raw mode."""
     mode = termios.tcgetattr(fd)
     mode[termios.IFLAG] = mode[termios.IFLAG] & ~(
-        termios.BRKINT | termios.ICRNL | termios.INPCK | termios.ISTRIP | termios.IXON
+        termios.BRKINT
+        | termios.ICRNL
+        | termios.INPCK
+        | termios.ISTRIP
+        | termios.IXON
     )
     mode[termios.OFLAG] = mode[termios.OFLAG] & ~(termios.OPOST)
-    mode[termios.CFLAG] = mode[termios.CFLAG] & ~(termios.CSIZE | termios.PARENB)
+    mode[termios.CFLAG] = mode[termios.CFLAG] & ~(
+        termios.CSIZE | termios.PARENB
+    )
     mode[termios.CFLAG] = mode[termios.CFLAG] | termios.CS8
     mode[termios.LFLAG] = mode[termios.LFLAG] & ~(
         termios.ECHO | termios.ICANON | termios.IEXTEN | termios.ISIG

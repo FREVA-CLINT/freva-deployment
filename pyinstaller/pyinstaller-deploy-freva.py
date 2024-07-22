@@ -6,25 +6,6 @@ import sys
 from rich import print as pprint
 
 
-def isatty(fd):
-    """Check if the file descriptor is a terminal."""
-
-    import msvcrt
-
-    try:
-        return msvcrt.get_osfhandle(fd) is not None
-    except Exception:
-        return False
-
-
-def mock_libraries():
-    """Adjust all methods that do not exist on windows."""
-    if not hasattr(os, "get_blocking"):
-        os.get_blocking = lambda x: True
-    if not hasattr(os, "isatty"):
-        os.isatty = isatty
-
-
 def main():
     """Run the main tui."""
     from freva_deployment.cli import main_cli
@@ -55,5 +36,4 @@ if __name__ == "__main__":
         locale.getlocale = lambda: ("UTF-8", "UTF-8")
         sys.getfilesystemencoding = lambda: "utf-8"
         os.environ["PYTHONIOENCODING"] = "utf-8"
-    mock_libraries()
     main()

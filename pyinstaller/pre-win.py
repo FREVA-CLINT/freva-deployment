@@ -13,14 +13,26 @@ if sys.platform.lower().startswith("win"):
     try:
         import ansible
 
-        ansible_cli_path = Path(ansible.__file__).parent / "cli" / "__init__.py"
-        ansible_temp_path = Path(ansible.__file__).parent / "template" / "__init__.py"
+        ansible_cli_path = (
+            Path(ansible.__file__).parent / "cli" / "__init__.py"
+        )
     finally:
         sys.getfilesystemencoding = getfilesystemencoding
         locale.getlocale = getlocale
     ansible_cli_path.write_text(
         re.sub("raise SystemExit", "print", ansible_cli_path.read_text())
     )
+    for inp_file in Path(ansible.__file__).parent.rglob("*.py"):
+        content = inp_file.read_text()
+        write = False
+        for call in ("os.isatty", "os.get_blocking"):
+            if call in content:
+                write = True
+                if "import os, tty" not in content:
+                    content = content.replace("import os", "import os, tty")
+                content = content.replace(f"os.{call}", f"tty.{call}")
+        if write:
+            inp_file.write_text(content)
 else:
     import PyInstaller.depend.bindepend
 
