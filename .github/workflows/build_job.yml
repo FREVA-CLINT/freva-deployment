@@ -63,6 +63,7 @@ jobs:
             python=3.11
             appdirs
             ansible-core
+            libclang
             pymysql
             mysql-common
             mysql-client
