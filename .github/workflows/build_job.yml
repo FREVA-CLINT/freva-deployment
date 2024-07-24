@@ -260,30 +260,33 @@ jobs:
         run: |
           echo "url=$(cat release_url/release_url.txt)" >> $GITHUB_OUTPUT
 
-      - name: Upload cmd Release Asset
+      - name: Upload freva-deploy Release Asset
         if: startsWith(github.ref, 'refs/tags/')
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.ASSET_TOKEN }}
         with:
           upload_url: ${{ steps.release_url.outputs.url }}
-          asset_path: |
-            dist/delopy-freva
-            dist/data-crawler
-          asset_name: |
-            deploy-freva-v${{steps.version.outputs.tag}}-${{matrix.target}}
-            data-crawler-v${{steps.version.outputs.tag}}-${{matrix.target}}
+          asset_path: dist/delopy-freva
+          asset_name: deploy-freva-v${{steps.version.outputs.tag}}-${{matrix.target}}
+          asset_mime: application/octet-stream
+
+      - name: Upload data-crawler Release Asset
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.ASSET_TOKEN }}
+        with:
+          upload_url: ${{ steps.release_url.outputs.url }}
+          asset_path: dist/data-crawler
+          asset_name: data-crawler-v${{steps.version.outputs.tag}}-${{matrix.target}}
           asset_mime: application/octet-stream
 
       - name: Upload cmd Asset
         uses: actions/upload-artifact@v3
         with:
-          path: |
-            dist/deploy-freva
-            dist/data-crawler
-          name: |
-            deploy-freva-v${{steps.version.outputs.tag}}-${{matrix.target}}
-            data-crawler-v${{steps.version.outputs.tag}}-${{matrix.target}}
+          path: dist
+          name: builds-v${{steps.version.outputs.tag}}-${{matrix.target}}
           retention-days: 7
 
 
@@ -383,30 +386,33 @@ jobs:
         run: |
           echo "url=$(cat release_url/release_url.txt)" >> $GITHUB_OUTPUT
 
-      - name: Upload cmd Release Asset
+      - name: Upload freva-deploy Release Asset
         if: startsWith(github.ref, 'refs/tags/')
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.ASSET_TOKEN }}
         with:
           upload_url: ${{ steps.release_url.outputs.url }}
-          asset_path: |
-            dist/delopy-freva
-            dist/data-crawler
-          asset_name: |
-            deploy-freva-v${{steps.version.outputs.tag}}-${{matrix.target}}
-            data-crawler-v${{steps.version.outputs.tag}}-${{matrix.target}}
+          asset_path: dist/delopy-freva
+          asset_name: deploy-freva-v${{steps.version.outputs.tag}}-${{matrix.target}}
           asset_mime: application/octet-stream
 
-      - name: Upload cmd Asset
+      - name: Upload data-crawler Release Asset
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.ASSET_TOKEN }}
+        with:
+          upload_url: ${{ steps.release_url.outputs.url }}
+          asset_path: dist/data-crawler
+          asset_name: data-crawler-v${{steps.version.outputs.tag}}-${{matrix.target}}
+          asset_mime: application/octet-stream
+
+      - name: Upload build Asset
         uses: actions/upload-artifact@v3
         with:
-          path: |
-            dist/deploy-freva
-            dist/data-crawler
-          name: |
-            deploy-freva-v${{steps.version.outputs.tag}}-${{matrix.target}}
-            data-crawler-v${{steps.version.outputs.tag}}-${{matrix.target}}
+          path: dist
+          name: builds-v${{steps.version.outputs.tag}}-${{matrix.target}}
           retention-days: 7
 
   pypi:
