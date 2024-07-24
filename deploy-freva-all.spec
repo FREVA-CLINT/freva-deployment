@@ -18,7 +18,7 @@ def run_build(command, script, binaries=None, datas=None, hiddenimports=None):
         hookspath=[],
         hooksconfig={},
         runtime_hooks=[],
-        excludes=["pycrypto", "PyInstaller", "cowsay"],
+        excludes=["pycrypto", "cowsay"],
         noarchive=False,
         #optimize=0,
     )
