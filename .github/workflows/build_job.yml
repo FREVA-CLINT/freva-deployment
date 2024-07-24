@@ -125,7 +125,7 @@ jobs:
         shell: pwsh
 
       - name: Test built bindary
-        run: ./dist/deploy-freva/deploy-freva.exe --help
+        run: ./dist/deploy-freva.exe --help
         shell: pwsh
       - name: Load Release URL File from release job
         if: startsWith(github.ref, 'refs/tags/')
@@ -137,11 +137,6 @@ jobs:
         run: |
           echo "tag=$(python src/freva_deployment/__init__.py -v)" >> $GITHUB_OUTPUT
         shell: bash
-      - name: Create ZIP archive of the folder
-        run: >
-          Compress-Archive -Path .\dist\deploy-freva\*
-          -DestinationPath  .\deploy-freva-v${{steps.version.outputs.tag}}-${{matrix.target}}.zip
-        shell: pwsh
       - name: Get Release File Name & Upload URL
         if: startsWith(github.ref, 'refs/tags/')
         id: release_url
@@ -155,20 +150,23 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.ASSET_TOKEN }}
         with:
           upload_url: ${{ steps.release_url.outputs.url }}
-          asset_path: deploy-freva-v${{steps.version.outputs.tag}}-${{matrix.target}}.zip
-          asset_name: deploy-freva-v${{steps.version.outputs.tag}}-${{matrix.target}}.zip
-          asset_content_type: application/zip
+          asset_path: dist/deploy-freva.exe
+          asset_name: deploy-freva-v${{steps.version.outputs.tag}}-${{matrix.target}}.exe
+          asset_mime: application/vnd.microsoft.portable-executable
       - name: Upload cmd Asset
         uses: actions/upload-artifact@v3
         with:
-          path: deploy-freva-v${{steps.version.outputs.tag}}-${{matrix.target}}.zip
-          name: deploy-freva-v${{steps.version.outputs.tag}}-${{matrix.target}}.zip
+          path: dist/deploy-freva.exe
+          name: deploy-freva-v${{steps.version.outputs.tag}}-${{matrix.target}}.exe
           retention-days: 7
 
 
   build-osx:
     name: Build packages
     needs: [release]
+    env:
+      GITLABUSER: ${{ secrets.GITLABUSER }}
+      METADATA_CRAWLER_TOKEN: ${{ secrets.METADATA_CRAWLER_TOKEN }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -234,7 +232,9 @@ jobs:
         shell: bash
 
       - name: Test built bindary
-        run: ./dist/deploy-freva/deploy-freva --help
+        run: |
+          ./dist/deploy-freva --help
+          ./dist/data-crawler --help
 
       - name: Get version
         id: version
@@ -260,26 +260,39 @@ jobs:
         run: |
           echo "url=$(cat release_url/release_url.txt)" >> $GITHUB_OUTPUT
 
-      - name: Upload Release Asset
+      - name: Upload cmd Release Asset
         if: startsWith(github.ref, 'refs/tags/')
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.ASSET_TOKEN }}
         with:
           upload_url: ${{ steps.release_url.outputs.url }}
-          asset_path: deploy-freva-v${{steps.version.outputs.tag}}-${{matrix.target}}.tar.gz
-          asset_name: deploy-freva-v${{steps.version.outputs.tag}}-${{matrix.target}}.tar.gz
-          asset_content_type: application/gzip
+          asset_path: |
+            dist/delopy-freva
+            dist/data-crawler
+          asset_name: |
+            deploy-freva-v${{steps.version.outputs.tag}}-${{matrix.target}}
+            data-crawler-v${{steps.version.outputs.tag}}-${{matrix.target}}
+          asset_mime: application/octet-stream
+
       - name: Upload cmd Asset
         uses: actions/upload-artifact@v3
         with:
-          path: deploy-freva-v${{steps.version.outputs.tag}}-${{matrix.target}}.tar.gz
-          name: deploy-freva-v${{steps.version.outputs.tag}}-${{matrix.target}}.tar.gz
+          path: |
+            dist/deploy-freva
+            dist/data-crawler
+          name: |
+            deploy-freva-v${{steps.version.outputs.tag}}-${{matrix.target}}
+            data-crawler-v${{steps.version.outputs.tag}}-${{matrix.target}}
           retention-days: 7
+
 
   build-linux:
     name: Build packages
     runs-on: ubuntu-latest
+    env:
+      GITLABUSER: ${{ secrets.GITLABUSER }}
+      METADATA_CRAWLER_TOKEN: ${{ secrets.METADATA_CRAWLER_TOKEN }}
     continue-on-error: false
     needs: [release]
     strategy:
@@ -341,16 +354,15 @@ jobs:
           load: true
           tags: pyinstaller:${{ matrix.target }}
 
-      - name: Run PyInstaller in Docker
+      - name: Build freva-deploy in Docker
         run: >
           docker run --rm -v $PWD:/src -w /src --platform ${{ matrix.arch }}
           -e PYTHONIOENCODING=utf-8 -e LANG=C pyinstaller:${{ matrix.target }}
           pyinstaller --noconfirm deploy-freva-all.spec
-
       - name: Test built bindary
-        run: >
-          docker run --rm -v $PWD:/src -w /src --platform ${{ matrix.arch }}
-          pyinstaller:${{ matrix.target }} /src/dist/deploy-freva/deploy-freva --help
+        run: |
+          docker run --rm -v $PWD:/src -w /src --platform ${{ matrix.arch }} pyinstaller:${{ matrix.target }} /src/dist/deploy-freva --help
+          docker run --rm -v $PWD:/src -w /src --platform ${{ matrix.arch }} pyinstaller:${{ matrix.target }} /src/dist/deploy-freva --help
 
       - name: Get version
         id: version
@@ -358,40 +370,44 @@ jobs:
           echo "tag=$(python src/freva_deployment/__init__.py -v)" >> $GITHUB_OUTPUT
         shell: bash
 
-      - name: Create tar.gz archive of the folder
-        run: >
-          tar -czvf
-          deploy-freva-v${{steps.version.outputs.tag}}-${{matrix.target}}.tar.gz
-          -C ./dist deploy-freva
       - name: Load Release URL File from release job
         if: startsWith(github.ref, 'refs/tags/')
         uses: actions/download-artifact@v1
         with:
           name: release_url
+
       - name: Get Release File Name & Upload URL
         if: startsWith(github.ref, 'refs/tags/')
         shell: bash
         id: release_url
         run: |
           echo "url=$(cat release_url/release_url.txt)" >> $GITHUB_OUTPUT
-      - name: Upload Release Asset
+
+      - name: Upload cmd Release Asset
         if: startsWith(github.ref, 'refs/tags/')
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.ASSET_TOKEN }}
         with:
           upload_url: ${{ steps.release_url.outputs.url }}
-          asset_path: deploy-freva-v${{steps.version.outputs.tag}}-${{matrix.target}}.tar.gz
-          asset_name: deploy-freva-v${{steps.version.outputs.tag}}-${{matrix.target}}.tar.gz
-          asset_content_type: application/gzip
+          asset_path: |
+            dist/delopy-freva
+            dist/data-crawler
+          asset_name: |
+            deploy-freva-v${{steps.version.outputs.tag}}-${{matrix.target}}
+            data-crawler-v${{steps.version.outputs.tag}}-${{matrix.target}}
+          asset_mime: application/octet-stream
 
       - name: Upload cmd Asset
         uses: actions/upload-artifact@v3
         with:
-          path: deploy-freva-v${{steps.version.outputs.tag}}-${{matrix.target}}.tar.gz
-          name: deploy-freva-v${{steps.version.outputs.tag}}-${{matrix.target}}.tar.gz
+          path: |
+            dist/deploy-freva
+            dist/data-crawler
+          name: |
+            deploy-freva-v${{steps.version.outputs.tag}}-${{matrix.target}}
+            data-crawler-v${{steps.version.outputs.tag}}-${{matrix.target}}
           retention-days: 7
-
 
   pypi:
     name: Create Pip package
