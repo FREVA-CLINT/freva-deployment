@@ -47,6 +47,34 @@ hosts = "localhost"
 ## Set the host names running the freva-rest service.
 hosts = "localhost"
 
+### The the host name of the redis-cache, this cache is used for caching
+### different kinds of data. If not set this will fall back to the host name
+### of the rest-api server.
+redis_host = ""
+
+### Set the hostname(s) for the data-loading portal. The data-loading portal
+### is a services that provisions data via zarr. The data-loading portal is
+### a distributed system, meaning that you can set multiple hostnames that
+### form a distributed memory. The first entry will be used as the master
+### scheduler and the consecutive ones as workers. If you leave this blank
+## then the service will be disabled.
+data_loader_portal_hosts = ""
+
+### Authentication is done via keycloak. This deployment assumes that you have
+### set up and configured an instance of keycloak. Set the keycloak host
+keycloak_url = ""
+
+### Set the realm of keycloak
+keycloak_realm = "freva"
+
+### Set the client (app name) in keycloak
+keycloak_client = "freva"
+
+### If you have configured that your keycloak client needs a client secret
+### you can define it here, if not then you don't have to set it
+keycloak_client_secret = ""
+
+
 [db]
 ## Set the host names running the MariaDB service.
 hosts = "localhost"
