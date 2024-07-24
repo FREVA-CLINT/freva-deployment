@@ -15,7 +15,7 @@ import tomlkit
 
 from freva_deployment.utils import asset_dir, config_dir, load_config
 
-from .base import BaseForm, VarForm, selectFile
+from .base import BaseForm, selectFile
 from .deploy_forms import (
     CoreScreen,
     DBScreen,
@@ -84,18 +84,12 @@ class MainApp(npyscreen.NPSAppManaged):
             CoreScreen,
             name="Core deployment",
         )
-        self._forms["web"] = self.addForm(
-            "SECOND", WebScreen, name="Web deployment"
-        )
-        self._forms["db"] = self.addForm(
-            "THIRD", DBScreen, name="Database deployment"
-        )
+        self._forms["web"] = self.addForm("SECOND", WebScreen, name="Web deployment")
+        self._forms["db"] = self.addForm("THIRD", DBScreen, name="Database deployment")
         self._forms["freva_rest"] = self.addForm(
             "FOURTH", FrevaRestScreen, name="Freva Rest deployment"
         )
-        self._setup_form = self.addForm(
-            "SETUP", RunForm, name="Apply the Deployment"
-        )
+        self._setup_form = self.addForm("SETUP", RunForm, name="Apply the Deployment")
 
     def exit_application(self, *args, **kwargs) -> None:
         value = npyscreen.notify_ok_cancel(
@@ -157,9 +151,7 @@ class MainApp(npyscreen.NPSAppManaged):
             the_selected_file = str(the_selected_file.expanduser().absolute())
             self.check_missing_config(stop_at_missing=False)
             self._setup_form.inventory_file.value = the_selected_file
-            self.save_config_to_file(
-                save_file=the_selected_file, write_toml_file=True
-            )
+            self.save_config_to_file(save_file=the_selected_file, write_toml_file=True)
 
     def _update_config(self, config_file: Path | str) -> None:
         """Update the main window after a new configuration has been loaded."""

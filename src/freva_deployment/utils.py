@@ -12,6 +12,8 @@ from pathlib import Path
 from typing import Any, Dict, MutableMapping, NamedTuple, Optional, Union, cast
 
 import appdirs
+
+import namegenerator
 import requests
 import tomlkit
 from rich.console import Console
@@ -19,6 +21,7 @@ from rich.prompt import Prompt
 
 from .error import ConfigurationError
 from .logger import logger
+from .keys import RandomKeys
 
 RichConsole = Console(markup=True, force_terminal=True)
 
@@ -55,12 +58,8 @@ class AssetDir:
 
     def __init__(self):
         self._inventory_content = None
-        self._user_asset_dir = (
-            Path(appdirs.user_data_dir()) / "freva" / "deployment"
-        )
-        self._user_config_dir = (
-            Path(appdirs.user_config_dir()) / "freva" / "deployment"
-        )
+        self._user_asset_dir = Path(appdirs.user_data_dir()) / "freva" / "deployment"
+        self._user_config_dir = Path(appdirs.user_config_dir()) / "freva" / "deployment"
 
     @property
     def is_bundeled(self) -> bool:
@@ -146,9 +145,7 @@ class AssetDir:
             inventory_file.unlink()
         except FileNotFoundError:
             pass
-        shutil.copy2(
-            self.asset_dir / "config" / "inventory.toml", inventory_file
-        )
+        shutil.copy2(self.asset_dir / "config" / "inventory.toml", inventory_file)
         return self._user_config_dir
 
     @property
@@ -166,6 +163,21 @@ asset_dir = AD.asset_dir
 config_dir = AD.config_dir
 config_file = AD.config_file
 is_bundeled = AD.is_bundeled
+
+
+def get_cache_information(
+    redis_host: str, redis_port: str, scheduler_host: str, scheduler_port: str
+) -> Dict[str, str]:
+    """Create all information we need to setup the redis cache and the data portal."""
+    keys = RandomKeys(common_name=redis_host)
+    return {
+        "ssl_cert": keys.certificate_chain.decode("utf-8"),
+        "ssl_key": keys.private_key_pem.decode("utf-8"),
+        "host": f"redis://{redis_host}:{redis_port}",
+        "user": namegenerator.gen(),
+        "passwd": "",
+        "scheduler_host": f"{scheduler_host}:{scheduler_port}",
+    }
 
 
 def get_current_file_dir(inp_dir: str | Path, value: str) -> str:
@@ -205,10 +217,21 @@ def _update_config(
 
 def _create_new_config(inp_file: Path) -> Path:
     """Update any old configuration file to a newer version."""
+    config_str = inp_file.read_text()
     config = cast(
         Dict[str, Dict[str, Dict[str, Union[str, float, int, bool]]]],
-        tomlkit.loads(inp_file.read_text()),
+        tomlkit.loads(config_str),
     )
+    keys_to_check = {
+        "freva_rest": [
+            "redis_host",
+            "keycloak_url",
+            "keycloak_realm",
+            "keycloak_client",
+            "keycloak_client_secret",
+            "data_loader_portal_hosts",
+        ]
+    }
     create_backup = False
     config_tmpl = tomlkit.loads(AD.inventory_file.read_text())
     # Legacy solr:
@@ -223,12 +246,17 @@ def _create_new_config(inp_file: Path) -> Path:
                     ]["config"].pop(key)
         else:
             config["freva_rest"] = config.pop("databrowser")
-            config["freva_rest"]["config"]["freva_rest_port"] = config[
-                "freva_rest"
-            ]["config"].pop("databrowser_port", "")
+            config["freva_rest"]["config"]["freva_rest_port"] = config["freva_rest"][
+                "config"
+            ].pop("databrowser_port", "")
             config["freva_rest"]["config"]["freva_rest_playbook"] = config[
                 "freva_rest"
             ]["config"].pop("databrowser_playbook", "")
+    for section, keys in keys_to_check.items():
+        for key in keys:
+            if key not in config_str:
+                config[section][key] = config_tmpl[section].get(key, "")
+                create_backup = True
     if create_backup:
         backup_file = inp_file.with_suffix(inp_file.suffix + ".bck")
         logger.info(
@@ -253,9 +281,7 @@ def load_config(inp_file: str | Path, convert: bool = False) -> dict[str, Any]:
     return config
 
 
-def get_setup_for_service(
-    service: str, setups: list[ServiceInfo]
-) -> tuple[str, str]:
+def get_setup_for_service(service: str, setups: list[ServiceInfo]) -> tuple[str, str]:
     """Get the setup of a service configuration."""
     for setup in setups:
         if setup.name == service:
@@ -268,9 +294,7 @@ def read_db_credentials(
 ) -> dict[str, str]:
     """Read database config."""
     with cert_file.open() as f_obj:
-        key = "".join(
-            [k.strip() for k in f_obj.readlines() if not k.startswith("-")]
-        )
+        key = "".join([k.strip() for k in f_obj.readlines() if not k.startswith("-")])
         sha = hashlib.sha512(key.encode()).hexdigest()
     url = f"http://{db_host}:{port}/vault/data/{sha}"
     return requests.get(url).json()
@@ -295,15 +319,11 @@ def get_email_credentials() -> tuple[str, str]:
         if not username:
             username = Prompt.ask("[green b]Username[/] for mail server")
         if not password:
-            password = Prompt.ask(
-                "[green b]Password[/] for mail server", password=True
-            )
+            password = Prompt.ask("[green b]Password[/] for mail server", password=True)
     return username, password
 
 
-def get_passwd(
-    master_pass: Optional[str] = None, min_characters: int = 8
-) -> str:
+def get_passwd(master_pass: Optional[str] = None, min_characters: int = 8) -> str:
     """Create a secure pasword.
 
     Parameters
@@ -329,7 +349,6 @@ def get_passwd(
 
 
 def _passwd_is_good(master_pass: str, min_characters: int) -> str:
-
     is_ok: bool = len(master_pass) > min_characters
     for check in ("[a-z]", "[A-Z]", "[0-9]"):
         if not re.search(check, master_pass):
@@ -358,9 +377,7 @@ def _create_passwd(min_characters: int, msg: str = "") -> str:
     """Create passwords."""
     master_pass = Prompt.ask(msg or password_prompt, password=True)
     _passwd_is_good(master_pass, min_characters)
-    master_pass_2 = Prompt.ask(
-        "[bold green]re-enter[/] master password", password=True
-    )
+    master_pass_2 = Prompt.ask("[bold green]re-enter[/] master password", password=True)
     if master_pass != master_pass_2:
         raise ValueError("Passwords do not match")
     return master_pass

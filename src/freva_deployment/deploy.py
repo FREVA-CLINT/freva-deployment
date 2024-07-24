@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from base64 import b64encode
 import json
 import os
 import platform
@@ -35,6 +36,7 @@ from .utils import (
     asset_dir,
     config_dir,
     get_email_credentials,
+    get_cache_information,
     get_passwd,
     is_bundeled,
     load_config,
@@ -136,9 +138,7 @@ class DeployFactory:
         self._master_pass: str = ""
         self.email_password: str = ""
         self._td: RunnerDir = RunnerDir()
-        self.eval_conf_file: Path = (
-            self._td.parent_dir / "evaluation_system.conf"
-        )
+        self.eval_conf_file: Path = self._td.parent_dir / "evaluation_system.conf"
         self.web_conf_file: Path = self._td.parent_dir / "freva_web.toml"
         self.apache_config: Path = self._td.parent_dir / "freva_web.conf"
         self._db_pass: str = ""
@@ -221,12 +221,12 @@ class DeployFactory:
         """Prepare the vault."""
         self.cfg["vault"]["config"].setdefault("ansible_become_user", "root")
         self.cfg["vault"]["config"].pop("db_playbook", "")
-        self.cfg["vault"]["config"]["db_port"] = self.cfg["vault"][
-            "config"
-        ].get("port", 3306)
-        self.cfg["vault"]["config"]["db_user"] = self.cfg["vault"][
-            "config"
-        ].get("user", "")
+        self.cfg["vault"]["config"]["db_port"] = self.cfg["vault"]["config"].get(
+            "port", 3306
+        )
+        self.cfg["vault"]["config"]["db_user"] = self.cfg["vault"]["config"].get(
+            "user", ""
+        )
         self.cfg["vault"]["config"]["root_passwd"] = self.master_pass
         self.cfg["vault"]["config"]["passwd"] = self.db_pass
         self.cfg["vault"]["config"]["keyfile"] = self.public_key_file
@@ -253,9 +253,7 @@ class DeployFactory:
         )
         self.cfg["db"]["config"]["data_path"] = str(data_path)
         for key in ("name", "user", "db"):
-            self.cfg["db"]["config"][key] = (
-                self.cfg["db"]["config"].get(key) or "freva"
-            )
+            self.cfg["db"]["config"][key] = self.cfg["db"]["config"].get(key) or "freva"
         db_host = self.cfg["db"]["config"].get("host", "").strip()
         if not db_host:
             self.cfg["db"]["config"]["host"] = host
@@ -270,17 +268,13 @@ class DeployFactory:
     def _prep_freva_rest(self, prep_web=True) -> None:
         """prepare the freva_rest service."""
         self._config_keys.append("freva_rest")
-        self.cfg["freva_rest"]["config"].setdefault(
-            "ansible_become_user", "root"
-        )
+        self.cfg["freva_rest"]["config"].setdefault("ansible_become_user", "root")
         self.cfg["freva_rest"]["config"]["root_passwd"] = self.master_pass
         self.cfg["freva_rest"]["config"].pop("core", None)
         data_path = Path(
             cast(
                 str,
-                self.cfg["freva_rest"]["config"].get(
-                    "data_path", "/opt/freva"
-                ),
+                self.cfg["freva_rest"]["config"].get("data_path", "/opt/freva"),
             )
         )
         self.cfg["freva_rest"]["config"]["data_path"] = str(data_path)
@@ -291,9 +285,59 @@ class DeployFactory:
             self.cfg["freva_rest"]["config"][key] = (
                 self.cfg["freva_rest"]["config"].get(key) or default
             )
-        self.cfg["freva_rest"]["config"]["email"] = self.cfg["web"][
-            "config"
-        ].get("contacts", "")
+        self.cfg["freva_rest"]["config"]["email"] = self.cfg["web"]["config"].get(
+            "contacts", ""
+        )
+        redis_host = (
+            self.cfg["freva_rest"]["config"].get("redis_host", "")
+            or self.cfg["freva_rest"]["hosts"]
+        )
+        data_portal_host = self.cfg["freva_rest"].get("data_loader_portal_hosts", "")
+        data_portal_hosts = [
+            d.strip() for d in data_portal_host.split(",") if d.strip()
+        ]
+        if data_portal_hosts:
+            scheduler_host = data_portal_host[0]
+        else:
+            scheduler_host = ""
+        for prefix in ("redis://", "http://", "https://", "tcp://"):
+            redis_host = redis_host.removeprefix(prefix)
+            scheduler_host = scheduler_host.removeprefix(prefix)
+
+        redis_host, _, redis_port = redis_host.partition(":")
+        redis_port = redis_port or "6379"
+        scheduler_host, _, scheduler_port = scheduler_host.partition(":")
+        redis_information = get_cache_information(
+            redis_host, redis_port, scheduler_host, scheduler_port
+        )
+        redis_information["passwd"] = self._create_random_passwd(30, 10)
+        print(redis_information)
+        redis_information_enc = b64encode(
+            json.dumps(redis_information).encode("utf-8")
+        ).decode("utf-8")
+        if data_portal_hosts:
+            self.cfg["data_portal_scheduler"] = {
+                "hosts": scheduler_host,
+                "config": {
+                    "information": redis_information_enc,
+                    "is_worker": False,
+                },
+            }
+            self.cfg["data_portal_hosts"] = {
+                "hosts": ",".join(data_portal_hosts[:1]),
+                "config": {
+                    "is_worker": True,
+                    "information": redis_information_enc,
+                },
+            }
+        self.cfg["freva_rest"]["config"].setdefault("keycloak_url", "freva")
+        self.cfg["freva_rest"]["config"].setdefault("keycloak_realm", "freva")
+        self.cfg["freva_rest"]["config"].setdefault("keycloak_client", "freva")
+        self.cfg["freva_rest"]["config"].setdefault("keycloak_client_secret", "")
+        self.cfg["redis_cache"] = {"hosts": redis_host, "config": {}}
+        for key in ("user", "passwd", "ssl_cert", "ssl_key"):
+            self.cfg["freva_rest"]["config"][f"redis_{key}"] = redis_information[key]
+            self.cfg["redis_cache"]["config"][key] = redis_information[key]
         if prep_web:
             self._prep_web(False)
 
@@ -301,9 +345,7 @@ class DeployFactory:
         """prepare the core deployment."""
         self._config_keys.append("core")
         self.cfg["core"]["config"].setdefault("ansible_become_user", "")
-        self.playbooks["core"] = self.cfg["core"]["config"].get(
-            "core_playbook"
-        )
+        self.playbooks["core"] = self.cfg["core"]["config"].get("core_playbook")
         # Legacy args as we are going to use micromamba
         self.cfg["core"]["config"]["arch"] = mamba_to_conda_arch(
             self.cfg["core"]["config"]
@@ -320,8 +362,7 @@ class DeployFactory:
             self.cfg["core"]["config"]["admins"] = getuser()
         install_dir = Path(self.cfg["core"]["config"]["install_dir"])
         root_dir = Path(
-            self.cfg["core"]["config"].get("root_dir", "").strip()
-            or install_dir
+            self.cfg["core"]["config"].get("root_dir", "").strip() or install_dir
         )
         self.cfg["core"]["config"]["install_dir"] = str(install_dir)
         self.cfg["core"]["config"]["root_dir"] = str(root_dir)
@@ -333,9 +374,7 @@ class DeployFactory:
         scheduler_output_dir = self.cfg["core"]["config"].get(
             "scheduler_output_dir", ""
         )
-        scheduler_system = self.cfg["core"]["config"].get(
-            "scheduler_system", "local"
-        )
+        scheduler_system = self.cfg["core"]["config"].get("scheduler_system", "local")
         if not preview_path:
             self.cfg["core"]["config"]["preview_path"] = str(
                 Path(base_dir_location) / "share" / "preview"
@@ -343,12 +382,8 @@ class DeployFactory:
         if not scheduler_output_dir:
             scheduler_output_dir = str(Path(base_dir_location) / "share")
         elif Path(scheduler_output_dir).parts[-1] != scheduler_system:
-            scheduler_output_dir = (
-                Path(scheduler_output_dir) / scheduler_system
-            )
-        self.cfg["core"]["config"]["scheduler_output_dir"] = str(
-            scheduler_output_dir
-        )
+            scheduler_output_dir = Path(scheduler_output_dir) / scheduler_system
+        self.cfg["core"]["config"]["scheduler_output_dir"] = str(scheduler_output_dir)
         self.cfg["core"]["config"]["keyfile"] = self.public_key_file
         git_exe = self.cfg["core"]["config"].get("git_path")
         self.cfg["core"]["config"]["git_path"] = git_exe or "git"
@@ -387,41 +422,23 @@ class DeployFactory:
             self.cfg["web"]["config"]["admin"] = admin[0]
         else:
             self.cfg["web"]["config"]["admin"] = admin
-        allowed_hosts = self.cfg["web"]["config"].get("allowed_hosts") or [
-            "localhost"
-        ]
+        allowed_hosts = self.cfg["web"]["config"].get("allowed_hosts") or ["localhost"]
         allowed_hosts.append(self.cfg["web"]["hosts"])
         allowed_hosts.append(f"{self.project_name}-httpd")
         self.cfg["web"]["config"]["allowed_hosts"] = list(set(allowed_hosts))
         self.cfg["web"]["config"].setdefault("allowed_hosts", ["localhost"])
 
         _webserver_items = {
-            "institution_logo": self.cfg["web"]["config"].get(
-                "institution_logo", ""
-            ),
-            "main_color": self.cfg["web"]["config"].get(
-                "main_color", "Tomato"
-            ),
-            "border_color": self.cfg["web"]["config"].get(
-                "border_color", "#6c2e1f"
-            ),
-            "hover_color": self.cfg["web"]["config"].get(
-                "hover_color", "#d0513a"
-            ),
-            "homepage_text": self.cfg["web"]["config"].get(
-                "homepage_text", ""
-            ),
+            "institution_logo": self.cfg["web"]["config"].get("institution_logo", ""),
+            "main_color": self.cfg["web"]["config"].get("main_color", "Tomato"),
+            "border_color": self.cfg["web"]["config"].get("border_color", "#6c2e1f"),
+            "hover_color": self.cfg["web"]["config"].get("hover_color", "#d0513a"),
+            "homepage_text": self.cfg["web"]["config"].get("homepage_text", ""),
             "imprint": self.cfg["web"]["config"].get("imprint", []),
-            "homepage_heading": self.cfg["web"]["config"].get(
-                "homepage_heading", ""
-            ),
-            "about_us_text": self.cfg["web"]["config"].get(
-                "about_us_text", ""
-            ),
+            "homepage_heading": self.cfg["web"]["config"].get("homepage_heading", ""),
+            "about_us_text": self.cfg["web"]["config"].get("about_us_text", ""),
             "contacts": self.cfg["web"]["config"].get("contacts", []),
-            "insitution_name": self.cfg["web"]["config"].get(
-                "insitution_name", ""
-            ),
+            "insitution_name": self.cfg["web"]["config"].get("insitution_name", ""),
             "menu_entries": self.cfg["web"]["config"].get("menu_entries", []),
         }
         try:
@@ -440,9 +457,7 @@ class DeployFactory:
         if self.local_debug:
             self.cfg["web"]["config"]["redis_host"] = self.cfg["web"]["hosts"]
         else:
-            self.cfg["web"]["config"][
-                "redis_host"
-            ] = f"{self.project_name}-redis"
+            self.cfg["web"]["config"]["redis_host"] = f"{self.project_name}-redis"
 
         server_name = self.cfg["web"]["config"].pop("server_name", [])
         if isinstance(server_name, str):
@@ -471,31 +486,25 @@ class DeployFactory:
             self.cfg["core"]["config"]["install_dir"], "bin"
         )
         for key in ("core", "web"):
-            self.cfg[key]["config"]["config_toml_file"] = str(
-                self.web_conf_file
-            )
+            self.cfg[key]["config"]["config_toml_file"] = str(self.web_conf_file)
         self._prep_vault()
         if ask_pass:
             email_user, self.email_password = get_email_credentials()
             self.cfg["vault"]["config"]["email_user"] = email_user
             self.cfg["vault"]["config"]["email_password"] = self.email_password
-        self.cfg["vault"]["config"]["ansible_python_interpreter"] = self.cfg[
-            "db"
-        ]["config"].get("ansible_python_interpreter", "/usr/bin/python3")
+        self.cfg["vault"]["config"]["ansible_python_interpreter"] = self.cfg["db"][
+            "config"
+        ].get("ansible_python_interpreter", "/usr/bin/python3")
         self.cfg["web"]["config"]["root_passwd"] = self.master_pass
         self.cfg["web"]["config"]["private_keyfile"] = self.private_key_file
         self.cfg["web"]["config"]["public_keyfile"] = self.public_key_file
-        self.cfg["web"]["config"]["apache_config_file"] = str(
-            self.apache_config
-        )
+        self.cfg["web"]["config"]["apache_config_file"] = str(self.apache_config)
         if ask_pass:
             self._prep_apache_config()
 
     def _prep_apache_config(self):
         with open(self.apache_config, "w") as f_obj:
-            f_obj.write(
-                (Path(asset_dir) / "web" / "freva_web.conf").read_text()
-            )
+            f_obj.write((Path(asset_dir) / "web" / "freva_web.conf").read_text())
 
     def _prep_local_debug(self) -> None:
         """Prepare the system for a potential local debug."""
@@ -529,13 +538,9 @@ class DeployFactory:
             if step in ("db", "freva_rest"):
                 self.cfg[step]["config"]["port"] = default_ports[step]
             self.cfg[step]["config"]["ansible_user"] = getuser()
-            self.cfg[step]["config"][
-                "ansible_python_interpreter"
-            ] = sys.executable
+            self.cfg[step]["config"]["ansible_python_interpreter"] = sys.executable
             if "data_path" in self.cfg[step]["config"]:
-                self.cfg[step]["config"]["data_path"] = str(
-                    deploy_dir / "services"
-                )
+                self.cfg[step]["config"]["data_path"] = str(deploy_dir / "services")
 
     def __enter__(self):
         return self
@@ -549,9 +554,7 @@ class DeployFactory:
             config["vault"] = deepcopy(config["db"])
             return config
         except FileNotFoundError:
-            raise ConfigurationError(
-                f"No such file {self._inv_tmpl}"
-            ) from None
+            raise ConfigurationError(f"No such file {self._inv_tmpl}") from None
         except KeyError:
             raise ConfigurationError("You must define a db section") from None
 
@@ -566,11 +569,7 @@ class DeployFactory:
                     sections.append(section)
         for section in sections:
             for key, value in self.cfg[section]["config"].items():
-                if (
-                    not value
-                    and not self._empty_ok
-                    and not isinstance(value, bool)
-                ):
+                if not value and not self._empty_ok and not isinstance(value, bool):
                     raise ConfigurationError(
                         f"{key} in {section} is empty in {self._inv_tmpl}"
                     ) from None
@@ -601,27 +600,27 @@ class DeployFactory:
             web=self.eval_conf_file.absolute(),
         ).get(key, None)
 
-    @property
-    def db_pass(self) -> str:
-        """Create a password for the database."""
-        if self._db_pass:
-            return self._db_pass
-        num_chars, num_digits = 30, 8
+    @staticmethod
+    def _create_random_passwd(num_chars: int = 30, num_digits: int = 8) -> str:
+
         num_chars -= num_digits
         characters = [
-            "".join(
-                [random.choice(string.ascii_letters) for i in range(num_chars)]
-            ),
+            "".join([random.choice(string.ascii_letters) for i in range(num_chars)]),
             "".join([random.choice(string.digits) for i in range(num_digits)]),
         ]
         str_characters = "".join(characters)
         _db_pass = "".join(random.sample(str_characters, len(str_characters)))
         while _db_pass.startswith("@"):
             # Vault treats values starting with "@" as file names.
-            _db_pass = "".join(
-                random.sample(str_characters, len(str_characters))
-            )
-        self._db_pass = _db_pass
+            _db_pass = "".join(random.sample(str_characters, len(str_characters)))
+        return _db_pass
+
+    @property
+    def db_pass(self) -> str:
+        """Create a password for the database."""
+        if self._db_pass:
+            return self._db_pass
+        self._db_pass = self._create_random_passwd(30, 8)
         return self._db_pass
 
     @property
@@ -660,9 +659,7 @@ class DeployFactory:
 
     def parse_config(self, steps: list[str]) -> str | None:
         """Create config files for anisble and evaluation_system.conf."""
-        versions = json.loads(
-            (Path(__file__).parent / "versions.json").read_text()
-        )
+        versions = json.loads((Path(__file__).parent / "versions.json").read_text())
         additional_steps = set(steps) - set(self.steps)
         if additional_steps:
             pprint(
@@ -694,8 +691,8 @@ class DeployFactory:
                     new_key = f"{step.replace('-', '_')}_{key}"
                 config[step]["vars"][new_key] = value
             config[step]["vars"]["project_name"] = self.project_name
-            config[step]["vars"][f"{step.replace('-', '_')}_version"] = (
-                versions.get(step, "")
+            config[step]["vars"][f"{step.replace('-', '_')}_version"] = versions.get(
+                step, ""
             )
             config[step]["vars"]["debug"] = self.local_debug
             # Add additional keys
@@ -790,9 +787,7 @@ class DeployFactory:
                 if line.startswith("solr.host"):
                     lines[num] = f"solr.host={self.cfg[step]['hosts']}\n"
                 if line.startswith("db.host"):
-                    lines[num] = (
-                        f"db.host={self.cfg['db']['config']['host']}\n"
-                    )
+                    lines[num] = f"db.host={self.cfg['db']['config']['host']}\n"
         dump_file = self._get_files_copy("core")
         if dump_file:
             with dump_file.open("w") as f_obj:
@@ -801,9 +796,7 @@ class DeployFactory:
     def get_ansible_password(self, ask_pass: bool = False) -> dict[str, str]:
         """The passwords for the ansible environments."""
         ssh_pass_msg = "Give the [b]ssh[/b] password for remote login"
-        sudo_pass_msg = (
-            "Give the password elevating user privilege ([b]sudo[/b])"
-        )
+        sudo_pass_msg = "Give the password elevating user privilege ([b]sudo[/b])"
         if ask_pass:
             sudo_pass_msg += ", defaults to ssh password"
         passwords = {}
@@ -811,9 +804,7 @@ class DeployFactory:
         ssh_key = "^SSH password:\\s*?$"
         ssh_key = "anslibe_ssh_pass"
         sudo_key = "ansible_become_pass"
-        passwords[sudo_key] = (
-            os.environ.get("ANSIBLE_BECOME_PASSWORD", "") or ""
-        )
+        passwords[sudo_key] = os.environ.get("ANSIBLE_BECOME_PASSWORD", "") or ""
         passwords[ssh_key] = os.environ.get("ANSIBLE_SSH_PASSWORD", "") or ""
         if ask_pass and not passwords[ssh_key]:
             passwords[ssh_key] = Prompt.ask(
@@ -957,9 +948,7 @@ class DeployFactory:
             host_key_checking="False",
             retry_files_enabled="False",
             nocows=str(bool(int(self._no_cowsay))),
-            cowpath=os.getenv(
-                "ANSIBLE_COW_PATH", shutil.which("cowsay") or ""
-            ),
+            cowpath=os.getenv("ANSIBLE_COW_PATH", shutil.which("cowsay") or ""),
             cow_selection="random",
             timeout="5",
         )
@@ -988,9 +977,7 @@ class DeployFactory:
             return None
         self.create_eval_config()
         logger.debug(inventory)
-        logger.info(
-            "Playing the playbooks for %s with ansible", ", ".join(self.steps)
-        )
+        logger.info("Playing the playbooks for %s with ansible", ", ".join(self.steps))
         logger.debug(self.playbooks)
         time.sleep(3)
         self._td.run_ansible_playbook(

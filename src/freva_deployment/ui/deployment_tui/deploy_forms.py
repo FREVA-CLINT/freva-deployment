@@ -882,6 +882,72 @@ class FrevaRestScreen(BaseForm):
                 ),
                 True,
             ),
+            redis_host=(
+                self.add_widget_intelligent(
+                    TextInfo,
+                    section="freva_rest.config",
+                    key="redis_host",
+                    name=f"{self.num} Set the redis host name",
+                    value=cast(
+                        str,
+                        cfg.get("redis_host") or self.get_host("freva_rest"),
+                    ),
+                ),
+                True,
+            ),
+            data_loader_portal_hosts=(
+                self.add_widget_intelligent(
+                    TextInfo,
+                    section="freva_rest.config",
+                    key="data_loader_portal_hosts",
+                    name=(
+                        f"{self.num} ',' separated hostname(s) data-loading portal "
+                        "to provide zarr. Leave blank for none."
+                    ),
+                    value=cast(str, cfg.get("data_loader_portal_hosts", "")),
+                ),
+                False,
+            ),
+            keycloak_url=(
+                self.add_widget_intelligent(
+                    TextInfo,
+                    section="freva_rest.config",
+                    key="keycloak_url",
+                    name=(f"{self.num}Host name of the auth service (keycloak)."),
+                    value=cast(str, cfg.get("keycloak_url", "")),
+                ),
+                True,
+            ),
+            keycloak_realm=(
+                self.add_widget_intelligent(
+                    TextInfo,
+                    section="freva_rest.config",
+                    key="keycloak_realm",
+                    name=(f"{self.num}Keycloak realm. "),
+                    value=cast(str, cfg.get("keycloak_realm", "freva")),
+                ),
+                True,
+            ),
+            keycloak_client=(
+                self.add_widget_intelligent(
+                    TextInfo,
+                    section="freva_rest.config",
+                    key="keycloak_client",
+                    name=(f"{self.num}Name of the keycloak client (app name)"),
+                    value=cast(str, cfg.get("keycloak_client", "freva")),
+                ),
+                True,
+            ),
+            keycloak_client_secret=(
+                self.add_widget_intelligent(
+                    TextInfo,
+                    section="freva_rest.config",
+                    key="keycloak_client_secret",
+                    name=(f"{self.num}Keycloak client secret. Leave blank for none"),
+                    value=cast(str, cfg.get("keycloak_client_secret", "")),
+                ),
+                False,
+            ),
             freva_rest_playbook=(
                 self.add_widget_intelligent(
                     FileInfo,
