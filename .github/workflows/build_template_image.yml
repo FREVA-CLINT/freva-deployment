@@ -12,7 +12,7 @@ on:
   push:
     branches: ["add-metadata-crawler"]
     tags:
-      - "build-"
+      - "build-*"
 jobs:
   linux-build:
     name: Build multi-arch container template
@@ -24,19 +24,12 @@ jobs:
       matrix:
         include:
           - arch: linux/amd64
-            target: linux-x64
           - arch: linux/arm64
-            target: linux-arm64
           - arch: linux/arm/v7
-            target: linux-armvl7
           - arch: linux/arm/v6
-            target: linux-armvl6
           - arch: linux/ppc64le
-            target: linux-ppc64
           - arch: linux/s390x
-            target: linux-s390x
           - arch: linux/i386
-            target: linux-i386
 
     steps:
       - name: Checkout repository
@@ -57,7 +50,7 @@ jobs:
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
         with:
-          platforms: all
+          platforms: ${{ matrix.arch }}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
@@ -90,4 +83,4 @@ jobs:
           tags: |
             ghcr.io/freva-clint/pyinstaller:py-${{ steps.repository.outputs.pyv }}
             ghcr.io/freva-clint/pyinstaller:latest
-          platforms: ${{ matrix-arch }}
+          platforms: ${{ matrix.arch }}
