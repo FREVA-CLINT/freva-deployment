@@ -7,11 +7,16 @@ permissions:
   contents: write
   packages: write
 
+# on:
+#  pull_request:
+#    types: [closed]
+#    branches:
+#      - main
 on:
-  pull_request:
-    types: [closed]
-    branches:
-      - main
+  push:
+    branches: ["**"]
+    tags:
+      - "v*.*.*"
 
 
 jobs:
@@ -64,11 +69,23 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           push: true
+          file: Dockerfile.base
+          build-args: VERSION=${{steps.repository.outputs.tag}}
+          tags: |
+            ghcr.io/freva-clint/pyinstaller:${{ steps.repository.outputs.tag }}
+            ghcr.io/freva-clint/pyinstaller:latest
+          platforms: linux/amd64,linux/arm64,linux/arm/v7,linux/arm/v6,linux/ppc64le,linux/i386,linux/s390x
+      -
+        name: Build and push deployment image
+        uses: docker/build-push-action@v4
+        with:
+          push: true
           build-args: VERSION=${{steps.repository.outputs.tag}}
           tags: |
             ghcr.io/freva-clint/freva-deployment:${{ steps.repository.outputs.tag }}
             ghcr.io/freva-clint/freva-deployment:latest
-          platforms: linux/amd64,linux/arm64,linux/arm/v7,linux/arm/v6,linux/ppc64le,linux/i386
+          platforms: linux/amd64,linux/arm64,linux/arm/v7,linux/arm/v6,linux/ppc64le,linux/i386,linux/s390x
+
 
   build-and-push-vault-image:
     runs-on: ubuntu-latest
