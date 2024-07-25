@@ -24,12 +24,19 @@ jobs:
       matrix:
         include:
           - arch: linux/amd64
+            tag: amd64
           - arch: linux/arm64
+            tag: arm64
           - arch: linux/arm/v7
+            tag: armv7
           - arch: linux/arm/v6
+            tag: armv6
           - arch: linux/ppc64le
+            tag: ppc64le
           - arch: linux/s390x
+            tag: s390x
           - arch: linux/i386
+            tag: i386
 
             target: linux-i386
     steps:
@@ -82,6 +89,6 @@ jobs:
             VERSION=Python-${{steps.repository.outputs.pyv}}
             PYTHON_VERSION=${{steps.repository.outputs.pyv}}
           tags: |
-            ghcr.io/freva-clint/pyinstaller:py-${{ steps.repository.outputs.pyv }}
-            ghcr.io/freva-clint/pyinstaller:latest
+            ghcr.io/freva-clint/pyinstaller:py-${{ steps.repository.outputs.pyv }}-${{matrix.tag}}
+          ghcr.io/freva-clint/pyinstaller:latest-${{matrix.tag}}
           platforms: ${{ matrix.arch }}

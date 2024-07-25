@@ -1,8 +1,9 @@
-# Alpine 3.9.2 is 5 years old, so we might be lucky in terms of GLIBC.
-FROM alpine:3.9.2
+# Use a more recent version of Alpine if possible
+FROM alpine:3.16
 
 ARG VERSION
-ARG PYTHON_VERSION=3.10.14
+ARG PYTHON_VERSION=3.12.0
+
 LABEL org.opencontainers.image.authors="DRKZ-CLINT"
 LABEL org.opencontainers.image.source="https://github.com/FREVA-CLINT/freva-deployment.git"
 LABEL org.opencontainers.image.version="$VERSION"
@@ -12,7 +13,7 @@ ENV LANG=C.UTF-8 \
     LC_ALL=C.UTF-8 \
     PYTHON_VERSION=${PYTHON_VERSION}
 
-# Install necessary packages
+# Install necessary packages and compile Python
 RUN apk update && \
     apk add --no-cache \
         curl \
@@ -26,22 +27,19 @@ RUN apk update && \
         openssl \
         openssl-dev \
         binutils \
-        git
-
-# Download and compile Python
-RUN curl -O https://www.python.org/ftp/python/${PYTHON_VERSION}/Python-${PYTHON_VERSION}.tgz && \
+        git && \
+    curl -O https://www.python.org/ftp/python/${PYTHON_VERSION}/Python-${PYTHON_VERSION}.tgz && \
     tar xzf Python-${PYTHON_VERSION}.tgz && \
     cd Python-${PYTHON_VERSION} && \
     ./configure --enable-optimizations && \
     make altinstall && \
     cd .. && \
-    rm -rf Python-${PYTHON_VERSION} Python-${PYTHON_VERSION}.tgz &&\
+    rm -rf Python-${PYTHON_VERSION} Python-${PYTHON_VERSION}.tgz && \
     rm -rf /var/cache/apk/*
 
-# Set python3.8 as the default python3
-
-RUN MAJOR_PYTHON=$(echo ${PYTHON_VERSION}|cut -d'.' -f1,2) && \
+# Set python version symlinks
+RUN MAJOR_PYTHON=$(echo ${PYTHON_VERSION} | cut -d'.' -f1,2) && \
     ln -s /usr/local/bin/python${MAJOR_PYTHON} /usr/bin/python3 && \
     ln -s /usr/local/bin/python${MAJOR_PYTHON} /usr/bin/python && \
     /usr/local/bin/python${MAJOR_PYTHON} -m ensurepip --upgrade && \
-    /usr/local/bin/python${MAJOR_PYTHON} -m pip install --no-cache-dir pyinstaller
+    /usr/local/bin/python${MAJOR_PYTHON} -m pip install -U pip setuptools
