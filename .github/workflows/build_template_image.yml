@@ -1,0 +1,90 @@
+name: Creating contaginer tamplate image
+run-name: Creating container template image 🧉
+
+# Set the access for individual scopes, or use permissions: write-all
+permissions:
+  pull-requests: write
+  contents: write
+  packages: write
+
+on:
+  push:
+    branches: ["add-metadata-crawler"]
+    tags:
+      - "build-"
+
+build-linux:
+  name: Build multi-arch container template
+  runs-on: ubuntu-latest
+  permissions:
+    contents: write
+    packages: write
+  strategy:
+    matrix:
+      include:
+        - arch: linux/amd64
+          target: linux-x64
+        - arch: linux/arm64
+          target: linux-arm64
+        - arch: linux/arm/v7
+          target: linux-armvl7
+        - arch: linux/arm/v6
+          target: linux-armvl6
+        - arch: linux/ppc64le
+          target: linux-ppc64
+        - arch: linux/s390x
+          target: linux-s390x
+        - arch: linux/i386
+          target: linux-i386
+
+  steps:
+  - name: Checkout repository
+    uses: actions/checkout@v4
+    with:
+      fetch-depth: 0
+
+  - name: Set up Python 3.X
+    uses: actions/setup-python@v4
+    with:
+      python-version: "3.X"
+
+  - name: Get tag
+    id: repository
+    run: |
+      echo "pyv=3.10.14)" >> $GITHUB_OUTPUT
+
+  - name: Set up QEMU
+    uses: docker/setup-qemu-action@v2
+    with:
+      platforms: all
+
+  - name: Set up Docker Buildx
+    uses: docker/setup-buildx-action@v2
+    with:
+      install: true
+
+  - name: Create Buildx builder
+    run: docker buildx create --use --name mybuilder --driver docker-container
+
+  - name: Inspect Buildx builder
+    run: docker buildx inspect --bootstrap
+
+  - name: Log in to the Container registry
+    uses: docker/login-action@v2
+    with:
+      registry: ghcr.io
+      username: ${{ github.actor }}
+      password: ${{ secrets.GITHUB_TOKEN }}
+
+  - name: Build and push deployment image
+    uses: docker/build-push-action@v4
+    with:
+      push: true
+      file: Dockerfile.base
+      build-args: |
+        VERSION=Python-${{steps.repository.outputs.pyv}}
+        PYTHON_VERSION=${{steps.repository.outputs.pyv}}
+      tags: |
+        ghcr.io/freva-clint/pyinstaller:py-${{ steps.repository.outputs.pyv }}
+        ghcr.io/freva-clint/pyinstaller:latest
+      platforms: ${{ matrix-arch }}
