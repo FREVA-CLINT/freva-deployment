@@ -31,6 +31,7 @@ jobs:
           - arch: linux/s390x
           - arch: linux/i386
 
+            target: linux-i386
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -45,7 +46,7 @@ jobs:
       - name: Get tag
         id: repository
         run: |
-          echo "pyv=3.10.14)" >> $GITHUB_OUTPUT
+          echo "pyv=3.10.14" >> $GITHUB_OUTPUT
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
