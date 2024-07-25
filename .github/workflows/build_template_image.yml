@@ -90,5 +90,5 @@ jobs:
             PYTHON_VERSION=${{steps.repository.outputs.pyv}}
           tags: |
             ghcr.io/freva-clint/pyinstaller:py-${{ steps.repository.outputs.pyv }}-${{matrix.tag}}
-          ghcr.io/freva-clint/pyinstaller:latest-${{matrix.tag}}
+            ghcr.io/freva-clint/pyinstaller:latest-${{matrix.tag}}
           platforms: ${{ matrix.arch }}
