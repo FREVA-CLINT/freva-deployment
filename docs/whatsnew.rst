@@ -7,6 +7,12 @@ What's new
    :maxdepth: 0
    :titlesonly:
 
+v2407.3.0
+~~~~~~~~
+* Bumped version of freva_rest to 2407.0.0
+
+
+
 v2407.2.2
 ~~~~~~~~~
 * Improve error messages for too small tui terminal windows.
