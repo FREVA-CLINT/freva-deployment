@@ -74,13 +74,14 @@ This command installs ansible and all required python packages.
 > ``💡``  On *CentOS* python SELinux libraries need to be installed.
 > You will need to install libselinux for your CentOS version.
 >
-> The ansible library is not supported on *Windows* and needs to be patched.
+> ```console
+> python3 -m pip install libselinux-python3
+> ```
+>
+> ``💡`` The ansible library is not supported on *Windows* and needs to be patched.
 > you can either use the above mentioned pre compiled windows binary or install
 > the deployment software on Windows Subsystem for Linux - WSL (preferred).
 
-```console
-python3 -m pip install libselinux-python3
-```
 ## 3. Using docker
 
 A pre-built docker image is available to run the deployment
