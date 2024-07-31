@@ -1,4 +1,4 @@
-FROM debian:bookworm
+FROM debian:bullseye
 
 ARG VERSION
 LABEL org.opencontainers.image.authors="DRKZ-CLINT"
@@ -53,7 +53,7 @@ COPY . .
 
 # Install Python dependencies
 RUN python3 src/freva_deployment/__init__.py && \
-    python3 -m pip install --break-system-packages pyinstaller . && \
+    python3 -m pip install pyinstaller . && \
     python3 pyinstaller/pre-win.py &&\
     rm -rf /root/.cache/pip && \
     rm -rf /root/build-deps && \

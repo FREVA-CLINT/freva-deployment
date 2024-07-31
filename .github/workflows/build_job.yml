@@ -245,7 +245,7 @@ jobs:
       - name: Create tar.gz archive of the folder
         run: >
           tar -czvf
-          doploy-freva-v${{steps.version.outputs.tag}}-${{matrix.target}}.tar.gz
+          deploy-freva-v${{steps.version.outputs.tag}}-${{matrix.target}}.tar.gz
           -C ./dist deploy-freva
 
       - name: Load Release URL File from release job
@@ -267,14 +267,14 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.ASSET_TOKEN }}
         with:
           upload_url: ${{ steps.release_url.outputs.url }}
-          asset_path: doploy-freva-v${{steps.version.outputs.tag}}-${{matrix.target}}.tar.gz
-          asset_name: doploy-freva-v${{steps.version.outputs.tag}}-${{matrix.target}}.tar.gz
+          asset_path: deploy-freva-v${{steps.version.outputs.tag}}-${{matrix.target}}.tar.gz
+          asset_name: deploy-freva-v${{steps.version.outputs.tag}}-${{matrix.target}}.tar.gz
           asset_content_type: application/gzip
       - name: Upload cmd Asset
         uses: actions/upload-artifact@v3
         with:
-          path: doploy-freva-v${{steps.version.outputs.tag}}-${{matrix.target}}.tar.gz
-          name: doploy-freva-v${{steps.version.outputs.tag}}-${{matrix.target}}.tar.gz
+          path: deploy-freva-v${{steps.version.outputs.tag}}-${{matrix.target}}.tar.gz
+          name: deploy-freva-v${{steps.version.outputs.tag}}-${{matrix.target}}.tar.gz
           retention-days: 7
 
   build-linux:
@@ -361,7 +361,7 @@ jobs:
       - name: Create tar.gz archive of the folder
         run: >
           tar -czvf
-          doploy-freva-v${{steps.version.outputs.tag}}-${{matrix.target}}.tar.gz
+          deploy-freva-v${{steps.version.outputs.tag}}-${{matrix.target}}.tar.gz
           -C ./dist deploy-freva
       - name: Load Release URL File from release job
         if: startsWith(github.ref, 'refs/tags/')
@@ -381,15 +381,15 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.ASSET_TOKEN }}
         with:
           upload_url: ${{ steps.release_url.outputs.url }}
-          asset_path: doploy-freva-v${{steps.version.outputs.tag}}-${{matrix.target}}.tar.gz
-          asset_name: doploy-freva-v${{steps.version.outputs.tag}}-${{matrix.target}}.tar.gz
+          asset_path: deploy-freva-v${{steps.version.outputs.tag}}-${{matrix.target}}.tar.gz
+          asset_name: deploy-freva-v${{steps.version.outputs.tag}}-${{matrix.target}}.tar.gz
           asset_content_type: application/gzip
 
       - name: Upload cmd Asset
         uses: actions/upload-artifact@v3
         with:
-          path: doploy-freva-v${{steps.version.outputs.tag}}-${{matrix.target}}.tar.gz
-          name: doploy-freva-v${{steps.version.outputs.tag}}-${{matrix.target}}.tar.gz
+          path: deploy-freva-v${{steps.version.outputs.tag}}-${{matrix.target}}.tar.gz
+          name: deploy-freva-v${{steps.version.outputs.tag}}-${{matrix.target}}.tar.gz
           retention-days: 7
 
 
