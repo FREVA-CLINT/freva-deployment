@@ -12,7 +12,6 @@ from pathlib import Path
 from typing import Any, Dict, MutableMapping, NamedTuple, Optional, Union, cast
 
 import appdirs
-
 import namegenerator
 import requests
 import tomlkit
@@ -20,8 +19,8 @@ from rich.console import Console
 from rich.prompt import Prompt
 
 from .error import ConfigurationError
-from .logger import logger
 from .keys import RandomKeys
+from .logger import logger
 
 RichConsole = Console(markup=True, force_terminal=True)
 
@@ -166,17 +165,32 @@ is_bundeled = AD.is_bundeled
 
 
 def get_cache_information(
-    redis_host: str, redis_port: str, scheduler_host: str, scheduler_port: str
+    redis_host: Optional[str] = None,
+    redis_port: Optional[str] = None,
+    scheduler_host: Optional[str] = None,
+    scheduler_port: Optional[str] = None,
 ) -> Dict[str, str]:
     """Create all information we need to setup the redis cache and the data portal."""
-    keys = RandomKeys(common_name=redis_host)
+    user = ssl_cert = ssl_key = ""
+    if scheduler_host and scheduler_port:
+        scheduler_host = f"{scheduler_host}:{scheduler_port}"
+    if redis_host and redis_port:
+        redis_host = f"redis://{redis_host}:{redis_port}"
+    elif redis_host and not redis_port:
+        redis_host = f"redis://{redis_host}"
+    if redis_host:
+        keys = RandomKeys(common_name=redis_host)
+        user = namegenerator.gen()
+        ssl_cert = keys.certificate_chain.decode("utf-8")
+        ssl_key = keys.private_key_pem.decode("utf-8")
     return {
-        "ssl_cert": keys.certificate_chain.decode("utf-8"),
-        "ssl_key": keys.private_key_pem.decode("utf-8"),
-        "host": f"redis://{redis_host}:{redis_port}",
-        "user": namegenerator.gen(),
+        "ssl_cert": ssl_cert,
+        "ssl_key": ssl_key,
+        "host": redis_host,
+        "user": user,
         "passwd": "",
-        "scheduler_host": f"{scheduler_host}:{scheduler_port}",
+        "scheduler_host": scheduler_host,
+        "cache_exp": "86400",
     }
 
 
@@ -225,11 +239,11 @@ def _create_new_config(inp_file: Path) -> Path:
     keys_to_check = {
         "freva_rest": [
             "redis_host",
-            "keycloak_url",
-            "keycloak_realm",
-            "keycloak_client",
-            "keycloak_client_secret",
+            "oidc_url",
+            "oidc_client",
+            "oidc_client_secret",
             "data_loader_portal_hosts",
+            "deploy_data_loader",
         ]
     }
     create_backup = False

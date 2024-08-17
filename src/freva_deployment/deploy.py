@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from base64 import b64encode
 import json
 import os
 import platform
@@ -11,11 +10,13 @@ import shutil
 import string
 import sys
 import time
+from base64 import b64decode, b64encode
 from copy import deepcopy
+from functools import lru_cache
 from getpass import getuser
 from pathlib import Path
 from socket import gethostbyname, gethostname
-from typing import Any, cast
+from typing import Any, Optional, Tuple, cast
 from urllib.parse import urlparse
 
 import appdirs
@@ -35,7 +36,6 @@ from .utils import (
     RichConsole,
     asset_dir,
     config_dir,
-    get_email_credentials,
     get_cache_information,
     get_passwd,
     is_bundeled,
@@ -136,14 +136,13 @@ class DeployFactory:
         self.local_debug = local_debug
         self._config_keys: list[str] = []
         self._master_pass: str = ""
-        self.email_password: str = ""
         self._td: RunnerDir = RunnerDir()
         self.eval_conf_file: Path = self._td.parent_dir / "evaluation_system.conf"
         self.web_conf_file: Path = self._td.parent_dir / "freva_web.toml"
         self.apache_config: Path = self._td.parent_dir / "freva_web.conf"
         self._db_pass: str = ""
         self._steps = steps or ["db", "freva_rest", "web", "core"]
-        if self._steps == ["auto"] or self._steps == "auto":
+        if self._steps in (["auto"], "auto"):
             self._steps = []
         self._inv_tmpl = Path(config_file or config_dir / "inventory.toml")
         self._cfg_tmpl = self.aux_dir / "evaluation_system.conf.tmpl"
@@ -163,14 +162,6 @@ class DeployFactory:
         old_master = self._master_pass
         self._master_pass = old_master or "foo"
         not_in_use = set(["db", "freva_rest", "web", "core"]) - set(self.steps)
-        # We temporary set the env variables for email user and email password
-        # This is not pretty but prevents the password dialogs, which aren't
-        # needed at this step to show up.
-        # Later we will set everything back as it was.
-        current_values = {}
-        for key in ("EMAIL_USER", "EMAIL_PASSWD"):
-            current_values[key] = os.environ.get(key, "")
-            os.environ[key] = current_values[key] or "foo"
         for step in self.steps:
             getattr(self, f"_prep_{step.replace('-', '_')}")()
         for step in not_in_use:
@@ -178,8 +169,6 @@ class DeployFactory:
                 getattr(self, f"_prep_{step.replace('-', '_')}")()
             except ConfigurationError as error:
                 logger.warning("Some of your config isn't valid:\n%s", error)
-        for key, value in current_values.items():
-            os.environ[key] = current_values[key]
         self._master_pass = old_master
 
     @property
@@ -217,6 +206,7 @@ class DeployFactory:
             "You must give a valid path to a private key file."
         ) from None
 
+    @lru_cache()
     def _prep_vault(self) -> None:
         """Prepare the vault."""
         self.cfg["vault"]["config"].setdefault("ansible_become_user", "root")
@@ -237,6 +227,7 @@ class DeployFactory:
             "host", self.cfg["db"]["hosts"]
         )
 
+    @lru_cache()
     def _prep_db(self) -> None:
         """prepare the mariadb service."""
         self._config_keys.append("db")
@@ -265,12 +256,133 @@ class DeployFactory:
         self._prep_vault()
         self._prep_web(False)
 
+    @lru_cache()
+    def _prep_data_loader(self, password: Optional[str] = None) -> None:
+        """Prepare the data-loader."""
+        self._prep_freva_rest()
+        data_path = Path(
+            cast(
+                str,
+                self.cfg["freva_rest"]["config"].get("data_path", "/opt/freva"),
+            )
+        )
+        redis_host = (
+            self.cfg["freva_rest"]["config"].get("redis_host", "")
+            or self.cfg["freva_rest"]["hosts"]
+        )
+        data_portal_host = self.cfg["freva_rest"]["config"].get(
+            "data_loader_portal_hosts", ""
+        )
+        data_portal_hosts = [
+            d.strip() for d in data_portal_host.split(",") if d.strip()
+        ]
+        if data_portal_hosts:
+            scheduler_host = data_portal_hosts[0]
+        else:
+            scheduler_host = ""
+        for prefix in ("redis://", "http://", "https://", "tcp://"):
+            redis_host = redis_host.removeprefix(prefix)
+            scheduler_host = scheduler_host.removeprefix(prefix)
+
+        redis_host, _, redis_port = redis_host.partition(":")
+        redis_port = redis_port or "6379"
+        self.cfg["freva_rest"]["config"][
+            "redis_cache_url"
+        ] = f"redis://{redis_host}:{redis_port}"
+        api_url = (
+            f'http://{self.cfg["freva_rest"]["hosts"]}:'
+            f'{self.cfg["freva_rest"]["config"]["freva_rest_port"]}'
+        )
+        api_url = self.cfg["web"]["config"].get("project_website", api_url)
+        parsed_api_url = urlparse(api_url)
+        self.cfg["freva_rest"]["config"][
+            "api_url"
+        ] = f"{parsed_api_url.scheme}://{parsed_api_url.netloc}"
+        scheduler_host, _, scheduler_port = scheduler_host.partition(":")
+        user_name = self.cfg["freva_rest"]["config"].get("ansible_user", getuser())
+        redis_information_enc = self._td.get_remote_file_content(
+            os.path.join(data_path, ".redis-cache.json"),
+            redis_host,
+            username=user_name,
+            password=password,
+        )
+        if not redis_information_enc:
+            redis_information = get_cache_information(
+                redis_host,
+                redis_port,
+                scheduler_host,
+                scheduler_port or "40000",
+            )
+            redis_information["passwd"] = self._create_random_passwd(30, 10)
+            redis_information_enc = b64encode(
+                json.dumps(redis_information).encode("utf-8")
+            ).decode("utf-8")
+        self.cfg["freva_rest"]["config"].setdefault("data_loader", True)
+        deploy = self.cfg["freva_rest"]["config"].get("deploy_data_loader", False)
+        if scheduler_host and deploy:
+            self.playbooks["data-loader"] = str(
+                self.playbook_dir / "data-loader-playbook.yml"
+            )
+            self._config_keys += [
+                "data_portal_hosts",
+                "data_portal_scheduler",
+                "redis_cache",
+            ]
+        if not scheduler_host:
+            self.cfg["freva_rest"]["config"]["data_loader"] = False
+        # Update the config.
+        self.cfg["data_portal_scheduler"] = {
+            "hosts": scheduler_host or "",
+            "config": {
+                "information": redis_information_enc,
+                "is_worker": False,
+                "ansible_become_user": self.cfg["freva_rest"]["config"].get(
+                    "ansible_become_user", "root"
+                ),
+                "ansible_user": self.cfg["freva_rest"]["config"].get(
+                    "ansible_user", getuser()
+                ),
+            },
+        }
+        self.cfg["data_portal_hosts"] = {
+            "hosts": ",".join(data_portal_hosts[1:]),
+            "config": {
+                "is_worker": True,
+                "information": redis_information_enc,
+                "ansible_become_user": self.cfg["freva_rest"]["config"].get(
+                    "ansible_become_user", "root"
+                ),
+                "ansible_user": self.cfg["freva_rest"]["config"].get(
+                    "ansible_user", getuser()
+                ),
+            },
+        }
+        self.cfg["redis_cache"] = {
+            "hosts": redis_host,
+            "config": {
+                "information": redis_information_enc,
+                "project_name": self.project_name,
+                "port": redis_port,
+                "data_path": str(data_path),
+                "ansible_become_user": self.cfg["freva_rest"]["config"].get(
+                    "ansible_become_user", "root"
+                ),
+                "ansible_user": self.cfg["freva_rest"]["config"].get(
+                    "ansible_user", getuser()
+                ),
+            },
+        }
+
+    @lru_cache()
     def _prep_freva_rest(self, prep_web=True) -> None:
         """prepare the freva_rest service."""
         self._config_keys.append("freva_rest")
         self.cfg["freva_rest"]["config"].setdefault("ansible_become_user", "root")
         self.cfg["freva_rest"]["config"]["root_passwd"] = self.master_pass
         self.cfg["freva_rest"]["config"].pop("core", None)
+        services = ["", "databrowser"]
+        if self.cfg["freva_rest"]["config"].get("data_loader", True):
+            services.append("zarr-stream")
         data_path = Path(
             cast(
                 str,
@@ -288,59 +400,17 @@ class DeployFactory:
         self.cfg["freva_rest"]["config"]["email"] = self.cfg["web"]["config"].get(
             "contacts", ""
         )
-        redis_host = (
-            self.cfg["freva_rest"]["config"].get("redis_host", "")
-            or self.cfg["freva_rest"]["hosts"]
+        self.cfg["freva_rest"]["config"].setdefault("oidc_url", "")
+        self.cfg["freva_rest"]["config"].setdefault("oidc_client", "freva")
+        self.cfg["freva_rest"]["config"].setdefault("oidc_client_secret", "")
+        self.cfg["freva_rest"]["config"]["data_loader"] = (
+            self.cfg.get("redis_cache", {}).get("config", {}).get("use", False)
         )
-        data_portal_host = self.cfg["freva_rest"].get("data_loader_portal_hosts", "")
-        data_portal_hosts = [
-            d.strip() for d in data_portal_host.split(",") if d.strip()
-        ]
-        if data_portal_hosts:
-            scheduler_host = data_portal_host[0]
-        else:
-            scheduler_host = ""
-        for prefix in ("redis://", "http://", "https://", "tcp://"):
-            redis_host = redis_host.removeprefix(prefix)
-            scheduler_host = scheduler_host.removeprefix(prefix)
-
-        redis_host, _, redis_port = redis_host.partition(":")
-        redis_port = redis_port or "6379"
-        scheduler_host, _, scheduler_port = scheduler_host.partition(":")
-        redis_information = get_cache_information(
-            redis_host, redis_port, scheduler_host, scheduler_port
-        )
-        redis_information["passwd"] = self._create_random_passwd(30, 10)
-        print(redis_information)
-        redis_information_enc = b64encode(
-            json.dumps(redis_information).encode("utf-8")
-        ).decode("utf-8")
-        if data_portal_hosts:
-            self.cfg["data_portal_scheduler"] = {
-                "hosts": scheduler_host,
-                "config": {
-                    "information": redis_information_enc,
-                    "is_worker": False,
-                },
-            }
-            self.cfg["data_portal_hosts"] = {
-                "hosts": ",".join(data_portal_hosts[:1]),
-                "config": {
-                    "is_worker": True,
-                    "information": redis_information_enc,
-                },
-            }
-        self.cfg["freva_rest"]["config"].setdefault("keycloak_url", "freva")
-        self.cfg["freva_rest"]["config"].setdefault("keycloak_realm", "freva")
-        self.cfg["freva_rest"]["config"].setdefault("keycloak_client", "freva")
-        self.cfg["freva_rest"]["config"].setdefault("keycloak_client_secret", "")
-        self.cfg["redis_cache"] = {"hosts": redis_host, "config": {}}
-        for key in ("user", "passwd", "ssl_cert", "ssl_key"):
-            self.cfg["freva_rest"]["config"][f"redis_{key}"] = redis_information[key]
-            self.cfg["redis_cache"]["config"][key] = redis_information[key]
+        self.cfg["freva_rest"]["config"]["services"] = " -s ".join(services)
         if prep_web:
             self._prep_web(False)
 
+    @lru_cache()
     def _prep_core(self) -> None:
         """prepare the core deployment."""
         self._config_keys.append("core")
@@ -395,6 +465,10 @@ class DeployFactory:
         """prepare the web deployment."""
         self._config_keys.append("web")
         self.playbooks["web"] = self.cfg["web"]["config"].get("web_playbook")
+        for key in "oidc_url", "oidc_client", "oidc_client_secret":
+            self.cfg["web"]["config"][key] = self.cfg["freva_rest"]["config"].get(
+                "oidc_url", ""
+            )
         self.cfg["web"]["config"].setdefault("ansible_become_user", "root")
         self._prep_core()
         freva_rest_host = (
@@ -423,10 +497,13 @@ class DeployFactory:
         else:
             self.cfg["web"]["config"]["admin"] = admin
         allowed_hosts = self.cfg["web"]["config"].get("allowed_hosts") or ["localhost"]
+        if isinstance(allowed_hosts, str):
+            allowed_hosts = [s.strip() for s in allowed_hosts.split(",") if s.strip()]
         allowed_hosts.append(self.cfg["web"]["hosts"])
         allowed_hosts.append(f"{self.project_name}-httpd")
-        self.cfg["web"]["config"]["allowed_hosts"] = list(set(allowed_hosts))
-        self.cfg["web"]["config"].setdefault("allowed_hosts", ["localhost"])
+        self.cfg["web"]["config"]["allowed_hosts"] = [
+            s.strip() for s in set(allowed_hosts) if s.strip()
+        ]
 
         _webserver_items = {
             "institution_logo": self.cfg["web"]["config"].get("institution_logo", ""),
@@ -488,10 +565,6 @@ class DeployFactory:
         for key in ("core", "web"):
             self.cfg[key]["config"]["config_toml_file"] = str(self.web_conf_file)
         self._prep_vault()
-        if ask_pass:
-            email_user, self.email_password = get_email_credentials()
-            self.cfg["vault"]["config"]["email_user"] = email_user
-            self.cfg["vault"]["config"]["email_password"] = self.email_password
         self.cfg["vault"]["config"]["ansible_python_interpreter"] = self.cfg["db"][
             "config"
         ].get("ansible_python_interpreter", "/usr/bin/python3")
@@ -502,10 +575,12 @@ class DeployFactory:
         if ask_pass:
             self._prep_apache_config()
 
+    @lru_cache()
     def _prep_apache_config(self):
         with open(self.apache_config, "w") as f_obj:
             f_obj.write((Path(asset_dir) / "web" / "freva_web.conf").read_text())
 
+    @lru_cache()
     def _prep_local_debug(self) -> None:
         """Prepare the system for a potential local debug."""
         default_ports = {"db": 3306, "freva_rest": 7777}
@@ -602,7 +677,6 @@ class DeployFactory:
 
     @staticmethod
     def _create_random_passwd(num_chars: int = 30, num_digits: int = 8) -> str:
-
         num_chars -= num_digits
         characters = [
             "".join([random.choice(string.ascii_letters) for i in range(num_chars)]),
@@ -657,7 +731,7 @@ class DeployFactory:
         if dump_file:
             config[step]["vars"][f"{step}_dump"] = str(dump_file)
 
-    def parse_config(self, steps: list[str]) -> str | None:
+    def parse_config(self, steps: list[str]) -> Tuple[Optional[str], Optional[str]]:
         """Create config files for anisble and evaluation_system.conf."""
         versions = json.loads((Path(__file__).parent / "versions.json").read_text())
         additional_steps = set(steps) - set(self.steps)
@@ -669,7 +743,7 @@ class DeployFactory:
             time.sleep(3)
         new_steps = set(steps + self.steps)
         if not new_steps:
-            return None
+            return None, None
         self._steps = list(new_steps)
         playbook = self.create_playbooks()
         logger.info("Parsing configurations")
@@ -697,6 +771,7 @@ class DeployFactory:
             config[step]["vars"]["debug"] = self.local_debug
             # Add additional keys
             self._set_additional_config_values(step, config)
+        max_width = int(max(shutil.get_terminal_size().columns * 0.75, 25))
         if "freva_rest" in config:
             config["freva_rest"]["vars"]["solr_version"] = versions["solr"]
         if "db" in config:
@@ -707,13 +782,19 @@ class DeployFactory:
         for step in info:
             for key, value in config[step]["vars"].items():
                 if key in playbook or key == "debug":
-                    info[step]["vars"][key] = value
+                    if isinstance(value, str) and "pass" in key:
+                        add_value = "***"
+                    elif isinstance(value, str) and len(value) > max_width:
+                        add_value = value[:max_width] + "..."
+                    else:
+                        add_value = value
+                    info[step]["vars"][key] = add_value
         info_str = yaml.dump(json.loads(json.dumps(info)))
-        for passwd in (self.email_password, self.master_pass):
+        for passwd in (self.master_pass,):
             if passwd:
                 info_str = info_str.replace(passwd, "***")
         RichConsole.print(info_str, style="bold", markup=True)
-        return yaml.dump(json.loads(json.dumps(config)))
+        return playbook, yaml.dump(json.loads(json.dumps(config)))
 
     @property
     def python_prefix(self) -> Path:
@@ -746,7 +827,10 @@ class DeployFactory:
         playbook = []
         self.current_step = "foo"
         _ = [getattr(self, f"_prep_{step}")() for step in self.steps]
-        for step in self.steps:
+        steps = deepcopy(self.steps)
+        if "freva_rest" in steps and "data-loader" in self.playbooks:
+            steps.insert(steps.index("freva_rest"), "data-loader")
+        for step in steps:
             playbook_file = (
                 self.playbooks.get(step)
                 or self.playbook_dir / f"{step}-server-playbook.yml"
@@ -800,8 +884,6 @@ class DeployFactory:
         if ask_pass:
             sudo_pass_msg += ", defaults to ssh password"
         passwords = {}
-        sudo_key = "^BECOME password.*:\\s*?$"
-        ssh_key = "^SSH password:\\s*?$"
         ssh_key = "anslibe_ssh_pass"
         sudo_key = "ansible_become_pass"
         passwords[sudo_key] = os.environ.get("ANSIBLE_BECOME_PASSWORD", "") or ""
@@ -852,11 +934,35 @@ class DeployFactory:
                 pprint(f" [red][ERROR]: {error}[/]", file=sys.stderr)
             raise KeyboardInterrupt() from None
 
+    def _get_or_set_cache_information(
+        self,
+        envvars: dict[str, str],
+        extravars: dict[str, str],
+        passwords: dict[str, str],
+        verbosity: int,
+    ) -> None:
+        """Update the redis cache informations."""
+        self._prep_data_loader(passwords.get("anslibe_ssh_pass"))
+        self.cfg["freva_rest"]["config"].setdefault(
+            "cache_information",
+            b64encode(json.dumps(get_cache_information()).encode("utf-8")).decode(
+                "utf-8"
+            ),
+        )
+        if self.cfg["freva_rest"]["config"].get("deploy_data_loader", False) is False:
+            return
+        config: dict[str, dict[str, dict[str, str | int | bool]]] = {}
+        config["redis_cache"] = {}
+        config["redis_cache"]["hosts"] = self.cfg["redis_cache"]["hosts"]
+        config["redis_cache"]["vars"] = self.cfg["redis_cache"]["config"].copy()
+        self.cfg["freva_rest"]["config"]["cache_information"] = self.cfg["redis_cache"][
+            "config"
+        ]["information"]
+
     def get_steps_from_versions(
         self,
         envvars: dict[str, str],
         extravars: dict[str, str],
-        cmdline: str,
         passwords: dict[str, str],
         verbosity: int,
     ) -> list[str]:
@@ -866,37 +972,48 @@ class DeployFactory:
         if not steps or self.local_debug:
             # The user has selected all steps anyway, nothing to do here:
             return []
+        playbook_tmpl = yaml.safe_load(
+            (asset_dir / "playbooks" / "versions.yaml").read_text()
+        )
+        playbook = []
         cfg = deepcopy(self.cfg)
         if cfg.get("freva_rest") is None:
             cfg["freva_rest"] = cfg.get("databrowser", cfg.get("solr", {}))
         version_path = self._td.parent_dir / "versions.txt"
-        for step in steps:
-            config[step] = {}
-            config[step]["hosts"] = cfg[step]["hosts"]
-            if "ansible_become_user" not in cfg[step]["config"]:
-                become_user = "root"
-            else:
-                become_user = cfg[step]["config"]["ansible_become_user"]
-            config[step]["vars"] = {
-                f"{step}_ansible_become_user": become_user,
-                "asset_dir": str(asset_dir),
-                f"{step}_ansible_user": cfg[step]["config"].get(
-                    "ansible_user", getuser()
-                ),
-                "version_file_path": str(version_path),
-            }
+        for tasks in playbook_tmpl:
+            step = tasks["hosts"]
+            if step in steps:
+                playbook.append(tasks)
+                config[step] = {}
+                config[step]["hosts"] = cfg[step]["hosts"]
+                if "ansible_become_user" not in cfg[step]["config"]:
+                    become_user = "root"
+                else:
+                    become_user = cfg[step]["config"]["ansible_become_user"]
+                config[step]["vars"] = {
+                    f"{step}_ansible_become_user": become_user,
+                    "asset_dir": str(asset_dir),
+                    f"{step}_ansible_user": cfg[step]["config"].get(
+                        "ansible_user", getuser()
+                    ),
+                    "version_file_path": str(version_path),
+                }
+                python_exe = self.cfg[step]["config"].get(
+                    "ansible_python_interpreter", ""
+                )
+                if python_exe:
+                    config[step]["vars"]["ansible_python_interpreter"] = python_exe
         config.setdefault("core", {})
         config["core"].setdefault("vars", {})
         config["core"]["vars"]["core_install_dir"] = cfg["core"]["config"][
             "install_dir"
         ]
         result = self._td.run_ansible_playbook(
-            playbook=str(asset_dir / "playbooks" / "versions.yaml"),
+            playbook=playbook,
             inventory=config,
             envvars=envvars,
             passwords=passwords,
             extravars=extravars,
-            cmdline=cmdline,
             verbosity=verbosity,
             hide_output=True,
             text="Getting versions of micro-services ...",
@@ -940,6 +1057,8 @@ class DeployFactory:
             "ANSIBLE_COW_PATH": os.getenv(
                 "ANSIBLE_COW_PATH", shutil.which("cowsay") or ""
             ),
+            "ANSIBLE_ACTION_WARNINGS": str(int(verbosity > 0)),
+            "ANSIBLE_DEVEL_WARNING": str(int(verbosity > 0)),
         }
         self._td.create_config(
             cowsay_enabled_stencils="default,sheep,moose",
@@ -948,8 +1067,11 @@ class DeployFactory:
             host_key_checking="False",
             retry_files_enabled="False",
             nocows=str(bool(int(self._no_cowsay))),
+            action_warnings=str(verbosity > 0),
+            devel_warning=str(verbosity > 0),
             cowpath=os.getenv("ANSIBLE_COW_PATH", shutil.which("cowsay") or ""),
             cow_selection="random",
+            interpreter_python="auto_silent",
             timeout="5",
         )
         logger.debug("CONFIG\n%s", self._td.ansible_config_file.read_text())
@@ -967,21 +1089,23 @@ class DeployFactory:
             steps = self.get_steps_from_versions(
                 envvars.copy(),
                 extravars.copy(),
-                "",
                 passwords.copy(),
                 verbosity,
             )
-        inventory = self.parse_config(steps)
+        self._get_or_set_cache_information(
+            envvars.copy(), extravars.copy(), passwords.copy(), verbosity
+        )
+        playbook, inventory = self.parse_config(steps)
         if inventory is None:
             logger.info("Services up to date, nothing to do!")
             return None
-        self.create_eval_config()
         logger.debug(inventory)
+        self.create_eval_config()
         logger.info("Playing the playbooks for %s with ansible", ", ".join(self.steps))
         logger.debug(self.playbooks)
         time.sleep(3)
         self._td.run_ansible_playbook(
-            playbook=str(self._td.playbook_file),
+            playbook=playbook,
             inventory=inventory,
             envvars=envvars,
             passwords=passwords,

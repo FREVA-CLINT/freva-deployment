@@ -1,0 +1,33 @@
+version: "3"
+services:
+  cache:
+    user: root:0
+{% if debug %}
+    network_mode: host
+{% else %}
+    networks:
+      - redis
+{% endif %}
+    image: redis:latest
+    container_name: redis-cache
+    ports:
+      - "{{redis_cache_port}}:6379"
+    environment:
+      REDIS_USERNAME: {{username}}
+      REDIS_PASSWORD: {{password}}
+      REDIS_SSL_CERTFILE: /certs/client-cert.pem
+      REDIS_SSL_KEYFILE: /certs/client-key.pem
+    hostname: redis
+    volumes:
+      - {{redis_data}}/redis/redis-cmd.sh:/usr/local/bin/redis-cmd
+      - {{redis_data}}/certs:/certs
+    command: /usr/local/bin/redis-cmd
+
+networks:
+{% if debug  %}
+    hostnet:
+      driver: host
+{% else %}
+  redis:
+    driver: bridge
+{% endif %}

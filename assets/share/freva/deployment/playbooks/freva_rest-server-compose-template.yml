@@ -30,8 +30,9 @@ services:
 
   {{mongo_name}}:
 {% if (become == true and ansible_become_user == 'root') or ansible_user == 'root' %}
-    user: {{uid}}:{{gid}}
+    container_name: {{mongo_name}}
 {% else %}
+    container_name: {{mongo_name}}
     user: root:0
     entrypoint: /tmp/entrypoint.sh
 {% endif %}
@@ -73,6 +74,16 @@ services:
     environment:
       - SOLR_CORE=files
       - API_PORT={{freva_rest_port}}
+      - API_URL={{freva_rest_api_url}}
+      - COLUMNS=140
+      - OIDC_CLIENT_ID={{freva_rest_oidc_client}}
+      - OIDC_URL={{freva_rest_oidc_url}}
+      - OIDC_CLIENT_SECRET={{freva_rest_oidc_client_secret}}
+      - REDIS_HOST={{freva_rest_redis_cache_url}}
+      - REDIS_PASS={{password}}
+      - REDIS_USER={{username}}
+      - REDIS_SSL_CERTFILE=/certs/client-cert.pem
+      - REDIS_SSL_KEYFILE=/certs/client-key.pem
 {% if debug %}
       - SOLR_HOST=127.0.0.1:8983
       - MONGO_HOST=127.0.0.1:27017
@@ -85,7 +96,10 @@ services:
       - MONGO_USER=mongo
     ports:
       - {{freva_rest_port}}:{{freva_rest_port}}
+    volumes:
+      - {{cert_path}}:/certs:z
     container_name: {{freva_rest_name}}
+    command: python3 -m freva_rest.cli {{freva_rest_services}}
     depends_on:
       - {{solr_name}}
       - {{mongo_name}}

@@ -125,8 +125,6 @@ essential setup steps:
 1. A short text about the Freva admin team/group. This text will go to the
    header of the web page.
 1. Contact email address of the admin(s).
-1. Smtp mail server host name. This mail server will be used to send emails
-   from the web ui.
 1. Address of the institute, will be appearing in the footer of the website.
 1. Detailed overview over the project, this text will go into the left central
    box in the Freva main page. It should describe the purpose of this project
@@ -134,26 +132,6 @@ essential setup steps:
 1. Host name(s) - usually HPC login node(s) - the web backend code submits
    plugin jobs from. The backend will logon to this host name and submit a
    plugin job.
-1. String of ldap server uri(s) (comma separated). The ldap server uris are
-   used to make authentication requests via the web side.
-1. Tick this box (`<SPACE>`) to enable TLS encrypted connection from the django
-   web application to the ldap server.
-   [See also django ldap tls config](https://django-auth-ldap.readthedocs.io/en/latest/authentication.html#notes)
-1. Set the user group name that is allowed to logon to the web ui.
-1. Set the ldap user base filters. See also the
-   [django ldap authentication for user](https://django-auth-ldap.readthedocs.io/en/latest/users.html)
-1. Set the ldap group base filters. See also the
-   [django ldap authentication for groups](https://django-auth-ldap.readthedocs.io/en/latest/groups.html#finding-groups)
-1. Set the distinguished name of the ldap user. This setting is used to make
-   queries to the ldap server. TODO: [this might not be necessary](https://django-auth-ldap.readthedocs.io/en/latest/authentication.html#search-bind)
-1. Set the password for the ldap user.
-1. Set the ldap search key for finding the first name entries
-1. Set the ldap search key for finding the last name entries
-1. Set the ldap search key for finding email addresses
-1. Set the type of ldap object class name
-1. Set the type of ldap group type (nested or posix). ``💡`` This is a
-    dropdown menu, hit enter to select the options.
-1. Set the evaluation_system ldap class that handles the ldap connections
 1. If you want to customise the installation process you can set the path
    to a custom ansible playbook here. If this is set then the deployment
    will use this playbook instead of the default playbook that ships with
@@ -212,21 +190,25 @@ following explains the essential setup steps:
 
 ![](_static/tui_solr.png)
 
-1. The host name where the solr server should be installed. This should be a single
+1. The host name where the freva-rest server should be installed. This should be a single
    host name.
 1. Tick this box (`<SPACE>`) if you want to delete any pre existing databrowser data.
 1. Select how much memory you want to allocate for the databrowser server process.
-1. Select the port the databrowser server is running on.
+1. Select the port the freva-rest server is running on.
 1. Set the path where the permanent database data should be stored.
    By default, this is set to `/opt/freva/<project_name>/freva_rest_service`.
 1. If you want to customise the installation process you can set the path
    to a custom ansible playbook here. If this is set then the deployment
    will use this playbook instead of the default playbook that ships with
    the system. Leave blank for default behaviour.
-1. Set the user name that should execute the container commands, defaults
-   to root. Leave blank if no special user is needed.
+1. URL of the openid-connect service that manages the user authentication
+1. Client name of the openid-connect service, defaults to `freva`.
+1. Client secret of the open-connect service, you can leave this blank if
+   the client doesn't require any secrets.
 1. Set the path to the `python3.4+` binary, this should be set if the python
    binary is not part of the `$PATH` variable.
+1. Set the user name that should execute the container commands, defaults
+   to root. Leave blank if no special user is needed.
 1. Set the login user name for the remote machine.
 
 > ``💡`` Press CTRL+f for *f*urther information on each configuration item.

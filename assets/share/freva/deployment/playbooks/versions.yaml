@@ -68,4 +68,4 @@
         cmd: "{{ core_install_dir | regex_replace('^~', ansible_env.HOME) }}/bin/freva -V 2> /dev/null | awk '{print $NF}';"
     - name: Display freva version
       debug:
-        msg: "{{ freva.stdout }}"
+        msg: "{{ core.stdout }}"

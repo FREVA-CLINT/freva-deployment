@@ -9,8 +9,8 @@
     ansible_become_user: "{{ db_ansible_become_user | default('root') }}"
     compose_file: '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/compose_services/{{db_name}}-compose.yml'
     vault_volumes:
-      - '{{vault_data_path|regex_replace("^~", ansible_env.HOME)}}/{{project_name}}/vault_service/config:/data:z'
-      - '{{vault_data_path|regex_replace("^~", ansible_env.HOME)}}/{{project_name}}/vault_service/files:/vault/file:z'
+      - '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/{{project_name}}/vault_service/config:/data:z'
+      - '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/{{project_name}}/vault_service/files:/vault/file:z'
       - '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/{{ project_name }}/db_service/healthcheck.sh:/tmp/healthcheck.sh:z'
     db_volumes:
       - '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/freva-service-config/mysql/create_tables.sql:/docker-entrypoint-initdb.d/002_create_tables.sql:z'
@@ -93,7 +93,7 @@
       when: db_wipe == true
     - name: Registering db_service path
       stat:
-        path: '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/{{ project_name }}/db_service/{{db_name}}'
+        path: '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/{{ project_name }}/db_service'
       register: db_service
     - name:  Set db_service path exist facts
       set_fact:
@@ -123,7 +123,7 @@
     - name: Copying public key file to target machine
       copy:
         src: "{{ vault_keyfile }}"
-        dest: "{{vault_data_path|regex_replace('^~', ansible_env.HOME)}}/{{project_name}}/vault_service/config/freva.crt"
+        dest: "{{db_data_path|regex_replace('^~', ansible_env.HOME)}}/{{project_name}}/vault_service/config/freva.crt"
         owner: "{{uid}}"
         group: "{{gid}}"
     - name: Copying auxillary files to target machine
@@ -198,6 +198,10 @@
         -s db.port {{ vault_db_port }} -s db.db {{ vault_db }}
         -s db.passwd '{{ debug | ternary(root_passwd, vault_passwd) }}'
         -s db.user {{ debug | ternary('root', vault_db_user) }}
+    - name: DB health check
+      shell: >
+        /tmp/docker-or-podman exec {{ db_name }}
+        sh -c 'mariadb -u root -p${MARIADB_ROOT_PASSWORD} -e "SHOW GLOBAL STATUS LIKE '\''Threads_connected'\'';"'
     - name: Deleting auxillary files
       file:
         state: absent

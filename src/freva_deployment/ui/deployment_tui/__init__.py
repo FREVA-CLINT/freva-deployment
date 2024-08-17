@@ -31,7 +31,10 @@ def tui(args: argparse.Namespace) -> None:
             raise
         msg = str(error)
         if "addwstr" in msg:
-            msg = "Cloud not display content, try " "increasing your terminal size"
+            msg = (
+                "Cloud not display content, try "
+                "increasing your terminal size"
+            )
         if logger.getEffectiveLevel() < logging.INFO:
             logger.exception(error)
         else:
