@@ -32,6 +32,7 @@ RUN apt-get update && apt-get install -y \
     python3-requests \
     python3-rich \
     python3-paramiko \
+    python3-pymysql \
     ansible \
     python3-mock \
     mysql-common \

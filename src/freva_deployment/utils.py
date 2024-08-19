@@ -92,7 +92,10 @@ class AssetDir:
 
         data_dir = self.get_dirs(False) / "share" / "freva" / "deployment"
         user_dir = self.get_dirs(True) / "share" / "freva" / "deployment"
-        for path in (data_dir, user_dir):
+        data_dir_local = (
+            self.get_dirs(False) / "local" / "share" / "freva" / "deployment"
+        )
+        for path in (data_dir, user_dir, data_dir_local):
             if path.is_dir():
                 return path
         raise ConfigurationError(
