@@ -38,8 +38,9 @@ services:
 
   {{redis_name}}:
 {% if (become == true and ansible_become_user == 'root') or ansible_user == 'root' %}
-    user: {{uid}}:{{gid}}
+    image: docker.io/redis:latest
 {% else %}
+    image: docker.io/redis:latest
     user: root:0
     entrypoint: /tmp/entrypoint.sh
 {% endif %}
@@ -78,7 +79,6 @@ services:
       - FREVA_WEB_CONFIG_FILE={{web_config_file}}
       - SCHEDULER_HOST={{web_scheduler_host | join(',')}}
       - REDIS_HOST={{web_redis_host}}
-      - EMAIL_HOST={{web_email_host}}
       - CSRF_TRUSTED_ORIGINS={{web_csrf_trusted_origins | join(',')}}
       - FREVA_BIN={{web_freva_bin}}
       - COLUMNS=140

@@ -65,7 +65,6 @@
       - "{{web_data_path|regex_replace('^~', ansible_env.HOME)}}/{{project_name}}/web_service/healthcheck.sh:/tmp/healthcheck.sh:z"
       - "{{ core_preview_path | regex_replace('^~', ansible_env.HOME)}}:/srv/static/preview:ro"
     redis_volumes:
-      - "{{web_data_path|regex_replace('^~', ansible_env.HOME)}}/{{project_name}}/web_service/cache:/data:z"
       - "{{web_data_path|regex_replace('^~', ansible_env.HOME)}}/{{project_name}}/web_service/rootless-entrypoint.sh:/tmp/entrypoint.sh:z"
     redis_name: "{{ project_name }}-redis"
     apache_name: "{{project_name}}-httpd"
