@@ -99,9 +99,7 @@ class VaultClient:
     def update_secret(self, path: str, **secret: str) -> None:
         """Update or create a secret."""
         self._auth_vault()
-        self.client.secrets.kv.v1.create_or_update_secret(
-            path=path, secret=secret
-        )
+        self.client.secrets.kv.v1.create_or_update_secret(path=path, secret=secret)
 
     def get_secret(self, path: str) -> Optional[Dict[str, str]]:
         """Get the secretes of a path."""
@@ -125,19 +123,13 @@ class VaultClient:
     def init_vault(cls) -> KeyType:
         """Setup a fresh vault."""
         if cls.client.sys.is_initialized() is False:
-            keys = cls.client.sys.initialize(
-                cls.secret_shares, cls.secret_threshold
-            )
+            keys = cls.client.sys.initialize(cls.secret_shares, cls.secret_threshold)
             keys.pop("keys_base64", "")
             keys["token"] = keys.pop("root_token")
             KEY_FILE.parent.mkdir(exist_ok=True, parents=True)
-            KEY_FILE.write_bytes(
-                base64.b64encode(json.dumps(keys).encode("utf-8"))
-            )
+            KEY_FILE.write_bytes(base64.b64encode(json.dumps(keys).encode("utf-8")))
         elif not KEY_FILE.is_file():
-            logger.critical(
-                "Vault is initialized but the key file does not exist"
-            )
+            logger.critical("Vault is initialized but the key file does not exist")
             return {"token": "", "keys": []}
         return cast(
             KeyType,
@@ -196,7 +188,7 @@ async def get_vault_status() -> JSONResponse:
 
 @app.post("/vault/{path}", tags=["Secrets"])
 async def update_secret(
-    path: Annotated[str, Path(description="Secret location.", example="test")],
+    path: Annotated[str, Path(description="Secret location.", examples="test")],
     secret: Annotated[
         Optional[str],
         Query(
@@ -207,7 +199,7 @@ async def update_secret(
                 "key=value. Multiple secrets are ',' "
                 "comma separated."
             ),
-            example="foo=bar,hoo=rohoo",
+            examples="foo=bar,hoo=rohoo",
         ),
     ] = None,
     admin_pw: Annotated[
@@ -215,16 +207,14 @@ async def update_secret(
         Header(
             alias="password",
             description="Give the pre defined admin password.",
-            example="password",
+            examples="password",
             tile="Password",
         ),
     ] = None,
 ) -> JSONResponse:
     """Update or create a secret."""
     if path == "test":
-        return JSONResponse(
-            {"message": "success"}, status_code=status.HTTP_201_CREATED
-        )
+        return JSONResponse({"message": "success"}, status_code=status.HTTP_201_CREATED)
     if admin_pw != os.environ.get("ROOT_PW"):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -258,14 +248,14 @@ async def read_secret(
         str,
         Path(
             description="The name of the k/v secrets path",
-            example="data",
+            examples="data",
         ),
     ],
     public_key: Annotated[
         str,
         Path(
             description="hexdigest representation of the sha512 freva public key.",
-            example="foo",
+            examples="foo",
         ),
     ],
 ) -> JSONResponse:

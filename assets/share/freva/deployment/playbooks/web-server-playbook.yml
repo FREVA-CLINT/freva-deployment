@@ -1,24 +1,4 @@
 ---
-- name: Adding web secrets to the vault
-  hosts: vault
-  become: "{{ vault_ansible_become_user is defined and vault_ansible_become_user != '' }}"
-  vars:
-    ansible_python_interpreter: "{{ vault_ansible_python_interpreter }}"
-    become: "{{ vault_ansible_become_user is defined and vault_ansible_become_user != '' }}"
-  tasks:
-    - name: Copying docker/podman wrapper script
-      copy:
-        src: "{{ asset_dir }}/scripts/docker-or-podman"
-        dest: /tmp/docker-or-podman
-        mode: "0775"
-    - name: Deleting tmporary files
-      file:
-        path: "{{item}}"
-        state: absent
-      with_items:
-        - /tmp/create_systemd.py
-        - /tmp/docker-or-podman
-
 - name: Creating web config on the core directory
   hosts: core
   become: "{{ core_ansible_become_user is defined and core_ansible_become_user != '' }}"

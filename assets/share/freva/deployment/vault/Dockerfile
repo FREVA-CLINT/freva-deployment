@@ -9,7 +9,7 @@ ENV VERSION=$VERSION
 ENV HOME=/vault
 COPY runserver.py /bin/runserver.py
 COPY add-vault-secret /bin/add-vault-secret
-RUN apk add --update --no-cache gcc musl-dev python3-dev libffi-dev build-base
+RUN apk add --update --no-cache gcc musl-dev python3-dev py3-pip libffi-dev build-base
 RUN set -ex &&\
     mkdir -p /opt/vault && chown -R vault:vault /opt/vault &&\
     chmod +x /bin/runserver.py /bin/add-vault-secret &&\
@@ -18,9 +18,8 @@ RUN set -ex &&\
 COPY --chown=vault:vault vault-server-tls.hcl /opt/vault/
 COPY --chown=vault:vault policy-file.hcl /opt/vault/
 
-RUN python3 -m ensurepip
-RUN pip3 install --no-cache-dir --upgrade pip setuptools &&\
-    pip3 install --no-cache-dir hvac requests pyopenssl fastapi uvicorn &&\
+RUN python3 -m pip install --break-system-packages --no-cache-dir --upgrade pip setuptools &&\
+    python3 -m pip install --break-system-packages --no-cache-dir hvac requests pyopenssl fastapi uvicorn &&\
     rm -rf /root/.cache/pip /var/cache/apk/* /tmp/*
 
 EXPOSE 5002
