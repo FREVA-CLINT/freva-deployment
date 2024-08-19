@@ -16,6 +16,7 @@ RUN apt-get update && apt-get install -y \
     sshpass \
     git \
     binutils \
+    cowsay \
     libghc-zlib-dev \
     musl-dev \
     librust-libc-dev \
@@ -29,6 +30,8 @@ RUN apt-get update && apt-get install -y \
     python3-toml \
     python3-tomlkit \
     python3-requests \
+    python3-rich \
+    python3-paramiko \
     ansible \
     python3-mock \
     mysql-common \
@@ -54,7 +57,8 @@ COPY . .
 
 # Install Python dependencies
 RUN python3 src/freva_deployment/__init__.py && \
-    python3 -m pip install pyinstaller . && \
+    python3 -m pip install pyinstaller rich-argparse namegenerator && \
+    python3 -m pip install --no-deps . \
     python3 pyinstaller/pre-win.py &&\
     rm -rf /root/.cache/pip && \
     rm -rf /root/build-deps && \
