@@ -269,7 +269,7 @@ def _create_new_config(inp_file: Path) -> Path:
     for section, keys in keys_to_check.items():
         for key in keys:
             if key not in config_str:
-                config[section][key] = config_tmpl[section][key]
+                config[section]["config"][key] = config_tmpl[section]["config"][key]
                 create_backup = True
     if create_backup:
         backup_file = inp_file.with_suffix(inp_file.suffix + ".bck")
