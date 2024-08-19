@@ -149,7 +149,7 @@ class DeployFactory:
         self.cfg = self._read_cfg()
         self.project_name = self.cfg.pop("project_name", None)
         self._random_key = RandomKeys(self.project_name or "freva")
-        self.playbooks: dict[str, Path | None] = {}
+        self.playbooks: dict[str, Optional[str]] = {}
         if not self.project_name:
             raise ConfigurationError("You must set a project name") from None
         self._prep_local_debug()
@@ -1096,7 +1096,7 @@ class DeployFactory:
             envvars.copy(), extravars.copy(), passwords.copy(), verbosity
         )
         playbook, inventory = self.parse_config(steps)
-        if inventory is None:
+        if inventory is None or playbook is None:
             logger.info("Services up to date, nothing to do!")
             return None
         logger.debug(inventory)

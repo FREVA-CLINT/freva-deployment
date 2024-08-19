@@ -186,10 +186,10 @@ def get_cache_information(
     return {
         "ssl_cert": ssl_cert,
         "ssl_key": ssl_key,
-        "host": redis_host,
+        "host": redis_host or "",
         "user": user,
         "passwd": "",
-        "scheduler_host": scheduler_host,
+        "scheduler_host": scheduler_host or "",
         "cache_exp": "86400",
     }
 
@@ -247,7 +247,7 @@ def _create_new_config(inp_file: Path) -> Path:
         ]
     }
     create_backup = False
-    config_tmpl = tomlkit.loads(AD.inventory_file.read_text())
+    config_tmpl = cast(Dict[str, Any], tomlkit.loads(AD.inventory_file.read_text()))
     # Legacy solr:
     if "solr" in config or "databrowser" in config:
         create_backup = True
@@ -269,7 +269,7 @@ def _create_new_config(inp_file: Path) -> Path:
     for section, keys in keys_to_check.items():
         for key in keys:
             if key not in config_str:
-                config[section][key] = config_tmpl[section].get(key, "")
+                config[section][key] = config_tmpl[section][key]
                 create_backup = True
     if create_backup:
         backup_file = inp_file.with_suffix(inp_file.suffix + ".bck")

@@ -35,8 +35,10 @@ def _del_path(inp_path: Path) -> None:
 class SubProcess:
     """Class that holds the exitcode and the stdout of a process."""
 
-    def __init__(self, exitcode: int, stdout: str = "", log: str = "") -> None:
-        self.returncode = exitcode
+    def __init__(
+        self, exitcode: Optional[int], stdout: str = "", log: str = ""
+    ) -> None:
+        self.returncode = exitcode or 0
         self.stdout = stdout
         self.log = log
 
@@ -44,7 +46,7 @@ class SubProcess:
     def run_ansible_playbook(
         cls,
         command: List[str],
-    ) -> int:
+    ) -> None:
         from ansible.cli.playbook import main
 
         main(command)
@@ -82,7 +84,6 @@ def run_command(
             stdout=stdout_file.read_text(),
             log=logger_file.read_text(),
         )
-        return res
 
 
 def run_command_with_spinner(
