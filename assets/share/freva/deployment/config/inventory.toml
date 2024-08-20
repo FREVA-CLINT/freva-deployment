@@ -143,6 +143,39 @@ wipe = false
 ## By default, this is set to /opt/freva.
 data_path = "/opt/freva"
 
+### The the host name of the redis-cache, this cache is used for caching
+### different kinds of data. If not set this will fall back to the host name
+### of the rest-api server.
+redis_host = ""
+
+### Set the hostname(s) for the data-loading portal. The data-loading portal
+### is a services that provisions data via zarr. The data-loading portal is
+### a distributed system, meaning that you can set multiple hostnames that
+### form a distributed memory. The first entry will be used as the master
+### scheduler and the consecutive ones as workers. If you leave this blank
+## then the service will be disabled.
+data_loader_portal_hosts = ""
+
+### Ideally you only deploy the data loader service once. If the service
+### is up and running you can skip setting it up again by setting the
+### deploy_data_loader flag to false (default).
+deploy_data_loader = false
+
+### Authentication is done via open id connect. This deployment assumes that
+## you have set up and configured a open id connect host. Set the url
+## to the open id discovery. This url usually ends with
+## `.well-known/openid-configuration`
+oidc_url = ""
+
+
+### Set the client id (app name) of the open id connect service.
+oidc_client = "freva"
+
+### If you have configured that your OIDC client needs a client secret
+### you can define it here, if not then you don't have to set it
+oidc_client_secret = ""
+
+
 ## In case you want to set a custom path to an Ansible playbook,
 ## you can do this here. By default, the deployment will use the playbook
 ## located in the user config directory.
@@ -191,7 +224,7 @@ scheduler_system = "local"
 
 ## Set the path to the directory that contains the stdout of the plugins.
 ## This directory must be accessible to the web UI. The workload manager
-## will write the stdout into this directory. Defaults to user-specific 
+## will write the stdout into this directory. Defaults to user-specific
 ## output dir `<base_dir_location>/share`.
 scheduler_output_dir = ""
 
@@ -274,9 +307,6 @@ institution_logo = ""
 ## Set email addresses for contact points for users.
 contacts = ""
 
-## Set the SMTP email server that will be used to send emails to contacts via the web UI.
-email_host = ""
-
 ## Set the postal address, which will appear in the footer of the website.
 imprint = "Project name, German Climate Computing Centre (DKRZ), Bundesstr. 45a, 20146 Hamburg, Germany."
 
@@ -295,52 +325,6 @@ institution_name = "Freva"
 ## machine via SSH to submit plugin jobs.
 scheduler_host = ["localhost"]
 
-## Settings for LDAP.
-
-## LDAP server name.
-auth_ldap_server_uri = ""
-
-## Set the user LDAP group that will be allowed to log on.
-## You can either instruct the web UI to allow access to only that group
-## or set `allowed_group` to '*' to allow all users regardless of the
-## LDAP group to log on.
-allowed_group = "test_group"
-
-## Set the LDAP search user base.
-ldap_user_base = "cn=users,cn=accounts,dc=dkrz,dc=de"
-
-## Set the LDAP search group base. Note: Do not add the allowed_group as it will be auto-added.
-ldap_group_base = "cn=groups,cn=accounts,dc=dkrz,dc=de"
-
-## Distinguished name (DN) for the LDAP user.
-ldap_user_dn = ""
-
-## Use an encrypted LDAP connection (needs to be configured).
-auth_ldap_start_tls = false
-
-## Set the LDAP last name search key.
-ldap_last_name_field = "givenname"
-
-## Set the LDAP first name search key.
-ldap_first_name_field = "sn"
-
-## Set the LDAP email search key.
-ldap_email_name_field = "mail"
-
-## Set the LDAP group class name.
-ldap_group_class = "groupOfNames"
-
-## Set the LDAP group type. Available values are [posix, nested].
-ldap_group_type = "nested"
-
-## Set the LDAP tools class for users. This class needs to be implemented
-## in the web app backend.
-ldap_model = "MiklipUserInformation"
-
-## Set the password for the LDAP admin user.
-ldap_user_pw = ""
-
-#######
 ## Set the hosts that are allowed to execute WSGI code.
 allowed_hosts = ["localhost"]
 

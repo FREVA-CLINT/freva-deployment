@@ -68,7 +68,7 @@ jobs:
           tags: |
             ghcr.io/freva-clint/freva-deployment:${{ steps.repository.outputs.tag }}
             ghcr.io/freva-clint/freva-deployment:latest
-          platforms: linux/amd64,linux/arm64,linux/arm/v7,linux/arm/v6,linux/ppc64le,linux/i386
+          platforms: linux/amd64
 
   build-and-push-vault-image:
     runs-on: ubuntu-latest
@@ -120,7 +120,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: assets/share/freva/deployment/vault/
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
           push: true
           build-args: VERSION=${{steps.repository.outputs.tag}}
           tags: |

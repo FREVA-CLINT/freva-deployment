@@ -147,7 +147,7 @@ class CoreScreen(BaseForm):
                     TextInfo,
                     section="core.config",
                     key="admins",
-                    name=f"{self.num}Set the admin user(s) - comma separated:",
+                    name=f"{self.num}Set the admin user(s) - comma separated",
                     value=cfg.get("admins", getuser()),
                 ),
                 False,
@@ -159,7 +159,7 @@ class CoreScreen(BaseForm):
                     key="admin_group",
                     name=(
                         f"{self.num}Set the Freva admin group - "
-                        "leave blank if not needed:"
+                        "leave blank if not needed"
                     ),
                     value=cfg.get("admin_group", ""),
                 ),
@@ -172,7 +172,7 @@ class CoreScreen(BaseForm):
                     key="ansible_become_user",
                     name=(
                         f"{self.num}Become (sudo) user name to change to on "
-                        "remote machine."
+                        "remote machine"
                     ),
                     value=cfg.get("ansible_become_user", ""),
                 ),
@@ -196,7 +196,7 @@ class CoreScreen(BaseForm):
                     key="core_playbook",
                     name=(
                         f"{self.num}Set the path to the playbook used for"
-                        " setting up the system."
+                        " setting up the system"
                     ),
                     value=cfg.get("core_playbook", ""),
                 ),
@@ -227,7 +227,7 @@ class CoreScreen(BaseForm):
                     FileInfo,
                     section="core.config",
                     key="git_path",
-                    name=f"{self.num}Path to the git executable.",
+                    name=f"{self.num}Path to the git executable",
                     value=cfg.get("git_path", ""),
                 ),
                 False,
@@ -257,24 +257,13 @@ class WebScreen(BaseForm):
             if key in cfg and isinstance(cfg[key], str):
                 value = cast(str, cfg[key])
                 cfg[key] = [v.strip() for v in value.split(",") if v.strip()]
-        availalbe_ldab_models = [
-            "MiklipUserInformation",
-            "UCARUserInformation",
-            "DWDUserInformation",
-            "FUUserInformation",
-        ]
-        current_ldab_model = get_index(
-            availalbe_ldab_models,
-            cast(str, cfg.get("ldap_model", "MiklipUserInformation")),
-            0,
-        )
         self.input_fields: dict[str, tuple[npyscreen.TitleText, bool]] = dict(
             hosts=(
                 self.add_widget_intelligent(
                     TextInfo,
                     section="web",
                     key="hosts",
-                    name=f"{self.num}Server Name(s) the web service is deployed on:",
+                    name=f"{self.num}Server Name(s) the web service is deployed on",
                     value=self.get_host("web"),
                 ),
                 True,
@@ -284,7 +273,7 @@ class WebScreen(BaseForm):
                     TextInfo,
                     section="web.config",
                     key="data_path",
-                    name=f"{self.num}Parent directory for any permanent data:",
+                    name=f"{self.num}Parent directory for any permanent data",
                     value=cast(str, cfg.get("data_path", "/opt/freva")),
                 ),
                 True,
@@ -294,7 +283,7 @@ class WebScreen(BaseForm):
                     TextInfo,
                     section="web.config",
                     key="project_website",
-                    name=f"{self.num}Url of the Freva home page:",
+                    name=f"{self.num}Url of the Freva home page",
                     value=cfg.get("project_website", ""),
                 ),
                 True,
@@ -304,7 +293,7 @@ class WebScreen(BaseForm):
                     TextInfo,
                     section="web.config",
                     key="main_color",
-                    name=f"{self.num}Html color of the main color theme:",
+                    name=f"{self.num}Html color of the main color theme",
                     value=cfg.get("main_color", "Tomato"),
                 ),
                 True,
@@ -314,7 +303,7 @@ class WebScreen(BaseForm):
                     TextInfo,
                     section="web.config",
                     key="border_color",
-                    name=f"{self.num}Html color for the borders:",
+                    name=f"{self.num}Html color for the borders",
                     value=cfg.get("border_color", "#6c2e1f"),
                 ),
                 True,
@@ -324,7 +313,7 @@ class WebScreen(BaseForm):
                     TextInfo,
                     section="web.config",
                     key="hover_color",
-                    name=f"{self.num}Html color for hover modes:",
+                    name=f"{self.num}Html color for hover modes",
                     value=cfg.get("hover_color", "#d0513a"),
                 ),
                 True,
@@ -334,7 +323,7 @@ class WebScreen(BaseForm):
                     TextInfo,
                     section="web.config",
                     key="institution_logo",
-                    name=f"{self.num}Path to the institution logo.",
+                    name=f"{self.num}Path to the institution logo",
                     value=cfg.get(
                         "institution_logo", "/path/to/logo/on/target/machine"
                     ),
@@ -346,7 +335,7 @@ class WebScreen(BaseForm):
                     TextInfo,
                     section="web.config",
                     key="about_us_text",
-                    name=f"{self.num}About us text - short blurb about Freva:",
+                    name=f"{self.num}About us text - short blurb about Freva",
                     value=cfg.get("about_us_text", "Testing"),
                 ),
                 True,
@@ -356,21 +345,8 @@ class WebScreen(BaseForm):
                     TextInfo,
                     section="web.config",
                     key="contacts",
-                    name=f"{self.num}Contact email address:",
-                    value=str(cfg.get("contacts", "data@dkrz.de")),
-                ),
-                True,
-            ),
-            email_host=(
-                self.add_widget_intelligent(
-                    TextInfo,
-                    section="web.config",
-                    key="email_host",
-                    name=(
-                        f"{self.num}Smtp email host  that will be used to send "
-                        "emails to the contacts via the web ui"
-                    ),
-                    value=cfg.get("email_host", "mailhost.dkrz.de"),
+                    name=f"{self.num}Contact email address",
+                    value=str(cfg.get("contacts", "freva@dkrz.de")),
                 ),
                 True,
             ),
@@ -379,7 +355,7 @@ class WebScreen(BaseForm):
                     TextInfo,
                     section="web.config",
                     key="imprint",
-                    name=f"{self.num}Institution address - comma separated:",
+                    name=f"{self.num}Institution address - comma separated",
                     value=",".join(
                         cast(
                             List[str],
@@ -403,7 +379,7 @@ class WebScreen(BaseForm):
                     TextInfo,
                     section="web.config",
                     key="homepage_text",
-                    name=f"{self.num}More in detail project description:",
+                    name=f"{self.num}More in detail project description",
                     value=cfg.get(
                         "homepage_text",
                         (
@@ -427,7 +403,7 @@ class WebScreen(BaseForm):
                     TextInfo,
                     section="web.config",
                     key="homepage_heading",
-                    name=f"{self.num}A brief describtion of the project:",
+                    name=f"{self.num}A brief describtion of the project",
                     value=cfg.get("homepage_heading", "Lorem ipsum dolor sit amet"),
                 ),
                 True,
@@ -437,7 +413,7 @@ class WebScreen(BaseForm):
                     TextInfo,
                     section="web.config",
                     key="scheduler_host",
-                    name=f"{self.num}Scheduler hostname(s) - comma separated:",
+                    name=f"{self.num}Scheduler hostname(s) - comma separated",
                     value=",".join(
                         cast(
                             List[str],
@@ -452,180 +428,13 @@ class WebScreen(BaseForm):
                     TextInfo,
                     section="web.config",
                     key="allowed_hosts",
-                    name=f"{self.num}Set additional hostnames django can serve:",
+                    name=f"{self.num}Set additional hostnames django can serve",
                     value=",".join(
                         cast(
                             List[str],
                             cfg.get("allowed_hosts", ["localhost"]),
                         ),
                     ),
-                ),
-                True,
-            ),
-            auth_ldap_server_uri=(
-                self.add_widget_intelligent(
-                    TextInfo,
-                    section="web.config",
-                    key="auth_ldap_server_uri",
-                    name=(
-                        f"{self.num}Ldap server name(s) used for authentication"
-                        " - comma separated:"
-                    ),
-                    value=cfg.get(
-                        "auth_ldap_server_uri",
-                        "ldap://idm-dmz.dkrz.de",
-                    ),
-                ),
-                True,
-            ),
-            auth_ldap_start_tls=(
-                self.add_widget_intelligent(
-                    CheckboxInfo,
-                    section="web.config",
-                    key="auth_ldap_start_tls",
-                    max_height=2,
-                    value=cfg.get("auth_ldap_start_tls", False),
-                    editable=True,
-                    name=(
-                        f"{self.num}Enable TLS encryption when communicating with the"
-                        "ldap server. Needs to be configured:"
-                    ),
-                    scroll_exit=True,
-                ),
-                True,
-            ),
-            allowed_group=(
-                self.add_widget_intelligent(
-                    TextInfo,
-                    section="web.config",
-                    key="allowed_group",
-                    name=f"{self.num}Unix group allowed to log on to the web:",
-                    value=cfg.get("allowed_group", "my_freva"),
-                ),
-                False,
-            ),
-            ldap_user_base=(
-                self.add_widget_intelligent(
-                    TextInfo,
-                    section="web.config",
-                    key="ldap_user_base",
-                    name=f"{self.num}Ldap search keys for user base:",
-                    value=cfg.get(
-                        "ldap_user_base", "cn=users,cn=accounts,dc=dkrz,dc=de"
-                    ),
-                ),
-                True,
-            ),
-            ldap_group_base=(
-                self.add_widget_intelligent(
-                    TextInfo,
-                    section="web.config",
-                    key="ldap_group_base",
-                    name=f"{self.num}Ldap search keys for group base:",
-                    value=cfg.get(
-                        "ldap_group_base",
-                        "cn=groups,cn=accounts,dc=dkrz,dc=de",
-                    ),
-                ),
-                True,
-            ),
-            ldap_user_dn=(
-                self.add_widget_intelligent(
-                    TextInfo,
-                    section="web.config",
-                    key="ldap_user_dn",
-                    name=f"{self.num}Distinguished name (dn) for the ldap user:",
-                    value=cfg.get(
-                        "ldap_user_dn",
-                        "uid=dkrzagent,cn=sysaccounts,cn=etc,dc=dkrz,dc=de",
-                    ),
-                ),
-                True,
-            ),
-            ldap_user_pw=(
-                self.add_widget_intelligent(
-                    PasswordInfo,
-                    section="web.config",
-                    key="ldap_user_pw",
-                    name=f"{self.num}Password for ldap user:",
-                    value=cfg.get("ldap_user_pw", ""),
-                ),
-                False,
-            ),
-            ldap_first_name_field=(
-                self.add_widget_intelligent(
-                    TextInfo,
-                    section="web.config",
-                    key="ldap_first_name_field",
-                    name=(f"{self.num}Ldap search search key for first name"),
-                    value=cfg.get(
-                        "ldap_first_name_field",
-                        "givenname",
-                    ),
-                ),
-                False,
-            ),
-            ldap_last_name_field=(
-                self.add_widget_intelligent(
-                    TextInfo,
-                    section="web.config",
-                    key="ldap_last_name_field",
-                    name=(f"{self.num}Ldap search search key for last name"),
-                    value=cfg.get(
-                        "ldap_last_name_field",
-                        "sn",
-                    ),
-                ),
-                False,
-            ),
-            ldap_email_field=(
-                self.add_widget_intelligent(
-                    TextInfo,
-                    section="web.config",
-                    key="ldap_email_name_field",
-                    name=(f"{self.num}Ldap search search key for email addr"),
-                    value=cfg.get(
-                        "ldap_email_name_field",
-                        "mail",
-                    ),
-                ),
-                False,
-            ),
-            ldap_group_class=(
-                self.add_widget_intelligent(
-                    TextInfo,
-                    section="web.config",
-                    key="ldap_group_class",
-                    name=(f"{self.num}Ldap object class"),
-                    value=cfg.get(
-                        "ldap_group_class",
-                        "groupOfNames",
-                    ),
-                ),
-                True,
-            ),
-            ldap_group_type=(
-                self.add_widget_intelligent(
-                    ComboInfo,
-                    section="web.config",
-                    key="ldap_group_type",
-                    name=(f"{self.num}Ldap group type"),
-                    value=self.get_index(
-                        ["posix", "nested"],
-                        cast(str, cfg.get("ldap_group_type", "nested")),
-                    ),
-                    values=["posix", "nested"],
-                ),
-                True,
-            ),
-            ldap_model=(
-                self.add_widget_intelligent(
-                    ComboInfo,
-                    section="web.config",
-                    key="ldap_model",
-                    name=(f"{self.num}Ldap tools class to be used for authentication."),
-                    value=current_ldab_model,
-                    values=availalbe_ldab_models,
                 ),
                 True,
             ),
@@ -636,7 +445,7 @@ class WebScreen(BaseForm):
                     key="web_playbook",
                     name=(
                         f"{self.num}Set the path to the playbook used for"
-                        " setting up the system."
+                        " setting up the system"
                     ),
                     value=cfg.get("web_playbook", ""),
                 ),
@@ -649,7 +458,7 @@ class WebScreen(BaseForm):
                     key="ansible_become_user",
                     name=(
                         f"{self.num}Become (sudo) user name to change to on "
-                        "remote machine."
+                        "remote machine"
                     ),
                     value=cfg.get("ansible_become_user", "root"),
                 ),
@@ -660,7 +469,7 @@ class WebScreen(BaseForm):
                     FileInfo,
                     section="web.config",
                     key="ansible_python_interpreter",
-                    name=f"{self.num}Pythonpath on remote machine:",
+                    name=f"{self.num}Pythonpath on remote machine",
                     value=cfg.get("ansible_python_interpreter", "/usr/bin/python3"),
                 ),
                 False,
@@ -670,7 +479,7 @@ class WebScreen(BaseForm):
                     TextInfo,
                     section="web.config",
                     key="ansible_user",
-                    name=f"{self.num}Username for remote machine:",
+                    name=f"{self.num}Username for remote machine",
                     value=cfg.get("ansible_user", getuser()),
                 ),
                 False,
@@ -699,7 +508,7 @@ class DBScreen(BaseForm):
                     TextInfo,
                     section="db",
                     key="hosts",
-                    name=f"{self.num}Server Name(s) where the database service is deployed:",
+                    name=f"{self.num}Server Name(s) where the database service is deployed",
                     value=self.get_host("db"),
                 ),
                 True,
@@ -722,7 +531,7 @@ class DBScreen(BaseForm):
                     TextInfo,
                     section="db.config",
                     key="user",
-                    name=f"{self.num}Database user:",
+                    name=f"{self.num}Database user",
                     value=cfg.get("user", "evaluation_system"),
                 ),
                 True,
@@ -732,7 +541,7 @@ class DBScreen(BaseForm):
                     TextInfo,
                     section="db.config",
                     key="db",
-                    name=f"{self.num}Database name:",
+                    name=f"{self.num}Database name",
                     value=cfg.get("db", "evaluation_system"),
                 ),
                 True,
@@ -742,7 +551,7 @@ class DBScreen(BaseForm):
                     ComboInfo,
                     section="db.config",
                     key="port",
-                    name=f"{self.num}Database Port:",
+                    name=f"{self.num}Database Port",
                     value=port_idx,
                     values=db_ports,
                 ),
@@ -753,7 +562,7 @@ class DBScreen(BaseForm):
                     TextInfo,
                     section="db.config",
                     key="data_path",
-                    name=(f"{self.num}Parent directory for any permanent data:"),
+                    name=(f"{self.num}Parent directory for any permanent data"),
                     value=cast(str, cfg.get("data_path", "/opt/freva")),
                 ),
                 True,
@@ -765,7 +574,7 @@ class DBScreen(BaseForm):
                     key="db_playbook",
                     name=(
                         f"{self.num}Set the path to the db playbook used for"
-                        " setting up the system."
+                        " setting up the system"
                     ),
                     value=cfg.get("db_playbook", ""),
                 ),
@@ -778,7 +587,7 @@ class DBScreen(BaseForm):
                     key="ansible_become_user",
                     name=(
                         f"{self.num}Become (sudo) user name to change to on "
-                        "remote machine."
+                        "remote machine"
                     ),
                     value=cfg.get("ansible_become_user", "root"),
                 ),
@@ -789,7 +598,7 @@ class DBScreen(BaseForm):
                     FileInfo,
                     section="db.config",
                     key="ansible_python_interpreter",
-                    name=f"{self.num}Pythonpath on remote machine:",
+                    name=f"{self.num}Pythonpath on remote machine",
                     value=cfg.get("ansible_python_interpreter", "/usr/bin/python3"),
                 ),
                 False,
@@ -799,7 +608,7 @@ class DBScreen(BaseForm):
                     TextInfo,
                     section="db.config",
                     key="ansible_user",
-                    name=f"{self.num}Username for remote machine:",
+                    name=f"{self.num}Username for remote machine",
                     value=cfg.get("ansible_user", getuser()),
                 ),
                 False,
@@ -832,7 +641,7 @@ class FrevaRestScreen(BaseForm):
                     TextInfo,
                     section="freva_rest",
                     key="hosts",
-                    name=f"{self.num}Server Name(s) where the freva-rest service is deployed:",
+                    name=f"{self.num}Server Name(s) where the freva-rest service is deployed",
                     value=self.get_host("freva_rest"),
                 ),
                 True,
@@ -855,7 +664,7 @@ class FrevaRestScreen(BaseForm):
                     ComboInfo,
                     section="freva_rest.config",
                     key="solr_mem",
-                    name=f"{self.num}Virtual memory (in GB) for the search engine service:",
+                    name=f"{self.num}Virtual memory (in GB) for the search engine service",
                     value=solr_mem_select,
                     values=solr_mem_values,
                 ),
@@ -866,7 +675,7 @@ class FrevaRestScreen(BaseForm):
                     ComboInfo,
                     section="freva_rest.config",
                     key="freva_rest_port",
-                    name=f"{self.num}Freva-rest API port:",
+                    name=f"{self.num}Freva-rest API port",
                     value=freva_rest_port_idx,
                     values=freva_rest_ports,
                 ),
@@ -877,10 +686,79 @@ class FrevaRestScreen(BaseForm):
                     TextInfo,
                     section="freva_rest.config",
                     key="data_path",
-                    name=f"{self.num}Parent directory for any permanent data:",
+                    name=f"{self.num}Parent directory for any permanent data",
                     value=cast(str, cfg.get("data_path", "/opt/freva")),
                 ),
                 True,
+            ),
+            redis_host=(
+                self.add_widget_intelligent(
+                    TextInfo,
+                    section="freva_rest.config",
+                    key="redis_host",
+                    name=f"{self.num} Set the redis host name",
+                    value=cast(
+                        str,
+                        cfg.get("redis_host") or self.get_host("freva_rest"),
+                    ),
+                ),
+                False,
+            ),
+            data_loader_portal_hosts=(
+                self.add_widget_intelligent(
+                    TextInfo,
+                    section="freva_rest.config",
+                    key="data_loader_portal_hosts",
+                    name=(
+                        f"{self.num} ',' separated hostname(s) data-loading portal "
+                        "to provide zarr. Leave blank for none"
+                    ),
+                    value=cast(str, cfg.get("data_loader_portal_hosts", "")),
+                ),
+                False,
+            ),
+            deploy_data_loader=(
+                self.add_widget_intelligent(
+                    CheckboxInfo,
+                    section="freva_rest.config",
+                    key="deploy_data_loader",
+                    max_height=2,
+                    editable=True,
+                    name=f"{self.num} set up the data-loader service ",
+                    scroll_exit=True,
+                    value=cast(bool, cfg.get("deploy_data_loader", False)),
+                ),
+                False,
+            ),
+            oidc_url=(
+                self.add_widget_intelligent(
+                    TextInfo,
+                    section="freva_rest.config",
+                    key="oidc_url",
+                    name=(f"{self.num}Config url of the OIDC service"),
+                    value=cast(str, cfg.get("oidc_url", "")),
+                ),
+                True,
+            ),
+            oidc_client=(
+                self.add_widget_intelligent(
+                    TextInfo,
+                    section="freva_rest.config",
+                    key="oidc_client",
+                    name=(f"{self.num}Name of the OIDC client (app name)"),
+                    value=cast(str, cfg.get("oidc_client", "freva")),
+                ),
+                True,
+            ),
+            oidc_client_secret=(
+                self.add_widget_intelligent(
+                    TextInfo,
+                    section="freva_rest.config",
+                    key="oidc_client_secret",
+                    name=(f"{self.num}OIDC client secret. Leave blank for none"),
+                    value=cast(str, cfg.get("oidc_client_secret", "")),
+                ),
+                False,
             ),
             freva_rest_playbook=(
                 self.add_widget_intelligent(
@@ -889,7 +767,7 @@ class FrevaRestScreen(BaseForm):
                     key="freva_rest_playbook",
                     name=(
                         f"{self.num}Set the path to the playbook used for"
-                        " setting up the system."
+                        " setting up the system"
                     ),
                     value=cfg.get("freva_rest_playbook", ""),
                 ),
@@ -902,7 +780,7 @@ class FrevaRestScreen(BaseForm):
                     key="ansible_become_user",
                     name=(
                         f"{self.num}Become (sudo) user name to change to on "
-                        "remote machine."
+                        "remote machine"
                     ),
                     value=cfg.get("ansible_become_user", "root"),
                 ),
@@ -913,7 +791,7 @@ class FrevaRestScreen(BaseForm):
                     FileInfo,
                     section="freva_rest.config",
                     key="ansible_python_interpreter",
-                    name=f"{self.num}Pythonpath on remote machine:",
+                    name=f"{self.num}Pythonpath on remote machine",
                     value=cfg.get("ansible_python_interpreter", "/usr/bin/python3"),
                 ),
                 False,
@@ -923,7 +801,7 @@ class FrevaRestScreen(BaseForm):
                     TextInfo,
                     section="freva_rest.config",
                     key="ansible_user",
-                    name=f"{self.num}Username for remote machine:",
+                    name=f"{self.num}Username for remote machine",
                     value=cfg.get("ansible_user", getuser()),
                 ),
                 False,
@@ -932,7 +810,7 @@ class FrevaRestScreen(BaseForm):
 
 
 class RunForm(npyscreen.FormMultiPageAction):
-    """Definition of the form that applies the actual deployment."""
+    """Definition of the form that applies the actual deployment"""
 
     _num: int = 0
 
@@ -979,7 +857,7 @@ class RunForm(npyscreen.FormMultiPageAction):
                                 f"{key_type} certificate file `{key_file}` must exist."
                             )
                         else:
-                            msg = f"You must give a {key_type} certificate file."
+                            msg = f"You must give a {key_type} certificate file"
                         npyscreen.notify_confirm(msg, title="ERROR")
                         return
         _ = self.parentApp.save_config_to_file(
@@ -1065,7 +943,7 @@ class RunForm(npyscreen.FormMultiPageAction):
             max_height=2,
             editable=True,
             value=self.parentApp._read_cache("skip_version_check", False),
-            name=f"{self.num}Skip the version check, use with caution.",
+            name=f"{self.num}Skip the version check, use with caution",
         )
         self.ssh_port = self.add_widget_intelligent(
             npyscreen.TitleText,

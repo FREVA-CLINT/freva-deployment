@@ -38,8 +38,9 @@ services:
 
   {{redis_name}}:
 {% if (become == true and ansible_become_user == 'root') or ansible_user == 'root' %}
-    user: {{uid}}:{{gid}}
+    image: docker.io/redis:latest
 {% else %}
+    image: docker.io/redis:latest
     user: root:0
     entrypoint: /tmp/entrypoint.sh
 {% endif %}
@@ -74,26 +75,14 @@ services:
     environment:
       - EVALUATION_SYSTEM_CONFIG_FILE={{core_root_dir|regex_replace('^~', ansible_env.HOME)}}/freva/evaluation_system.conf
       - DJANGO_SUPERUSER_PASSWORD={{ root_passwd }}
-      - FREVA_WEB_CONFIG_FILE={{web_config_file}}
-      - AUTH_LDAP_SERVER_URI={{web_auth_ldap_server_uri}}
-      - AUTH_LDAP_START_TLS={{ 1 if web_auth_ldap_start_tls else 0 }}
-      - ALLOWED_GROUP={{web_allowed_group}}
       - ALLOWED_HOSTS={{web_allowed_hosts | join(',')}}
-      - LDAP_USER_BASE={{web_ldap_user_base}}
-      - LDAP_GROUP_BASE={{web_ldap_group_base}}
-      - LDAP_FIRSTNAME_FIELD={{web_ldap_first_name_field}}
-      - LDAP_LASTNAME_FIELD={{web_ldap_last_name_field}}
-      - LDAP_EMAIL_FIELD={{web_ldap_email_field}}
-      - LDAP_GROUP_CLASS={{web_ldap_group_class}}
-      - LDAP_GROUP_TYPE={{web_ldap_group_type}}
-      - LDAP_USER_DN={{web_ldap_user_dn}}
-      - LDAP_USER_PW={{web_ldap_user_pw}}
-      - LDAP_MODEL={{web_ldap_model}}
+      - FREVA_WEB_CONFIG_FILE={{web_config_file}}
       - SCHEDULER_HOST={{web_scheduler_host | join(',')}}
       - REDIS_HOST={{web_redis_host}}
-      - EMAIL_HOST={{web_email_host}}
       - CSRF_TRUSTED_ORIGINS={{web_csrf_trusted_origins | join(',')}}
       - FREVA_BIN={{web_freva_bin}}
+      - COLUMNS=140
+      - FREVA_REST_URL=http://{{web_freva_rest_host}}
     volumes:
 {% for volume in web_volumes %}
       - {{volume}}

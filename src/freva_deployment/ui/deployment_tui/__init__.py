@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import logging
 
 from freva_deployment.deploy import DeployFactory
 from freva_deployment.error import DeploymentError
@@ -19,7 +20,6 @@ def tui(args: argparse.Namespace) -> None:
         main_app = MainApp()
         main_app.run()
     except (KeyboardInterrupt, Exception) as error:
-        print(isinstance(error, KeyboardInterrupt))
         try:
             main_app.thread_stop.set()
             main_app.save_config_to_file(
@@ -27,13 +27,17 @@ def tui(args: argparse.Namespace) -> None:
             )
         except AttributeError:
             pass
-        if not isinstance(error, KeyboardInterrupt):
-            msg = str(error)
-            if "addwstr" in msg:
-                msg = (
-                    "Cloud not display content, try "
-                    "increasing your terminal size"
-                )
+        if isinstance(error, KeyboardInterrupt):
+            raise
+        msg = str(error)
+        if "addwstr" in msg:
+            msg = (
+                "Cloud not display content, try "
+                "increasing your terminal size"
+            )
+        if logger.getEffectiveLevel() < logging.INFO:
+            logger.exception(error)
+        else:
             logger.error("Exiting App: %s", msg)
         return
     setup = main_app.setup

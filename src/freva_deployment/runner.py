@@ -4,13 +4,14 @@ import atexit
 import json
 import os
 import sys
-from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
-from io import TextIOWrapper
+from getpass import getuser
+from multiprocessing import get_context
 from pathlib import Path
 from tempfile import NamedTemporaryFile, TemporaryDirectory
 from typing import Any, Dict, List, Optional, Union
 
+import paramiko
 import yaml
 from rich import print as pprint
 from rich.console import Console
@@ -34,9 +35,10 @@ def _del_path(inp_path: Path) -> None:
 class SubProcess:
     """Class that holds the exitcode and the stdout of a process."""
 
-    def __init__(self, exitcode: int, stdout: str = "", log: str = "") -> None:
-
-        self.returncode = exitcode
+    def __init__(
+        self, exitcode: Optional[int], stdout: str = "", log: str = ""
+    ) -> None:
+        self.returncode = exitcode or 0
         self.stdout = stdout
         self.log = log
 
@@ -44,17 +46,10 @@ class SubProcess:
     def run_ansible_playbook(
         cls,
         command: List[str],
-    ) -> int:
+    ) -> None:
         from ansible.cli.playbook import main
 
-        try:
-            main(command)
-        except Exception as error:
-            return 1
-        except SystemExit as error:
-            if error.code:
-                return 1
-        return 0
+        main(command)
 
 
 def run_command(
@@ -62,7 +57,6 @@ def run_command(
     env: Optional[Dict[str, str]] = None,
     capture_output: bool = False,
 ):
-
     os_env = deepcopy(os.environ)
     env = env or {}
     stdout = sys.stdout
@@ -77,13 +71,16 @@ def run_command(
             os.environ.update(env)
             if capture_output:
                 sys.stdout = stdout_buffer
-            result = SubProcess.run_ansible_playbook(command)
+            ctx = get_context()
+            proc = ctx.Process(target=SubProcess.run_ansible_playbook, args=(command,))
+            proc.start()
+            proc.join()
         finally:
             os.environ = os_env
             sys.stdout = stdout
             stdout_buffer.close()
         return SubProcess(
-            result,
+            proc.exitcode,
             stdout=stdout_file.read_text(),
             log=logger_file.read_text(),
         )
@@ -141,8 +138,10 @@ class RunnerDir(TemporaryDirectory):
     def create_playbook(self, content: List[Dict[str, Any]]) -> str:
         """Dump the content of a playbook into the playbook file."""
         for nn, step in enumerate(content):
-            host = step["hosts"]
-            for tt, task in enumerate(step["tasks"]):
+            host = step.get("hosts", "")
+            if not host:
+                continue
+            for tt, task in enumerate(step.get("tasks", [])):
                 try:
                     content[nn]["tasks"][tt]["name"] = f"{host} - {task['name']}"
                 except KeyError:
@@ -202,6 +201,48 @@ class RunnerDir(TemporaryDirectory):
             return self.write_to_tempfile(content_str)
         else:
             raise ValueError("Invalid inventory format")
+
+    def get_remote_file_content(
+        self,
+        file_path: str,
+        host: str,
+        username: Optional[str] = None,
+        password: Optional[str] = None,
+    ) -> str:
+        """Get the content of a remote file.
+
+        Parameters
+        ----------
+        file_path: str
+            The path to the file contaning the target content
+        host: str
+            Remote hostname
+        username: str, default: None
+            Use this username to log on
+        password: str, default: None
+            Instead of logging on by ssh key, use a password based log in.
+
+        Returns
+        -------
+        str: Content of the file
+        """
+        if not host:
+            return ""
+        username = username or getuser()
+        ssh = paramiko.SSHClient()
+        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        file_content = ""
+        try:
+            logger.debug("Connecting to %s with %s", host, username)
+            ssh.connect(host, username=username, password=password or None)
+            _, stdout, stderr = ssh.exec_command(f"cat {file_path}")
+            if stderr.channel.recv_exit_status() == 0:
+                file_content = stdout.read().decode("utf-8").strip()
+        except Exception as error:
+            logger.critical("Couldn't establish connection to %s: %s", host, error)
+        finally:
+            ssh.close()
+        return file_content
 
     def run_ansible_playbook(
         self,

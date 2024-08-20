@@ -1,29 +1,4 @@
 ---
-- name: Adding web secrets to the vault
-  hosts: vault
-  become: "{{ vault_ansible_become_user is defined and vault_ansible_become_user != '' }}"
-  vars:
-    ansible_python_interpreter: "{{ vault_ansible_python_interpreter }}"
-    become: "{{ vault_ansible_become_user is defined and vault_ansible_become_user != '' }}"
-  tasks:
-    - name: Copying docker/podman wrapper script
-      copy:
-        src: "{{ asset_dir }}/scripts/docker-or-podman"
-        dest: /tmp/docker-or-podman
-        mode: "0775"
-    - name: Inserting email secrets
-      shell: >
-        /tmp/docker-or-podman exec {{ vault_name }} add-vault-secret email
-        -s username {{vault_email_user}}
-        -s password '{{vault_email_password}}'
-    - name: Deleting tmporary files
-      file:
-        path: "{{item}}"
-        state: absent
-      with_items:
-        - /tmp/create_systemd.py
-        - /tmp/docker-or-podman
-
 - name: Creating web config on the core directory
   hosts: core
   become: "{{ core_ansible_become_user is defined and core_ansible_become_user != '' }}"
@@ -70,7 +45,6 @@
       - "{{web_data_path|regex_replace('^~', ansible_env.HOME)}}/{{project_name}}/web_service/healthcheck.sh:/tmp/healthcheck.sh:z"
       - "{{ core_preview_path | regex_replace('^~', ansible_env.HOME)}}:/srv/static/preview:ro"
     redis_volumes:
-      - "{{web_data_path|regex_replace('^~', ansible_env.HOME)}}/{{project_name}}/web_service/cache:/data:z"
       - "{{web_data_path|regex_replace('^~', ansible_env.HOME)}}/{{project_name}}/web_service/rootless-entrypoint.sh:/tmp/entrypoint.sh:z"
     redis_name: "{{ project_name }}-redis"
     apache_name: "{{project_name}}-httpd"
@@ -79,6 +53,14 @@
     ansible_become_user: "{{ web_ansible_become_user if web_ansible_become_user is defined else 'root' }}"
     web_port_httpd: "{{ '80' if web_ansible_become_user == 'root' or ansible_user == 'root' else '9080' }}"
     web_port_httpsd: "{{ '443' if web_ansible_become_user == 'root' or ansible_user == 'root'  else '9443' }}"
+    healthchecks:
+      - name: "{{project_name}}-web"
+        cmd:  'python -V'
+      - name: "{{project_name}}-redis"
+        cmd: 'redis-cli ping'
+      - name: "{{project_name}}-httpd"
+        cmd: 'httpd -S'
+
   tasks:
     - name: Get UID
       command: id -u {{ ansible_user }}
@@ -204,6 +186,11 @@
             systemctl --user restart {{ web_name }}
          {% endif %}
       when: systemctl.stat.exists == true and debug == false
+    - pause: seconds=30
+    - name: Container healthchecks
+      shell: >
+        /tmp/docker-or-podman exec {{item.name}} {{item.cmd}}
+      with_items: "{{healthchecks}}"
     - name: Deleting tmporary files
       file:
         path: "{{item}}"

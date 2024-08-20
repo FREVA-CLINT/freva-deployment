@@ -38,11 +38,17 @@ def parse_args() -> Tuple[str, str, List[str], bool]:
         help="Enable this unit.",
     )
     app.add_argument("--requires", type=str, nargs="+", default=[])
+    app.add_argument(
+        "--gracious",
+        action="store_true",
+        default=False,
+        help="Do not restart but only start the unit",
+    )
     args, other = app.parse_known_args()
     enable = args.enable
     if os.environ.get("DEBUG", "false").lower() == "true":
         enable = False
-    return " ".join(other), args.name, args.requires, enable
+    return " ".join(other), args.name, args.requires, enable, args.gracious
 
 
 def _parse_dict(tmp_dict: Dict[str, Dict[str, str]]) -> str:
@@ -54,7 +60,9 @@ def _parse_dict(tmp_dict: Dict[str, Dict[str, str]]) -> str:
     return systemd_unit
 
 
-def load_unit(unit: str, content: str, enable: bool = True) -> None:
+def load_unit(
+    unit: str, content: str, enable: bool = True, gracious: bool = False
+) -> None:
     """Load a given systemd unit."""
     files = (
         "/etc/systemd/system/{}.service".format(unit),
@@ -76,7 +84,10 @@ def load_unit(unit: str, content: str, enable: bool = True) -> None:
         subprocess.run(cmd + ["daemon-reload"], check=True)
         if enable:
             subprocess.run(cmd + ["enable", unit], check=True)
-        subprocess.run(cmd + ["restart", unit], check=True)
+        if gracious:
+            subprocess.run(cmd + ["start", unit], check=True)
+        else:
+            subprocess.run(cmd + ["restart", unit], check=True)
         return
 
 
@@ -98,7 +109,9 @@ def get_container_cmd(args: str) -> Tuple[str, str]:
     return "", ""
 
 
-def create_unit(args: str, unit: str, requires: List[str], enable: bool) -> None:
+def create_unit(
+    args: str, unit: str, requires: List[str], enable: bool, gracious: bool
+) -> None:
     """Create the systemd unit."""
     container_cmd, container_args = get_container_cmd(args)
     cmd = args.split()
@@ -137,7 +150,7 @@ def create_unit(args: str, unit: str, requires: List[str], enable: bool) -> None
                 SYSTEMD_TMPL["Unit"][key] += " {}.service".format(service)
             except KeyError:
                 SYSTEMD_TMPL["Unit"][key] = " {}.service".format(service)
-    load_unit(unit, _parse_dict(SYSTEMD_TMPL), enable)
+    load_unit(unit, _parse_dict(SYSTEMD_TMPL), enable, gracious=gracious)
 
 
 if __name__ == "__main__":

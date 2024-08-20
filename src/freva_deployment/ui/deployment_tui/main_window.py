@@ -4,6 +4,7 @@ deployment setup for a new instance of freva."""
 from __future__ import annotations
 
 import json
+import signal
 import threading
 import time
 from pathlib import Path
@@ -15,7 +16,7 @@ import tomlkit
 
 from freva_deployment.utils import asset_dir, config_dir, load_config
 
-from .base import BaseForm, VarForm, selectFile
+from .base import BaseForm, selectFile
 from .deploy_forms import (
     CoreScreen,
     DBScreen,
@@ -23,6 +24,10 @@ from .deploy_forms import (
     RunForm,
     WebScreen,
 )
+
+
+def interrupt(*args: Any) -> None:
+    raise KeyboardInterrupt("Exiting App")
 
 
 class MainApp(npyscreen.NPSAppManaged):
@@ -48,6 +53,7 @@ class MainApp(npyscreen.NPSAppManaged):
         self._auto_save_active = False
         self.thread_stop = threading.Event()
         self.start_auto_save()
+        signal.signal(signal.SIGINT, interrupt)
 
     def init(self) -> None:
         self._steps_lookup = {
@@ -84,18 +90,12 @@ class MainApp(npyscreen.NPSAppManaged):
             CoreScreen,
             name="Core deployment",
         )
-        self._forms["web"] = self.addForm(
-            "SECOND", WebScreen, name="Web deployment"
-        )
-        self._forms["db"] = self.addForm(
-            "THIRD", DBScreen, name="Database deployment"
-        )
+        self._forms["web"] = self.addForm("SECOND", WebScreen, name="Web deployment")
+        self._forms["db"] = self.addForm("THIRD", DBScreen, name="Database deployment")
         self._forms["freva_rest"] = self.addForm(
             "FOURTH", FrevaRestScreen, name="Freva Rest deployment"
         )
-        self._setup_form = self.addForm(
-            "SETUP", RunForm, name="Apply the Deployment"
-        )
+        self._setup_form = self.addForm("SETUP", RunForm, name="Apply the Deployment")
 
     def exit_application(self, *args, **kwargs) -> None:
         value = npyscreen.notify_ok_cancel(
@@ -157,16 +157,15 @@ class MainApp(npyscreen.NPSAppManaged):
             the_selected_file = str(the_selected_file.expanduser().absolute())
             self.check_missing_config(stop_at_missing=False)
             self._setup_form.inventory_file.value = the_selected_file
-            self.save_config_to_file(
-                save_file=the_selected_file, write_toml_file=True
-            )
+            self.save_config_to_file(save_file=the_selected_file, write_toml_file=True)
 
     def _update_config(self, config_file: Path | str) -> None:
         """Update the main window after a new configuration has been loaded."""
 
         try:
             self.config = load_config(config_file)
-        except Exception:
+        except Exception as error:
+            npyscreen.notify_ok(error, title=f"Error loading {config_file}")
             return
         self.resetHistory()
         self.editing = True
@@ -193,7 +192,7 @@ class MainApp(npyscreen.NPSAppManaged):
                 title="Error",
                 message=f"Couldn't save config:\n{error}",
             )
-            raise
+        return None
 
     def get_save_file(self, save_file: Path | None = None) -> str:
         """Get the name of the file where the config should be stored to."""
@@ -247,7 +246,8 @@ class MainApp(npyscreen.NPSAppManaged):
 
         try:
             config_tmpl = load_config(asset_dir / "config" / "inventory.toml")
-        except Exception:
+        except Exception as error:
+            npyscreen.notify_confirm(error)
             config_tmpl = self.config
         config_tmpl["certificates"] = cert_files
         config_tmpl["project_name"] = project_name

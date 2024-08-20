@@ -12,12 +12,14 @@ from pathlib import Path
 from typing import Any, Dict, MutableMapping, NamedTuple, Optional, Union, cast
 
 import appdirs
+import namegenerator
 import requests
 import tomlkit
 from rich.console import Console
 from rich.prompt import Prompt
 
 from .error import ConfigurationError
+from .keys import RandomKeys
 from .logger import logger
 
 RichConsole = Console(markup=True, force_terminal=True)
@@ -55,12 +57,8 @@ class AssetDir:
 
     def __init__(self):
         self._inventory_content = None
-        self._user_asset_dir = (
-            Path(appdirs.user_data_dir()) / "freva" / "deployment"
-        )
-        self._user_config_dir = (
-            Path(appdirs.user_config_dir()) / "freva" / "deployment"
-        )
+        self._user_asset_dir = Path(appdirs.user_data_dir()) / "freva" / "deployment"
+        self._user_config_dir = Path(appdirs.user_config_dir()) / "freva" / "deployment"
 
     @property
     def is_bundeled(self) -> bool:
@@ -94,7 +92,10 @@ class AssetDir:
 
         data_dir = self.get_dirs(False) / "share" / "freva" / "deployment"
         user_dir = self.get_dirs(True) / "share" / "freva" / "deployment"
-        for path in (data_dir, user_dir):
+        data_dir_local = (
+            self.get_dirs(False) / "local" / "share" / "freva" / "deployment"
+        )
+        for path in (data_dir, user_dir, data_dir_local):
             if path.is_dir():
                 return path
         raise ConfigurationError(
@@ -146,9 +147,7 @@ class AssetDir:
             inventory_file.unlink()
         except FileNotFoundError:
             pass
-        shutil.copy2(
-            self.asset_dir / "config" / "inventory.toml", inventory_file
-        )
+        shutil.copy2(self.asset_dir / "config" / "inventory.toml", inventory_file)
         return self._user_config_dir
 
     @property
@@ -166,6 +165,36 @@ asset_dir = AD.asset_dir
 config_dir = AD.config_dir
 config_file = AD.config_file
 is_bundeled = AD.is_bundeled
+
+
+def get_cache_information(
+    redis_host: Optional[str] = None,
+    redis_port: Optional[str] = None,
+    scheduler_host: Optional[str] = None,
+    scheduler_port: Optional[str] = None,
+) -> Dict[str, str]:
+    """Create all information we need to setup the redis cache and the data portal."""
+    user = ssl_cert = ssl_key = ""
+    if scheduler_host and scheduler_port:
+        scheduler_host = f"{scheduler_host}:{scheduler_port}"
+    if redis_host and redis_port:
+        redis_host = f"redis://{redis_host}:{redis_port}"
+    elif redis_host and not redis_port:
+        redis_host = f"redis://{redis_host}"
+    if redis_host:
+        keys = RandomKeys(common_name=redis_host)
+        user = namegenerator.gen()
+        ssl_cert = keys.certificate_chain.decode("utf-8")
+        ssl_key = keys.private_key_pem.decode("utf-8")
+    return {
+        "ssl_cert": ssl_cert,
+        "ssl_key": ssl_key,
+        "host": redis_host or "",
+        "user": user,
+        "passwd": "",
+        "scheduler_host": scheduler_host or "",
+        "cache_exp": "86400",
+    }
 
 
 def get_current_file_dir(inp_dir: str | Path, value: str) -> str:
@@ -205,12 +234,23 @@ def _update_config(
 
 def _create_new_config(inp_file: Path) -> Path:
     """Update any old configuration file to a newer version."""
+    config_str = inp_file.read_text()
     config = cast(
         Dict[str, Dict[str, Dict[str, Union[str, float, int, bool]]]],
-        tomlkit.loads(inp_file.read_text()),
+        tomlkit.loads(config_str),
     )
+    keys_to_check = {
+        "freva_rest": [
+            "redis_host",
+            "oidc_url",
+            "oidc_client",
+            "oidc_client_secret",
+            "data_loader_portal_hosts",
+            "deploy_data_loader",
+        ]
+    }
     create_backup = False
-    config_tmpl = tomlkit.loads(AD.inventory_file.read_text())
+    config_tmpl = cast(Dict[str, Any], tomlkit.loads(AD.inventory_file.read_text()))
     # Legacy solr:
     if "solr" in config or "databrowser" in config:
         create_backup = True
@@ -223,12 +263,17 @@ def _create_new_config(inp_file: Path) -> Path:
                     ]["config"].pop(key)
         else:
             config["freva_rest"] = config.pop("databrowser")
-            config["freva_rest"]["config"]["freva_rest_port"] = config[
-                "freva_rest"
-            ]["config"].pop("databrowser_port", "")
+            config["freva_rest"]["config"]["freva_rest_port"] = config["freva_rest"][
+                "config"
+            ].pop("databrowser_port", "")
             config["freva_rest"]["config"]["freva_rest_playbook"] = config[
                 "freva_rest"
             ]["config"].pop("databrowser_playbook", "")
+    for section, keys in keys_to_check.items():
+        for key in keys:
+            if key not in config_str:
+                config[section]["config"][key] = config_tmpl[section]["config"][key]
+                create_backup = True
     if create_backup:
         backup_file = inp_file.with_suffix(inp_file.suffix + ".bck")
         logger.info(
@@ -253,9 +298,7 @@ def load_config(inp_file: str | Path, convert: bool = False) -> dict[str, Any]:
     return config
 
 
-def get_setup_for_service(
-    service: str, setups: list[ServiceInfo]
-) -> tuple[str, str]:
+def get_setup_for_service(service: str, setups: list[ServiceInfo]) -> tuple[str, str]:
     """Get the setup of a service configuration."""
     for setup in setups:
         if setup.name == service:
@@ -268,9 +311,7 @@ def read_db_credentials(
 ) -> dict[str, str]:
     """Read database config."""
     with cert_file.open() as f_obj:
-        key = "".join(
-            [k.strip() for k in f_obj.readlines() if not k.startswith("-")]
-        )
+        key = "".join([k.strip() for k in f_obj.readlines() if not k.startswith("-")])
         sha = hashlib.sha512(key.encode()).hexdigest()
     url = f"http://{db_host}:{port}/vault/data/{sha}"
     return requests.get(url).json()
@@ -295,15 +336,11 @@ def get_email_credentials() -> tuple[str, str]:
         if not username:
             username = Prompt.ask("[green b]Username[/] for mail server")
         if not password:
-            password = Prompt.ask(
-                "[green b]Password[/] for mail server", password=True
-            )
+            password = Prompt.ask("[green b]Password[/] for mail server", password=True)
     return username, password
 
 
-def get_passwd(
-    master_pass: Optional[str] = None, min_characters: int = 8
-) -> str:
+def get_passwd(master_pass: Optional[str] = None, min_characters: int = 8) -> str:
     """Create a secure pasword.
 
     Parameters
@@ -329,7 +366,6 @@ def get_passwd(
 
 
 def _passwd_is_good(master_pass: str, min_characters: int) -> str:
-
     is_ok: bool = len(master_pass) > min_characters
     for check in ("[a-z]", "[A-Z]", "[0-9]"):
         if not re.search(check, master_pass):
@@ -358,9 +394,7 @@ def _create_passwd(min_characters: int, msg: str = "") -> str:
     """Create passwords."""
     master_pass = Prompt.ask(msg or password_prompt, password=True)
     _passwd_is_good(master_pass, min_characters)
-    master_pass_2 = Prompt.ask(
-        "[bold green]re-enter[/] master password", password=True
-    )
+    master_pass_2 = Prompt.ask("[bold green]re-enter[/] master password", password=True)
     if master_pass != master_pass_2:
         raise ValueError("Passwords do not match")
     return master_pass

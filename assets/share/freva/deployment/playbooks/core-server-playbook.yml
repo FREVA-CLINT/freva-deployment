@@ -55,7 +55,7 @@
         pkg_mgr: "mamba"
       when: mamba_check.stat.exists
     - name: Getting the freva version
-      shell: "/opt/conda/bin/freva -V 2> /dev/null | awk '{print $NF}'"
+      shell: "{{conda_bin}}/freva -V 2> /dev/null | awk '{print $NF}'"
       register: freva_version
     - name: Check if the version is lower than {{ core_version }}
       set_fact:
