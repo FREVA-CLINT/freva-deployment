@@ -7,6 +7,12 @@ What's new
    :maxdepth: 0
    :titlesonly:
 
+v2408.1.0
+~~~~~~~~
+* Bumped version of freva-web to 2408.0.0
+
+
+
 v2408.0.0
 ~~~~~~~~
 * Add zarr-streaming deployment.
