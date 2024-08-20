@@ -7,6 +7,12 @@ What's new
    :maxdepth: 0
    :titlesonly:
 
+v2408.0.0
+~~~~~~~~
+* Add zarr-streaming deployment.
+* Implement openid-connect for authentication.
+
+
 v2407.3.0
 ~~~~~~~~
 * Bumped version of freva_rest to 2407.0.0
