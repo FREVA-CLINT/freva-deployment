@@ -7,6 +7,11 @@ What's new
    :maxdepth: 0
    :titlesonly:
 
+v2408.0.1
+~~~~~~~~
+* Some bug-fixes.
+
+
 v2408.0.0
 ~~~~~~~~
 * Add zarr-streaming deployment.
