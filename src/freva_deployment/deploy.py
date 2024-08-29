@@ -10,9 +10,8 @@ import shutil
 import string
 import sys
 import time
-from base64 import b64decode, b64encode
+from base64 import b64encode
 from copy import deepcopy
-from functools import lru_cache
 from getpass import getuser
 from pathlib import Path
 from socket import gethostbyname, gethostname
@@ -38,7 +37,6 @@ from .utils import (
     config_dir,
     get_cache_information,
     get_passwd,
-    is_bundeled,
     load_config,
 )
 from .versions import get_steps_from_versions
@@ -206,7 +204,6 @@ class DeployFactory:
             "You must give a valid path to a private key file."
         ) from None
 
-    @lru_cache()
     def _prep_vault(self) -> None:
         """Prepare the vault."""
         self.cfg["vault"]["config"].setdefault("ansible_become_user", "root")
@@ -227,7 +224,6 @@ class DeployFactory:
             "host", self.cfg["db"]["hosts"]
         )
 
-    @lru_cache()
     def _prep_db(self) -> None:
         """prepare the mariadb service."""
         self._config_keys.append("db")
@@ -256,7 +252,6 @@ class DeployFactory:
         self._prep_vault()
         self._prep_web(False)
 
-    @lru_cache()
     def _prep_data_loader(self, password: Optional[str] = None) -> None:
         """Prepare the data-loader."""
         self._prep_freva_rest()
@@ -373,7 +368,6 @@ class DeployFactory:
             },
         }
 
-    @lru_cache()
     def _prep_freva_rest(self, prep_web=True) -> None:
         """prepare the freva_rest service."""
         self._config_keys.append("freva_rest")
@@ -410,7 +404,6 @@ class DeployFactory:
         if prep_web:
             self._prep_web(False)
 
-    @lru_cache()
     def _prep_core(self) -> None:
         """prepare the core deployment."""
         self._config_keys.append("core")
@@ -575,12 +568,10 @@ class DeployFactory:
         if ask_pass:
             self._prep_apache_config()
 
-    @lru_cache()
     def _prep_apache_config(self):
         with open(self.apache_config, "w") as f_obj:
             f_obj.write((Path(asset_dir) / "web" / "freva_web.conf").read_text())
 
-    @lru_cache()
     def _prep_local_debug(self) -> None:
         """Prepare the system for a potential local debug."""
         default_ports = {"db": 3306, "freva_rest": 7777}
