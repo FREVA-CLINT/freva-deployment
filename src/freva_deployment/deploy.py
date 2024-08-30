@@ -31,14 +31,8 @@ from .error import ConfigurationError, handled_exception
 from .keys import RandomKeys
 from .logger import logger
 from .runner import RunnerDir
-from .utils import (
-    RichConsole,
-    asset_dir,
-    config_dir,
-    get_cache_information,
-    get_passwd,
-    load_config,
-)
+from .utils import (RichConsole, asset_dir, config_dir, get_cache_information,
+                    get_passwd, load_config)
 from .versions import get_steps_from_versions
 
 
@@ -1063,7 +1057,7 @@ class DeployFactory:
             cowpath=os.getenv("ANSIBLE_COW_PATH", shutil.which("cowsay") or ""),
             cow_selection="random",
             interpreter_python="auto_silent",
-            timeout="5",
+            timeout="15",
         )
         logger.debug("CONFIG\n%s", self._td.ansible_config_file.read_text())
         extravars: dict[str, str] = {
