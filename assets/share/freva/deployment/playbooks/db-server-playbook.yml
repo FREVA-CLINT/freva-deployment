@@ -20,6 +20,7 @@
     data_path: '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/{{ project_name }}/db_service'
     continer_name: "{{ db_name }}"
     vault_name: "{{project_name}}-vault"
+    vault_token_path: "{{db_data_path|regex_replace('^~', ansible_env.HOME)}}/{{ project_name }}/vault_service/files/keys"
     adminer_name: "{{project_name}}-adminer"
   tasks:
     - name: Get UID
@@ -45,7 +46,7 @@
       stat:
         path: /etc/cron.daily
       register: cron
-    - name: Registering vault volume path
+    - name: Registering vault service path
       stat:
         path: /etc/systemd/system/{{vault_name}}.service
       register: vault_service
@@ -95,6 +96,20 @@
       stat:
         path: '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/{{ project_name }}/db_service'
       register: db_service
+    - name: Register path to vault keys
+      stat:
+        path: "{{vault_token_path}}"
+      register: token_path
+    - name: Check vault keys
+      block:
+        - name: Base64 decode vault key path
+          command: base64 -d "{{vault_token_path}}"
+      rescue:
+        - name: Delete vault dir because its content is not valid
+          file:
+            state: absent
+            path: "{{db_data_path|regex_replace('^~', ansible_env.HOME)}}/{{ project_name }}/vault_service"
+      when: token_path.stat.exists
     - name:  Set db_service path exist facts
       set_fact:
         db_service_exist: "{{ db_service.stat.exists }}"
