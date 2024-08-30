@@ -31,8 +31,14 @@ from .error import ConfigurationError, handled_exception
 from .keys import RandomKeys
 from .logger import logger
 from .runner import RunnerDir
-from .utils import (RichConsole, asset_dir, config_dir, get_cache_information,
-                    get_passwd, load_config)
+from .utils import (
+    RichConsole,
+    asset_dir,
+    config_dir,
+    get_cache_information,
+    get_passwd,
+    load_config,
+)
 from .versions import get_steps_from_versions
 
 
