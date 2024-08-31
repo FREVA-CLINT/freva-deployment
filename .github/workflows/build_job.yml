@@ -24,7 +24,9 @@ jobs:
         uses: actions/github-script@v6
         with:
           script: |
-            const octokit = new Octokit({ auth: context.token });
+            const core = require('@actions/core');
+
+            const octokit = new Octokit({ auth: core.getInput('GITHUB_TOKEN') });
             const releases = await octokit.rest.repos.listReleases({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -54,6 +56,7 @@ jobs:
         with:
           name: release_url
           path: release_url.txt
+
 
 
   build-windows:
