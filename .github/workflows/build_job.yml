@@ -19,8 +19,21 @@ jobs:
     name: Create Release
     runs-on: ubuntu-latest
     steps:
-      - name: Create Release
-        if: startsWith(github.ref, 'refs/tags/')
+      - name: Check for Existing Release
+        id: check_release
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const octokit = new Octokit({ auth: context.token });
+            const releases = await octokit.rest.repos.listReleases({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag: context.ref.replace('refs/tags/', '')
+            });
+            return releases.data.length > 0;
+
+      - name: Create Release (if not exists)
+        if: startsWith(github.ref, 'refs/tags/') && steps.check_release.outputs.existing_release == false
         id: create_release
         uses: actions/create-release@v1
         env:
@@ -30,15 +43,18 @@ jobs:
           release_name: Release ${{ github.ref }}
           draft: false
           prerelease: false
+
       - name: Output Release URL File
-        if: startsWith(github.ref, 'refs/tags/')
+        if: startsWith(github.ref, 'refs/tags/') && steps.check_release.outputs.existing_release == false
         run: echo "${{ steps.create_release.outputs.upload_url }}" > release_url.txt
+
       - name: Save Release URL File for publish
-        if: startsWith(github.ref, 'refs/tags/')
+        if: startsWith(github.ref, 'refs/tags/') && steps.check_release.outputs.existing_release == false
         uses: actions/upload-artifact@v1
         with:
           name: release_url
           path: release_url.txt
+
 
   build-windows:
     needs: [release]
