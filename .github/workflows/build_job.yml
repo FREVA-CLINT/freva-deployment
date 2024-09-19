@@ -22,7 +22,7 @@ jobs:
       - name: Create Release
         if: startsWith(github.ref, 'refs/tags/')
         id: create_release
-        uses: actions/create-release@v4
+        uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.ASSET_TOKEN }}
         with:
@@ -35,7 +35,7 @@ jobs:
         run: echo "${{ steps.create_release.outputs.upload_url }}" > release_url.txt
       - name: Save Release URL File for publish
         if: startsWith(github.ref, 'refs/tags/')
-        uses: actions/upload-artifact@v1
+        uses: actions/upload-artifact@v3
         with:
           name: release_url
           path: release_url.txt
