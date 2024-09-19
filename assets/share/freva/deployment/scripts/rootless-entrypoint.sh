@@ -7,11 +7,21 @@ _setup_mariadb() {
         echo "   user=root" >> /etc/mysql/conf.d/root.cnf
     fi
 }
+
 _setup_mongodb(){
     DIR_OWNER=$(stat -c '%U' "/data/configdb")
     if [ "$DIR_OWNER" != "root" ]; then
         chown -R root:0 /data/configdb
     fi
+    echo "starting mongo without authentication"
+    mongod --bind_ip_all --fork
+    echo "creating user ..."
+    mongosh --eval 'use admin; db.createUser({user: "mongo", pwd: "{{root_passwd}}", roles: [{ role: "root", db: "admin" }]});'
+    export MONGO_INITDB_ROOT_USERNAME=mongo
+    export MONGO_INITDB_ROOT_PASSWORD={{root_passwd}}
+    echo "restarting mongo with authentication enabled..."
+    mongod --shutdown
+    COMMAND="mongod --bind_ip_all --auth"
 }
 
 COMMAND=${@:-redis-server}
