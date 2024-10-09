@@ -7,6 +7,12 @@ What's new
    :maxdepth: 0
    :titlesonly:
 
+v2410.0.0
+~~~~~~~~
+* Bumped version of freva_rest to 2410.0.0-beta
+
+
+
 v2408.0.1
 ~~~~~~~~
 * Some bug-fixes.
