@@ -29,16 +29,15 @@ services:
       - 8983:8983
 
   {{mongo_name}}:
+    image: docker.io/mongo:latest
+    container_name: {{ mongo_name }}
+    hostname: {{ mongo_name }}
 {% if (become == true and ansible_become_user == 'root') or ansible_user == 'root' %}
-    container_name: {{mongo_name}}
+    entrypoint: /tmp/mongo-flush-pass-entrypoint.sh
 {% else %}
-    container_name: {{mongo_name}}
     user: root:0
     entrypoint: /tmp/entrypoint.sh
 {% endif %}
-    image: docker.io/mongo:latest
-    container_name: {{mongo_name}}
-    hostname: {{mongo_name}}
 {% if debug %}
     network_mode: host
 {% else %}
@@ -46,8 +45,6 @@ services:
       - {{freva_rest_name}}
 {% endif %}
     environment:
-      - MONGO_INITDB_ROOT_USERNAME=mongo
-      - MONGO_INITDB_ROOT_PASSWORD={{root_passwd}}
       - MONGO_INITDB_DATABASE=search_stats
     volumes:
 {% for volume in mongo_volumes %}

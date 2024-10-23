@@ -9,6 +9,7 @@
     freva_rest_name: "{{project_name}}-freva_rest"
     databrowser_name: "{{project_name}}-databrowser"
     compose_file: '{{freva_rest_data_path|regex_replace("^~", ansible_env.HOME)}}/compose_services/{{freva_rest_name}}-compose.yml'
+    flush_mongo_pass_path: '{{freva_rest_data_path|regex_replace("^~", ansible_env.HOME)}}/{{ project_name }}/freva_rest/mongo-flush-pass-entrypoint.sh'
     solr_name: "{{project_name}}-solr"
     mongo_name: "{{project_name}}-mongo"
     data_path: '{{freva_rest_data_path|regex_replace("^~", ansible_env.HOME)}}/{{project_name}}/freva_rest'
@@ -30,6 +31,8 @@
     mongo_volumes:
       - '{{freva_rest_data_path|regex_replace("^~", ansible_env.HOME)}}/{{project_name}}/freva_rest/stats:/data/db:z'
       - '{{freva_rest_data_path|regex_replace("^~", ansible_env.HOME)}}/{{ project_name }}/freva_rest/rootless-entrypoint.sh:/tmp/entrypoint.sh:z'
+      - '{{freva_rest_data_path|regex_replace("^~", ansible_env.HOME)}}/{{ project_name }}/freva_rest/mongo-flush-pass-entrypoint.sh:/tmp/mongo-flush-pass-entrypoint.sh:z'
+      - '{{freva_rest_data_path|regex_replace("^~", ansible_env.HOME)}}/freva-service-config/mongo/mongo-userdata-init.js:/docker-entrypoint-initdb.d/mongo-userdata-init.js:ro'
     ansible_become_user: "{{ freva_rest_ansible_become_user | default('root') }}"
   tasks:
     - name: Decode Base64 information content
@@ -177,6 +180,13 @@
       template:
         src: "{{ asset_dir }}/playbooks/freva_rest-server-compose-template.yml"
         dest: "{{compose_file}}"
+    - name: Deploy and set permissions for MongoDB flush password entrypoint
+      template:
+        src: "{{ asset_dir }}/script/mongo-flush-pass-entrypoint.sh"
+        dest: "{{flush_mongo_pass_path}}"
+        owner: "{{ uid }}"
+        group: "{{ gid }}"
+        mode: "0755"
     - name: Creating systemd services
       shell: |
         /tmp/create_systemd.py {{freva_rest_name}} compose --enable --project-name {{freva_rest_name}} -f {{compose_file}} up --remove-orphans
