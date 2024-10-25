@@ -285,6 +285,8 @@ jobs:
     strategy:
       matrix:
         include:
+          - arch: linux/amd64
+            target: linux-x64
           - arch: linux/arm64
             target: linux-arm64
           - arch: linux/arm/v7
