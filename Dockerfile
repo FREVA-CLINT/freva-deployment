@@ -1,4 +1,4 @@
-FROM debian:bookworm
+FROM debian:bullseye-20240904
 
 ARG VERSION
 LABEL org.opencontainers.image.authors="DRKZ-CLINT"
