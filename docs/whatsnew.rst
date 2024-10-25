@@ -7,6 +7,11 @@ What's new
    :maxdepth: 0
    :titlesonly:
 
+v2410.0.0
+~~~~~~~~
+* Add a routine to reset the mongo root password
+* Add mongo user data facet validator
+
 v2408.0.1
 ~~~~~~~~
 * Some bug-fixes.
