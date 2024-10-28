@@ -7,3 +7,9 @@ build:
 
 conda:
   environment: docs/environment.yml
+branches:
+  only:
+    - main
+tags:
+  only:
+    - '*'
