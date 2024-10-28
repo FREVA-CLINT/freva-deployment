@@ -55,4 +55,4 @@ that is the definitions of dataset metadata, was hard coded into the module
 is saved in a designated [toml](https://toml.io/en/) file (drs_config.toml).
 The ingestion of data is done by the new `data-crawler` software, which is
 written in python. More information on this configuration and usage of the
-software can be found on the [software documentation](https://freva.gitlab-pages.dkrz.de/metadata-crawler-source/index.html).
+software can be found on the [software documentation](https://freva.gitlab-pages.dkrz.de/metadata-crawler-source/docs/index.html).
