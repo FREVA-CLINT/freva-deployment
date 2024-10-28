@@ -182,7 +182,7 @@
         dest: "{{compose_file}}"
     - name: Deploy and set permissions for MongoDB flush password entrypoint
       template:
-        src: "{{ asset_dir }}/script/mongo-flush-pass-entrypoint.sh"
+        src: "{{ asset_dir }}/scripts/mongo-flush-pass-entrypoint.sh"
         dest: "{{flush_mongo_pass_path}}"
         owner: "{{ uid }}"
         group: "{{ gid }}"
