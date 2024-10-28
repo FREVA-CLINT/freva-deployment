@@ -7,6 +7,10 @@ What's new
    :maxdepth: 0
    :titlesonly:
 
+v2410.0.3
+~~~~~~~~
+* bug-fixes in ci and furnish readthedocs
+
 v2410.0.0
 ~~~~~~~~
 * Add a routine to reset the mongo root password

@@ -35,7 +35,7 @@ jobs:
         run: echo "${{ steps.create_release.outputs.upload_url }}" > release_url.txt
       - name: Save Release URL File for publish
         if: startsWith(github.ref, 'refs/tags/')
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: release_url
           path: release_url.txt
@@ -129,9 +129,10 @@ jobs:
         shell: pwsh
       - name: Load Release URL File from release job
         if: startsWith(github.ref, 'refs/tags/')
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: release_url
+          path: release_url
       - name: Get version
         id: version
         run: |
@@ -159,7 +160,7 @@ jobs:
           asset_name: deploy-freva-v${{steps.version.outputs.tag}}-${{matrix.target}}.zip
           asset_content_type: application/zip
       - name: Upload cmd Asset
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           path: deploy-freva-v${{steps.version.outputs.tag}}-${{matrix.target}}.zip
           name: deploy-freva-v${{steps.version.outputs.tag}}-${{matrix.target}}.zip
@@ -250,9 +251,10 @@ jobs:
 
       - name: Load Release URL File from release job
         if: startsWith(github.ref, 'refs/tags/')
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: release_url
+          path: release_url
       - name: Get Release File Name & Upload URL
         if: startsWith(github.ref, 'refs/tags/')
         id: release_url
@@ -271,7 +273,7 @@ jobs:
           asset_name: deploy-freva-v${{steps.version.outputs.tag}}-${{matrix.target}}.tar.gz
           asset_content_type: application/gzip
       - name: Upload cmd Asset
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           path: deploy-freva-v${{steps.version.outputs.tag}}-${{matrix.target}}.tar.gz
           name: deploy-freva-v${{steps.version.outputs.tag}}-${{matrix.target}}.tar.gz
@@ -365,9 +367,10 @@ jobs:
           -C ./dist deploy-freva
       - name: Load Release URL File from release job
         if: startsWith(github.ref, 'refs/tags/')
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: release_url
+          path: release_url
       - name: Get Release File Name & Upload URL
         if: startsWith(github.ref, 'refs/tags/')
         shell: bash
@@ -386,7 +389,7 @@ jobs:
           asset_content_type: application/gzip
 
       - name: Upload cmd Asset
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           path: deploy-freva-v${{steps.version.outputs.tag}}-${{matrix.target}}.tar.gz
           name: deploy-freva-v${{steps.version.outputs.tag}}-${{matrix.target}}.tar.gz
