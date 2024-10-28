@@ -368,6 +368,7 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: release_url
+          path: release_url
       - name: Get Release File Name & Upload URL
         if: startsWith(github.ref, 'refs/tags/')
         shell: bash
