@@ -5,7 +5,6 @@ from pathlib import Path
 from typing import Dict, List, cast
 
 import npyscreen
-
 from freva_deployment import AVAILABLE_CONDA_ARCHS, AVAILABLE_PYTHON_VERSIONS
 from freva_deployment.utils import get_current_file_dir
 
@@ -18,6 +17,8 @@ from .base import (
     TextInfo,
     logger,
 )
+
+DEPLOYMENT_METHODS = ["container", "conda"]
 
 
 def get_index(values: list[str], target: str, default: int = 0) -> int:
@@ -127,7 +128,9 @@ class CoreScreen(BaseForm):
                     section="core.config",
                     key="scheduler_system",
                     name=f"{self.num}Workload manger",
-                    value=self.scheduler_index(cast(str, cfg.get("scheduler_system"))),
+                    value=self.scheduler_index(
+                        cast(str, cfg.get("scheduler_system"))
+                    ),
                     values=self.scheduler_systems,
                 ),
                 True,
@@ -208,7 +211,9 @@ class CoreScreen(BaseForm):
                     section="core.config",
                     key="ansible_python_interpreter",
                     name=f"{self.num}Python path on remote machine",
-                    value=cfg.get("ansible_python_interpreter", "/usr/bin/python3"),
+                    value=cfg.get(
+                        "ansible_python_interpreter", "/usr/bin/python3"
+                    ),
                 ),
                 False,
             ),
@@ -265,6 +270,20 @@ class WebScreen(BaseForm):
                     key="hosts",
                     name=f"{self.num}Server Name(s) the web service is deployed on",
                     value=self.get_host("web"),
+                ),
+                True,
+            ),
+            deployment_method=(
+                self.add_widget_intelligent(
+                    ComboInfo,
+                    section="web.config",
+                    key="deployment_method",
+                    name=f"{self.num}Deployment Method",
+                    value=get_index(
+                        DEPLOYMENT_METHODS,
+                        cfg.get("deployment_method", "conda"),
+                    ),
+                    values=DEPLOYMENT_METHODS,
                 ),
                 True,
             ),
@@ -404,7 +423,9 @@ class WebScreen(BaseForm):
                     section="web.config",
                     key="homepage_heading",
                     name=f"{self.num}A brief describtion of the project",
-                    value=cfg.get("homepage_heading", "Lorem ipsum dolor sit amet"),
+                    value=cfg.get(
+                        "homepage_heading", "Lorem ipsum dolor sit amet"
+                    ),
                 ),
                 True,
             ),
@@ -470,7 +491,9 @@ class WebScreen(BaseForm):
                     section="web.config",
                     key="ansible_python_interpreter",
                     name=f"{self.num}Pythonpath on remote machine",
-                    value=cfg.get("ansible_python_interpreter", "/usr/bin/python3"),
+                    value=cfg.get(
+                        "ansible_python_interpreter", "/usr/bin/python3"
+                    ),
                 ),
                 False,
             ),
@@ -557,6 +580,20 @@ class DBScreen(BaseForm):
                 ),
                 True,
             ),
+            deployment_method=(
+                self.add_widget_intelligent(
+                    ComboInfo,
+                    section="db.config",
+                    key="deployment_method",
+                    name=f"{self.num}Deployment Method",
+                    value=get_index(
+                        DEPLOYMENT_METHODS,
+                        cfg.get("deployment_method", "conda"),
+                    ),
+                    values=DEPLOYMENT_METHODS,
+                ),
+                True,
+            ),
             data_path=(
                 self.add_widget_intelligent(
                     TextInfo,
@@ -599,7 +636,9 @@ class DBScreen(BaseForm):
                     section="db.config",
                     key="ansible_python_interpreter",
                     name=f"{self.num}Pythonpath on remote machine",
-                    value=cfg.get("ansible_python_interpreter", "/usr/bin/python3"),
+                    value=cfg.get(
+                        "ansible_python_interpreter", "/usr/bin/python3"
+                    ),
                 ),
                 False,
             ),
@@ -678,6 +717,20 @@ class FrevaRestScreen(BaseForm):
                     name=f"{self.num}Freva-rest API port",
                     value=freva_rest_port_idx,
                     values=freva_rest_ports,
+                ),
+                True,
+            ),
+            deployment_method=(
+                self.add_widget_intelligent(
+                    ComboInfo,
+                    section="freva_rest.config",
+                    key="deployment_method",
+                    name=f"{self.num}Deployment Method",
+                    value=get_index(
+                        DEPLOYMENT_METHODS,
+                        cfg.get("deployment_method", "conda"),
+                    ),
+                    values=DEPLOYMENT_METHODS,
                 ),
                 True,
             ),
@@ -792,7 +845,9 @@ class FrevaRestScreen(BaseForm):
                     section="freva_rest.config",
                     key="ansible_python_interpreter",
                     name=f"{self.num}Pythonpath on remote machine",
-                    value=cfg.get("ansible_python_interpreter", "/usr/bin/python3"),
+                    value=cfg.get(
+                        "ansible_python_interpreter", "/usr/bin/python3"
+                    ),
                 ),
                 False,
             ),
@@ -825,7 +880,9 @@ class RunForm(npyscreen.FormMultiPageAction):
 
         self.parentApp.thread_stop.set()
         if not self.project_name.value:
-            npyscreen.notify_confirm("You have to set a project name", title="ERROR")
+            npyscreen.notify_confirm(
+                "You have to set a project name", title="ERROR"
+            )
             return
         missing_form: None | str = self.parentApp.check_missing_config()
         if missing_form:
@@ -853,9 +910,7 @@ class RunForm(npyscreen.FormMultiPageAction):
                         and gen_keys is False
                     ):
                         if keyfile:
-                            msg = (
-                                f"{key_type} certificate file `{key_file}` must exist."
-                            )
+                            msg = f"{key_type} certificate file `{key_file}` must exist."
                         else:
                             msg = f"You must give a {key_type} certificate file"
                         npyscreen.notify_confirm(msg, title="ERROR")

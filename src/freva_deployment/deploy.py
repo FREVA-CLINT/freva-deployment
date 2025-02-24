@@ -240,7 +240,9 @@ class DeployFactory:
         )
         self.cfg["db"]["config"]["data_path"] = str(data_path)
         for key in ("name", "user", "db"):
-            self.cfg["db"]["config"][key] = self.cfg["db"]["config"].get(key) or "freva"
+            self.cfg["db"]["config"][key] = (
+                self.cfg["db"]["config"].get(key) or "freva"
+            )
         db_host = self.cfg["db"]["config"].get("host", "").strip()
         if not db_host:
             self.cfg["db"]["config"]["host"] = host
@@ -284,17 +286,19 @@ class DeployFactory:
         self.cfg["freva_rest"]["config"][
             "redis_cache_url"
         ] = f"redis://{redis_host}:{redis_port}"
-        api_url = (
+        proxy_url = (
             f'http://{self.cfg["freva_rest"]["hosts"]}:'
             f'{self.cfg["freva_rest"]["config"]["freva_rest_port"]}'
         )
-        api_url = self.cfg["web"]["config"].get("project_website", api_url)
-        parsed_api_url = urlparse(api_url)
+        proxy_url = self.cfg["web"]["config"].get("project_website", proxy_url)
+        parsed_proxy_url = urlparse(proxy_url)
         self.cfg["freva_rest"]["config"][
-            "api_url"
-        ] = f"{parsed_api_url.scheme}://{parsed_api_url.netloc}"
+            "proxy_url"
+        ] = f"{parsed_proxy_url.scheme}://{parsed_proxy_url.netloc}"
         scheduler_host, _, scheduler_port = scheduler_host.partition(":")
-        user_name = self.cfg["freva_rest"]["config"].get("ansible_user", getuser())
+        user_name = self.cfg["freva_rest"]["config"].get(
+            "ansible_user", getuser()
+        )
         redis_information_enc = self._td.get_remote_file_content(
             os.path.join(data_path, ".redis-cache.json"),
             redis_host,
@@ -437,7 +441,9 @@ class DeployFactory:
         scheduler_output_dir = self.cfg["core"]["config"].get(
             "scheduler_output_dir", ""
         )
-        scheduler_system = self.cfg["core"]["config"].get("scheduler_system", "local")
+        scheduler_system = self.cfg["core"]["config"].get(
+            "scheduler_system", "local"
+        )
         if not preview_path:
             self.cfg["core"]["config"]["preview_path"] = str(
                 Path(base_dir_location) / "share" / "preview"
@@ -446,7 +452,9 @@ class DeployFactory:
             scheduler_output_dir = str(Path(base_dir_location) / "share")
         elif Path(scheduler_output_dir).parts[-1] != scheduler_system:
             scheduler_output_dir = Path(scheduler_output_dir) / scheduler_system
-        self.cfg["core"]["config"]["scheduler_output_dir"] = str(scheduler_output_dir)
+        self.cfg["core"]["config"]["scheduler_output_dir"] = str(
+            scheduler_output_dir
+        )
         self.cfg["core"]["config"]["keyfile"] = self.public_key_file
         git_exe = self.cfg["core"]["config"].get("git_path")
         self.cfg["core"]["config"]["git_path"] = git_exe or "git"
@@ -489,9 +497,13 @@ class DeployFactory:
             self.cfg["web"]["config"]["admin"] = admin[0]
         else:
             self.cfg["web"]["config"]["admin"] = admin
-        allowed_hosts = self.cfg["web"]["config"].get("allowed_hosts") or ["localhost"]
+        allowed_hosts = self.cfg["web"]["config"].get("allowed_hosts") or [
+            "localhost"
+        ]
         if isinstance(allowed_hosts, str):
-            allowed_hosts = [s.strip() for s in allowed_hosts.split(",") if s.strip()]
+            allowed_hosts = [
+                s.strip() for s in allowed_hosts.split(",") if s.strip()
+            ]
         allowed_hosts.append(self.cfg["web"]["hosts"])
         allowed_hosts.append(f"{self.project_name}-httpd")
         self.cfg["web"]["config"]["allowed_hosts"] = [
@@ -499,16 +511,26 @@ class DeployFactory:
         ]
 
         _webserver_items = {
-            "institution_logo": self.cfg["web"]["config"].get("institution_logo", ""),
+            "institution_logo": self.cfg["web"]["config"].get(
+                "institution_logo", ""
+            ),
             "main_color": self.cfg["web"]["config"].get("main_color", "Tomato"),
-            "border_color": self.cfg["web"]["config"].get("border_color", "#6c2e1f"),
-            "hover_color": self.cfg["web"]["config"].get("hover_color", "#d0513a"),
+            "border_color": self.cfg["web"]["config"].get(
+                "border_color", "#6c2e1f"
+            ),
+            "hover_color": self.cfg["web"]["config"].get(
+                "hover_color", "#d0513a"
+            ),
             "homepage_text": self.cfg["web"]["config"].get("homepage_text", ""),
             "imprint": self.cfg["web"]["config"].get("imprint", []),
-            "homepage_heading": self.cfg["web"]["config"].get("homepage_heading", ""),
+            "homepage_heading": self.cfg["web"]["config"].get(
+                "homepage_heading", ""
+            ),
             "about_us_text": self.cfg["web"]["config"].get("about_us_text", ""),
             "contacts": self.cfg["web"]["config"].get("contacts", []),
-            "insitution_name": self.cfg["web"]["config"].get("insitution_name", ""),
+            "insitution_name": self.cfg["web"]["config"].get(
+                "insitution_name", ""
+            ),
             "menu_entries": self.cfg["web"]["config"].get("menu_entries", []),
         }
         try:
@@ -558,9 +580,9 @@ class DeployFactory:
         for key in ("core", "web"):
             self.cfg[key]["config"]["config_toml_file"] = str(self.web_conf_file)
         self._prep_vault()
-        self.cfg["vault"]["config"]["ansible_python_interpreter"] = self.cfg["db"][
-            "config"
-        ].get("ansible_python_interpreter", "/usr/bin/python3")
+        self.cfg["vault"]["config"]["ansible_python_interpreter"] = self.cfg[
+            "db"
+        ]["config"].get("ansible_python_interpreter", "/usr/bin/python3")
         self.cfg["web"]["config"]["root_passwd"] = self.master_pass
         self.cfg["web"]["config"]["private_keyfile"] = self.private_key_file
         self.cfg["web"]["config"]["public_keyfile"] = self.public_key_file
@@ -604,9 +626,13 @@ class DeployFactory:
             if step in ("db", "freva_rest"):
                 self.cfg[step]["config"]["port"] = default_ports[step]
             self.cfg[step]["config"]["ansible_user"] = getuser()
-            self.cfg[step]["config"]["ansible_python_interpreter"] = sys.executable
+            self.cfg[step]["config"][
+                "ansible_python_interpreter"
+            ] = sys.executable
             if "data_path" in self.cfg[step]["config"]:
-                self.cfg[step]["config"]["data_path"] = str(deploy_dir / "services")
+                self.cfg[step]["config"]["data_path"] = str(
+                    deploy_dir / "services"
+                )
 
     def __enter__(self):
         return self
@@ -635,7 +661,11 @@ class DeployFactory:
                     sections.append(section)
         for section in sections:
             for key, value in self.cfg[section]["config"].items():
-                if not value and not self._empty_ok and not isinstance(value, bool):
+                if (
+                    not value
+                    and not self._empty_ok
+                    and not isinstance(value, bool)
+                ):
                     raise ConfigurationError(
                         f"{key} in {section} is empty in {self._inv_tmpl}"
                     ) from None
@@ -670,7 +700,9 @@ class DeployFactory:
     def _create_random_passwd(num_chars: int = 30, num_digits: int = 8) -> str:
         num_chars -= num_digits
         characters = [
-            "".join([random.choice(string.ascii_letters) for i in range(num_chars)]),
+            "".join(
+                [random.choice(string.ascii_letters) for i in range(num_chars)]
+            ),
             "".join([random.choice(string.digits) for i in range(num_digits)]),
         ]
         str_characters = "".join(characters)
@@ -722,9 +754,13 @@ class DeployFactory:
         if dump_file:
             config[step]["vars"][f"{step}_dump"] = str(dump_file)
 
-    def parse_config(self, steps: list[str]) -> Tuple[Optional[str], Optional[str]]:
+    def parse_config(
+        self, steps: list[str]
+    ) -> Tuple[Optional[str], Optional[str]]:
         """Create config files for anisble and evaluation_system.conf."""
-        versions = json.loads((Path(__file__).parent / "versions.json").read_text())
+        versions = json.loads(
+            (Path(__file__).parent / "versions.json").read_text()
+        )
         additional_steps = set(steps) - set(self.steps)
         if additional_steps:
             pprint(
@@ -756,8 +792,8 @@ class DeployFactory:
                     new_key = f"{step.replace('-', '_')}_{key}"
                 config[step]["vars"][new_key] = value
             config[step]["vars"]["project_name"] = self.project_name
-            config[step]["vars"][f"{step.replace('-', '_')}_version"] = versions.get(
-                step, ""
+            config[step]["vars"][f"{step.replace('-', '_')}_version"] = (
+                versions.get(step, "")
             )
             config[step]["vars"]["debug"] = self.local_debug
             # Add additional keys
@@ -821,10 +857,20 @@ class DeployFactory:
         steps = deepcopy(self.steps)
         if "freva_rest" in steps and "data-loader" in self.playbooks:
             steps.insert(steps.index("freva_rest"), "data-loader")
+        valid_deployment_methods = ("container", "conda")
         for step in steps:
+            deployment_method = self.cfg[step]["config"].get(
+                "deployment_method", "container"
+            )
+            if deployment_method not in valid_deployment_methods:
+                raise ValueError(
+                    f"Deployment method in step: {step} is invalid, should be"
+                    f"one of {', '.join(valid_deployment_methods)}"
+                )
             playbook_file = (
                 self.playbooks.get(step)
-                or self.playbook_dir / f"{step}-server-playbook.yml"
+                or self.playbook_dir
+                / f"{step}-server-playbook-{deployment_method}.yml"
             )
             with Path(playbook_file).open(encoding="utf-8") as f_obj:
                 playbook += yaml.safe_load(f_obj)
@@ -940,15 +986,18 @@ class DeployFactory:
                 "utf-8"
             ),
         )
-        if self.cfg["freva_rest"]["config"].get("deploy_data_loader", False) is False:
+        if (
+            self.cfg["freva_rest"]["config"].get("deploy_data_loader", False)
+            is False
+        ):
             return
         config: dict[str, dict[str, dict[str, str | int | bool]]] = {}
         config["redis_cache"] = {}
         config["redis_cache"]["hosts"] = self.cfg["redis_cache"]["hosts"]
         config["redis_cache"]["vars"] = self.cfg["redis_cache"]["config"].copy()
-        self.cfg["freva_rest"]["config"]["cache_information"] = self.cfg["redis_cache"][
-            "config"
-        ]["information"]
+        self.cfg["freva_rest"]["config"]["cache_information"] = self.cfg[
+            "redis_cache"
+        ]["config"]["information"]
 
     def get_steps_from_versions(
         self,
@@ -993,7 +1042,9 @@ class DeployFactory:
                     "ansible_python_interpreter", ""
                 )
                 if python_exe:
-                    config[step]["vars"]["ansible_python_interpreter"] = python_exe
+                    config[step]["vars"][
+                        "ansible_python_interpreter"
+                    ] = python_exe
         config.setdefault("core", {})
         config["core"].setdefault("vars", {})
         config["core"]["vars"]["core_install_dir"] = cfg["core"]["config"][
@@ -1092,9 +1143,12 @@ class DeployFactory:
             return None
         logger.debug(inventory)
         self.create_eval_config()
-        logger.info("Playing the playbooks for %s with ansible", ", ".join(self.steps))
+        logger.info(
+            "Playing the playbooks for %s with ansible", ", ".join(self.steps)
+        )
         logger.debug(self.playbooks)
         time.sleep(3)
+        # return
         self._td.run_ansible_playbook(
             playbook=playbook,
             inventory=inventory,

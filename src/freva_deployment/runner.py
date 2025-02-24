@@ -112,6 +112,7 @@ class RunnerDir(TemporaryDirectory):
     def __init__(self) -> None:
         super().__init__(prefix="AnsibleRunner")
         self.parent_dir = Path(self.name)
+        self.parent_dir = Path("foo")
         self.env_dir = self.parent_dir / "env"
         self.inventory_dir = self.parent_dir / "inventory"
         self.project_dir = self.parent_dir / "project"

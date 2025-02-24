@@ -247,7 +247,10 @@ def _create_new_config(inp_file: Path) -> Path:
             "oidc_client_secret",
             "data_loader_portal_hosts",
             "deploy_data_loader",
-        ]
+            "deployment_method",
+        ],
+        "web": ["deployment_method"],
+        "db": ["deployment_method"],
     }
     create_backup = False
     config_tmpl = cast(Dict[str, Any], tomlkit.loads(AD.inventory_file.read_text()))
@@ -292,7 +295,7 @@ def load_config(inp_file: str | Path, convert: bool = False) -> dict[str, Any]:
     variables = cast(
         dict[str, str], tomlkit.loads(config_file.read_text())["variables"]
     )
-    config = tomlkit.loads(inp_file.read_text())
+    config = tomlkit.loads(inp_file.read_text(encoding="utf-8"))
     if convert:
         _convert_dict(config, variables, inp_file.parent)
     return config

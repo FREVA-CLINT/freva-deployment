@@ -1,0 +1,193 @@
+---
+- name: Deploying the database service
+  hosts: db
+
+  become: "{{ db_ansible_become_user is defined and db_ansible_become_user != '' }}"
+  vars:
+    become: "{{ db_ansible_become_user is defined and db_ansible_become_user != '' }}"
+    ansible_python_interpreter: "{{ db_ansible_python_interpreter }}"
+    ansible_become_user: "{{ db_ansible_become_user | default('root') }}"
+    compose_file: '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/compose_services/{{db_name}}-compose.yml'
+    conda_url: "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3"
+    conda_path: '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/{{ project_name }}'
+    continer_name: "{{ db_name }}"
+    vault_name: "{{project_name}}-vault"
+    vault_token_path: "{{db_data_path|regex_replace('^~', ansible_env.HOME)}}/{{ project_name }}/share/freva-rest-server/vault/keys"
+    systemd_unit_dir: "{{ '/etc/systemd/system' if  db_ansible_become_user is defined and db_ansible_become_user != '' else ansible_env.HOME + '/.config/systemd/user' }}"
+
+  tasks:
+    - name: Ensure the user systemd directory exists
+      file:
+        path: "{{ systemd_unit_dir }}"
+        state: directory
+        mode: "0755"
+    - name: Get UID
+      command: id -u {{ ansible_user }}
+      register: uid_result
+    - name: Get GID
+      command: id -g {{ ansible_user }}
+      register: gid_result
+    - name: Set UID and GID as facts
+      set_fact:
+        uid: "{{ uid_result.stdout }}"
+        gid: "{{ gid_result.stdout }}"
+    - name: Creating temp. dir
+      tempfile:
+        state: directory
+        prefix: evaluation_system
+      register: tempdir
+    - name: Registering conda path
+      stat:
+        path: "{{ conda_path }}"
+      register: conda_env_path
+    - name: Registering mysql path
+      stat:
+        path: "{{ conda_path }}/bin/mysql.server"
+      register: mysql_bin
+    - name: Downloading miniforge
+      ansible.builtin.script:
+        cmd: "{{ asset_dir }}/scripts/download_conda.py {{ tempdir.path }}"
+      when: not conda_env_path.stat.exists
+    - name: Creating conda dir
+      file:
+        path: "{{ conda_path }}"
+        owner: "{{uid}}"
+        group: "{{gid}}"
+        recurse: true
+      when: not conda_env_path.stat.exists
+    - name: Setting up conda environment
+      shell:
+        cmd: "./conda.sh -b -u -f -p {{conda_path}}"
+        chdir: "{{ tempdir.path }}"
+      when: not conda_env_path.stat.exists
+    - name: Installing freva-rest-server package
+      shell:
+        cmd: "{{ conda_path }}/bin/mamba install -y freva-rest-server vault"
+      when: not mysql_bin.stat.exists
+    - name: Adjusting mysql dir ownership
+      file:
+        path: "{{ conda_path }}"
+        owner: "{{uid}}"
+        group: "{{gid}}"
+        state: directory
+        recurse: true
+    - name: Cleaning existing directory structure
+      file:
+        path: '{{db_data_path}}/data'
+        state: absent
+      when: db_wipe == true
+    - name: Initialising mysql db
+      shell:
+        cmd: "{{conda_path}}/libexec/freva-rest-server/scripts/init-mysql"
+      environment:
+        MYSQL_USER: "{{ db_user }}"
+        MYSQL_PASSWORD: "{{ db_passwd }}"
+        MYSQL_ROOT_PASSWORD: "{{ root_passwd }}"
+        MYSQL_DATABASE: "{{ db }}"
+        CONDA_PREFIX: "{{ conda_path }}"
+      become: false
+    - name: Register ibdata1 file
+      stat:
+        path: "{{ conda_path }}/data/ibdata1"
+      register: idbdata
+    - name: Creating mysql systemd service
+      template:
+        src: "{{ asset_dir }}/vault/mysqld.service"
+        dest: "{{ systemd_unit_dir }}/{{ project_name }}-db.service"
+        owner: "{{uid}}"
+        group: "{{gid}}"
+        mode: "0644"
+    - name: Register path to vault keys
+      stat:
+        path: "{{vault_token_path}}"
+      register: token_path
+    - name: Check vault keys
+      block:
+        - name: Base64 decode vault key path
+          command: base64 -d "{{vault_token_path}}"
+      rescue:
+        - name: Delete vault dir because its content is not valid
+          file:
+            state: absent
+            path: "{{conda_path}}/share/freva-rest-server/vault/"
+      when: token_path.stat.exists
+    - name: Creating service directory structure
+      file:
+        state: directory
+        path: "{{ conda_path }}/share/freva-rest-server/vault/{{ item }}"
+        owner: "{{uid}}"
+        group: "{{gid}}"
+        recurse: true
+      with_items:
+        - "server"
+        - "config"
+        - "file"
+    - name: Copying public key file to target machine
+      copy:
+        src: "{{ vault_keyfile }}"
+        dest: "{{ conda_path }}/share/freva-rest-server/vault/config/freva.crt"
+        owner: "{{uid}}"
+        group: "{{gid}}"
+    - name: Copying vault files to target machine
+      copy:
+        src: "{{ asset_dir }}/vault/{{ item }}"
+        dest: "{{ conda_path }}/share/freva-rest-server/vault/server/{{ item }}"
+        owner: "{{uid}}"
+        group: "{{gid}}"
+      with_items:
+        - "vault-server-tls.hcl"
+        - "runserver.py"
+        - "policy-file.hcl"
+        - "add-vault-secret"
+        - "requirements.txt"
+    - name: Adjusting vault config file
+      replace:
+        path: "{{ conda_path }}/share/freva-rest-server/vault/server/vault-server-tls.hcl"
+        regexp: 'path\s*=\s*"/vault/file"'
+        replace: 'path = "{{ conda_path }}/share/freva-rest-server/vault/file"'
+    - name: Installing pip requirements
+      shell:
+        cmd: >
+          {{ conda_path }}/bin/python -m pip install -r
+          {{ conda_path }}/share/freva-rest-server/vault/server/requirements.txt
+          --root-user-action ignore
+    - name: Adding helper scripts
+      copy:
+        src: "{{ asset_dir }}/vault/add-vault-secret"
+        dest: "{{ conda_path }}/bin/add-vault-secret"
+        owner: "{{uid}}"
+        group: "{{gid}}"
+        mode: "0755"
+    - name: Creating vault systemd service
+      template:
+        src: "{{ asset_dir }}/vault/systemd.j2"
+        dest: "{{ item }}"
+        owner: "{{uid}}"
+        group: "{{gid}}"
+        mode: "0644"
+      with_items:
+        - "{{ conda_path }}/share/freva-rest-server/systemd/vault.service"
+        - "{{ systemd_unit_dir }}/{{ project_name }}-vault.service"
+    - name: Reload systemd daemon
+      systemd:
+        daemon_reload: true
+        scope: "{{ 'system' if become is true else 'user'}}"
+    - name: Enable and start the freva vault/mysql server
+      systemd:
+        name: "{{ item }}"
+        state: started
+        enabled: true
+        scope: "{{ 'system' if become is true else 'user'}}"
+      with_items:
+        - "{{ project_name }}-db"
+        - "{{ project_name }}-vault"
+    - pause: seconds=15
+    - name: Add DB secrets to vault
+      shell: >
+        {{ conda_path }}/bin/add-vault-secret
+        data -s db.container {{ vault_name }} -s db.host {{ vault_db_host }}
+        -s db.port {{ vault_db_port }} -s db.db {{ vault_db }}
+        -s db.passwd '{{ debug | ternary(root_passwd, vault_passwd) }}'
+        -s db.user {{ debug | ternary('root', vault_db_user) }}
+      environment:
+        ROOT_PW: "{{ root_passwd }}"

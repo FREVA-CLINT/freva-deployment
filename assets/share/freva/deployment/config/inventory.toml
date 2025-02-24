@@ -104,6 +104,12 @@ wipe = false
 ## By default, this is set to /opt/freva/<project_name>/db_service.
 data_path = "/opt/freva"
 
+## The `deployment_method` key sets the option of how the installation
+## of the service is realised `container` leverages podman/docker while
+## `conda` uses conda-forge to install the service.
+## Chosse between: "container", "conda"
+deployment_method="container"
+
 ## In case you want to set a custom path to an Ansible playbook,
 ## you can do this here. By default, the deployment will use the playbook
 ## located in the user config directory.
@@ -142,6 +148,12 @@ wipe = false
 ## Set the path where the permanent freva-rest data should be stored.
 ## By default, this is set to /opt/freva.
 data_path = "/opt/freva"
+
+## The `deployment_method` key sets the option of how the installation
+## of the service is realised `container` leverages podman/docker while
+## `conda` uses conda-forge to install the service.
+## Chosse between: "container", "conda"
+deployment_method="container"
 
 ### The the host name of the redis-cache, this cache is used for caching
 ### different kinds of data. If not set this will fall back to the host name
@@ -289,6 +301,12 @@ ansible_user = ""
 ## Set the path where the permanent web data should be stored.
 ## By default, this is set to /opt/freva.
 data_path = "/opt/freva"
+
+## The `deployment_method` key sets the option of how the installation
+## of the service is realised `container` leverages podman/docker while
+## `conda` uses conda-forge to install the service.
+## Chosse between: "container", "conda"
+deployment_method="container"
 
 ## Set the main HTML color scheme.
 main_color = "Tomato"

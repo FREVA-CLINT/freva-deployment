@@ -1,0 +1,5 @@
+hvac
+requests
+pyopenssl
+fastapi
+uvicorn
