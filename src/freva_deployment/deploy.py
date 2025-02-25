@@ -19,6 +19,7 @@ from typing import Any, Optional, Tuple, cast
 from urllib.parse import urlparse
 
 import appdirs
+import namegenerator
 import tomlkit
 import yaml
 from rich import print as pprint
@@ -290,11 +291,13 @@ class DeployFactory:
             f'http://{self.cfg["freva_rest"]["hosts"]}:'
             f'{self.cfg["freva_rest"]["config"]["freva_rest_port"]}'
         )
-        proxy_url = self.cfg["web"]["config"].get("project_website", proxy_url)
-        parsed_proxy_url = urlparse(proxy_url)
-        self.cfg["freva_rest"]["config"][
-            "proxy_url"
-        ] = f"{parsed_proxy_url.scheme}://{parsed_proxy_url.netloc}"
+        proxy_url = (
+            self.cfg["web"]["config"].get("project_website").strip() or proxy_url
+        )
+        scheme, _, netloc = proxy_url.rpartition("://")
+        scheme = scheme or "http"
+        self.cfg["freva_rest"]["config"]["proxy_url"] = f"{scheme}://{netloc}"
+        print(self.cfg["freva_rest"]["config"]["proxy_url"])
         scheduler_host, _, scheduler_port = scheduler_host.partition(":")
         user_name = self.cfg["freva_rest"]["config"].get(
             "ansible_user", getuser()
@@ -377,6 +380,10 @@ class DeployFactory:
         self._config_keys.append("freva_rest")
         self.cfg["freva_rest"]["config"].setdefault("ansible_become_user", "root")
         self.cfg["freva_rest"]["config"]["root_passwd"] = self.master_pass
+        self.cfg["freva_rest"]["config"]["db_passwd"] = (
+            self._create_random_passwd(30, 10)
+        )
+        self.cfg["freva_rest"]["config"]["db_user"] = namegenerator.gen()
         self.cfg["freva_rest"]["config"].pop("core", None)
         services = ["", "databrowser"]
         if self.cfg["freva_rest"]["config"].get("data_loader", True):
@@ -986,6 +993,7 @@ class DeployFactory:
                 "utf-8"
             ),
         )
+
         if (
             self.cfg["freva_rest"]["config"].get("deploy_data_loader", False)
             is False
