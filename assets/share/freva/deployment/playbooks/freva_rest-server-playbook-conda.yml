@@ -1,0 +1,137 @@
+---
+- name: Deploying freva restAPI
+  hosts: freva_rest
+
+  become: "{{ freva_rest_ansible_become_user is defined and freva_rest_ansible_become_user != '' }}"
+  vars:
+    become: "{{ freva_rest_ansible_become_user is defined and freva_rest_ansible_become_user != '' }}"
+    ansible_python_interpreter: "{{ freva_rest_ansible_python_interpreter }}"
+    ansible_become_user: "{{ freva_rest_ansible_become_user | default('root') }}"
+    conda_url: "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3"
+    conda_path: '{{freva_rest_data_path|regex_replace("^~", ansible_env.HOME)}}/{{ project_name }}'
+    systemd_unit_dir: "{{ '/etc/systemd/system' if  db_ansible_become_user is defined and db_ansible_become_user != '' else ansible_env.HOME + '/.config/systemd/user' }}"
+
+  tasks:
+    - name: Ensure the user systemd directory exists
+      file:
+        path: "{{ systemd_unit_dir }}"
+        state: directory
+        mode: "0755"
+    - name: Get UID
+      command: id -u {{ ansible_user }}
+      register: uid_result
+    - name: Get GID
+      command: id -g {{ ansible_user }}
+      register: gid_result
+    - name: Decode Base64 information content
+      set_fact:
+        information: "{{ freva_rest_cache_information | b64decode }}"
+    - name: Set additional variables
+      set_fact:
+        uid: "{{ uid_result.stdout }}"
+        gid: "{{ gid_result.stdout }}"
+        username: "{{ freva_rest_db_user }}"
+        password: "{{ freva_rest_db_passwd }}"
+    - name: Creating temp. dir
+      tempfile:
+        state: directory
+        prefix: evaluation_system
+      register: tempdir
+    - name: Registering conda path
+      stat:
+        path: "{{ conda_path }}"
+      register: conda_env_path
+    - name: Registering freva-rest-server path
+      stat:
+        path: "{{ conda_path }}/bin/freva-rest-server"
+      register: rest_bin
+    - name: Stopping the freva-rest server
+      systemd:
+        name: "{{ project_name }}-freva_rest"
+        state: stopped
+        scope: "{{ 'system' if become is true else 'user'}}"
+    - name: Downloading miniforge
+      ansible.builtin.script:
+        cmd: "{{ asset_dir }}/scripts/download_conda.py {{ tempdir.path }}"
+      when: not conda_env_path.stat.exists
+    - name: Creating conda dir
+      file:
+        path: "{{ conda_path }}"
+        owner: "{{uid}}"
+        group: "{{gid}}"
+        recurse: true
+      when: not conda_env_path.stat.exists
+    - name: Setting up conda environment
+      shell:
+        cmd: "./conda.sh -b -u -f -p {{conda_path}}"
+        chdir: "{{ tempdir.path }}"
+      when: not conda_env_path.stat.exists
+    - name: Getting the freva-rest-server version
+      shell: "{{conda_path}}/bin/freva-rest-server -V 2> /dev/null | awk '{print $NF}'"
+      register: cmd
+    - name: Extract freva version
+      set_fact:
+        freva_version: "{{ cmd.stdout if cmd.stdout != '' else '0.0.0'}}"
+    - name: Check if the version is lower than {{ freva_rest_version }}
+      set_fact:
+        is_version_lower: "{{ freva_version is version(freva_rest_version, '<') }}"
+    - name: Installing freva-rest-server package
+      shell:
+        cmd: "{{ conda_path }}/bin/mamba install -y freva-rest-server={{freva_rest_version}}"
+      when: is_version_lower
+    - name: Adjusting conda dir ownership
+      file:
+        path: "{{ conda_path }}"
+        owner: "{{uid}}"
+        group: "{{gid}}"
+        state: directory
+        recurse: true
+    - name: Initialising services
+      shell:
+        cmd: "{{ item }}"
+      environment:
+        API_MONGO_USER: "{{ username }}"
+        API_MONGO_PASSWORD: "{{ password }}"
+        API_SOLR_HEAP: "{{ freva_rest_solr_mem }}"
+        CONDA_PREFIX: "{{ conda_path }}"
+        PATH: "/bin:/usr/bin:/usr/local/bin:{{conda_path}}/bin"
+      with_items:
+        - "{{conda_path}}/libexec/freva-rest-server/scripts/init-mongo"
+        - "{{conda_path}}/libexec/freva-rest-server/scripts/init-solr"
+      become: false
+    - name: Creating directory cert dir
+      file:
+        state: directory
+        path: "{{conda_path}}/share/freva-rest-server/certs"
+        recurse: true
+        owner: "{{uid}}"
+        group: "{{gid}}"
+    - name: Writing ssl key to file
+      copy:
+        content: "{{ information.ssl_key }}"
+        dest: "{{conda_path}}/share/freva-rest-server/certs/client-key.pem"
+        owner: "{{uid}}"
+        group: "{{gid}}"
+    - name: Writing ssh cert to file
+      copy:
+        content: "{{ information.ssl_cert }}"
+        dest: "{{conda_path}}/share/freva-rest-server/certs/client-cert.pem"
+        owner: "{{uid}}"
+        group: "{{gid}}"
+    - name: Creating systemd unit service
+      template:
+        src: "{{ asset_dir }}/freva-rest/systemd.j2"
+        dest: "{{ systemd_unit_dir }}/{{ project_name }}-freva_rest.service"
+        owner: "{{uid}}"
+        group: "{{gid}}"
+        mode: "0644"
+    - name: Reload systemd daemon
+      systemd:
+        daemon_reload: true
+        scope: "{{ 'system' if become is true else 'user'}}"
+    - name: Enable and start the freva-rest server
+      systemd:
+        name: "{{ project_name }}-freva_rest"
+        state: started
+        enabled: true
+        scope: "{{ 'system' if become is true else 'user'}}"

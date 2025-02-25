@@ -1,0 +1,38 @@
+[Unit]
+Description=Freva rest server
+After=network.target
+
+[Service]
+Type=simple
+ProtectSystem=full
+PermissionsStartOnly=true
+NoNewPrivileges=true
+ProtectHome=true
+KillSignal=SIGTERM
+Restart=on-abort
+ExecStartPre=/bin/sh -c "PATH={{ conda_path }}/bin:$PATH {{ conda_path }}/bin/solr start -force >  {{ conda_path }}/share/freva-rest-server/solr.log &"
+ExecStartPre=/bin/sh -c "PATH={{ conda_path }}/bin:$PATH {{ conda_path }}/bin/mongod -f {{ conda_path }}/share/freva-rest-server/mongodb/mongod.yaml --auth --cpu > {{ conda_path }}/share/freva-rest-server/mongod.logi &"
+ExecStart=/bin/sh -c "PATH={{ conda_path }}/bin:$PATH freva-rest-server"
+Environment="CONDA_PREFIX={{ conda_path }}"
+Environment="API_PROXY={{freva_rest_proxy_url}}"
+Environment="COLUMNS=140"
+Environment="API_OIDC_CLIENT_ID={{freva_rest_oidc_client}}"
+Environment="API_OIDC_DISCOVERY_URL={{freva_rest_oidc_url}}"
+Environment="API_OIDC_CLIENT_SECRET={{freva_rest_oidc_client_secret}}"
+Environment="API_REDIS_HOST={{freva_rest_redis_cache_url}}"
+Environment="API_API_REDIS_PASSWORD={{password}}"
+Environment="API_REDIS_USER={{username}}"
+Environment="API_REDIS_SSL_CERTFILE={{conda_path}}/share/freva-rest-server/certs/client-cert.pem"
+Environment="API_REDIS_SSL_KEYFILE={{conda_path}}/share/freva-rest-server/certs/client-key.pem"
+Environment="API_SOLR_HOST=127.0.0.1:8983"
+Environment="API_MONGO_HOST=127.0.0.1:27017"
+Environment="API_MONGO_PASSWORD={{password}}"
+Environment="API_MONGO_DB=search_stats"
+Environment="API_MONGO_USER={{username}}"
+Environment="USE_SOLR=1"
+Environment="USE_MONGODB=1"
+
+UMask=007
+
+[Install]
+WantedBy=multi-user.target

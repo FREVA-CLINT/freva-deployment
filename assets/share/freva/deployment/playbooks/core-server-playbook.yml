@@ -29,14 +29,16 @@
       stat:
         path: "{{ core_install_dir | regex_replace('^~', ansible_env.HOME)}}/bin/freva"
       register: freva_path
-    - name: Downloading temp miniconda
-      shell:
-        cmd: >
-            {{ansible_python_interpreter}} -c
-            "import os, stat, urllib.request as req;
-            req.urlretrieve('{{conda_url}}', 'conda.sh');
-            os.chmod('conda.sh', os.stat('conda.sh').st_mode|stat.S_IEXEC)"
-        chdir: "{{tempdir.path}}"
+    - name: Downloading miniforge
+      ansible.builtin.script:
+        cmd: "{{ asset_dir }}/scripts/download_conda.py {{ tempdir.path }}"
+      when: not freva_path.stat.exists
+    - name: Creating conda dir
+      file:
+        path: "{{ core_install_dir }}"
+        owner: "{{uid}}"
+        group: "{{gid}}"
+        recurse: true
       when: not freva_path.stat.exists
     - name: Installing freva
       command:
@@ -66,7 +68,7 @@
       environment:
         PATH: "{{conda_bin}}"
       when:
-        - freva_path.stat.exists 
+        - freva_path.stat.exists
         - is_version_lower
     - name: Preparing creation of directory structure
       file:
