@@ -10,9 +10,9 @@ NoNewPrivileges=true
 ProtectHome=true
 KillSignal=SIGTERM
 Restart=on-abort
-ExecStartPre=/bin/sh -c "PATH={{ conda_path }}/bin:$PATH {{ conda_path }}/bin/solr start -force >  {{ conda_path }}/share/freva-rest-server/solr.log &"
-ExecStartPre=/bin/sh -c "PATH={{ conda_path }}/bin:$PATH {{ conda_path }}/bin/mongod -f {{ conda_path }}/share/freva-rest-server/mongodb/mongod.yaml --auth --cpu > {{ conda_path }}/share/freva-rest-server/mongod.logi &"
-ExecStart=/bin/sh -c "PATH={{ conda_path }}/bin:$PATH freva-rest-server"
+ExecStartPre=/bin/sh -c "PATH={{ conda_path }}/bin:$PATH {{ conda_path }}/bin/solr start -force &>  {{ conda_path }}/share/freva-rest-server/solr.log &"
+ExecStartPre=/bin/sh -c "PATH={{ conda_path }}/bin:$PATH {{ conda_path }}/bin/mongod -f {{ conda_path }}/share/freva-rest-server/mongodb/mongod.yaml --auth --cpu &> {{ conda_path }}/share/freva-rest-server/mongod.log &"
+ExecStart=/bin/sh -c "PATH={{ conda_path }}/bin:$PATH freva-rest-server {{freva_rest_services}} &> {{ conda_path }}/share/freva-rest-server/freva-rest-server.log"
 Environment="CONDA_PREFIX={{ conda_path }}"
 Environment="API_PROXY={{freva_rest_proxy_url}}"
 Environment="COLUMNS=140"
@@ -20,8 +20,8 @@ Environment="API_OIDC_CLIENT_ID={{freva_rest_oidc_client}}"
 Environment="API_OIDC_DISCOVERY_URL={{freva_rest_oidc_url}}"
 Environment="API_OIDC_CLIENT_SECRET={{freva_rest_oidc_client_secret}}"
 Environment="API_REDIS_HOST={{freva_rest_redis_cache_url}}"
-Environment="API_API_REDIS_PASSWORD={{password}}"
-Environment="API_REDIS_USER={{username}}"
+Environment="API_REDIS_PASSWORD={{information.passwd}}"
+Environment="API_REDIS_USER={{information.user}}"
 Environment="API_REDIS_SSL_CERTFILE={{conda_path}}/share/freva-rest-server/certs/client-cert.pem"
 Environment="API_REDIS_SSL_KEYFILE={{conda_path}}/share/freva-rest-server/certs/client-key.pem"
 Environment="API_SOLR_HOST=127.0.0.1:8983"

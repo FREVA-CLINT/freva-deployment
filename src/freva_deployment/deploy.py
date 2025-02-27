@@ -297,7 +297,6 @@ class DeployFactory:
         scheme, _, netloc = proxy_url.rpartition("://")
         scheme = scheme or "http"
         self.cfg["freva_rest"]["config"]["proxy_url"] = f"{scheme}://{netloc}"
-        print(self.cfg["freva_rest"]["config"]["proxy_url"])
         scheduler_host, _, scheduler_port = scheduler_host.partition(":")
         user_name = self.cfg["freva_rest"]["config"].get(
             "ansible_user", getuser()
@@ -325,8 +324,9 @@ class DeployFactory:
             self.playbooks["data-loader"] = str(
                 self.playbook_dir / "data-loader-playbook.yml"
             )
+            if data_portal_hosts[1:]:
+                self._config_keys += ["data_portal_hosts"]
             self._config_keys += [
-                "data_portal_hosts",
                 "data_portal_scheduler",
                 "redis_cache",
             ]
@@ -346,19 +346,20 @@ class DeployFactory:
                 ),
             },
         }
-        self.cfg["data_portal_hosts"] = {
-            "hosts": ",".join(data_portal_hosts[1:]),
-            "config": {
-                "is_worker": True,
-                "information": redis_information_enc,
-                "ansible_become_user": self.cfg["freva_rest"]["config"].get(
-                    "ansible_become_user", "root"
-                ),
-                "ansible_user": self.cfg["freva_rest"]["config"].get(
-                    "ansible_user", getuser()
-                ),
-            },
-        }
+        if data_portal_hosts[1:]:
+            self.cfg["data_portal_hosts"] = {
+                "hosts": ",".join(data_portal_hosts[1:]),
+                "config": {
+                    "is_worker": True,
+                    "information": redis_information_enc,
+                    "ansible_become_user": self.cfg["freva_rest"]["config"].get(
+                        "ansible_become_user", "root"
+                    ),
+                    "ansible_user": self.cfg["freva_rest"]["config"].get(
+                        "ansible_user", getuser()
+                    ),
+                },
+            }
         self.cfg["redis_cache"] = {
             "hosts": redis_host,
             "config": {
@@ -386,7 +387,7 @@ class DeployFactory:
         self.cfg["freva_rest"]["config"]["db_user"] = namegenerator.gen()
         self.cfg["freva_rest"]["config"].pop("core", None)
         services = ["", "databrowser"]
-        if self.cfg["freva_rest"]["config"].get("data_loader", True):
+        if self.cfg["freva_rest"]["config"].get("deploy_data_loader", True):
             services.append("zarr-stream")
         data_path = Path(
             cast(
@@ -862,18 +863,23 @@ class DeployFactory:
         self.current_step = "foo"
         _ = [getattr(self, f"_prep_{step}")() for step in self.steps]
         steps = deepcopy(self.steps)
-        if "freva_rest" in steps and "data-loader" in self.playbooks:
-            steps.insert(steps.index("freva_rest"), "data-loader")
         valid_deployment_methods = ("container", "conda")
         for step in steps:
-            deployment_method = self.cfg[step]["config"].get(
-                "deployment_method", "container"
-            )
-            if deployment_method not in valid_deployment_methods:
-                raise ValueError(
-                    f"Deployment method in step: {step} is invalid, should be"
-                    f"one of {', '.join(valid_deployment_methods)}"
+            try:
+                deployment_method = self.cfg[step]["config"].get(
+                    "deployment_method", "container"
                 )
+                if deployment_method not in valid_deployment_methods:
+                    raise ValueError(
+                        f"Deployment method in step: {step} is invalid, should be"
+                        f"one of {', '.join(valid_deployment_methods)}"
+                    )
+                if deployment_method == "conda":
+                    self.cfg[step]["config"]["use_conda"] = True
+                else:
+                    self.cfg[step]["config"]["use_conda"] = False
+            except KeyError:
+                pass
             playbook_file = (
                 self.playbooks.get(step)
                 or self.playbook_dir
@@ -881,6 +887,24 @@ class DeployFactory:
             )
             with Path(playbook_file).open(encoding="utf-8") as f_obj:
                 playbook += yaml.safe_load(f_obj)
+
+        if "freva_rest" in steps and "data-loader" in self.playbooks:
+            loader_playbook = []
+            use_conda = self.cfg["freva_rest"]["config"].get("use_conda", False)
+            for step in (
+                "redis_cache",
+                "data_portal_scheduler",
+                "data_portal_hosts",
+            ):
+                if step in self.cfg:
+                    self.cfg[step]["config"]["use_conda"] = use_conda
+            with Path(self.playbooks.get("data-loader")).open(
+                encoding="utf-8"
+            ) as stream:
+                for step in yaml.safe_load(stream):
+                    if step["hosts"] in self._config_keys:
+                        loader_playbook.append(step)
+            playbook = loader_playbook + playbook
         return self._td.create_playbook(playbook)
 
     def create_eval_config(self) -> None:

@@ -9,9 +9,38 @@
     become: "{{ redis_cache_ansible_become_user is defined and redis_cache_ansible_become_user != '' }}"
     data_path: '{{redis_cache_data_path|regex_replace("^~", ansible_env.HOME)}}'
     redis_data: '{{redis_cache_data_path|regex_replace("^~", ansible_env.HOME)}}/caching'
+    conda_url: "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3"
+    conda_path: '{{redis_cache_data_path|regex_replace("^~", ansible_env.HOME)}}/{{ project_name }}'
+    use_conda: "{{ redis_cache_use_conda | default(false) }}"
+    systemd_unit_dir: "{{ '/etc/systemd/system' if  redis_cache_ansible_become_user is defined and redis_cache_ansible_become_user != '' else ansible_env.HOME + '/.config/systemd/user' }}"
     redis_volumes:
       - '{{redis_cache_data_path|regex_replace("^~", ansible_env.HOME)}}/caching'
   tasks:
+    - name: Ensure the user systemd directory exists
+      file:
+        path: "{{ systemd_unit_dir }}"
+        state: directory
+        mode: "0755"
+
+    - name: Get UID
+      command: id -u {{ ansible_user }}
+      register: uid_result
+
+    - name: Get GID
+      command: id -g {{ ansible_user }}
+      register: gid_result
+
+    - name: Set additional variables
+      set_fact:
+        uid: "{{ uid_result.stdout }}"
+        gid: "{{ gid_result.stdout }}"
+
+    - name: Override variables
+      set_fact:
+        data_path: '{{conda_path}}'
+        redis_data: '{{conda_path}}/share/freva-rest-server'
+      when: use_conda is true
+
     - name: Writing redis-cache information
       copy:
         content: "{{redis_cache_information}}"
@@ -27,8 +56,9 @@
         src: "{{ asset_dir }}/scripts/docker-or-podman"
         dest: /tmp/docker-or-podman
         mode: "0775"
+      when: use_conda is false
 
-    - name: collect facts about system services
+    - name: Collect facts about system services
       service_facts:
       register: services_state
 
@@ -41,17 +71,89 @@
         username: "{{ information.user }}"
         password: "{{ information.passwd }}"
 
+    - name: Creating temp. dir
+      tempfile:
+        state: directory
+        prefix: evaluation_system
+      register: tempdir
+      when: use_conda is true
+
+    - name: Registering conda path
+      stat:
+        path: "{{ conda_path }}"
+      register: conda_env_path
+      when: use_conda is true
+
+    - name: Registering redis-server path
+      stat:
+        path: "{{ conda_path }}/bin/redis-server"
+      register: redis_bin
+      when: use_conda is true
+
+    - name: Stopping the redis server
+      systemd:
+        name: "{{ project_name }}-redis"
+        state: stopped
+        scope: "{{ 'system' if become is true else 'user'}}"
+      when: use_conda is true
+      ignore_errors: true
+
+    - name: Downloading miniforge
+      ansible.builtin.script:
+        cmd: "{{ asset_dir }}/scripts/download_conda.py {{ tempdir.path }}"
+      when: not conda_env_path.stat.exists and use_conda is true
+
+    - name: Creating conda dir
+      file:
+        path: "{{ conda_path }}"
+        owner: "{{uid}}"
+        group: "{{gid}}"
+        recurse: true
+      when: not conda_env_path.stat.exists and use_conda is true
+
+    - name: Setting up conda environment
+      shell:
+        cmd: "./conda.sh -b -u -f -p {{conda_path}}"
+        chdir: "{{ tempdir.path }}"
+      when: not conda_env_path.stat.exists
+
+    - name: Installing freva-rest-server package
+      shell:
+        cmd: "{{ conda_path }}/bin/mamba install -y freva-rest-server={{freva_rest_version}}"
+      when: use_conda is true and not redis_bin.stat.exists
+
+    - name: Adjusting conda dir ownership
+      file:
+        path: "{{ conda_path }}"
+        owner: "{{uid}}"
+        group: "{{gid}}"
+        state: directory
+        recurse: true
+      when: use_conda is true
+
     - name: Getting additional configurations
       git:
         repo: https://github.com/FREVA-CLINT/freva-service-config.git
         dest: '{{redis_data}}'
         update: true
         force: true
+      when: use_conda is false
+
+    - name: Creating redis data dir
+      file:
+        path: "{{redis_data}}/certs"
+        state: directory
+        mode: "0755"
+        owner: "{{uid}}"
+        group: "{{gid}}"
+        recurse: true
+      when: use_conda is true
 
     - name: Adjusting configuration onwnership
       file:
         recurse: true
         path: '{{redis_data}}'
+      when: use_conda is false
 
     - name: Creating service data directory structure
       file:
@@ -61,41 +163,78 @@
       with_items:
         - '{{redis_data}}/certs'
         - '{{data_path}}/compose_services'
+      when: use_conda is false
 
     - name: Pulling container
       shell:
         cmd: /tmp/docker-or-podman pull docker.io/redis:latest
+      when: use_conda is false
+
+    - name: Remove cert files
+      file:
+        path: "{{item}}"
+        state: absent
+      with_items:
+        - "{{redis_data}}/certs/client-key.pem"
+        - "{{redis_data}}/certs/client-cert.pem"
 
     - name: Write ssl key to file
       copy:
         content: "{{ information.ssl_key }}"
         dest: "{{redis_data}}/certs/client-key.pem"
+      when: information.ssl_key | length > 0
 
-    - name: Write ssh cert to file
+    - name: Write ssl cert to file
       copy:
         content: "{{ information.ssl_cert }}"
         dest: "{{redis_data}}/certs/client-cert.pem"
+      when: information.ssl_cert | length > 0
 
     - name: Creating compose file
       template:
         src: "{{ asset_dir }}/playbooks/redis-cache-compose-template.yml"
         dest: "{{compose_file}}"
+      when: use_conda is false
 
-    - name: Creating systemd services
+    - name: Creating systemd conda service
+      template:
+        src: "{{ asset_dir }}/freva-rest/redis.j2"
+        dest: "{{ systemd_unit_dir }}/{{ project_name }}-redis.service"
+        owner: "{{uid}}"
+        group: "{{gid}}"
+        mode: "0644"
+      when: use_conda is true
+
+    - name: Reload systemd daemon
+      systemd:
+        daemon_reload: true
+        scope: "{{ 'system' if become is true else 'user'}}"
+      when: use_conda is true
+
+    - name: Creating systemd container services
       ansible.builtin.script:
         cmd: "{{asset_dir}}/scripts/create_systemd.py redis_cache compose --enable -p redis --gracious -f {{compose_file}} up --remove-orphans"
       environment:
         DEBUG: '{{ debug }}'
-      when: systemctl.stat.exists == true and debug == false
+      when: systemctl.stat.exists is true and debug is false and use_conda is false
 
     - name: Starting compose service
       shell: /tmp/docker-or-podman compose -f {{compose_file}} up -d
-      when: systemctl.stat.exists == false or debug == true
+      when: systemctl.stat.exists is false or debug is true and use_conda is false
+
+    - name: Enable and start the redis server
+      systemd:
+        name: "{{ project_name }}-redis"
+        state: started
+        enabled: true
+        scope: "{{ 'system' if become is true else 'user'}}"
+      when: use_conda is true
 
     - name: Deleting tmporary files
       file:
         path: /tmp/docker-or-podman
         state: absent
+      when: use_conda is false
 
 - name: Setting up data loader host
   hosts: data_portal_scheduler
@@ -112,11 +251,21 @@
         info_dir: "{{ '/root' if ansible_become_user == 'root' else ansible_env.HOME}}"
         scope: "{{ 'system' if ansible_become_user == 'root' else 'user'}}"
 
+    - name: Decode Base64 information content
+      set_fact:
+        information: "{{ information_enc | b64decode }}"
+
     - name: Writing redis-cache information
       copy:
         content: "{{information_enc}}"
         dest: "{{info_dir}}/.data-portal-cluster-config.json"
         force: true
+
+    - name: Set all additional variables
+      set_fact:
+        username: "{{ information.user }}"
+        password: "{{ information.passwd }}"
+
 
     - name: Create systemd path
       file:
@@ -130,7 +279,6 @@
         dest: "{{systemd_path|regex_replace('^~', ansible_env.HOME)}}/data-loader@.service"
         mode: '0644'
         force: true
-
 
     - name: Reloading systemd
       systemd:
@@ -174,7 +322,6 @@
         dest: "{{systemd_path|regex_replace('^~', ansible_env.HOME)}}/data-loader@.service"
         mode: '0644'
         force: true
-
 
     - name: Reloading systemd
       systemd:

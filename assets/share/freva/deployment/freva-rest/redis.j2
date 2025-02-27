@@ -1,0 +1,24 @@
+[Unit]
+Description=Freva cache service
+After=network.target
+
+[Service]
+Type=simple
+ProtectSystem=full
+PermissionsStartOnly=true
+NoNewPrivileges=true
+ProtectHome=true
+KillSignal=SIGTERM
+Restart=on-abort
+ExecStartPre={{conda_path}}/libexec/freva-rest-server/scripts/init-redis
+ExecStart={{conda_path}}/bin/redis-server /tmp/redis.conf
+Environment="CONDA_PREFIX={{ conda_path }}"
+Environment="API_REDIS_USER={{username}}"
+Environment="API_REDIS_PASSWORD={{password}}"
+Environment="API_REDIS_SSL_CERTFILE={{conda_path}}/share/freva-rest-server/certs/client-cert.pem"
+Environment="API_REDIS_SSL_KEYFILE={{conda_path}}/share/freva-rest-server/certs/client-key.pem"
+
+UMask=007
+
+[Install]
+WantedBy=multi-user.target

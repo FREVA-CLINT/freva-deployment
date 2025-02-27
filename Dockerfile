@@ -16,14 +16,6 @@ RUN apt-get update && apt-get install -y \
     sshpass \
     git \
     binutils \
-    cowsay \
-    libghc-zlib-dev \
-    musl-dev \
-    librust-libc-dev \
-    libc-devtools \
-    libffi-dev \
-    gcc \
-    g++ \
     python3-appdirs \
     python3-mysqldb \
     python3-yaml \
@@ -35,8 +27,7 @@ RUN apt-get update && apt-get install -y \
     python3-pymysql \
     ansible \
     python3-mock \
-    mysql-common \
-    locales && \
+    mysql-common && \
     rm -rf /var/lib/apt/lists/*
 
 # Generate and set the desired locale
@@ -60,7 +51,6 @@ COPY . .
 RUN python3 src/freva_deployment/__init__.py && \
     python3 -m pip install pyinstaller rich-argparse namegenerator npyscreen && \
     python3 -m pip install --no-deps . &&\
-    python3 pyinstaller/pre-win.py &&\
     rm -rf /root/.cache/pip && \
     rm -rf /root/build-deps && \
     rm -rf /tmp/deployment

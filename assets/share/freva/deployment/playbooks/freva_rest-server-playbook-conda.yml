@@ -50,6 +50,7 @@
         name: "{{ project_name }}-freva_rest"
         state: stopped
         scope: "{{ 'system' if become is true else 'user'}}"
+      ignore_errors: true
     - name: Downloading miniforge
       ansible.builtin.script:
         cmd: "{{ asset_dir }}/scripts/download_conda.py {{ tempdir.path }}"
@@ -112,12 +113,14 @@
         dest: "{{conda_path}}/share/freva-rest-server/certs/client-key.pem"
         owner: "{{uid}}"
         group: "{{gid}}"
+      when: information.ssl_key | length > 0
     - name: Writing ssh cert to file
       copy:
         content: "{{ information.ssl_cert }}"
         dest: "{{conda_path}}/share/freva-rest-server/certs/client-cert.pem"
         owner: "{{uid}}"
         group: "{{gid}}"
+      when: information.ssl_cert | length > 0
     - name: Creating systemd unit service
       template:
         src: "{{ asset_dir }}/freva-rest/systemd.j2"
