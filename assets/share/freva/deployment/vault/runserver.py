@@ -64,6 +64,8 @@ metadata_tags = [
     }
 ]
 
+VERSION = os.environ.get("VERSION", "1.0.0")
+
 app = FastAPI(
     title="freva-vault",
     debug=False,
@@ -71,8 +73,8 @@ app = FastAPI(
     description=__doc__,
     openapi_url="/vault/docs/openapi.json",
     docs_url="/vault/docs",
+    version=VERSION,
     redoc_url=None,
-    version=os.environ.get("VERSION", "1.0.0"),
     contact={"name": "DKRZ, Clint", "email": "freva@dkrz.de"},
     license_info={
         "name": "BSD 2-Clause License",
@@ -224,7 +226,9 @@ Vault = VaultClient()
 @app.get("/vault/status", tags=["Secrets"])
 async def get_vault_status() -> JSONResponse:
     """Get the status of the vault."""
-    return JSONResponse(content={"status": Vault.vault_state}, status_code=200)
+    return JSONResponse(
+        content={"status": Vault.vault_state, "version": VERSION}, status_code=200
+    )
 
 
 @app.post("/vault/{path}", tags=["Secrets"])

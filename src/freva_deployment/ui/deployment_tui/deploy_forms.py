@@ -757,6 +757,18 @@ class FrevaRestScreen(BaseForm):
                 ),
                 False,
             ),
+            shared_cache=(
+                self.add_widget_intelligent(
+                    CheckboxInfo,
+                    section="freva_rest.config",
+                    key="shared_cache",
+                    max_height=2,
+                    editable=True,
+                    name=f"{self.num} Share the cache with other projects",
+                    value=cast(bool, cfg.get("shared_cache", False)),
+                ),
+                False,
+            ),
             data_loader_portal_hosts=(
                 self.add_widget_intelligent(
                     TextInfo,

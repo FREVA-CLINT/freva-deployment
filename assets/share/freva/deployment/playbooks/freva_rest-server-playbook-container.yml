@@ -8,7 +8,8 @@
     ansible_python_interpreter: "{{ freva_rest_ansible_python_interpreter }}"
     freva_rest_name: "{{project_name}}-freva_rest"
     databrowser_name: "{{project_name}}-databrowser"
-    compose_file: '{{freva_rest_data_path|regex_replace("^~", ansible_env.HOME)}}/compose_services/{{freva_rest_name}}-compose.yml'
+    compose_file: '{{freva_rest_data_path|regex_replace("^~", ansible_env.HOME)}}/{{project_name}}/compose_services/{{freva_rest_name}}-compose.yml'
+    old_compose_dir: '{{freva_rest_data_path|regex_replace("^~", ansible_env.HOME)}}/compose_services'
     flush_mongo_pass_path: '{{freva_rest_data_path|regex_replace("^~", ansible_env.HOME)}}/{{ project_name }}/freva_rest/mongo-flush-pass-entrypoint.sh'
     solr_name: "{{project_name}}-solr"
     mongo_name: "{{project_name}}-mongo"
@@ -35,6 +36,11 @@
       - '{{freva_rest_data_path|regex_replace("^~", ansible_env.HOME)}}/freva-service-config/mongo/mongo-userdata-init.js:/docker-entrypoint-initdb.d/mongo-userdata-init.js:ro'
     ansible_become_user: "{{ freva_rest_ansible_become_user | default('root') }}"
   tasks:
+    - name: Removing old compose directory structure
+      file:
+        path: "{{old_compose_dir}}"
+        state: absent
+        force: true
     - name: Decode Base64 information content
       set_fact:
         information: "{{ freva_rest_cache_information | b64decode }}"
@@ -133,12 +139,12 @@
         dest: "{{data_path}}/certs/client-cert.pem"
     - name: Creating compose directory structure
       file:
-        path: '{{freva_rest_data_path|regex_replace("^~", ansible_env.HOME)}}/compose_services'
+        path: '{{freva_rest_data_path|regex_replace("^~", ansible_env.HOME)}}/{{project_name}}/compose_services'
         state: directory
         recurse: true
     - name: Deleting old compose files
       file:
-        path: '{{freva_rest_data_path|regex_replace("^~", ansible_env.HOME)}}/{{databrowser_name}}-compose.yml'
+        path: '{{freva_rest_data_path|regex_replace("^~", ansible_env.HOME)}}/{{project_name}}/{{databrowser_name}}-compose.yml'
         state: absent
     - name: Adjusting old solr directory structure
       command: mv "{{solr_data}}/{{item}}" "{{solr_data}}/data/{{item}}"

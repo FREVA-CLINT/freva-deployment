@@ -3,60 +3,141 @@
   vars:
     ansible_become_user: "{{ freva_rest_ansible_become_user | default('root') }}"
     ansible_user: "{{freva_rest_ansible_user}}"
+    use_conda: "{{ freva_rest_use_conda | default(false) }}"
+    conda_path: '{{freva_rest_data_path|regex_replace("^~", ansible_env.HOME)}}/{{ project_name }}'
   tasks:
-    - name: Get freva-rest-api version
+    - name: Get freva-rest-api container version
       ansible.builtin.script:
         cmd: "{{ asset_dir }}/scripts/inspect.sh ghcr.io/freva-clint/freva-rest-api"
       become: "{{ freva_rest_ansible_become_user | default('root') is defined and freva_rest_ansible_become_user | default('root') != '' }}"
-      register: freva_rest
-    - name: Display freva-rest-api version
+      register: freva_rest_container
+      when: use_conda is false
+
+    - name: Get freva-rest-api conda version
+      shell: "{{conda_path}}/bin/freva-rest-server -V 2> /dev/null | awk '{print $NF}'"
+      become: "{{ freva_rest_ansible_become_user | default('root') is defined and freva_rest_ansible_become_user | default('root') != '' }}"
+      register: freva_rest_conda
+      when: use_conda is true
+
+    - name: Display freva_rest container version
       debug:
-        msg: "{{ freva_rest.stdout }}"
-    - name: Get solr version
-      register: solr
+        msg: "{{ freva_rest_container.stdout }}"
+      when: use_conda is false
+
+    - name: Display freva_rest conda version
+      debug:
+        msg: "{{ freva_rest_conda.stdout }}"
+      when: use_conda is true
+
+    - name: Get solr container version
+      register: solr_container
       ansible.builtin.script:
         cmd: "{{ asset_dir }}/scripts/inspect.sh solr"
       become: "{{ freva_rest_ansible_become_user | default('root') is defined and freva_rest_ansible_become_user | default('root') != '' }}"
-    - name: Display solr version
+      when: use_conda is false
+
+    - name: Get solr conda version
+      register: solr_conda
+      shell:
+        cmd: >
+          {{ansible_python_interpreter}} -c "from urllib.request import urlopen;
+          import json;
+          try:conn=urlopen('http://localhost:8983/solr/admin/info/system');
+          print(json.loads(conn.read().decode()).get('lucene', {}).get('solr-spec-version', '0.0.0'));
+          conn.close()" 2> /dev/null || echo
+      when: use_conda is true
+
+    - name: Display solr container version
       debug:
-        msg: "{{ solr.stdout }}"
+        msg: "{{ solr_container.stdout }}"
+      when: use_conda is false
+
+    - name: Display solr conda version
+      debug:
+        msg: "{{ solr_conda.stdout }}"
+      when: use_conda is true
 
 - hosts: web
   vars:
     ansible_become_user: "{{ web_ansible_become_user | default('root') }}"
     ansible_user: "{{web_ansible_user}}"
+    use_conda: "{{ web_use_conda | default(false) }}"
+    conda_path: '{{web_data_path|regex_replace("^~", ansible_env.HOME)}}/{{ project_name }}'
   tasks:
-    - name: Get web version
-      register: web
+    - name: Get web container version
+      register: web_container
       ansible.builtin.script:
         cmd: "{{ asset_dir }}/scripts/inspect.sh ghcr.io/freva-clint/freva-web"
       become: "{{ web_ansible_become_user | default('root') is defined and web_ansible_become_user | default('root') != '' }}"
-    - name: Display web version
+      when: use_conda is false
+
+    - name: Get web conda version
+      register: web_conda
+      shell:
+        cmd: >
+          {{ansible_python_interpreter}} -c "import json;
+          print(json.load(open('{{conda_path}}/share/freva-web/app/package.json')).get('version', '0.0.0'))
+          " 2> /dev/null || echo
+      when: use_conda is true
+
+    - name: Display web container version
       debug:
-        msg: "{{ web.stdout }}"
+        msg: "{{ web_container.stdout }}"
+      when: use_conda is false
+
+    - name: Display web conda version
+      debug:
+        msg: "{{ web_conda.stdout }}"
+      when: use_conda is true
 
 - hosts: db
   vars:
     ansible_become_user: "{{ db_ansible_become_user | default('root') }}"
     ansible_user: "{{db_ansible_user}}"
+    use_conda: "{{ db_use_conda | default(false) }}"
+    conda_path: '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/{{ project_name }}'
   tasks:
     - name: Get vault version
       register: vault
-      ansible.builtin.script:
-        cmd: "{{ asset_dir }}/scripts/inspect.sh ghcr.io/freva-clint/freva-vault"
-      become: "{{ db_ansible_become_user | default('root') is defined and db_ansible_become_user | default('root') != '' }}"
+      shell:
+        cmd: >
+          {{ansible_python_interpreter}} -c "from urllib.request import urlopen;
+          import json;
+          conn=urlopen('http://localhost:5002/vault/status');
+          print(json.loads(conn.read().decode()).get('version', '0.0.0'));
+          conn.close()" 2> /dev/null || echo
+
     - name: Display vault version
       debug:
         msg: "{{ vault.stdout }}"
-    - name: Get db version
-      register: db
+
+    - name: Get db container version
+      register: db_container
       ansible.builtin.script:
         cmd: "{{ asset_dir }}/scripts/inspect.sh mariadb"
       become: "{{ db_ansible_become_user | default('root') is defined and db_ansible_become_user | default('root') != '' }}"
-    - name: Display db version
-      debug:
-        msg: "{{ db.stdout }}"
+      when: use_conda is false
 
+    - name: Registering mysqld path
+      stat:
+        path: "{{ conda_path }}/bin/mysqld"
+      register: mysqld_path
+      when: use_conda is true
+
+    - name: Set db_conda var
+      set_fact:
+        db_conda: "{{ 11.1 if mysqld_path.stat.exists else ''}}"
+      when: use_conda is true
+
+    - name: Display db container version
+      debug:
+        msg: "{{ db_container.stdout }}"
+      when: use_conda is false
+
+    - name: Display db conda version
+      debug:
+        msg: "{{ db_conda }}"
+      when: use_conda is true
 
 - hosts: core
   vars:
@@ -66,6 +147,7 @@
       register: core
       shell:
         cmd: "{{ core_install_dir | regex_replace('^~', ansible_env.HOME) }}/bin/freva -V 2> /dev/null | awk '{print $NF}';"
+
     - name: Display core version
       debug:
         msg: "{{ core.stdout }}"

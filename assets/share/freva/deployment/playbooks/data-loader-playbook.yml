@@ -5,22 +5,36 @@
   become: "{{ redis_cache_ansible_become_user is defined and redis_cache_ansible_become_user != '' }}"
   vars:
     ansible_become_user: "{{ redis_cache_ansible_become_user | default('root') }}"
-    compose_file: '{{redis_cache_data_path|regex_replace("^~", ansible_env.HOME)}}/compose_services/redis_cache-compose.yml'
+    old_compose_dir: '{{redis_cache_data_path|regex_replace("^~", ansible_env.HOME)}}/compose_services'
     become: "{{ redis_cache_ansible_become_user is defined and redis_cache_ansible_become_user != '' }}"
-    data_path: '{{redis_cache_data_path|regex_replace("^~", ansible_env.HOME)}}'
-    redis_data: '{{redis_cache_data_path|regex_replace("^~", ansible_env.HOME)}}/caching'
     conda_url: "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3"
-    conda_path: '{{redis_cache_data_path|regex_replace("^~", ansible_env.HOME)}}/{{ project_name }}'
     use_conda: "{{ redis_cache_use_conda | default(false) }}"
+    data_dir: "{{ redis_cache_data_path| regex_replace('^~', ansible_env.HOME)}}"
+    shared_cache: "{{ redis_cache_shared_cache }}"
     systemd_unit_dir: "{{ '/etc/systemd/system' if  redis_cache_ansible_become_user is defined and redis_cache_ansible_become_user != '' else ansible_env.HOME + '/.config/systemd/user' }}"
     redis_volumes:
       - '{{redis_cache_data_path|regex_replace("^~", ansible_env.HOME)}}/caching'
   tasks:
+    - name: Removing old compose directory structure
+      file:
+        path: "{{old_compose_dir}}"
+        state: absent
+        force: true
+
     - name: Ensure the user systemd directory exists
       file:
         path: "{{ systemd_unit_dir }}"
         state: directory
         mode: "0755"
+
+    - name: Set variables
+      set_fact:
+        data_path: "{{ data_dir }}/{{ project_name if not shared_cache else 'caching' }}"
+        redis_data: "{{ data_dir }}/{{ project_name if not shared_cache else 'caching' }}"
+        conda_path: "{{ data_dir }}/{{ project_name if not shared_cache else 'caching' }}"
+        log_dir: "{{ data_dir }}/{{ project_name if not shared_cache else 'caching' }}/logs"
+        compose_file: "{{ data_dir }}/{{ project_name if not shared_cache else 'caching' }}/ompose_services/redis_cache-compose.yml"
+        systemd_unit: "{{ project_name if not shared_cache else 'redis' }}-cache"
 
     - name: Get UID
       command: id -u {{ ansible_user }}
@@ -39,7 +53,15 @@
       set_fact:
         data_path: '{{conda_path}}'
         redis_data: '{{conda_path}}/share/freva-rest-server'
+        log_dir: '{{conda_path}}/var/log/caching'
+        mamba_path: '{{conda_path}}/bin/mamba'
       when: use_conda is true
+
+    - name: Ensure the user systemd directory exists
+      file:
+        path: "{{ data_path }}"
+        state: directory
+        mode: "0755"
 
     - name: Writing redis-cache information
       copy:
@@ -80,7 +102,7 @@
 
     - name: Registering conda path
       stat:
-        path: "{{ conda_path }}"
+        path: "{{ mamba_path }}"
       register: conda_env_path
       when: use_conda is true
 
@@ -92,7 +114,7 @@
 
     - name: Stopping the redis server
       systemd:
-        name: "{{ project_name }}-redis"
+        name: "{{systemd_unit}}"
         state: stopped
         scope: "{{ 'system' if become is true else 'user'}}"
       when: use_conda is true
@@ -106,8 +128,6 @@
     - name: Creating conda dir
       file:
         path: "{{ conda_path }}"
-        owner: "{{uid}}"
-        group: "{{gid}}"
         recurse: true
       when: not conda_env_path.stat.exists and use_conda is true
 
@@ -119,17 +139,13 @@
 
     - name: Installing freva-rest-server package
       shell:
-        cmd: "{{ conda_path }}/bin/mamba install -y freva-rest-server={{freva_rest_version}}"
+        cmd: "{{ conda_path }}/bin/mamba install -y freva-rest-server"
       when: use_conda is true and not redis_bin.stat.exists
 
-    - name: Adjusting conda dir ownership
+    - name: Creating log dir
       file:
-        path: "{{ conda_path }}"
-        owner: "{{uid}}"
-        group: "{{gid}}"
-        state: directory
+        path: "{{log_dir}}"
         recurse: true
-      when: use_conda is true
 
     - name: Getting additional configurations
       git:
@@ -144,12 +160,10 @@
         path: "{{redis_data}}/certs"
         state: directory
         mode: "0755"
-        owner: "{{uid}}"
-        group: "{{gid}}"
         recurse: true
       when: use_conda is true
 
-    - name: Adjusting configuration onwnership
+    - name: Creating configuration onwnership
       file:
         recurse: true
         path: '{{redis_data}}'
@@ -162,7 +176,7 @@
         recurse: true
       with_items:
         - '{{redis_data}}/certs'
-        - '{{data_path}}/compose_services'
+        - '{{data_path}}/{{project_name}}/compose_services'
       when: use_conda is false
 
     - name: Pulling container
@@ -199,9 +213,7 @@
     - name: Creating systemd conda service
       template:
         src: "{{ asset_dir }}/freva-rest/redis.j2"
-        dest: "{{ systemd_unit_dir }}/{{ project_name }}-redis.service"
-        owner: "{{uid}}"
-        group: "{{gid}}"
+        dest: "{{ systemd_unit_dir }}/{{systemd_unit}}.service"
         mode: "0644"
       when: use_conda is true
 
@@ -213,7 +225,7 @@
 
     - name: Creating systemd container services
       ansible.builtin.script:
-        cmd: "{{asset_dir}}/scripts/create_systemd.py redis_cache compose --enable -p redis --gracious -f {{compose_file}} up --remove-orphans"
+        cmd: "{{asset_dir}}/scripts/create_systemd.py {{systemd_unit}} compose --enable -p redis --gracious -f {{compose_file}} up --remove-orphans"
       environment:
         DEBUG: '{{ debug }}'
       when: systemctl.stat.exists is true and debug is false and use_conda is false
@@ -224,7 +236,7 @@
 
     - name: Enable and start the redis server
       systemd:
-        name: "{{ project_name }}-redis"
+        name: "{{systemd_unit}}"
         state: started
         enabled: true
         scope: "{{ 'system' if become is true else 'user'}}"
@@ -244,6 +256,18 @@
     information_enc: '{{data_portal_scheduler_information}}'
 
   tasks:
+    - name: Get UID
+      command: id -u {{ ansible_user }}
+      register: uid_result
+
+    - name: Get GID
+      command: id -g {{ ansible_user }}
+      register: gid_result
+
+    - name: Set additional variables
+      set_fact:
+        uid: "{{ uid_result.stdout }}"
+        gid: "{{ gid_result.stdout }}"
 
     - name: Set all additional variables
       set_fact:
@@ -297,6 +321,18 @@
     information: '{{data_portal_hosts_information}}'
 
   tasks:
+    - name: Get UID
+      command: id -u {{ ansible_user }}
+      register: uid_result
+
+    - name: Get GID
+      command: id -g {{ ansible_user }}
+      register: gid_result
+
+    - name: Set additional variables
+      set_fact:
+        uid: "{{ uid_result.stdout }}"
+        gid: "{{ gid_result.stdout }}"
 
     - name: Set all additional variables
       set_fact:

@@ -10,7 +10,7 @@ import shutil
 import string
 import sys
 import time
-from base64 import b64encode
+from base64 import b64decode, b64encode
 from copy import deepcopy
 from getpass import getuser
 from pathlib import Path
@@ -26,7 +26,7 @@ from rich import print as pprint
 from rich.prompt import Prompt
 
 import freva_deployment.callback_plugins
-from freva_deployment import FREVA_PYTHON_VERSION
+from freva_deployment import FREVA_PYTHON_VERSION, __version__
 
 from .error import ConfigurationError, handled_exception
 from .keys import RandomKeys
@@ -130,6 +130,7 @@ class DeployFactory:
         gen_keys: bool = False,
         _cowsay: bool = False,
     ) -> None:
+        self.passwords: dict[str, str] = {}
         self._no_cowsay = str(int(_cowsay is False))
         self.gen_keys = gen_keys or local_debug
         self.local_debug = local_debug
@@ -212,6 +213,7 @@ class DeployFactory:
         self.cfg["vault"]["config"]["db_port"] = self.cfg["vault"]["config"].get(
             "port", 3306
         )
+        self.cfg["vault"]["config"]["version"] = __version__
         self.cfg["vault"]["config"]["db_user"] = self.cfg["vault"]["config"].get(
             "user", ""
         )
@@ -287,6 +289,7 @@ class DeployFactory:
         self.cfg["freva_rest"]["config"][
             "redis_cache_url"
         ] = f"redis://{redis_host}:{redis_port}"
+        self.cfg["freva_rest"]["config"]["redis_host_name"] = redis_host
         proxy_url = (
             f'http://{self.cfg["freva_rest"]["hosts"]}:'
             f'{self.cfg["freva_rest"]["config"]["freva_rest_port"]}'
@@ -302,8 +305,11 @@ class DeployFactory:
             "ansible_user", getuser()
         )
         redis_information_enc = self._td.get_remote_file_content(
-            os.path.join(data_path, ".redis-cache.json"),
             redis_host,
+            os.path.join(data_path, ".redis-cache.json"),
+            os.path.join(data_path, self.project_name, ".redis-cache.json"),
+            os.path.join(data_path, "caching", ".redis-cache.json"),
+            os.path.join(data_path, f".redis-cache-{self.project_name}.json"),
             username=user_name,
             password=password,
         )
@@ -346,6 +352,7 @@ class DeployFactory:
                 ),
             },
         }
+        shared_cache = self.cfg["freva_rest"]["config"].get("shared_cache", False)
         if data_portal_hosts[1:]:
             self.cfg["data_portal_hosts"] = {
                 "hosts": ",".join(data_portal_hosts[1:]),
@@ -366,6 +373,7 @@ class DeployFactory:
                 "information": redis_information_enc,
                 "project_name": self.project_name,
                 "port": redis_port,
+                "shared_cache": shared_cache,
                 "data_path": str(data_path),
                 "ansible_become_user": self.cfg["freva_rest"]["config"].get(
                     "ansible_become_user", "root"
@@ -473,6 +481,7 @@ class DeployFactory:
     def _prep_web(self, ask_pass: bool = True) -> None:
         """prepare the web deployment."""
         self._config_keys.append("web")
+
         self.playbooks["web"] = self.cfg["web"]["config"].get("web_playbook")
         for key in "oidc_url", "oidc_client", "oidc_client_secret":
             self.cfg["web"]["config"][key] = self.cfg["freva_rest"]["config"].get(
@@ -856,6 +865,22 @@ class DeployFactory:
                 steps.append("vault")
         return [s for s in self.step_order if s in steps]
 
+    def _set_deployment_methods(self) -> None:
+        """Check the deployment methods."""
+        valid_deployment_methods = ("container", "conda")
+        for step in ("db", "freva_rest", "web"):
+            deployment_method = (
+                self.cfg[step]
+                .get("config", {})
+                .get("deployment_method", "container")
+            )
+            if deployment_method not in valid_deployment_methods:
+                raise ValueError(
+                    f"Deployment method in step: {step} is invalid, should be"
+                    f"one of {', '.join(valid_deployment_methods)}"
+                )
+            self.cfg[step]["config"]["use_conda"] = deployment_method == "conda"
+
     def create_playbooks(self) -> str:
         """Create the ansible playbook form all steps."""
         logger.info("Creating Ansible playbooks")
@@ -863,33 +888,27 @@ class DeployFactory:
         self.current_step = "foo"
         _ = [getattr(self, f"_prep_{step}")() for step in self.steps]
         steps = deepcopy(self.steps)
-        valid_deployment_methods = ("container", "conda")
         for step in steps:
-            try:
-                deployment_method = self.cfg[step]["config"].get(
-                    "deployment_method", "container"
-                )
-                if deployment_method not in valid_deployment_methods:
-                    raise ValueError(
-                        f"Deployment method in step: {step} is invalid, should be"
-                        f"one of {', '.join(valid_deployment_methods)}"
-                    )
-                if deployment_method == "conda":
-                    self.cfg[step]["config"]["use_conda"] = True
-                else:
-                    self.cfg[step]["config"]["use_conda"] = False
-            except KeyError:
-                pass
+            deployment_method = (
+                self.cfg[step]
+                .get("config", {})
+                .get("deployment_method", "container")
+            )
+            if step != "core":
+                file_suffix = f"-{deployment_method}"
+            else:
+                file_suffix = ""
             playbook_file = (
                 self.playbooks.get(step)
-                or self.playbook_dir
-                / f"{step}-server-playbook-{deployment_method}.yml"
+                or self.playbook_dir / f"{step}-server-playbook{file_suffix}.yml"
             )
             with Path(playbook_file).open(encoding="utf-8") as f_obj:
                 playbook += yaml.safe_load(f_obj)
 
         if "freva_rest" in steps and "data-loader" in self.playbooks:
             loader_playbook = []
+            freva_rest_idx = self.steps.index("freva_rest")
+
             use_conda = self.cfg["freva_rest"]["config"].get("use_conda", False)
             for step in (
                 "redis_cache",
@@ -904,7 +923,11 @@ class DeployFactory:
                 for step in yaml.safe_load(stream):
                     if step["hosts"] in self._config_keys:
                         loader_playbook.append(step)
-            playbook = loader_playbook + playbook
+            playbook = (
+                playbook[:freva_rest_idx]
+                + loader_playbook
+                + playbook[freva_rest_idx:]
+            )
         return self._td.create_playbook(playbook)
 
     def create_eval_config(self) -> None:
@@ -1011,25 +1034,17 @@ class DeployFactory:
     ) -> None:
         """Update the redis cache informations."""
         self._prep_data_loader(passwords.get("anslibe_ssh_pass"))
+        information = get_cache_information()
         self.cfg["freva_rest"]["config"].setdefault(
             "cache_information",
-            b64encode(json.dumps(get_cache_information()).encode("utf-8")).decode(
-                "utf-8"
-            ),
+            b64encode(json.dumps(information).encode("utf-8")).decode("utf-8"),
         )
-
-        if (
-            self.cfg["freva_rest"]["config"].get("deploy_data_loader", False)
-            is False
-        ):
-            return
-        config: dict[str, dict[str, dict[str, str | int | bool]]] = {}
-        config["redis_cache"] = {}
-        config["redis_cache"]["hosts"] = self.cfg["redis_cache"]["hosts"]
-        config["redis_cache"]["vars"] = self.cfg["redis_cache"]["config"].copy()
-        self.cfg["freva_rest"]["config"]["cache_information"] = self.cfg[
-            "redis_cache"
-        ]["config"]["information"]
+        self.cfg["web"]["config"]["cache_information"] = self.cfg["freva_rest"][
+            "config"
+        ]["cache_information"] = self.cfg["redis_cache"]["config"]["information"]
+        self.cfg["web"]["config"]["redis_host_name"] = self.cfg["freva_rest"][
+            "config"
+        ]["redis_host_name"]
 
     def get_steps_from_versions(
         self,
@@ -1068,6 +1083,11 @@ class DeployFactory:
                     f"{step}_ansible_user": cfg[step]["config"].get(
                         "ansible_user", getuser()
                     ),
+                    f"{step}_use_conda": cfg[step]["config"].get(
+                        "use_conda", False
+                    ),
+                    "project_name": self.project_name,
+                    f"{step}_data_path": cfg[step]["config"].get("data_path", ""),
                     "version_file_path": str(version_path),
                 }
                 python_exe = self.cfg[step]["config"].get(
@@ -1095,7 +1115,9 @@ class DeployFactory:
         versions = {}
         for line in result.splitlines():
             jline = json.loads(line)
-            if "msg" in jline["result"]:
+            if "msg" in jline["result"] and jline["task"].lower().startswith(
+                "display"
+            ):
                 service = jline["task"].split()[1].lower()
                 version = jline["result"]["msg"].strip()
                 versions[service.strip()] = version.strip()
@@ -1157,17 +1179,18 @@ class DeployFactory:
         if self.local_debug:
             extravars["ansible_connection"] = "local"
 
-        passwords = self.get_ansible_password(ask_pass)
+        self.passwords = self.get_ansible_password(ask_pass)
         steps = []
+        self._set_deployment_methods()
         if skip_version_check is False:
             steps = self.get_steps_from_versions(
                 envvars.copy(),
                 extravars.copy(),
-                passwords.copy(),
+                self.passwords.copy(),
                 verbosity,
             )
         self._get_or_set_cache_information(
-            envvars.copy(), extravars.copy(), passwords.copy(), verbosity
+            envvars.copy(), extravars.copy(), self.passwords.copy(), verbosity
         )
         playbook, inventory = self.parse_config(steps)
         if inventory is None or playbook is None:
@@ -1185,7 +1208,7 @@ class DeployFactory:
             playbook=playbook,
             inventory=inventory,
             envvars=envvars,
-            passwords=passwords,
+            passwords=self.passwords,
             extravars=extravars,
             verbosity=verbosity,
         )

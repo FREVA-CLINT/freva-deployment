@@ -73,11 +73,11 @@ def get_steps_from_versions(detected_versions: Dict[str, str]) -> List[str]:
             if os.environ.get("INTERACTIVE_DEPLOY", "1"):
                 answ = (
                     Prompt.ask(
-                        f"The installed version for {service} is higher"
+                        f"The installed version for [green]{service}[/green] is higher"
                         " than the min. defined version.\nThere might be"
                         " a chance that the current deployment software"
-                        " is outdated.\nIf you cotinue you will "
-                        f"[b]downgrade[/b] {service} from "
+                        " is outdated.\nIf you continue you will "
+                        f"[b]downgrade[/b] [green]{service}[/green] from "
                         f"{version} to {min_version}. "
                         "\nDo you want to continue \\[y|N]"
                     ).lower()

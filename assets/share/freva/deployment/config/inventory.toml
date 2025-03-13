@@ -160,6 +160,11 @@ deployment_method="container"
 ### of the rest-api server.
 redis_host = ""
 
+### Indicate whether or not the redis-caching services will be shared among
+### other freva instances. In this case the name of the service will simply
+### be called redis-cache service otherwise <project_name>-cache
+shared_cache = false
+
 ### Set the hostname(s) for the data-loading portal. The data-loading portal
 ### is a services that provisions data via zarr. The data-loading portal is
 ### a distributed system, meaning that you can set multiple hostnames that
@@ -242,9 +247,9 @@ scheduler_output_dir = ""
 
 ## Set the target architecture of the system where the backend will be installed.
 ## You can choose from the following options:
-## Linux-x86_64 (default), Linux-aarch64, Linux-ppc64le, Linux-s390x,
-## MacOSX-x86_64, MacOSX-arm64
-arch = "Linux-x86_64"
+## linux-64 (default), linux-aarch64, linux-ppc64le, linux-s390x,
+## oss-64, osx-arm64
+arch = "linux-64"
 
 ## If you need to install the core or its configuration as a different user,
 ## set the ansible_become_user variable. This will install the core as a

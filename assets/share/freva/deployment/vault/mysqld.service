@@ -13,9 +13,7 @@ KillSignal=SIGTERM
 PermissionsStartOnly=true
 ExecStartPre=/bin/sh -c "systemctl unset-environment _WSREP_START_POSITION"
 ExecStartPost=/bin/sh -c "systemctl unset-environment _WSREP_START_POSITION"
-ExecStart={{conda_path}}/bin/mysqld
-User={{uid}}
-Group={{gid}}
+ExecStart={{conda_path}}/bin/mysqld --user={{uid}}
 
 [Install]
 WantedBy=multi-user.target

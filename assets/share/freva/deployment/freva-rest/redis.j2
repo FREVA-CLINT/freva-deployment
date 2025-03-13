@@ -11,7 +11,7 @@ ProtectHome=true
 KillSignal=SIGTERM
 Restart=on-abort
 ExecStartPre={{conda_path}}/libexec/freva-rest-server/scripts/init-redis
-ExecStart={{conda_path}}/bin/redis-server /tmp/redis.conf
+ExecStart=/bin/sh -c "{{conda_path}}/bin/redis-server /tmp/redis.conf &> {{log_dir}}/redis.log"
 Environment="CONDA_PREFIX={{ conda_path }}"
 Environment="API_REDIS_USER={{username}}"
 Environment="API_REDIS_PASSWORD={{password}}"

@@ -20,6 +20,7 @@ ExecStart=/bin/sh -c "PATH={{ conda_path }}/bin:$PATH \
     --host 0.0.0.0 --port 5002 runserver:app"
 Environment="CONDA_PREFIX={{ conda_path }}"
 Environment="ROOT_PW={{ root_passwd }}"
+Environment="VERSION={{ vault_version }}"
 UMask=007
 
 [Install]

@@ -60,7 +60,6 @@ def run_command(
     os_env = deepcopy(os.environ)
     env = env or {}
     stdout = sys.stdout
-    result = 1
     with TemporaryDirectory(prefix="AnsibleRunner") as temp_dir:
         logger_file = Path(temp_dir) / "logger.log"
         logger_file.touch()
@@ -72,7 +71,9 @@ def run_command(
             if capture_output:
                 sys.stdout = stdout_buffer
             ctx = get_context()
-            proc = ctx.Process(target=SubProcess.run_ansible_playbook, args=(command,))
+            proc = ctx.Process(
+                target=SubProcess.run_ansible_playbook, args=(command,)
+            )
             proc.start()
             proc.join()
         finally:
@@ -112,7 +113,6 @@ class RunnerDir(TemporaryDirectory):
     def __init__(self) -> None:
         super().__init__(prefix="AnsibleRunner")
         self.parent_dir = Path(self.name)
-        self.parent_dir = Path("foo")
         self.env_dir = self.parent_dir / "env"
         self.inventory_dir = self.parent_dir / "inventory"
         self.project_dir = self.parent_dir / "project"
@@ -205,8 +205,8 @@ class RunnerDir(TemporaryDirectory):
 
     def get_remote_file_content(
         self,
-        file_path: str,
         host: str,
+        *file_paths: str,
         username: Optional[str] = None,
         password: Optional[str] = None,
     ) -> str:
@@ -214,10 +214,10 @@ class RunnerDir(TemporaryDirectory):
 
         Parameters
         ----------
-        file_path: str
-            The path to the file contaning the target content
         host: str
             Remote hostname
+        file_paths: str
+            The paths to the file contaning the target content
         username: str, default: None
             Use this username to log on
         password: str, default: None
@@ -236,11 +236,15 @@ class RunnerDir(TemporaryDirectory):
         try:
             logger.debug("Connecting to %s with %s", host, username)
             ssh.connect(host, username=username, password=password or None)
-            _, stdout, stderr = ssh.exec_command(f"cat {file_path}")
-            if stderr.channel.recv_exit_status() == 0:
-                file_content = stdout.read().decode("utf-8").strip()
+            for file_path in file_paths:
+                _, stdout, stderr = ssh.exec_command(f"cat {file_path}")
+                if stderr.channel.recv_exit_status() == 0:
+                    file_content = stdout.read().decode("utf-8").strip()
+                    break
         except Exception as error:
-            logger.critical("Couldn't establish connection to %s: %s", host, error)
+            logger.critical(
+                "Couldn't establish connection to %s: %s", host, error
+            )
         finally:
             ssh.close()
         return file_content

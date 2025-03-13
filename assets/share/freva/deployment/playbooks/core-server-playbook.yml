@@ -15,24 +15,41 @@
         if core_conda_exec_path is defined else '' }}"
     eval_path: "freva/evaluation_system.conf"
   tasks:
+    - name: Get UID
+      command: id -u {{ ansible_user }}
+      register: uid_result
+
+    - name: Get GID
+      command: id -g {{ ansible_user }}
+      register: gid_result
+
+    - name: Set UID and GID as facts
+      set_fact:
+        uid: "{{ uid_result.stdout }}"
+        gid: "{{ gid_result.stdout }}"
+
     - name: Creating temp. dir
       tempfile:
         state: directory
         prefix: evaluation_system
       register: tempdir
+
     - name: Cloning the evluation_system reposiotry
       git:
         repo: "{{ core_git_url }}"
         dest: "{{tempdir.path}}"
         executable: "{{core_git_path | regex_replace('^~', ansible_env.HOME)}}"
+
     - name: Getting status of the conda env
       stat:
         path: "{{ core_install_dir | regex_replace('^~', ansible_env.HOME)}}/bin/freva"
       register: freva_path
+
     - name: Downloading miniforge
       ansible.builtin.script:
         cmd: "{{ asset_dir }}/scripts/download_conda.py {{ tempdir.path }}"
       when: not freva_path.stat.exists
+
     - name: Creating conda dir
       file:
         path: "{{ core_install_dir }}"
@@ -40,6 +57,7 @@
         group: "{{gid}}"
         recurse: true
       when: not freva_path.stat.exists
+
     - name: Installing freva
       command:
         cmd: "{{item}}"
@@ -48,20 +66,25 @@
         - "./conda.sh -b -u -f -p {{tempdir.path}}/conda"
         - "{{tempdir.path}}/conda/bin/conda create -p {{core_install_dir}} -c conda-forge -y freva={{core_version}} conda"
       when: not freva_path.stat.exists
+
     - name: Check if mamba exists
       stat:
         path: "{{ core_install_dir | regex_replace('^~', ansible_env.HOME)}}/bin/mamba"
       register: mamba_check
+
     - name: Set variable for package manager
       set_fact:
         pkg_mgr: "mamba"
       when: mamba_check.stat.exists
+
     - name: Getting the freva version
       shell: "{{conda_bin}}/freva -V 2> /dev/null | awk '{print $NF}'"
       register: freva_version
+
     - name: Check if the version is lower than {{ core_version }}
       set_fact:
         is_version_lower: "{{ freva_version.stdout is version(core_version, '<') }}"
+
     - name: Updating existing freva
       shell:
         cmd: "{{conda_bin}}/{{pkg_mgr}} install -y -q -p {{core_install_dir}} -c conda-forge freva={{core_version}}"
@@ -70,10 +93,12 @@
       when:
         - freva_path.stat.exists
         - is_version_lower
+
     - name: Preparing creation of directory structure
       file:
         path: "{{ core_root_dir | regex_replace('^~', ansible_env.HOME) }}"
         state: directory
+
     - name: Creating directory structure
       file:
         path: "{{ item }}"
@@ -83,6 +108,7 @@
       with_items:
         - "{{ core_root_dir | regex_replace('^~', ansible_env.HOME) }}/freva/"
         - "{{ core_root_dir | regex_replace('^~', ansible_env.HOME) }}/plugins/"
+
     - name: Creating user work directory
       file:
         path: "{{core_base_dir_location | regex_replace('^~', ansible_env.HOME)}}"
@@ -90,6 +116,7 @@
         mode: "3775"
       when: core_base_dir_location | length != 0
       ignore_errors: true
+
     - name: Creating workload manager output
       file:
         path: "{{core_scheduler_output_dir | regex_replace('^~', ansible_env.HOME)}}"
@@ -97,6 +124,7 @@
         mode: "3775"
       ignore_errors: true
       when: core_scheduler_output_dir | length != 0
+
     - name: Creating preview path
       file:
         path: "{{core_preview_path | regex_replace('^~', ansible_env.HOME)}}"
@@ -104,10 +132,12 @@
         mode: "3775"
       when: core_preview_path | length != 0
       ignore_errors: true
+
     - name: Registering evaluation_sytem path
       stat:
         path: "{{ core_root_dir | regex_replace('^~', ansible_env.HOME)}}/freva/evaluation_system.conf"
       register: eval_conf
+
     - name: Inserting evaluation_sytem.conf file
       copy:
         src: "{{ core_dump }}"
@@ -115,10 +145,12 @@
         mode: "{{ '2664' if core_admin_group is defined and core_admin_group != '' else '2644' }}"
         group: "{{ core_admin_group if core_admin_group is defined and core_admin_group != '' else omit}}"
       when: (eval_conf.stat.exists != true)
+
     - name: Inserting evaluation_system.config file to temp location
       copy:
         src: "{{ core_dump }}"
         dest: "{{tempdir.path}}/evaluation_system.conf"
+
     - name: Inserting evaluation_system.conf file
       copy:
         src: "{{tempdir.path}}/evaluation_system.conf"
@@ -127,6 +159,7 @@
         group: "{{ core_admin_group if core_admin_group is defined and core_admin_group != '' else omit}}"
         mode: "{{ '2664' if core_admin_group is defined and core_admin_group != '' else '2644' }}"
       when: not freva_path.stat.exists
+
     - name: Installing additional python packages
       command:
         cmd: "{{conda_bin}}/python -m pip install {{item}}"
@@ -134,17 +167,20 @@
       with_items:
         - "jupyter-kernel-install"
         - "metadata-inspector"
+
     - name: Installing metadata-crawler
       ansible.builtin.script:
         cmd: >
           {{asset_dir}}/scripts/download.py
-          https://swift.dkrz.de/v1/dkrz_6681fd49-d4e5-44f6-bf39-307a187ed22e/data-crawler/data-crawler-linux64
+          https://freva.gitlab-pages.dkrz.de/metadata-crawler-source/binaries/data-crawler
           -o {{conda_sbin}}/data-crawler
         creates: "{{conda_sbin}}/data-crawler"
+
     - name: Getting status of drs_config.toml file
       stat:
         path: "{{ core_root_dir | regex_replace('^~', ansible_env.HOME)}}/freva/drs_config.toml"
       register: drs_path
+
     - name: Inserting drs_config.toml file
       copy:
         src: "{{tempdir.path}}/assets/drs_config.toml"
@@ -153,6 +189,7 @@
         group: "{{ core_admin_group if core_admin_group is defined and core_admin_group != '' else omit}}"
         mode: "{{ '2664' if core_admin_group is defined and core_admin_group != '' else '2644' }}"
       when: not drs_path.stat.exists
+
     - name: Configuring evaluation_system
       command:
         cmd: "$PYTHON3 deploy.py {{ core_install_dir | regex_replace('^~', ansible_env.HOME) }} -s --no-conda"
@@ -161,12 +198,14 @@
         PYTHON3: "{{ ansible_python_interpreter }}"
         EVALUATION_SYSTEM_CONFIG_FILE: "{{ core_root_dir | regex_replace('^~', ansible_env.HOME) }}/freva/evaluation_system.conf"
         PYTHON_VERSION: "{{core_python_version}}"
+
     - name: Copying Public key file
       copy:
         src: "{{ core_keyfile }}"
         dest: "{{ core_root_dir | regex_replace('^~', ansible_env.HOME) }}/freva/{{ project_name }}.crt"
         mode: "{{ '2664' if core_admin_group is defined and core_admin_group != '' else '2644' }}"
         group: "{{ core_admin_group if core_admin_group is defined and core_admin_group != '' else omit}}"
+
     - name: Deleting temporary files
       file:
         state: absent

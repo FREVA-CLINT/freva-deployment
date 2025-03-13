@@ -28,7 +28,8 @@
     ansible_python_interpreter: "{{ web_ansible_python_interpreter }}"
     become: "{{ web_ansible_become_user is defined and web_ansible_become_user != '' }}"
     service_dir: "{{web_data_path|regex_replace('^~', ansible_env.HOME)}}/{{project_name}}/web_service"
-    compose_file: "{{web_data_path|regex_replace('^~', ansible_env.HOME)}}/compose_services/{{web_name}}-compose.yml"
+    old_compose_dir: "{{web_data_path|regex_replace('^~', ansible_env.HOME)}}/compose_services"
+    compose_file: "{{web_data_path|regex_replace('^~', ansible_env.HOME)}}/{{project_name}}/compose_services/{{web_name}}-compose.yml"
     web_config_file: "{{ core_root_dir | regex_replace('^~', ansible_env.HOME)}}/freva/web/freva_web_conf.toml"
     web_volumes:
       - "{{ core_root_dir | regex_replace('^~', ansible_env.HOME)}}:{{ core_root_dir | regex_replace('^~', ansible_env.HOME)}}:ro"
@@ -46,7 +47,7 @@
       - "{{ core_preview_path | regex_replace('^~', ansible_env.HOME)}}:/srv/static/preview:ro"
     redis_volumes:
       - "{{web_data_path|regex_replace('^~', ansible_env.HOME)}}/{{project_name}}/web_service/rootless-entrypoint.sh:/tmp/entrypoint.sh:z"
-    redis_name: "{{ project_name }}-redis"
+    redis_name: "{{ project_name }}-cache"
     apache_name: "{{project_name}}-httpd"
     web_name: "{{project_name}}-web"
     service_path: "{{web_data_path|regex_replace('^~', ansible_env.HOME)}}/{{project_name}}/web_service/"
@@ -56,12 +57,18 @@
     healthchecks:
       - name: "{{project_name}}-web"
         cmd:  'python -V'
-      - name: "{{project_name}}-redis"
+      - name: "{{project_name}}-cache"
         cmd: 'redis-cli ping'
       - name: "{{project_name}}-httpd"
         cmd: 'httpd -S'
 
   tasks:
+    - name: Removing old compose directory structure
+      file:
+        path: "{{old_compose_dir}}"
+        state: absent
+        force: true
+
     - name: Get UID
       command: id -u {{ ansible_user }}
       register: uid_result
@@ -130,7 +137,7 @@
 
     - name: Creating compose directory structure
       file:
-        path: "{{web_data_path|regex_replace('^~', ansible_env.HOME)}}/compose_services"
+        path: "{{web_data_path|regex_replace('^~', ansible_env.HOME)}}/{{project_name}}/compose_services"
         state: directory
         recurse: true
     - name: Copying  httpd files

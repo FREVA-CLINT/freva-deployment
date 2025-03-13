@@ -20,7 +20,7 @@ services:
     hostname: redis
     volumes:
       - {{redis_data}}/redis/redis-cmd.sh:/usr/local/bin/redis-cmd
-      - {{redis_data}}/certs:/certs
+      - {{redis_data}}/certs:/certs:rw
     command: /usr/local/bin/redis-cmd
 
 networks:
