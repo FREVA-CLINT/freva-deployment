@@ -23,7 +23,7 @@ from typing import Annotated, Dict, List, Optional, TypedDict, cast
 
 import hvac
 import requests
-from fastapi import FastAPI, Header, HTTPException, Path, Query, status
+from fastapi import Body, FastAPI, Header, HTTPException, Path, status
 from fastapi.responses import JSONResponse
 
 KeyType = TypedDict("KeyType", {"keys": List[str], "token": str})
@@ -134,8 +134,10 @@ class VaultClient:
     def update_secret(self, path: str, **secret: str) -> None:
         """Update or create a secret."""
         self._auth_vault()
+        old_secret = self.get_secret(path) or {}
+        old_secret.update(secret)
         self.client.secrets.kv.v1.create_or_update_secret(
-            path=path, secret=secret
+            path=path, secret=old_secret
         )
 
     def get_secret(self, path: str) -> Optional[Dict[str, str]]:
@@ -233,10 +235,10 @@ async def get_vault_status() -> JSONResponse:
 
 @app.post("/vault/{path}", tags=["Secrets"])
 async def update_secret(
-    path: Annotated[str, Path(description="Secret location.", examples="test")],
-    secret: Annotated[
-        Optional[str],
-        Query(
+    path: Annotated[str, Path(description="Secret location.", examples=["test"])],
+    secrets: Annotated[
+        Optional[Dict[str, str]],
+        Body(
             description=(
                 "The secret that should be stored, "
                 "this is a string represenatation of the"
@@ -244,7 +246,7 @@ async def update_secret(
                 "key=value. Multiple secrets are ',' "
                 "comma separated."
             ),
-            examples="foo=bar,hoo=rohoo",
+            examples=[{"foo": "bar", "hoo": "roo"}],
         ),
     ] = None,
     admin_pw: Annotated[
@@ -267,17 +269,13 @@ async def update_secret(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Permission denied",
         ) from None
-    secrets_dict = {}
-    for secret_str in (secret or "").strip().split(","):
-        key, _, value = secret_str.partition("=")
-        secrets_dict[str(key).strip()] = str(value).strip()
-    if not secrets_dict:
+    if not secrets:
         JSONResponse(
             content={"message": random.choice(PHRASES)},
             status_code=status.HTTP_204_NO_CONTENT,
         )
     try:
-        Vault.update_secret(path, **secrets_dict)
+        Vault.update_secret(path, **secrets)
     except hvac.exceptions.VaultError:
         logger.warning("Could not add secrets %s to %s", path, secrets_dict)
         raise HTTPException(
