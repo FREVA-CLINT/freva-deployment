@@ -282,7 +282,7 @@ class WebScreen(BaseForm):
                     name=f"{self.num}Deployment Method",
                     value=get_index(
                         DEPLOYMENT_METHODS,
-                        cfg.get("deployment_method", "conda"),
+                        cast(str, cfg.get("deployment_method", "conda")),
                     ),
                     values=DEPLOYMENT_METHODS,
                 ),
@@ -589,7 +589,7 @@ class DBScreen(BaseForm):
                     name=f"{self.num}Deployment Method",
                     value=get_index(
                         DEPLOYMENT_METHODS,
-                        cfg.get("deployment_method", "conda"),
+                        cast(str, cfg.get("deployment_method", "conda")),
                     ),
                     values=DEPLOYMENT_METHODS,
                 ),
@@ -729,7 +729,7 @@ class FrevaRestScreen(BaseForm):
                     name=f"{self.num}Deployment Method",
                     value=get_index(
                         DEPLOYMENT_METHODS,
-                        cfg.get("deployment_method", "conda"),
+                        cast(str, cfg.get("deployment_method", "conda")),
                     ),
                     values=DEPLOYMENT_METHODS,
                 ),
