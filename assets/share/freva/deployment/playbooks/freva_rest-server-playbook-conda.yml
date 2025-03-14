@@ -120,3 +120,21 @@
         state: started
         enabled: true
         scope: "{{ 'system' if become is true else 'user'}}"
+
+- name: Add mongoDB secrets to vault
+  hosts: db
+  become: "{{ db_ansible_become_user is defined and db_ansible_become_user != '' }}"
+  vars:
+    ansible_python_interpreter: "{{ db_ansible_python_interpreter }}"
+    ansible_become_user: "{{ db_ansible_become_user | default('root') }}"
+    conda_path: '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/{{ project_name }}'
+
+  tasks:
+    - name: Add mongDB secrets to vault
+      shell: >
+        {{ conda_path }}/bin/add-vault-secret
+        data -s mongo.passwd {{freva_rest_db_passwd}}
+        -s mongo.user {{freva_rest_db_user}} -s mongo.db search_stats
+      environment:
+        ROOT_PW: "{{ root_passwd }}"
+        PATH: "{{conda_path}}/bin:/usr/bin:/bin:/usr/local/bin"

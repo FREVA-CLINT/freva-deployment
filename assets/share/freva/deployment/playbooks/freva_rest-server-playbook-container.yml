@@ -221,6 +221,31 @@
         - /tmp/create_systemd.py
         - /tmp/solr_service
 
+- name: Add mongoDB secrets to vault
+  hosts: db
+  become: "{{ db_ansible_become_user is defined and db_ansible_become_user != '' }}"
+  vars:
+    ansible_python_interpreter: "{{ db_ansible_python_interpreter }}"
+    ansible_become_user: "{{ db_ansible_become_user | default('root') }}"
+
+  tasks:
+    - name: Copying docker/podman wrapper script
+      copy:
+        src: "{{ asset_dir }}/scripts/docker-or-podman"
+        dest: /tmp/docker-or-podman
+        mode: "0775"
+
+    - name: Add mongDB secrets to vault
+      shell: >
+        /tmp/docker-or-podman exec {{ vault_name }} add-vault-secret
+        data -s mongo.passwd {{freva_rest_db_passwd}}
+        -s mongo.user {{freva_rest_db_user}} -s mongo.db search_stats
+
+    - name: Deleting auxillary files
+      file:
+        state: absent
+        path: /tmp/docker-or-podman
+
 - name: Restarting the web service
   hosts: web
   become: "{{ web_ansible_become_user is defined and web_ansible_become_user != '' }}"
