@@ -57,8 +57,12 @@ class AssetDir:
 
     def __init__(self):
         self._inventory_content = None
-        self._user_asset_dir = Path(appdirs.user_data_dir()) / "freva" / "deployment"
-        self._user_config_dir = Path(appdirs.user_config_dir()) / "freva" / "deployment"
+        self._user_asset_dir = (
+            Path(appdirs.user_data_dir()) / "freva" / "deployment"
+        )
+        self._user_config_dir = (
+            Path(appdirs.user_config_dir()) / "freva" / "deployment"
+        )
 
     @property
     def is_bundeled(self) -> bool:
@@ -253,7 +257,9 @@ def _create_new_config(inp_file: Path) -> Path:
         "db": ["deployment_method"],
     }
     create_backup = False
-    config_tmpl = cast(Dict[str, Any], tomlkit.loads(AD.inventory_file.read_text()))
+    config_tmpl = cast(
+        Dict[str, Any], tomlkit.loads(AD.inventory_file.read_text())
+    )
     # Legacy solr:
     if "solr" in config or "databrowser" in config:
         create_backup = True
@@ -266,16 +272,18 @@ def _create_new_config(inp_file: Path) -> Path:
                     ]["config"].pop(key)
         else:
             config["freva_rest"] = config.pop("databrowser")
-            config["freva_rest"]["config"]["freva_rest_port"] = config["freva_rest"][
-                "config"
-            ].pop("databrowser_port", "")
+            config["freva_rest"]["config"]["freva_rest_port"] = config[
+                "freva_rest"
+            ]["config"].pop("databrowser_port", "")
             config["freva_rest"]["config"]["freva_rest_playbook"] = config[
                 "freva_rest"
             ]["config"].pop("databrowser_playbook", "")
     for section, keys in keys_to_check.items():
         for key in keys:
             if key not in config_str:
-                config[section]["config"][key] = config_tmpl[section]["config"][key]
+                config[section]["config"][key] = config_tmpl[section]["config"][
+                    key
+                ]
                 create_backup = True
     if create_backup:
         backup_file = inp_file.with_suffix(inp_file.suffix + ".bck")
@@ -301,7 +309,9 @@ def load_config(inp_file: str | Path, convert: bool = False) -> dict[str, Any]:
     return config
 
 
-def get_setup_for_service(service: str, setups: list[ServiceInfo]) -> tuple[str, str]:
+def get_setup_for_service(
+    service: str, setups: list[ServiceInfo]
+) -> tuple[str, str]:
     """Get the setup of a service configuration."""
     for setup in setups:
         if setup.name == service:
@@ -309,15 +319,11 @@ def get_setup_for_service(service: str, setups: list[ServiceInfo]) -> tuple[str,
     raise ConfigurationError("Service not found")
 
 
-def read_db_credentials(
-    cert_file: Path, db_host: str, port: int = 5002
-) -> dict[str, str]:
+def read_db_credentials(db_host: str, port: int = 5002) -> dict[str, str]:
     """Read database config."""
-    with cert_file.open() as f_obj:
-        key = "".join([k.strip() for k in f_obj.readlines() if not k.startswith("-")])
-        sha = hashlib.sha512(key.encode()).hexdigest()
+    sha = hashlib.sha512("".encode()).hexdigest()
     url = f"http://{db_host}:{port}/vault/data/{sha}"
-    return requests.get(url).json()
+    return requests.get(url, timeout=3).json()
 
 
 def get_email_credentials() -> tuple[str, str]:
@@ -339,7 +345,9 @@ def get_email_credentials() -> tuple[str, str]:
         if not username:
             username = Prompt.ask("[green b]Username[/] for mail server")
         if not password:
-            password = Prompt.ask("[green b]Password[/] for mail server", password=True)
+            password = Prompt.ask(
+                "[green b]Password[/] for mail server", password=True
+            )
     return username, password
 
 
@@ -397,7 +405,9 @@ def _create_passwd(min_characters: int, msg: str = "") -> str:
     """Create passwords."""
     master_pass = Prompt.ask(msg or password_prompt, password=True)
     _passwd_is_good(master_pass, min_characters)
-    master_pass_2 = Prompt.ask("[bold green]re-enter[/] master password", password=True)
+    master_pass_2 = Prompt.ask(
+        "[bold green]re-enter[/] master password", password=True
+    )
     if master_pass != master_pass_2:
         raise ValueError("Passwords do not match")
     return master_pass
