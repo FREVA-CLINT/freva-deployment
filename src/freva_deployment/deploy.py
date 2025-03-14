@@ -24,6 +24,7 @@ import tomlkit
 import yaml
 from rich import print as pprint
 from rich.prompt import Prompt
+from typing_extensions import TypedDict
 
 import freva_deployment.callback_plugins
 from freva_deployment import FREVA_PYTHON_VERSION, __version__
@@ -41,6 +42,15 @@ from .utils import (
     load_config,
 )
 from .versions import get_steps_from_versions
+
+
+class ConfigType(TypedDict):
+    """Define the type of the yaml config dict."""
+
+    hosts: str
+    vars: dict[str, str]
+    become: str
+    tasks: list[dict[str, Any]]
 
 
 def get_current_architecture() -> str:
@@ -794,7 +804,11 @@ class DeployFactory:
         self._check_config()
         config: dict[str, dict[str, dict[str, str | int | bool]]] = {}
         info: dict[str, dict[str, dict[str, str | int | bool]]] = {}
-        config_keys = deepcopy(self._config_keys)
+        config_keys = [
+            s
+            for s in self._config_keys
+            if self.cfg.get(s, {}).get("hosts", "").strip()
+        ]
         if "db" in config_keys:
             config_keys.append("vault")
         for step in set(config_keys):
@@ -917,11 +931,11 @@ class DeployFactory:
             ):
                 if step in self.cfg:
                     self.cfg[step]["config"]["use_conda"] = use_conda
-            with Path(self.playbooks.get("data-loader")).open(
-                encoding="utf-8"
-            ) as stream:
-                for step in yaml.safe_load(stream):
-                    if step["hosts"] in self._config_keys:
+            dl_playbook: str = self.playbooks.get("data-loader") or ""
+            with Path(dl_playbook).open(encoding="utf-8") as stream:
+                for step in cast(Any, yaml.safe_load(stream)):
+                    hosts: str = cast(str, step["hosts"])  # type: ignore
+                    if hosts in self._config_keys:
                         loader_playbook.append(step)
             playbook = (
                 playbook[:freva_rest_idx]
@@ -1055,7 +1069,7 @@ class DeployFactory:
     ) -> list[str]:
         """Check the versions of the different freva parts."""
         config: dict[str, dict[str, dict[str, str | int | bool]]] = {}
-        steps = set(self.step_order) - set(self.steps)
+        steps = list(set(self.step_order) - set(self.steps))
         if not steps or self.local_debug:
             # The user has selected all steps anyway, nothing to do here:
             return []
@@ -1064,6 +1078,8 @@ class DeployFactory:
         )
         playbook = []
         cfg = deepcopy(self.cfg)
+        if "web" in steps and not cfg.get("web", {}).get("hosts", "").strip():
+            steps = [s for s in steps if s != "web"]
         if cfg.get("freva_rest") is None:
             cfg["freva_rest"] = cfg.get("databrowser", cfg.get("solr", {}))
         version_path = self._td.parent_dir / "versions.txt"

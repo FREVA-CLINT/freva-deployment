@@ -63,7 +63,10 @@ def get_steps_from_versions(detected_versions: Dict[str, str]) -> List[str]:
     for service, min_version in minimum_version.items():
         lookup.setdefault(service, service)
         min_version = minimum_version[service].strip("v")
-        version = detected_versions.get(service, "").strip("v") or "0.0.0"
+        version = detected_versions.get(service, "").strip("v").strip()
+        if service == "web" and not version:
+            continue
+        version = version or "0.0.0"
         if version < min_version:
             steps.append(lookup[service])
         elif version > min_version and service not in no_ask_for_downgrade:
