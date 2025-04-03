@@ -7,6 +7,12 @@ What's new
    :maxdepth: 0
    :titlesonly:
 
+v2502.0.0
+~~~~~~~~
+* Bumped version of freva_rest to 2502.0.0
+
+
+
 v2410.0.3
 ~~~~~~~~
 * bug-fixes in ci and furnish readthedocs
