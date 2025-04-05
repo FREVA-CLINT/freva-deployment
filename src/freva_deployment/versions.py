@@ -7,6 +7,7 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, List
 
+from packaging.version import Version
 from rich import print as pprint
 from rich.prompt import Prompt
 
@@ -62,11 +63,11 @@ def get_steps_from_versions(detected_versions: Dict[str, str]) -> List[str]:
     no_ask_for_downgrade = ("solr", "db")
     for service, min_version in minimum_version.items():
         lookup.setdefault(service, service)
-        min_version = minimum_version[service].strip("v")
-        version = detected_versions.get(service, "").strip("v").strip()
-        if service == "web" and not version:
+        min_version = Version(minimum_version[service].strip("v"))
+        version_str = detected_versions.get(service, "").strip("v").strip()
+        if service == "web" and not version_str:
             continue
-        version = version or "0.0.0"
+        version = Version(version_str or "0.0.0")
         if version < min_version:
             steps.append(lookup[service])
         elif version > min_version and service not in no_ask_for_downgrade:

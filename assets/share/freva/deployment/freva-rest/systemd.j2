@@ -9,12 +9,17 @@ PermissionsStartOnly=true
 NoNewPrivileges=true
 ProtectHome=true
 KillSignal=SIGTERM
-Restart=on-abort
-ExecStartPre=/bin/sh -c "PATH={{ conda_path }}/bin:$PATH {{ conda_path }}/bin/solr start -force &>  {{ conda_path }}/share/freva-rest-server/solr.log &"
-ExecStartPre=/bin/sh -c "PATH={{ conda_path }}/bin:$PATH {{ conda_path }}/bin/mongod -f {{ conda_path }}/share/freva-rest-server/mongodb/mongod.yaml --auth --cpu &> {{ conda_path }}/share/freva-rest-server/mongod.log &"
-ExecStart=/bin/sh -c "PATH={{ conda_path }}/bin:$PATH freva-rest-server {{freva_rest_services}} &> {{ conda_path }}/share/freva-rest-server/freva-rest-server.log"
+ExecStartPre=/bin/sh -c "PATH={{ conda_path }}/bin:$PATH {{ conda_path }}/bin/solr start -s {{data_dir}}/solr_service/data -force -Dsolr.log.dir {{ data_dir }}/solr_service/logs/  1> /dev/null 2>  {{ data_dir }}/solr_service/logs/sol.err.log &"
+ExecStartPre=/bin/sh -c "PATH={{ conda_path }}/bin:$PATH {{ conda_path }}/bin/mongod -f {{ conda_path }}/share/freva-rest-server/mongodb/mongod.yaml --auth --cpu 2> {{data_dir}}/freva_rest/logs/mongod.err.log 1> /dev/null &"
+ExecStartPre=sleep 3
+ExecStart=/bin/sh -c "PATH={{ conda_path }}/bin:$PATH freva-rest-server {{freva_rest_services}}"
 Environment="CONDA_PREFIX={{ conda_path }}"
 Environment="API_PROXY={{freva_rest_proxy_url}}"
+Environment="API_LOGDIR={{data_dir}}/freva_rest/logs"
+Environment="SOLR_LOGS_DIR={{data_dir}}/solr_service/logs"
+Environment="SOLR_JETTY_HOST=0.0.0.0"
+Environment="SOLR_HEAP={{freva_rest_solr_mem}}"
+Environment="SOLR_PID_DIR={{solr_pid_dir}}"
 Environment="COLUMNS=140"
 Environment="API_OIDC_CLIENT_ID={{freva_rest_oidc_client}}"
 Environment="API_OIDC_DISCOVERY_URL={{freva_rest_oidc_url}}"
@@ -31,8 +36,11 @@ Environment="API_MONGO_DB=search_stats"
 Environment="API_MONGO_USER={{username}}"
 Environment="USE_SOLR=1"
 Environment="USE_MONGODB=1"
-
+Restart=on-failure
+RestartSec=5
+StartLimitBurst=5
 UMask=007
-
+User={{uid}}
+Group={{gid}}
 [Install]
 WantedBy=multi-user.target

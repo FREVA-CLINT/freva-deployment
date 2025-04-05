@@ -38,9 +38,7 @@ class CommandFactory(metaclass=abc.ABCMeta):
     @staticmethod
     def get_container_cmd() -> str:
         """Get the command of the container."""
-        engines = ["docker", "podman"]
-        if getuser() != "root":
-            engines = engines[::-1]
+        engines = ["podman", "docker"]
         for cmd in engines:
             cont_cmd = shutil.which(cmd)
             if cont_cmd:

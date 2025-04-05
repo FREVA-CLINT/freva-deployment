@@ -8,8 +8,12 @@
     ansible_python_interpreter: "{{ freva_rest_ansible_python_interpreter }}"
     ansible_become_user: "{{ freva_rest_ansible_become_user | default('root') }}"
     conda_url: "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3"
-    conda_path: '{{freva_rest_data_path|regex_replace("^~", ansible_env.HOME)}}/{{ project_name }}'
+    conda_path: '{{freva_rest_data_path|regex_replace("^~", ansible_env.HOME)}}/{{ project_name }}/conda'
+    data_dir: '{{freva_rest_data_path|regex_replace("^~", ansible_env.HOME)}}/{{ project_name }}'
     systemd_unit_dir: "{{ '/etc/systemd/system' if  freva_rest_ansible_become_user is defined and freva_rest_ansible_become_user != '' else ansible_env.HOME + '/.config/systemd/user' }}"
+    healthchecks:
+      - cmd:  'solr status'
+      - cmd: "python -c \"import pymongo; pymongo.MongoClient('mongodb://{{freva_rest_db_user}}:{{freva_rest_db_passwd}}@localhost:27017?timeoutMS=2000').list_database_names()\""
 
   tasks:
     - name: Ensure the user systemd directory exists
@@ -37,6 +41,11 @@
         state: directory
         prefix: evaluation_system
       register: tempdir
+    - name: Creating solr pid dir
+      tempfile:
+        state: directory
+        prefix: solr-pid
+      register: solr_dir_dir
     - name: Registering conda path
       stat:
         path: "{{ conda_path }}"
@@ -78,18 +87,33 @@
       shell:
         cmd: "{{ conda_path }}/bin/mamba install -y freva-rest-server={{freva_rest_version}}"
       when: is_version_lower
+    - name: Creating log dirs
+      file:
+        path: "{{ item }}"
+        recurse: true
+        owner: "{{uid}}"
+        group: "{{gid}}"
+      with_items:
+        - "{{data_dir}}/solr_service/logs"
+        - "{{data_dir}}/freva_rest/logs"
     - name: Initialising services
       shell:
-        cmd: "{{ item }}"
+        cmd: "{{ item.cmd }}"
       environment:
         API_MONGO_USER: "{{ username }}"
         API_MONGO_PASSWORD: "{{ password }}"
         API_SOLR_HEAP: "{{ freva_rest_solr_mem }}"
+        API_DATA_DIR: "{{item.data_dir}}"
+        API_LOG_DIR: "{{item.log_dir}}"
         CONDA_PREFIX: "{{ conda_path }}"
         PATH: "/bin:/usr/bin:/usr/local/bin:{{conda_path}}/bin"
       with_items:
-        - "{{conda_path}}/libexec/freva-rest-server/scripts/init-mongo"
-        - "{{conda_path}}/libexec/freva-rest-server/scripts/init-solr"
+        - {cmd: "{{conda_path}}/libexec/freva-rest-server/scripts/init-mongo",
+           data_dir: "{{ data_dir }}/freva_rest/stats",
+           log_dir: "{{ data_dir }}/freva_rest/logs"}
+        - {cmd: "{{conda_path}}/libexec/freva-rest-server/scripts/init-solr",
+           data_dir: "{{ data_dir }}/solr_service/data",
+           log_dir: "{{ data_dir }}/solr_service/logs"}
     - name: Creating directory cert dir
       file:
         state: directory
@@ -120,6 +144,16 @@
         state: started
         enabled: true
         scope: "{{ 'system' if become is true else 'user'}}"
+    - name: Performing healthchecks
+      shell: "{{item.cmd}}"
+      with_items: "{{healthchecks}}"
+      environment:
+        PATH: "{{conda_path}}/bin:/usr/bin:/bin:/usr/local/bin"
+    - name: Removing temp dirs
+      file:
+        path: "{{tempdir.path}}"
+        state: absent
+
 
 - name: Add mongoDB secrets to vault
   hosts: db
@@ -127,7 +161,7 @@
   vars:
     ansible_python_interpreter: "{{ db_ansible_python_interpreter }}"
     ansible_become_user: "{{ db_ansible_become_user | default('root') }}"
-    conda_path: '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/{{ project_name }}'
+    conda_path: '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/{{ project_name }}/conda'
 
   tasks:
     - name: Add mongDB secrets to vault
@@ -135,6 +169,7 @@
         {{ conda_path }}/bin/add-vault-secret
         data -s mongo.passwd {{freva_rest_db_passwd}}
         -s mongo.user {{freva_rest_db_user}} -s mongo.db search_stats
+        -s mongo.url "mongodb://{{freva_rest_db_user}}:{{freva_rest_db_passwd}}@{{vault_db_host}}:27017?timeoutMS=2000"
       environment:
         ROOT_PW: "{{ root_passwd }}"
         PATH: "{{conda_path}}/bin:/usr/bin:/bin:/usr/local/bin"

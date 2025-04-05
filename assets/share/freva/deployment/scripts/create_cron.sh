@@ -1,5 +1,6 @@
 #!/bin/bash
-cmd=$(/tmp/docker-or-podman -p exec $1 bash /usr/local/bin/daily_backup)
+uid=${3:-0}
+cmd=$(/tmp/docker-or-podman -p exec --user=$uid $1 bash /usr/local/bin/daily_backup)
 cmd="$cmd 1> /dev/null"
 # Function to check if the cron job already exists in the crontab
 cron_job_exists() {

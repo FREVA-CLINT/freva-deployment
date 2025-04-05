@@ -31,7 +31,7 @@
       set_fact:
         data_path: "{{ data_dir }}/{{ project_name if not shared_cache else 'caching' }}"
         redis_data: "{{ data_dir }}/{{ project_name if not shared_cache else 'caching' }}"
-        conda_path: "{{ data_dir }}/{{ project_name if not shared_cache else 'caching' }}"
+        conda_path: "{{ data_dir }}/{{ project_name if not shared_cache else 'caching' }}/conda"
         log_dir: "{{ data_dir }}/{{ project_name if not shared_cache else 'caching' }}/logs"
         compose_file: "{{ data_dir }}/{{ project_name if not shared_cache else 'caching' }}/ompose_services/redis_cache-compose.yml"
         systemd_unit: "{{ project_name if not shared_cache else 'redis' }}-cache"
@@ -51,9 +51,8 @@
 
     - name: Override variables
       set_fact:
-        data_path: '{{conda_path}}'
         redis_data: '{{conda_path}}/share/freva-rest-server'
-        log_dir: '{{conda_path}}/var/log/caching'
+        log_dir: '{{conda_path}}/var/log/freva-rest-server'
         mamba_path: '{{conda_path}}/bin/mamba'
       when: use_conda is true
 

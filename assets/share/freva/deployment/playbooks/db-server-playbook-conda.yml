@@ -7,12 +7,10 @@
     become: "{{ db_ansible_become_user is defined and db_ansible_become_user != '' }}"
     ansible_python_interpreter: "{{ db_ansible_python_interpreter }}"
     ansible_become_user: "{{ db_ansible_become_user | default('root') }}"
-    compose_file: '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/compose_services/{{db_name}}-compose.yml'
     conda_url: "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3"
-    conda_path: '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/{{ project_name }}'
-    continer_name: "{{ db_name }}"
-    vault_name: "{{project_name}}-vault"
-    vault_token_path: "{{db_data_path|regex_replace('^~', ansible_env.HOME)}}/{{ project_name }}/share/freva-rest-server/vault/keys"
+    conda_path: '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/{{ project_name }}/conda'
+    data_dir: '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/{{ project_name }}'
+    vault_token_path: "{{db_data_path|regex_replace('^~', ansible_env.HOME)}}/{{ project_name }}/vault_service/keys"
     systemd_unit_dir: "{{ '/etc/systemd/system' if  db_ansible_become_user is defined and db_ansible_become_user != '' else ansible_env.HOME + '/.config/systemd/user' }}"
 
   tasks:
@@ -70,12 +68,15 @@
       when: not conda_env_path.stat.exists
     - name: Installing freva-rest-server package
       shell:
-        cmd: "{{ conda_path }}/bin/mamba install -y freva-rest-server vault"
+        cmd: "{{ conda_path }}/bin/mamba install -y freva-rest-server mysql-server=8.3.0 vault"
       when: not mysql_bin.stat.exists or not vault_bin.stat.exists
     - name: Cleaning existing directory structure
       file:
-        path: '{{db_data_path}}/data'
+        path: '{{data_dir}}/{{item}}'
         state: absent
+      with_items:
+        - "db_service"
+        - "vault_service"
       when: db_wipe == true
     - name: Initialising mysql db
       shell:
@@ -85,10 +86,11 @@
         MYSQL_PASSWORD: "{{ db_passwd }}"
         MYSQL_ROOT_PASSWORD: "{{ root_passwd }}"
         MYSQL_DATABASE: "{{ db }}"
+        API_DATA_DIR: "{{ data_dir }}/db_service"
         CONDA_PREFIX: "{{ conda_path }}"
     - name: Adjusting mysql dir ownership
       file:
-        path: "{{ conda_path }}/data"
+        path: "{{ data_dir }}/db_service"
         owner: "{{uid}}"
         group: "{{gid}}"
         state: directory
@@ -110,25 +112,25 @@
         - name: Delete vault dir because its content is not valid
           file:
             state: absent
-            path: "{{conda_path}}/share/freva-rest-server/vault/"
+            path: "{{data_dir}}/vault_service"
       when: token_path.stat.exists
     - name: Creating service directory structure
       file:
         state: directory
-        path: "{{ conda_path }}/share/freva-rest-server/vault/{{ item }}"
+        path: "{{item}}"
         recurse: true
       with_items:
-        - "server"
-        - "config"
-        - "file"
+        - "{{ conda_path }}/libexec/freva-rest-server/vault"
+        - "{{ data_dir }}/vault_service/config"
+        - "{{ data_dir }}/vault_service/files"
     - name: Copying public key file to target machine
       copy:
         src: "{{ vault_keyfile }}"
-        dest: "{{ conda_path }}/share/freva-rest-server/vault/config/freva.crt"
+        dest: "{{ data_dir }}/vault_service/config/freva.crt"
     - name: Copying vault files to target machine
       copy:
         src: "{{ asset_dir }}/vault/{{ item }}"
-        dest: "{{ conda_path }}/share/freva-rest-server/vault/server/{{ item }}"
+        dest: "{{ conda_path }}/libexec/freva-rest-server/vault/{{ item }}"
       with_items:
         - "vault-server-tls.hcl"
         - "runserver.py"
@@ -137,14 +139,14 @@
         - "requirements.txt"
     - name: Adjusting vault config file
       replace:
-        path: "{{ conda_path }}/share/freva-rest-server/vault/server/vault-server-tls.hcl"
+        path: "{{ conda_path }}/libexec/freva-rest-server/vault/vault-server-tls.hcl"
         regexp: 'path\s*=\s*"/vault/file"'
-        replace: 'path = "{{ conda_path }}/share/freva-rest-server/vault/file"'
+        replace: 'path = "{{ data_dir }}/vault_service/files"'
     - name: Installing pip requirements
       shell:
         cmd: >
           {{ conda_path }}/bin/python -m pip install -r
-          {{ conda_path }}/share/freva-rest-server/vault/server/requirements.txt
+          {{ conda_path }}/libexec/freva-rest-server/vault/requirements.txt
           --root-user-action ignore
     - name: Adding helper scripts
       copy:
@@ -183,3 +185,7 @@
       environment:
         ROOT_PW: "{{ root_passwd }}"
         PATH: "{{conda_path}}/bin:/usr/bin:/bin:/usr/local/bin"
+    - name: Removing temp dirs
+      file:
+        path: "{{tempdir.path}}"
+        state: absent

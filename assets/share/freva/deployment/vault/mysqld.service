@@ -7,13 +7,16 @@ Type=notify
 ProtectSystem=full
 NoNewPrivileges=true
 ProtectHome=true
-Restart=on-abort
 SendSIGKILL=no
 KillSignal=SIGTERM
 PermissionsStartOnly=true
 ExecStartPre=/bin/sh -c "systemctl unset-environment _WSREP_START_POSITION"
 ExecStartPost=/bin/sh -c "systemctl unset-environment _WSREP_START_POSITION"
-ExecStart={{conda_path}}/bin/mysqld --user={{uid}}
+ExecStart={{conda_path}}/bin/mysqld --no-defaults --bind-address=0.0.0.0 --datadir={{data_dir}}/db_service --user={{uid}}
+Restart=on-failure
+RestartSec=5
+StartLimitBurst=5
+
 
 [Install]
 WantedBy=multi-user.target

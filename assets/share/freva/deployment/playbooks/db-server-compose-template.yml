@@ -45,7 +45,7 @@ services:
       - {{db_port}}:3306
     depends_on:
       - {{vault_name}}
-  
+
   {{vault_name}}:
 {% if (become == true and ansible_become_user == 'root') or ansible_user == 'root' %}
     user: {{uid}}:{{gid}}

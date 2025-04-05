@@ -31,9 +31,9 @@
 
     - name: Get solr container version
       register: solr_container
-      ansible.builtin.script:
-        cmd: "{{ asset_dir }}/scripts/inspect.sh solr"
-      become: "{{ freva_rest_ansible_become_user | default('root') is defined and freva_rest_ansible_become_user | default('root') != '' }}"
+      shell:
+        # We don't have a solr container anymore, freva-rest takes care of solr.
+        cmd: echo 10.0.0
       when: use_conda is false
 
     - name: Get solr conda version
@@ -42,7 +42,7 @@
         cmd: >
           {{ansible_python_interpreter}} -c "from urllib.request import urlopen;
           import json;
-          try:conn=urlopen('http://localhost:8983/solr/admin/info/system');
+          conn=urlopen('http://localhost:8983/solr/admin/info/system');
           print(json.loads(conn.read().decode()).get('lucene', {}).get('solr-spec-version', '0.0.0'));
           conn.close()" 2> /dev/null || echo
       when: use_conda is true
@@ -114,7 +114,7 @@
     - name: Get db container version
       register: db_container
       ansible.builtin.script:
-        cmd: "{{ asset_dir }}/scripts/inspect.sh mariadb"
+        cmd: "{{ asset_dir }}/scripts/inspect.sh docker.io/library/mariadb"
       become: "{{ db_ansible_become_user | default('root') is defined and db_ansible_become_user | default('root') != '' }}"
       when: use_conda is false
 

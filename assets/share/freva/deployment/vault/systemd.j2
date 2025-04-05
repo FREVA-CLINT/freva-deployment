@@ -9,19 +9,22 @@ PermissionsStartOnly=true
 NoNewPrivileges=true
 ProtectHome=true
 KillSignal=SIGTERM
-Restart=on-abort
 ExecStartPre=/bin/sh -c "PATH={{ conda_path }}/bin:$PATH \
     {{ conda_path }}/bin/python\
-    {{ conda_path }}/share/freva-rest-server/vault/server/runserver.py \
-    -c {{ conda_path }}/share/freva-rest-server/vault/server/vault-server-tls.hcl"
+    {{ conda_path }}/libexec/freva-rest-server/vault/runserver.py \
+    -c {{ conda_path }}/libexec/freva-rest-server/vault/vault-server-tls.hcl"
 ExecStart=/bin/sh -c "PATH={{ conda_path }}/bin:$PATH \
     {{conda_path}}/bin/uvicorn --workers 2 --app-dir \
-    {{ conda_path }}/share/freva-rest-server/vault/server \
+    {{ conda_path }}/libexec/freva-rest-server/vault \
     --host 0.0.0.0 --port 5002 runserver:app"
 Environment="CONDA_PREFIX={{ conda_path }}"
 Environment="ROOT_PW={{ root_passwd }}"
 Environment="VERSION={{ vault_version }}"
+Restart=on-failure
+RestartSec=5
+StartLimitBurst=5
 UMask=007
-
+User={{uid}}
+Group={{gid}}
 [Install]
 WantedBy=multi-user.target

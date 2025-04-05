@@ -14,8 +14,8 @@
       - '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/{{project_name}}/vault_service/files:/vault/file:z'
       - '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/{{ project_name }}/db_service/healthcheck.sh:/tmp/healthcheck.sh:z'
     db_volumes:
-      - '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/freva-service-config/mysql/create_tables.sql:/docker-entrypoint-initdb.d/002_create_tables.sql:z'
-      - '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/freva-service-config/mysql/daily_backup.sh:/usr/local/bin/daily_backup:z'
+      - '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/{{project_name}}/freva-service-config/mysql/create_tables.sql:/docker-entrypoint-initdb.d/002_create_tables.sql:z'
+      - '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/{{project_name}}/freva-service-config/mysql/daily_backup.sh:/usr/local/bin/daily_backup:z'
       - '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/{{project_name}}/db_service:/var/lib/mysql:z'
       - '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/{{ project_name }}/db_service/rootless-entrypoint.sh:/tmp/entrypoint.sh:z'
     data_path: '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/{{ project_name }}/db_service'
@@ -26,9 +26,12 @@
   tasks:
     - name: Removing old compose directory structure
       file:
-        path: "{{old_compose_dir}}"
+        path: "{{item}}"
         state: absent
         force: true
+      with_items:
+        - "{{old_compose_dir}}"
+        - '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/freva-service-config'
 
     - name: Get UID
       command: id -u {{ ansible_user }}
@@ -84,7 +87,7 @@
       file:
         state: absent
         force: true
-        path: "{{db_data_path|regex_replace('^~', ansible_env.HOME)}}/freva-service-config/"
+        path: "{{db_data_path|regex_replace('^~', ansible_env.HOME)}}/{{project_name}}/freva-service-config/"
     - name: Pulling container
       shell: /tmp/docker-or-podman pull {{item}}
       with_items:
@@ -161,12 +164,12 @@
     - name: Getting additional configurations
       git:
         repo: https://github.com/FREVA-CLINT/freva-service-config.git
-        dest: '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/freva-service-config'
+        dest: '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/{{project_name}}/freva-service-config'
         update: true
     - name: Adjusting configuration onwnership
       file:
         recurse: true
-        path: '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/freva-service-config'
+        path: '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/{{project_name}}/freva-service-config'
         owner: "{{uid}}"
         group: "{{gid}}"
     - name: Creating compose directory structure
@@ -177,9 +180,9 @@
     - name: Creating compose file for root password reset
       template:
         src: "{{ asset_dir }}/playbooks/db-server-compose-template.yml"
-        dest: "{{db_data_path|regex_replace('^~', ansible_env.HOME)}}/compose_services/{{db_name}}-compose.yml"
+        dest: "{{compose_file}}"
       vars:
-        command: "--skip-grant-tables"
+        command: "--skip-grant-tables --skip-networking"
         root_pw: true
       when: db_service_exist == true
     - name: Starting the docker containers
@@ -190,6 +193,7 @@
     - name: Resetting the root password
       shell: /tmp/docker-or-podman compose -f {{compose_file}} exec {{db_name}} {{item}}
       with_items:
+        - 'mariadb -u root -e "CREATE DATABASE IF NOT EXISTS \`{{ db }}\`;"'
         - "/bin/sh -c 'mariadb -u root {{db}} < /docker-entrypoint-initdb.d/002_create_tables.sql'"
         - "/bin/sh /tmp/reset_root_pw.sh"
       when: db_service_exist == true
@@ -199,7 +203,7 @@
     - name: Creating compose file
       template:
         src: "{{ asset_dir }}/playbooks/db-server-compose-template.yml"
-        dest: "{{db_data_path|regex_replace('^~', ansible_env.HOME)}}/compose_services/{{db_name}}-compose.yml"
+        dest: "{{compose_file}}"
     - name: Creating system services
       command:
         cmd: /tmp/create_systemd.py {{db_name}} compose --enable --project-name {{db_name}} -f {{compose_file}} up --remove-orphans
@@ -210,7 +214,7 @@
       shell: /tmp/docker-or-podman compose -f {{compose_file}} up -d
       when: systemctl.stat.exists == false or debug == true
     - name: Creating cron jobs
-      shell: sh /tmp/create_cron.sh "{{ db_name }}" "{{db_email}}"
+      shell: sh /tmp/create_cron.sh "{{ db_name }}" "{{db_email}}" "{{uid}}"
       when: cron.stat.exists == true and debug == false
     - pause: seconds=15
     - name: Inserting server infrastructure

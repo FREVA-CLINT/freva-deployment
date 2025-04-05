@@ -2,22 +2,13 @@ from __future__ import annotations
 
 from getpass import getuser
 from pathlib import Path
-from typing import Dict, List, cast
+from typing import List, cast
 
 import npyscreen
-
-from freva_deployment import AVAILABLE_CONDA_ARCHS, AVAILABLE_PYTHON_VERSIONS
+from freva_deployment import AVAILABLE_CONDA_ARCHS
 from freva_deployment.utils import get_current_file_dir
 
-from .base import (
-    BaseForm,
-    CheckboxInfo,
-    ComboInfo,
-    FileInfo,
-    PasswordInfo,
-    TextInfo,
-    logger,
-)
+from .base import BaseForm, CheckboxInfo, ComboInfo, FileInfo, TextInfo
 
 DEPLOYMENT_METHODS = ["container", "conda"]
 
@@ -790,7 +781,7 @@ class FrevaRestScreen(BaseForm):
                     key="deploy_data_loader",
                     max_height=2,
                     editable=True,
-                    name=f"{self.num} set up the data-loader service ",
+                    name=f"{self.num} Deploy the data-loader service ",
                     scroll_exit=True,
                     value=cast(bool, cfg.get("deploy_data_loader", False)),
                 ),

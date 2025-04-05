@@ -9,15 +9,17 @@ PermissionsStartOnly=true
 NoNewPrivileges=true
 ProtectHome=true
 KillSignal=SIGTERM
-Restart=on-abort
+ExecStartPre=mkdir -p {{conda_path}}/var/log/freva-rest-server
 ExecStartPre={{conda_path}}/libexec/freva-rest-server/scripts/init-redis
-ExecStart=/bin/sh -c "{{conda_path}}/bin/redis-server /tmp/redis.conf &> {{log_dir}}/redis.log"
+ExecStart=/bin/sh -c "{{conda_path}}/bin/redis-server /tmp/redis.conf"
 Environment="CONDA_PREFIX={{ conda_path }}"
 Environment="API_REDIS_USER={{username}}"
 Environment="API_REDIS_PASSWORD={{password}}"
 Environment="API_REDIS_SSL_CERTFILE={{conda_path}}/share/freva-rest-server/certs/client-cert.pem"
 Environment="API_REDIS_SSL_KEYFILE={{conda_path}}/share/freva-rest-server/certs/client-key.pem"
-
+Restart=on-failure
+RestartSec=5
+StartLimitBurst=5
 UMask=007
 
 [Install]

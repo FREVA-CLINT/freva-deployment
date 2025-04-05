@@ -149,7 +149,6 @@ class DeployFactory:
         self._td: RunnerDir = RunnerDir()
         self.eval_conf_file: Path = self._td.parent_dir / "evaluation_system.conf"
         self.web_conf_file: Path = self._td.parent_dir / "freva_web.toml"
-        self.apache_config: Path = self._td.parent_dir / "freva_web.conf"
         self._db_pass: str = ""
         self._steps = steps or ["db", "freva_rest", "web", "core"]
         if self._steps in (["auto"], "auto"):
@@ -405,7 +404,11 @@ class DeployFactory:
         self.cfg["freva_rest"]["config"]["db_user"] = namegenerator.gen()
         self.cfg["freva_rest"]["config"].pop("core", None)
         services = ["", "databrowser"]
-        if self.cfg["freva_rest"]["config"].get("deploy_data_loader", True):
+        if (
+            self.cfg["freva_rest"]["config"]
+            .get("data_loader_portal_hosts", "")
+            .strip()
+        ):
             services.append("zarr-stream")
         data_path = Path(
             cast(
@@ -576,7 +579,7 @@ class DeployFactory:
         if self.local_debug:
             self.cfg["web"]["config"]["redis_host"] = self.cfg["web"]["hosts"]
         else:
-            self.cfg["web"]["config"]["redis_host"] = f"{self.project_name}-redis"
+            self.cfg["web"]["config"]["redis_host"] = f"{self.project_name}-cache"
 
         server_name = self.cfg["web"]["config"].pop("server_name", [])
         if isinstance(server_name, str):
@@ -613,13 +616,6 @@ class DeployFactory:
         self.cfg["web"]["config"]["root_passwd"] = self.master_pass
         self.cfg["web"]["config"]["private_keyfile"] = self.private_key_file
         self.cfg["web"]["config"]["public_keyfile"] = self.public_key_file
-        self.cfg["web"]["config"]["apache_config_file"] = str(self.apache_config)
-        if ask_pass:
-            self._prep_apache_config()
-
-    def _prep_apache_config(self):
-        with open(self.apache_config, "w") as f_obj:
-            f_obj.write((Path(asset_dir) / "web" / "freva_web.conf").read_text())
 
     def _prep_local_debug(self) -> None:
         """Prepare the system for a potential local debug."""

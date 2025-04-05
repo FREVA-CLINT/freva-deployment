@@ -18,7 +18,10 @@ SYSTEMD_TMPL = dict(
         ExecStartPre='/bin/sh -c "{delete_command}"',
         ExecStart='/bin/sh -c "{container_cmd} {container_args}"',
         ExecStop='/bin/sh -c "{delete_command}"',
-        Restart="no",
+        Restart="on-failure",
+        RestartSec=5,
+        StartLimitIntervalSec=60,
+        StartLimitBurst=5,
     ),
     Install=dict(WantedBy="default.target"),
 )
@@ -44,11 +47,24 @@ def parse_args() -> Tuple[str, str, List[str], bool]:
         default=False,
         help="Do not restart but only start the unit",
     )
+    app.add_argument(
+        "--print-unit-only",
+        action="store_true",
+        default=False,
+        help="Only print the unit that would be created and started.",
+    )
     args, other = app.parse_known_args()
     enable = args.enable
     if os.environ.get("DEBUG", "false").lower() == "true":
         enable = False
-    return " ".join(other), args.name, args.requires, enable, args.gracious
+    return (
+        " ".join(other),
+        args.name,
+        args.requires,
+        enable,
+        args.gracious,
+        args.print_unit_only,
+    )
 
 
 def _parse_dict(tmp_dict: Dict[str, Dict[str, str]]) -> str:
@@ -61,13 +77,20 @@ def _parse_dict(tmp_dict: Dict[str, Dict[str, str]]) -> str:
 
 
 def load_unit(
-    unit: str, content: str, enable: bool = True, gracious: bool = False
+    unit: str,
+    content: str,
+    enable: bool = True,
+    gracious: bool = False,
+    print_unit_only: bool = False,
 ) -> None:
     """Load a given systemd unit."""
     files = (
         "/etc/systemd/system/{}.service".format(unit),
         "~/.local/share/systemd/user/{}.service".format(unit),
     )
+    if print_unit_only:
+        print(content)
+        return
     flags = ("", "--user")
     for file, flag in zip(files, flags):
         out_file = Path(file).expanduser()
@@ -110,7 +133,12 @@ def get_container_cmd(args: str) -> Tuple[str, str]:
 
 
 def create_unit(
-    args: str, unit: str, requires: List[str], enable: bool, gracious: bool
+    args: str,
+    unit: str,
+    requires: List[str],
+    enable: bool,
+    gracious: bool,
+    print_unit_only: bool = False,
 ) -> None:
     """Create the systemd unit."""
     container_cmd, container_args = get_container_cmd(args)
@@ -150,7 +178,13 @@ def create_unit(
                 SYSTEMD_TMPL["Unit"][key] += " {}.service".format(service)
             except KeyError:
                 SYSTEMD_TMPL["Unit"][key] = " {}.service".format(service)
-    load_unit(unit, _parse_dict(SYSTEMD_TMPL), enable, gracious=gracious)
+    load_unit(
+        unit,
+        _parse_dict(SYSTEMD_TMPL),
+        enable,
+        gracious=gracious,
+        print_unit_only=print_unit_only,
+    )
 
 
 if __name__ == "__main__":

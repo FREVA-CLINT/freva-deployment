@@ -7,12 +7,18 @@
     ansible_python_interpreter: "{{ core_ansible_python_interpreter }}"
     ansible_become_user: "{{ core_ansible_become_user if core_ansible_become_user is defined else 'root' }}"
   tasks:
+    - name: Registering web config path
+      stat:
+        path: "{{core_root_dir|regex_replace('^~', ansible_env.HOME)}}/freva/web"
+      register: web_config
+
     - name: Creating share directory
       file:
         path: "{{core_root_dir|regex_replace('^~', ansible_env.HOME)}}/freva/web"
         state: directory
         mode: "{{ '2775' if core_admin_group is defined and core_admin_group != '' else '2755' }}"
         group: "{{ core_admin_group if core_admin_group is defined and core_admin_group != '' else omit }}"
+      when: not web_config.stat.exists
 
     - name: Adding freva web config to the core structure
       copy:
@@ -30,9 +36,10 @@
     become: "{{ web_ansible_become_user is defined and web_ansible_become_user != '' }}"
     web_config_file: "{{ core_root_dir | regex_replace('^~', ansible_env.HOME)}}/freva/web/freva_web_conf.toml"
     web_name: "{{project_name}}-web"
-    conda_path: '{{web_data_path|regex_replace("^~", ansible_env.HOME)}}/{{ project_name }}'
+    conda_path: '{{web_data_path|regex_replace("^~", ansible_env.HOME)}}/{{ project_name }}/conda'
     systemd_unit_dir: "{{ '/etc/systemd/system' if  web_ansible_become_user is defined and web_ansible_become_user != '' else ansible_env.HOME + '/.config/systemd/user' }}"
     ansible_become_user: "{{ web_ansible_become_user if web_ansible_become_user is defined else 'root' }}"
+    data_dir: '{{web_data_path|regex_replace("^~", ansible_env.HOME)}}/{{ project_name }}/web_service'
     web_port_httpd: "{{ '80' if web_ansible_become_user == 'root' or ansible_user == 'root' else '9080' }}"
     web_port_httpsd: "{{ '443' if web_ansible_become_user == 'root' or ansible_user == 'root'  else '9443' }}"
 
@@ -65,16 +72,15 @@
       command: id -g {{ ansible_user }}
       register: gid_result
 
-    - name: Set variables
-      set_fact:
-        uid: "{{ uid_result.stdout }}"
-        gid: "{{ gid_result.stdout }}"
-        log_dir: "{{conda_path}}/var/log/caching"
-
     - name: Register redis unit
       stat:
         path: "{{ systemd_unit_dir }}/{{project_name}}-cache.service"
       register: redis_unit
+
+    - name: Set UID and GID as facts
+      set_fact:
+        uid: "{{ uid_result.stdout }}"
+        gid: "{{ gid_result.stdout }}"
 
     - name: Run getent command
       command: "getent group {{gid}}"
@@ -92,9 +98,20 @@
 
     - name: Set variables
       set_fact:
-        redis_cert_dir: '{{conda_path}}/share/freva-rest-server/certs'
+        redis_cert_dir: '{{data_dir}}/cache'
         username: "{{ information.user }}"
         password: "{{ information.passwd }}"
+        log_dir: "{{data_dir}}/log"
+        uid: "{{ uid_result.stdout }}"
+        gid: "{{ gid_result.stdout }}"
+
+    - name: Deleting existing web-directory
+      file:
+        path: "{{item}}"
+        state: absent
+      with_items:
+        - "{{conda_path}}/libexec/freva-web"
+        - "{{data_dir}}"
 
     - name: Creating redis data dir
       file:
@@ -122,8 +139,11 @@
 
     - name: Creating log dir
       file:
+        state: directory
         path: "{{log_dir}}"
         recurse: true
+        owner: "{{uid}}"
+        group: "{{gid}}"
 
     - name: Creating redis unit
       template:
@@ -139,14 +159,14 @@
           - "REDIS_PASSWD={{password}}"
           - "REDIS_SSL_CERTFILE={{redis_cert_dir}}/client-cert.pem"
           - "REDIS_SSL_KEYFILE={{redis_cert_dir}}/client-key.pem"
-      when: (information.ssl_cert | length > 0) or redis_cert.stat.exists
+      when: information.ssl_cert | length > 0
 
     - name: Applying redis settings
       set_fact:
         redis_settings:
           - "REDIS_USER={{username}}"
           - "REDIS_PASSWD={{password}}"
-      when: (information.ssl_cert | length == 0) or not redis_cert.stat.exists
+      when: information.ssl_cert | length == 0
 
     - name: Creating temp. dir
       tempfile:
@@ -192,24 +212,6 @@
         state: stopped
       ignore_errors: true
 
-    - name: Registering web data path
-      stat:
-        path: "{{conda_path}}/share/freva-web"
-      register: data_path
-
-    - name: Deleting existing web-directory
-      file:
-        path: "{{conda_path}}/share/freva-web"
-        state: absent
-      when: data_path.stat.exists == true
-
-    - name: Getting web app
-      git:
-        repo: https://github.com/FREVA-CLINT/freva-web.git
-        dest: "{{conda_path}}/share/freva-web/app"
-        version: main
-        force: true
-
     - name: Creating aditional folders
       file:
         path: "{{ item }}"
@@ -217,57 +219,96 @@
         recurse: true
         mode: "0775"
       with_items:
-        - "{{conda_path}}/share/freva-web/app/static"
-        - "{{conda_path}}/share/freva-web/certs"
-        - "{{conda_path}}/share/freva-web/conf"
+        - "{{conda_path}}/libexec/freva-web"
         - "{{conda_path}}/var/run/nginx"
+
+    - name: Creating preview path
+      file:
+        path: "{{ core_preview_path }}"
+        state: directory
+        recurse: true
+
+    - name: Getting web app
+      unarchive:
+        src: https://github.com/FREVA-CLINT/freva-web/archive/refs/tags/v{{web_version}}.tar.gz
+        dest: "{{conda_path}}/libexec/freva-web"
+        remote_src: true
+        keep_newer: false
+        extra_opts:
+          - --strip-components=1
 
     - name: Creating log dir
       file:
-        path: "{{conda_path}}/var/log/nginx"
+        path: "{{item}}"
         recurse: true
+        owner: "{{uid}}"
+        group: "{{gid}}"
+      with_items:
+        - "{{data_dir}}"
+        - "{{data_dir}}/static"
+        - "{{data_dir}}/cache"
+        - "{{data_dir}}/migrations"
+
 
     - name: Creating nginx config file.
       template:
         src: "{{ asset_dir }}/web/nginx.j2"
-        dest: "{{ conda_path}}/share/freva-web/conf/freva_web.conf"
+        dest: "{{ data_dir }}/freva_web.conf"
         mode: "0644"
+        owner: "{{uid}}"
+        group: "{{gid}}"
 
     - name: Downloading mime-types file
       ansible.builtin.script:
         cmd: >
           {{ asset_dir }}/scripts/download.py
           https://raw.githubusercontent.com/nginx/nginx/master/conf/mime.types
-          -o {{ conda_path }}/share/freva-web/conf/mime.types
+          -o {{ data_dir }}/mime.types
+      become: false
 
     - name: Copying cert files
       copy:
         src: "{{item.src}}"
         dest: "{{item.dest}}"
         mode: "0775"
+        owner: "{{uid}}"
+        group: "{{gid}}"
       with_items:
         - {src: "{{web_public_keyfile|regex_replace('^~', ansible_env.HOME)}}",
-           dest: "{{conda_path}}/share/freva-web/certs/server-cert.crt"}
+           dest: "{{data_dir}}/server-cert.crt"}
         - {src: "{{web_private_keyfile|regex_replace('^~', ansible_env.HOME)}}",
-           dest: "{{conda_path}}/share/freva-web/certs/server-key.key"}
+           dest: "{{data_dir}}/server-key.key"}
 
     - name: Installing conda dependencies
       shell:
         cmd: >
           {{conda_path}}/bin/mamba env update -n base -y
-          --file {{conda_path}}/share/freva-web/app/conda-env.yml
+          --file {{conda_path}}/libexec/freva-web/conda-env.yml
       environment:
         MAMBA_ROOT_PREFIX: "{{conda_path}}"
+
+    - name: Link static folder
+      file:
+        src: "{{data_dir}}/static"
+        dest: "{{conda_path}}/libexec/freva-web/static"
+        state: link
 
     - name: Building js-code
       shell:
         cmd: "{{item}}"
-        chdir: "{{conda_path}}/share/freva-web/app"
+        chdir: "{{conda_path}}/libexec/freva-web"
       with_items:
         - "npm install"
         - "npm run build-production"
+        - "python manage.py makemigrations base"
+        - "python manage.py migrate --fake-initial --noinput"
+        - "python manage.py migrate --fake contenttypes"
+        - "python manage.py collectstatic --noinput"
       environment:
         PATH: "{{conda_path}}/bin:/usr/bin:/bin:/usr/local/bin"
+        EVALUATION_SYSTEM_CONFIG_FILE: "{{core_root_dir|regex_replace('^~', ansible_env.HOME)}}/freva/evaluation_system.conf"
+        FREVA_WEB_CONFIG_FILE: "{{web_config_file}}"
+      become: false
 
     - name: Cleaning up
       file:
@@ -281,8 +322,8 @@
         recurse: true
         path: "{{item}}"
       with_items:
-        - "{{conda_path}}/share/freva-web/app/static"
-        - "{{conda_path}}/var/log/web"
+        - "{{data_dir}}/static"
+        - "{{data_dir}}/log"
 
     - name: Creating systemd unit service
       template:
@@ -301,6 +342,12 @@
         state: started
         enabled: true
         scope: "{{ 'system' if become is true else 'user'}}"
+
+    - name: Removing temp dirs
+      file:
+        path: "{{tempdir.path}}"
+        state: absent
+
 
     - name: Display message about Apache HTTPD ports
       debug:

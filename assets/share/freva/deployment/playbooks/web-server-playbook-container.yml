@@ -7,12 +7,17 @@
     ansible_python_interpreter: "{{ core_ansible_python_interpreter }}"
     ansible_become_user: "{{ core_ansible_become_user if core_ansible_become_user is defined else 'root' }}"
   tasks:
+    - name: Registering web config path
+      stat:
+        path: "{{core_root_dir|regex_replace('^~', ansible_env.HOME)}}/freva/web"
+      register: web_config
     - name: Creating share directory
       file:
         path: "{{core_root_dir|regex_replace('^~', ansible_env.HOME)}}/freva/web"
         state: directory
         mode: "{{ '2775' if core_admin_group is defined and core_admin_group != '' else '2755' }}"
         group: "{{ core_admin_group if core_admin_group is defined and core_admin_group != '' else omit }}"
+      when: not web_config.stat.exists
     - name: Adding freva web config to the core structure
       copy:
         src: "{{ core_config_toml_file | regex_replace('^~', ansible_env.HOME)}}"
@@ -37,18 +42,18 @@
       - "{{web_data_path|regex_replace('^~', ansible_env.HOME)}}/{{project_name}}/web_service/static:/opt/freva_web/static:z"
       - "{{core_base_dir_location|regex_replace('^~', ansible_env.HOME)}}:{{core_base_dir_location|regex_replace('^~', ansible_env.HOME)}}:ro"
       - "{{web_data_path|regex_replace('^~', ansible_env.HOME)}}/{{project_name}}/web_service/healthcheck.sh:/tmp/healthcheck.sh:z"
-    apache_volumes:
-      - "{{web_data_path|regex_replace('^~', ansible_env.HOME)}}/{{project_name}}/web_service/freva_web.conf:/usr/local/apache2/conf/httpd.conf:z"
-      - "{{web_data_path|regex_replace('^~', ansible_env.HOME)}}/{{project_name}}/web_service/server-cert.crt:/etc/ssl/certs/server-cert.crt:z"
-      - "{{web_data_path|regex_replace('^~', ansible_env.HOME)}}/{{project_name}}/web_service/server-key.key:/etc/ssl/private/server-key.key:z"
+      - "{{web_data_path|regex_replace('^~', ansible_env.HOME)}}/{{project_name}}/web_service/migrations:/opt/freva_web/base/migrations:z"
+    nginx_volumes:
+      - "{{web_data_path|regex_replace('^~', ansible_env.HOME)}}/{{project_name}}/web_service/freva_web.conf:/etc/nginx/nginx.conf:z"
+      - "{{web_data_path|regex_replace('^~', ansible_env.HOME)}}/{{project_name}}/web_service/server-cert.crt:/tmp/server-cert.crt:z"
+      - "{{web_data_path|regex_replace('^~', ansible_env.HOME)}}/{{project_name}}/web_service/server-key.key:/tmp/server-key.key:z"
       - "{{web_data_path|regex_replace('^~', ansible_env.HOME)}}/{{project_name}}/web_service/static:/srv/static:z"
-      - "{{web_data_path|regex_replace('^~', ansible_env.HOME)}}/{{project_name}}/web_service/prepare-httpd:/usr/local/bin/prepare-httpd:z"
-      - "{{web_data_path|regex_replace('^~', ansible_env.HOME)}}/{{project_name}}/web_service/healthcheck.sh:/tmp/healthcheck.sh:z"
+      - "{{web_data_path|regex_replace('^~', ansible_env.HOME)}}/{{project_name}}/web_service/log:/var/log/web:z"
       - "{{ core_preview_path | regex_replace('^~', ansible_env.HOME)}}:/srv/static/preview:ro"
     redis_volumes:
       - "{{web_data_path|regex_replace('^~', ansible_env.HOME)}}/{{project_name}}/web_service/rootless-entrypoint.sh:/tmp/entrypoint.sh:z"
     redis_name: "{{ project_name }}-cache"
-    apache_name: "{{project_name}}-httpd"
+    nginx_name: "{{project_name}}-httpd"
     web_name: "{{project_name}}-web"
     service_path: "{{web_data_path|regex_replace('^~', ansible_env.HOME)}}/{{project_name}}/web_service/"
     ansible_become_user: "{{ web_ansible_become_user if web_ansible_become_user is defined else 'root' }}"
@@ -60,7 +65,7 @@
       - name: "{{project_name}}-cache"
         cmd: 'redis-cli ping'
       - name: "{{project_name}}-httpd"
-        cmd: 'httpd -S'
+        cmd: 'nginx -t'
 
   tasks:
     - name: Removing old compose directory structure
@@ -68,7 +73,6 @@
         path: "{{old_compose_dir}}"
         state: absent
         force: true
-
     - name: Get UID
       command: id -u {{ ansible_user }}
       register: uid_result
@@ -84,6 +88,11 @@
         src: "{{ asset_dir }}/scripts/docker-or-podman"
         dest: /tmp/docker-or-podman
         mode: "0775"
+    - name: Override facts for debug mode
+      set_fact:
+        web_server_name: 127.0.0.1
+        web_freva_rest_host: 127.0.0.1
+      when: debug
     - name: Getting register to core dir
       stat:
         path: "{{ core_root_dir | regex_replace('^~', ansible_env.HOME)}}/freva/evaluation_system.conf"
@@ -101,27 +110,34 @@
       when: core.stat.exists == false
     - name: Stopping services
       shell: >
-        systemctl stop {{ web_name }} {{ redis_name }} {{ apache_name }};
-        systemctl disable {{ web_name }} {{ redis_name }} {{ apache_name }};
+        systemctl stop {{ web_name }} {{ redis_name }} {{ nginx_name }};
+        systemctl disable {{ web_name }} {{ redis_name }} {{ nginx_name }};
         systemctl reset-failed;
-        /tmp/docker-or-podman stop {{web_name}} {{apache_name}} {{redis_name}};
-        /tmp/docker-or-podman rm -f {{web_name}} {{redis_name}} {{apache_name}};
+        /tmp/docker-or-podman stop {{web_name}} {{nginx_name}} {{redis_name}};
+        /tmp/docker-or-podman rm -f {{web_name}} {{redis_name}} {{nginx_name}};
         echo 0
       ignore_errors: true
     - name: Registering web data path
       stat:
         path: "{{service_dir|regex_replace('^~', ansible_env.HOME)}}"
       register: data_path
+    - name: Deleting existing web-directory
+      file:
+        path: "{{service_dir}}"
+        state: absent
     - name: Creating volume dir for web
       file:
-        path: "{{service_dir|regex_replace('^~', ansible_env.HOME)}}/{{item}}"
+        path: "{{item}}"
         state: directory
         recurse: true
         owner: "{{uid}}"
         group: "{{gid}}"
       with_items:
-        - "static"
-        - "cache"
+        - "{{service_dir}}"
+        - "{{service_dir}}/static"
+        - "{{service_dir}}/cache"
+        - "{{service_dir}}/log"
+        - "{{service_dir}}/migrations"
 
     - name: Copy entrypoint wrapper script
       copy:
@@ -134,12 +150,12 @@
         - "rootless-entrypoint.sh"
         - "healthcheck.sh"
 
-
     - name: Creating compose directory structure
       file:
         path: "{{web_data_path|regex_replace('^~', ansible_env.HOME)}}/{{project_name}}/compose_services"
         state: directory
         recurse: true
+
     - name: Copying  httpd files
       copy:
         src: "{{item.src}}"
@@ -148,21 +164,27 @@
         owner: "{{uid}}"
         group: "{{gid}}"
       with_items:
-        - {src: "{{web_apache_config_file|regex_replace('^~', ansible_env.HOME)}}",
-           dest: "{{service_dir|regex_replace('^~', ansible_env.HOME)}}/freva_web.conf"}
         - {src: "{{web_public_keyfile|regex_replace('^~', ansible_env.HOME)}}",
            dest: "{{service_dir|regex_replace('^~', ansible_env.HOME)}}/server-cert.crt"}
         - {src: "{{web_private_keyfile|regex_replace('^~', ansible_env.HOME)}}",
            dest: "{{service_dir|regex_replace('^~', ansible_env.HOME)}}/server-key.key"}
-        - {src: "{{ asset_dir }}/scripts/prepare-httpd",
-           dest: "{{web_data_path|regex_replace('^~', ansible_env.HOME)}}/{{project_name}}/web_service/prepare-httpd"}
+
+    - name: Creating nginx config file.
+      template:
+        src: "{{ asset_dir }}/web/nginx-container.j2"
+        dest: "{{ service_dir }}/freva_web.conf"
+        mode: "0644"
+        owner: "{{uid}}"
+        group: "{{gid}}"
+
     - name: Pulling containers
       shell:
         cmd: /tmp/docker-or-podman pull {{ item }}
       with_items:
         - "docker.io/redis:latest"
         - "ghcr.io/freva-clint/freva-web:{{web_version}}"
-        - "docker.io/httpd:latest"
+        - "docker.io/nginx:latest"
+
     - name: Copying systemd files
       copy:
         src: "{{ asset_dir }}/scripts/create_systemd.py"
@@ -174,7 +196,7 @@
         dest: "{{compose_file}}"
     - name: Deleting potential exsiting containers
       shell:
-        cmd: /tmp/docker-or-podman rm -f {{web_name}} {{redis_name}} {{apache_name}}
+        cmd: /tmp/docker-or-podman rm -f {{web_name}} {{redis_name}} {{nginx_name}}
     - name: Creating system services
       shell: |
         /tmp/create_systemd.py {{web_name}} compose --enable --project-name {{web_name}} -f {{compose_file}} up --remove-orphans
@@ -198,6 +220,12 @@
       shell: >
         /tmp/docker-or-podman exec {{item.name}} {{item.cmd}}
       with_items: "{{healthchecks}}"
+    - name: Fixing missing content
+      shell:  /tmp/docker-or-podman exec -it {{project_name}}-web {{item}}
+      with_items:
+        - "python manage.py makemigrations base"
+        - "python manage.py migrate --fake-initial --noinput"
+        - "python manage.py migrate --fake contenttypes"
     - name: Deleting tmporary files
       file:
         path: "{{item}}"
