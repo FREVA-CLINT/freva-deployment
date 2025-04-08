@@ -1,13 +1,13 @@
 version: '3'
 services:
   {{db_name}}:
-{% if (become == true and ansible_become_user == 'root') or ansible_user == 'root' %}
+{% if (ansible_become == true and ansible_become_user == 'root') or ansible_user == 'root' %}
     user: {{uid}}:{{gid}}
 {% else %}
     user: root:0
     entrypoint: /tmp/entrypoint.sh
 {% endif %}
-    image: docker.io/mariadb:{{db_version}}
+    image: docker.io/mysql:{{db_version}}
     hostname: {{db_name}}
 {% if debug %}
     network_mode: host
@@ -47,7 +47,7 @@ services:
       - {{vault_name}}
 
   {{vault_name}}:
-{% if (become == true and ansible_become_user == 'root') or ansible_user == 'root' %}
+{% if (ansible_become == true and ansible_become_user == 'root') or ansible_user == 'root' %}
     user: {{uid}}:{{gid}}
 {% else %}
     user: root:0

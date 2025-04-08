@@ -2,6 +2,7 @@
 import argparse
 import os
 import shlex
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -116,20 +117,45 @@ def load_unit(
 
 def get_container_cmd(args: str) -> Tuple[str, str]:
     """Get the correct container command for the system."""
-    path = os.environ.get("PATH", "") + ":" + "/usr/local/bin"
-    env = os.environ.copy()
-    env["PATH"] = path
-    cmd = ["/tmp/docker-or-podman", "--print-only"] + shlex.split(args)
-    res = subprocess.run(
-        cmd,
-        check=True,
-        stdout=subprocess.PIPE,
-        env=env,
+
+    def _get_container_cmd(path: str) -> str:
+        for cmd in ("podman", "docker"):
+            container_cmd = shutil.which(cmd, path=path)
+            if container_cmd:
+                return cmd
+        raise ValueError("Docker or Podman must be installed")
+
+    home_bin = os.path.join(os.path.expanduser("~"), ".local", "bin")
+    path = (
+        os.environ.get("PATH", "")
+        + os.pathsep
+        + "/usr/local/bin"
+        + os.pathsep
+        + home_bin
     )
-    out = res.stdout.decode().split()
-    if out:
-        return out[0], " ".join(out[1:])
-    return "", ""
+    container_cmd = _get_container_cmd(path)
+    args_list = shlex.split(args)
+    if "compose" in args:
+        _ = args_list.pop(args_list.index("compose"))
+        container_cmd += "-compose"
+        command = shutil.which(container_cmd)
+        if not command:
+            for cmd in ("ensurepip", "pip install container_cmd"):
+                try:
+                    subprocess.check_call(
+                        shlex.split("python3 -m " + cmd),
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                    )
+                except (subprocess.CalledProcessError, FileNotFoundError):
+                    txt = (
+                        f"{container_cmd} is available but not {container_cmd}-compose"
+                        " which should be installed on the system."
+                    )
+                    print(txt, file=sys.stderr)
+                    raise ValueError(txt)
+    container_path = shutil.which(container_cmd) or container_cmd
+    return container_path, " ".join(args_list)
 
 
 def create_unit(
@@ -142,7 +168,7 @@ def create_unit(
 ) -> None:
     """Create the systemd unit."""
     container_cmd, container_args = get_container_cmd(args)
-    cmd = args.split()
+    cmd = shlex.split(args)
     if "compose" in cmd and "up" in cmd:
         new_cmd = []
         for word in cmd:

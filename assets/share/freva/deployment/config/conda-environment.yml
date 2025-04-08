@@ -2,7 +2,6 @@ name: freva
 channels:
   - conda-forge
 dependencies:
-  - python=3.12
   - freva
   - pip:
     - jupyter-kernel-install

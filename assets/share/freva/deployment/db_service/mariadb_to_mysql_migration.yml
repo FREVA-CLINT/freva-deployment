@@ -1,0 +1,93 @@
+---
+- name: db - Setting additional variables
+  set_fact:
+    docker_bin: "{{ asset_dir }}/scripts/docker-or-podman"
+    compose_file: "{{ backup_dir.path }}/temp-container.yaml"
+    dump_folder: "{{ backup_dir.path }}/mariadb_dump"
+    dump_file: "{{ backup_dir.path}}/mariadb_dump/dump.sql.gz"
+    db_volume: "{{data_path}}"
+
+- name: db - Adjusting ownership of volume dirs
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ uid }}"
+    group: "{{ gid }}"
+    recurse: true
+  with_items:
+    - "{{ db_volume }}"
+    - "{{ backup_dir.path }}"
+    - "{{ dump_folder }}"
+
+- name: db - Pulling MariaDB Container
+  script: "{{ docker_bin }} pull docker.io/mariadb:11.1"
+
+- name: db - Creating migration compose file for MariaDB
+  template:
+    src: "{{ asset_dir }}/db_service/db-temp-server-compose.j2"
+    dest: "{{compose_file}}"
+  vars:
+    container: "mariadb:11.1"
+    command: "--skip-grant-tables --skip-networking"
+    db_volumes:
+      - '{{ db_volume }}:/var/lib/mysql:z'
+      - '{{ dump_folder }}:{{ dump_folder }}:z'
+
+- name: db - Start temporary MariaDB container using compose
+  script: >
+    {{ docker_bin }} compose -f {{ compose_file }} up -d
+  changed_when: true
+
+- pause: seconds=15
+
+- name: db - Dump MariaDB databases to shared volume
+  script: >
+    {{ docker_bin }} compose -f {{ compose_file }} exec temp-db
+    sh -c "mariadb-dump
+    --all-databases
+    --skip-add-locks
+    --skip-comments
+    --skip-set-charset
+    --skip-tz-utc
+    | sed -E 's/ PAGE_CHECKSUM=[^ ]+//g; s/ TRANSACTIONAL=[^ ]+//g'
+    | gzip -9 > {{ dump_file }}"
+
+- name: db - Stop and remove temporary MariaDB container
+  script: >
+    {{ docker_bin }} compose -f {{ compose_file }} down --volumes
+
+- name: db - Creating migration compose file for MySQL
+  template:
+    src: "{{ asset_dir }}/db_service/db-temp-server-compose.j2"
+    dest: "{{ compose_file }}"
+  vars:
+    container: "mysql:{{ db_version }}"
+    command: "--skip-networking"
+    db_volumes:
+      - '{{ db_volume }}:/var/lib/mysql:z'
+      - '{{ dump_folder }}:{{ dump_folder }}:z'
+
+- name: db - Remove any existing DB data
+  file:
+    path: "{{ db_volume }}"
+    state: absent
+
+- name: db - Recreate data dir
+  file:
+    path: "{{ db_volume }}"
+    state: directory
+    owner: "{{ uid }}"
+    group: "{{ gid }}"
+    recurse: true
+
+- name: db - Start temporary MySQL container using compose
+  script: >
+    {{ docker_bin }} compose -f {{ compose_file }} up -d
+  changed_when: true
+
+- pause: seconds=15
+
+- name: db - Import SQL dump into MySQL container
+  script: >
+    {{ docker_bin }} compose -f {{ compose_file }} exec temp-db
+    sh -c "gunzip -c {{ dump_file }} | sed -E \"s/(TEXT|BLOB|GEOMETRY|JSON)[^,]*DEFAULT ''//g\" | mysql -uroot -p'{{ root_passwd }}'"

@@ -114,7 +114,7 @@
     - name: Get db container version
       register: db_container
       ansible.builtin.script:
-        cmd: "{{ asset_dir }}/scripts/inspect.sh docker.io/library/mariadb"
+        cmd: "{{ asset_dir }}/scripts/inspect.sh docker.io/library/mysql"
       become: "{{ db_ansible_become_user | default('root') is defined and db_ansible_become_user | default('root') != '' }}"
       when: use_conda is false
 
@@ -126,7 +126,7 @@
 
     - name: Set db_conda var
       set_fact:
-        db_conda: "{{ 11.1 if mysqld_path.stat.exists else ''}}"
+        db_conda: "{{ 9.2 if mysqld_path.stat.exists else ''}}"
       when: use_conda is true
 
     - name: Display db container version

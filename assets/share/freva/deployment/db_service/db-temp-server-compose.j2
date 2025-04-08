@@ -1,0 +1,26 @@
+version: '3'
+services:
+  temp-db:
+{% if (ansible_become == true and ansible_become_user == 'root') or ansible_user == 'root' %}
+    user: {{uid}}:{{gid}}
+{% else %}
+    user: root:0
+{% endif %}
+    image: docker.io/{{container}}
+    hostname: temp-db
+    command: {{ command }}
+    environment:
+      - MYSQL_USER={{db_user}}
+      - MYSQL_PASSWORD={{db_passwd}}
+      - MYSQL_DATABASE={{db}}
+      - MYSQL_ROOT_PASSWORD={{ root_passwd }}
+      - MARIADB_USER={{db_user}}
+      - MARIADB_PASSWORD={{db_passwd}}
+      - MARIADB_DATABASE={{db}}
+      - MARIADB_ROOT_PASSWORD={{ root_passwd }}
+    volumes:
+{% for volume in db_volumes %}
+      - {{volume}}
+{% endfor %}
+    container_name: temp-db
+    tty: true

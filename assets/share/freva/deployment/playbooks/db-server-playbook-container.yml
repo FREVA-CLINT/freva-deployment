@@ -4,7 +4,7 @@
 
   become: "{{ db_ansible_become_user is defined and db_ansible_become_user != '' }}"
   vars:
-    become: "{{ db_ansible_become_user is defined and db_ansible_become_user != '' }}"
+    ansible_become: "{{ db_ansible_become_user is defined and db_ansible_become_user != '' }}"
     ansible_python_interpreter: "{{ db_ansible_python_interpreter }}"
     ansible_become_user: "{{ db_ansible_become_user | default('root') }}"
     compose_file: '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/{{project_name}}/compose_services/{{db_name}}-compose.yml'
@@ -12,13 +12,12 @@
     vault_volumes:
       - '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/{{project_name}}/vault_service/config:/data:z'
       - '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/{{project_name}}/vault_service/files:/vault/file:z'
-      - '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/{{ project_name }}/db_service/healthcheck.sh:/tmp/healthcheck.sh:z'
     db_volumes:
       - '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/{{project_name}}/freva-service-config/mysql/create_tables.sql:/docker-entrypoint-initdb.d/002_create_tables.sql:z'
       - '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/{{project_name}}/freva-service-config/mysql/daily_backup.sh:/usr/local/bin/daily_backup:z'
       - '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/{{project_name}}/db_service:/var/lib/mysql:z'
-      - '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/{{ project_name }}/db_service/rootless-entrypoint.sh:/tmp/entrypoint.sh:z'
     data_path: '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/{{ project_name }}/db_service'
+    base_path: '{{db_data_path| regex_replace("^~", ansible_env.HOME)}}'
     continer_name: "{{ db_name }}"
     vault_name: "{{project_name}}-vault"
     vault_token_path: "{{db_data_path|regex_replace('^~', ansible_env.HOME)}}/{{ project_name }}/vault_service/files/keys"
@@ -26,40 +25,41 @@
   tasks:
     - name: Removing old compose directory structure
       file:
-        path: "{{item}}"
+        path: "{{ item }}"
         state: absent
         force: true
       with_items:
-        - "{{old_compose_dir}}"
-        - '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/freva-service-config'
+        - "{{ old_compose_dir }}"
+        - '{{ base_path }}/freva-service-config'
 
     - name: Get UID
       command: id -u {{ ansible_user }}
       register: uid_result
+
     - name: Get GID
       command: id -g {{ ansible_user }}
       register: gid_result
+
     - name: Set UID and GID as facts
       set_fact:
         uid: "{{ uid_result.stdout }}"
         gid: "{{ gid_result.stdout }}"
-    - name: Copying docker/podman wrapper script
-      copy:
-        src: "{{ asset_dir }}/scripts/docker-or-podman"
-        dest: /tmp/docker-or-podman
-        mode: "0775"
+
     - name: Registering systemctl path
       stat:
         path: /usr/bin/systemctl
       register: systemctl
+
     - name: Registering anacron path
       stat:
         path: /etc/cron.daily
       register: cron
+
     - name: Registering vault service path
       stat:
         path: /etc/systemd/system/{{vault_name}}.service
       register: vault_service
+
     - name: Removing old vault service
       file:
         state: absent
@@ -68,9 +68,12 @@
       when: vault_service.stat.exists == true
       ignore_errors: true
       register: vault_volume
+
     - name: Set vault valume path
       set_fact:
         exists: vault_volume.stat.exists
+        upgrade_info_text: "mysql"
+
     - name: Stopping services and deleting existing containers
       shell: >
         /tmp/docker-or-podman stop {{db_name}};
@@ -83,33 +86,112 @@
         /tmp/docker-or-podman rm {{vault_name}};
         echo 0
       ignore_errors: true
+
     - name: Deleting config file
       file:
         state: absent
         force: true
-        path: "{{db_data_path|regex_replace('^~', ansible_env.HOME)}}/{{project_name}}/freva-service-config/"
+        path: "{{ base_path }}/{{ project_name }}/freva-service-config/"
+
     - name: Pulling container
-      shell: /tmp/docker-or-podman pull {{item}}
+      script: "{{ asset_dir }}/scripts/docker-or-podman pull {{ item }}"
       with_items:
-        - "docker.io/mariadb:{{db_version}}"
-        - "ghcr.io/freva-clint/freva-vault:{{vault_version}}"
-    - name: Creating docker network
-      shell: >
-        /tmp/docker-or-podman network create "{{ project_name }}";
-        echo 0
+        - "docker.io/mysql:{{ db_version }}"
+        - "ghcr.io/freva-clint/freva-vault:{{ vault_version }}"
+
     - name: Cleaning existing directory structure
       file:
-        path: '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/{{ project_name }}/db_service'
+        path: '{{ base_path }}/{{ project_name }}/db_service'
         state: absent
       when: db_wipe == true
+
     - name: Registering db_service path
       stat:
-        path: '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/{{ project_name }}/db_service'
-      register: db_service
+        path: '{{ data_path }}'
+      register: db_data_dir
+
+    - name: Check for mysql_upgrade_info
+      stat:
+        path: "{{ data_path }}/mysql_upgrade_info"
+      register: upgrade_info
+
+    - name: Read mysql_upgrade_info
+      slurp:
+        src: "{{ data_path }}/mysql_upgrade_info"
+      register: upgrade_info_content
+      when: upgrade_info.stat.exists
+
+    - name: Decode and clean upgrade_info
+      set_fact:
+        upgrade_info_text: "{{ upgrade_info_content['content'] | b64decode | trim | lower}}"
+      when: upgrade_info_content is defined and upgrade_info.stat.exists
+
+    - name: Migrate Old MariaDB to MySQL
+      block:
+        - name: db - Creating temporary backup directory
+          tempfile:
+            state: directory
+            prefix: db_backup
+          register: backup_dir
+
+        - name: db - Backup MariaDB data directory before migration
+          copy:
+            src: "{{ data_path }}"
+            dest: "{{ backup_dir.path }}"
+            remote_src: true
+
+        - name: db - Perform migration using included playbook
+          include_tasks:
+            file: "{{asset_dir}}/db_service/mariadb_to_mysql_migration.yml"
+
+      rescue:
+
+        - name: db - Remove any existing DB data
+          file:
+            path: "{{ data_path }}"
+            state: absent
+
+        - name: db - Restore original MariaDB data directory
+          copy:
+            src: "{{ backup_dir.path }}/db_service"
+            dest: "{{ base_path }}/{{ project_name }}"
+            remote_src: true
+
+        - name: db - Adjust data dir ownership
+          file:
+            path: "{{ data_path }}"
+            state: directory
+            owner: "{{ uid }}"
+            group: "{{ gid }}"
+            recurse: true
+
+        - name: Fail hard and notify user
+          fail:
+            msg: >
+              MariaDB-to-MySQL migration failed. Original MariaDB data was
+              restored. Aborting deployment.
+
+      always:
+
+        - name: db - Stop temp container if running
+          script: >
+            {{ asset_dir }}/scripts/docker-or-podman
+            compose -f {{ backup_dir.path }}/temp-container.yaml
+            down --remove-orphans
+          ignore_errors: true
+
+        - name: db - Remove backup after migration attempt
+          file:
+            path: "{{ backup_dir.path }}"
+            state: absent
+
+      when: "'mariadb' in upgrade_info_text"
+
     - name: Register path to vault keys
       stat:
-        path: "{{vault_token_path}}"
+        path: "{{ vault_token_path }}"
       register: token_path
+
     - name: Check vault keys
       block:
         - name: Base64 decode vault key path
@@ -118,11 +200,9 @@
         - name: Delete vault dir because its content is not valid
           file:
             state: absent
-            path: "{{db_data_path|regex_replace('^~', ansible_env.HOME)}}/{{ project_name }}/vault_service"
+            path: "{{ base_path }}/{{ project_name }}/vault_service"
       when: token_path.stat.exists
-    - name:  Set db_service path exist facts
-      set_fact:
-        db_service_exist: "{{ db_service.stat.exists }}"
+
     - name: Creating service directory structure
       file:
         state: directory
@@ -131,145 +211,164 @@
         group: "{{gid}}"
         recurse: true
       with_items:
-        - "{{db_data_path|regex_replace('^~', ansible_env.HOME)}}/{{ project_name }}/vault_service"
-        - "{{db_data_path|regex_replace('^~', ansible_env.HOME)}}/{{ project_name }}/vault_service/config"
-        - "{{db_data_path|regex_replace('^~', ansible_env.HOME)}}/{{ project_name }}/vault_service/files"
-        - '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/{{ project_name }}/db_service'
-    - name: Copy entrypoint wrapper script
-      copy:
-        src: "{{ asset_dir }}/scripts/{{item}}"
-        dest: '{{data_path}}/{{item}}'
-        owner: "{{uid}}"
-        group: "{{gid}}"
-        mode: "0755"
-      with_items:
-        - "rootless-entrypoint.sh"
-        - "healthcheck.sh"
+        - "{{ base_path }}/{{ project_name }}/vault_service"
+        - "{{ base_path }}/{{ project_name }}/vault_service/config"
+        - "{{ base_path }}/{{ project_name }}/vault_service/files"
+        - '{{ base_path }}/{{ project_name }}/db_service'
+
     - name: Copying public key file to target machine
       copy:
         src: "{{ vault_keyfile }}"
-        dest: "{{db_data_path|regex_replace('^~', ansible_env.HOME)}}/{{project_name}}/vault_service/config/freva.crt"
-        owner: "{{uid}}"
-        group: "{{gid}}"
+        dest: "{{ base_path }}/{{ project_name }}/vault_service/config/freva.crt"
+        owner: "{{ uid }}"
+        group: "{{ gid }}"
+
+
+    - name: Create a temporary file path
+      tempfile:
+        state: dir
+      register: temp_db_dir
+      become: false
+
     - name: Copying auxillary files to target machine
-      copy: src="{{ asset_dir }}/db_service/reset_root_pw.sh" dest=/tmp/
-    - name: Copying systemd files
       copy:
-        src: "{{ asset_dir }}/scripts/{{ item }}"
-        dest: /tmp/{{ item }}
-        mode: '0755'
-      with_items:
-        - "create_systemd.py"
-        - "create_cron.sh"
+        src: "{{ asset_dir }}/db_service/reset_root_pw.sh"
+        dest: "{{ temp_db_dir.path }}"
+        owner: "{{ uid }}"
+        group: "{{ gid }}"
+
     - name: Getting additional configurations
       git:
         repo: https://github.com/FREVA-CLINT/freva-service-config.git
-        dest: '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/{{project_name}}/freva-service-config'
+        dest: '{{ base_path }}/{{project_name}}/freva-service-config'
         update: true
+
     - name: Adjusting configuration onwnership
       file:
         recurse: true
-        path: '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/{{project_name}}/freva-service-config'
-        owner: "{{uid}}"
-        group: "{{gid}}"
+        path: '{{ base_path }}/{{project_name}}/freva-service-config'
+        owner: "{{ uid }}"
+        group: "{{ gid }}"
+
     - name: Creating compose directory structure
       file:
-        path: '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/{{project_name}}/compose_services'
+        path: '{{ base_path }}/{{ project_name }}/compose_services'
         state: directory
         recurse: true
-    - name: Creating compose file for root password reset
-      template:
-        src: "{{ asset_dir }}/playbooks/db-server-compose-template.yml"
-        dest: "{{compose_file}}"
-      vars:
-        command: "--skip-grant-tables --skip-networking"
-        root_pw: true
-      when: db_service_exist == true
-    - name: Starting the docker containers
-      shell: /tmp/docker-or-podman compose -f {{compose_file}} up -d
-      when: db_service_exist == true
-    - pause: seconds=5
-      when: db_service_exist == true
-    - name: Resetting the root password
-      shell: /tmp/docker-or-podman compose -f {{compose_file}} exec {{db_name}} {{item}}
-      with_items:
-        - 'mariadb -u root -e "CREATE DATABASE IF NOT EXISTS \`{{ db }}\`;"'
-        - "/bin/sh -c 'mariadb -u root {{db}} < /docker-entrypoint-initdb.d/002_create_tables.sql'"
-        - "/bin/sh /tmp/reset_root_pw.sh"
-      when: db_service_exist == true
-    - name: Deleting temp. container
-      shell: /tmp/docker-or-podman compose -f {{compose_file}} down
-      when: db_service_exist == true
+        owner: "{{ uid }}"
+        group: "{{ gid }}"
+
+    - name: Preparing the MySQL DB container
+      block:
+        - name: Creating compose file for root password reset
+          template:
+            src: "{{ asset_dir }}/db_service/db-temp-server-compose.j2"
+            dest: "{{ temp_db_dir.path }}/temp-container.yaml"
+          vars:
+            container: "mysql:{{ db_version }}"
+            command: "--skip-grant-tables --skip-networking"
+            db_volumes: "{{ db_volumes + [ temp_db_dir.path ~ '/reset_root_pw.sh:/tmp/reset_root_pw.sh:z' ] }}"
+
+        - name: Starting the docker container
+          script: >
+            {{ asset_dir }}/scripts/docker-or-podman
+            compose -f {{ temp_db_dir.path }}/temp-container.yaml up -d --remove-orphans
+        - pause: seconds=5
+        - name: Starting the docker container
+          script: >
+            {{ asset_dir }}/scripts/docker-or-podman
+            compose -f {{ temp_db_dir.path }}/temp-container.yaml up -d --remove-orphans
+        - pause: seconds=5
+        - name: Resetting the root password
+          script: >
+            {{ asset_dir }}/scripts/docker-or-podman
+            compose -f {{ temp_db_dir.path }}/temp-container.yaml
+            exec temp-db {{item}}
+          with_items:
+            - 'mysql -u root -e "CREATE DATABASE IF NOT EXISTS \`{{ db }}\`;"'
+            - "/bin/sh -c 'mysql -u root {{db}} < /docker-entrypoint-initdb.d/002_create_tables.sql'"
+            - "/bin/sh /tmp/reset_root_pw.sh"
+
+      always:
+        - name: Stop temp container if running
+          script: >
+            {{ asset_dir }}/scripts/docker-or-podman
+            compose -f {{ temp_db_dir.path }}/temp-container.yaml
+            down --remove-orphans
+          ignore_errors: true
+
+        - name: Deleting temp volume path
+          file:
+            path: "{{temp_db_dir.path}}"
+            state: absent
+
     - name: Creating compose file
       template:
-        src: "{{ asset_dir }}/playbooks/db-server-compose-template.yml"
-        dest: "{{compose_file}}"
+        src: "{{ asset_dir }}/db_service/db-server-compose.j2"
+        dest: "{{ compose_file }}"
+
     - name: Creating system services
-      command:
-        cmd: /tmp/create_systemd.py {{db_name}} compose --enable --project-name {{db_name}} -f {{compose_file}} up --remove-orphans
+      script: >
+        {{asset_dir}}/scripts/create_systemd.py
+        {{db_name}} compose --enable --project-name {{db_name}}
+        -f {{compose_file}} up --remove-orphans
       environment:
         DEBUG: '{{ debug }}'
       when: systemctl.stat.exists == true and debug == false
+
     - name: Starting compose service
-      shell: /tmp/docker-or-podman compose -f {{compose_file}} up -d
+      script: >
+        {{asset_dir}}/scripts/docker-or-podman
+        compose -f {{compose_file}} up -d
       when: systemctl.stat.exists == false or debug == true
+
     - name: Creating cron jobs
-      shell: sh /tmp/create_cron.sh "{{ db_name }}" "{{db_email}}" "{{uid}}"
+      script: >
+        {{asset_dir}}/scripts/create_cron.sh
+        "{{ db_name }}" "{{db_email}}" "{{uid}}"
       when: cron.stat.exists == true and debug == false
+
     - pause: seconds=15
+
     - name: Inserting server infrastructure
-      shell: >
-        /tmp/docker-or-podman exec {{ vault_name }} add-vault-secret
-        data -s db.container {{ vault_name }} -s db.host {{ vault_db_host }}
-        -s db.port {{ vault_db_port }} -s db.db {{ vault_db }}
+      script: >
+        {{asset_dir}}/scripts/docker-or-podman exec {{ vault_name }}
+        add-vault-secret data -s db.container {{ vault_name }} -s db.host
+        {{ vault_db_host }} -s db.port {{ vault_db_port }} -s db.db
+        {{ vault_db }}
         -s db.passwd '{{ debug | ternary(root_passwd, vault_passwd) }}'
         -s db.user {{ debug | ternary('root', vault_db_user) }}
+
     - name: DB health check
-      shell: >
-        /tmp/docker-or-podman exec {{ db_name }}
-        sh -c 'mariadb -u root -p${MARIADB_ROOT_PASSWORD} -e "SHOW GLOBAL STATUS LIKE '\''Threads_connected'\'';"'
-    - name: Deleting auxillary files
-      file:
-        state: absent
-        path: "{{ item }}"
-      with_items:
-        - /tmp/create_systemd.py
-        - /tmp/create_cron.sh
-        - /tmp/reset_root_pw.sh
-        - /tmp/docker-or-podman
+      script: >
+        {{asset_dir}}/scripts/docker-or-podman exec {{ db_name }}
+        sh -c 'mysql -u root -p${MYSQL_ROOT_PASSWORD}
+        -e "SHOW GLOBAL STATUS LIKE '\''Threads_connected'\'';"'
 
 - name: Restarting the web service
   hosts: web
   become: "{{ web_ansible_become_user is defined and web_ansible_become_user != '' }}"
   vars:
-    become: "{{ web_ansible_become_user is defined and web_ansible_become_user != '' }}"
-    compose_file: '{{web_data_path|regex_replace("^~", ansible_env.HOME)}}/compose_services/{{web_name}}-compose.yml'
+    compose_file: '{{ web_data_path|regex_replace("^~", ansible_env.HOME) }}/{{ project_name }}/compose_services/{{ web_name }}-compose.yml'
   tasks:
     - name: Registering systemctl path
       stat:
         path: /usr/bin/systemctl
       register: systemctl
-    - name: Copying docker/podman wrapper script
-      copy:
-        src: "{{ asset_dir }}/scripts/docker-or-podman"
-        dest: /tmp/docker-or-podman
-        mode: "0775"
-      when: systemctl.stat.exists == false or debug == true
+
     - name: Restarting web container via systemd
       shell: systemctl restart {{web_name}}
       ignore_errors: true
       failed_when: false
       when: systemctl.stat.exists == true and debug == false
+
     - name: Restarting compose service
-      shell: /tmp/docker-or-podman compose -f {{compose_file}} {{item}}
+      script: >
+        {{asset_dir}}/scripts/docker-or-podman
+        compose -f {{compose_file}} {{item}}
       with_items:
         - "down"
         - "up -d"
       when: systemctl.stat.exists == false or debug == true
       ignore_errors: true
       failed_when: false
-    - name: Deleting auxillary files
-      file:
-        state: absent
-        path: /tmp/docker-or-podman
-      when: systemctl.stat.exists == false or debug == true

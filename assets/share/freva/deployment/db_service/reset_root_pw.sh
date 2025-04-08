@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-mariadb -u root -v <<EOF
+mysql -u root -v <<EOF
 USE mysql;
 FLUSH PRIVILEGES;
 
