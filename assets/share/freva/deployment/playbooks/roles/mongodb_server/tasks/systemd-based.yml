@@ -1,0 +1,28 @@
+---
+- name: Running common taks
+  include_tasks: "{{ general_tasks }}/main.yml"
+
+- name: Stopping the services
+  systemd:
+    name: "{{ item }}"
+    state: stopped
+    enabled: false
+    scope: "{{ 'system' if ansible_become is true else 'user'}}"
+  ignore_errors: true
+  failed_when: false
+  with_items:
+    - "{{freva_rest_name}}"
+    - "{{mongo_name}}"
+
+- name: Removing old services files
+  file:
+    state: absent
+    force: true
+    path: "{{ systemd_unit_dir }}/{{ item }}.service"
+  with_items:
+    - "{{freva_rest_name}}"
+    - "{{mongo_name}}"
+
+- name: Playing the {{ deployment_method }} tasks
+  include_tasks:
+    file: "{{ deployment_file | trim }}"

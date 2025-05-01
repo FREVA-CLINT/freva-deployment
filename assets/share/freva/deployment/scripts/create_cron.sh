@@ -1,37 +1,181 @@
-#!/bin/bash
-uid=${3:-0}
-cmd=$(/tmp/docker-or-podman -p exec --user=$uid $1 bash /usr/local/bin/daily_backup)
-cmd="$cmd 1> /dev/null"
-# Function to check if the cron job already exists in the crontab
-cron_job_exists() {
-    local cmd="$1"
-    crontab -l 2>/dev/null | grep -F "$cmd" >/dev/null
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+# Default values
+USER_ID=0
+COMMAND="/usr/local/bin/daily_backup"
+DEPLOYMENT_METHOD="container"
+EMAIL=""
+SERVICE=""
+BACKUP_DIR=""
+DEBUG=false
+
+print_help() {
+    cat <<EOF
+Usage: $0 [OPTIONS]
+
+Options:
+  --user UID               User ID inside the container (default: 0)
+  --service NAME           Name of the container or environment (required)
+  --email EMAIL            Email address for cron job output
+  --command PATH           Command to run (default: /usr/local/bin/daily_backup)
+  --deployment-method TYPE Deployment method: podman, docker, conda, or mamba (required)
+  --backup-dir DIR         Directory where the backups should be stored.
+  --debug                  Print cron job content instead of writing it
+  --help, -h               Show this help message and exit
+
+Behavior:
+  - If deployment method is docker or podman: uses 'exec --user=UID SERVICE bash COMMAND'
+  - If deployment method is conda or mamba: runs the command directly
+  - Adds the command to /etc/cron.daily or the user's crontab
+  - Exports current PATH and MAMBA_ROOT_PREFIX to the cron environment
+EOF
 }
-if [ -w /etc/cron.daily ]; then
-    # If /etc/cron.daily is writable, create the cron job there
-    cron_dir="/etc/cron.daily"
-    cron_file="$cron_dir/backup_$1"
-else
-    # If /etc/cron.daily is not writable, add the cron job to the user's crontab
-    cron_dir=""
-    cron_file="user"
+
+# Parse arguments (supports both --flag=value and --flag value)
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --user)
+            USER_ID="$2"; shift 2 ;;
+        --user=*)
+            USER_ID="${1#*=}"; shift ;;
+        --service)
+            SERVICE="$2"; shift 2 ;;
+        --service=*)
+            SERVICE="${1#*=}"; shift ;;
+        --email)
+            EMAIL="$2"; shift 2 ;;
+        --email=*)
+            EMAIL="${1#*=}"; shift ;;
+        --command)
+            COMMAND="$2"; shift 2 ;;
+        --command=*)
+            COMMAND="${1#*=}"; shift ;;
+        --deployment-method)
+            DEPLOYMENT_METHOD="$2"; shift 2 ;;
+        --deployment-method=*)
+            DEPLOYMENT_METHOD="${1#*=}"; shift ;;
+        --backup-dir)
+            BACKUP_DIR="$2"; shift 2 ;;
+        --backup-dir=*)
+            BACKUP_DIR="${1#*=}"; shift ;;
+        --debug)
+            DEBUG=true; shift ;;
+        --help|-h)
+            print_help; exit 0 ;;
+        *)
+            echo "Unknown argument: $1"
+            echo "Use --help to see usage."
+            exit 1 ;;
+    esac
+done
+
+# Validate required flags
+if [[ -z "$SERVICE" ]]; then
+    echo "Error: --service is required"
+    echo "Use --help to see usage."
+    exit 1
 fi
 
+if [[ -z "$DEPLOYMENT_METHOD" ]]; then
+    echo "Error: --deployment-method is required"
+    echo "Use --help to see usage."
+    exit 1
+fi
 
-if [ "$cron_dir" ]; then
-    mkdir -p "$cron_dir"
-    echo "#!/bin/sh" > "$cron_file"
-    echo "# Run daily backup for $1" >> "$cron_file"
-    if [ "$2" ]; then
-        echo "MAILTO=$2" >> "$cron_file"
+# Detect container runtime if needed
+detect_container_tool() {
+    for tool in podman docker; do
+        if path=$(which "$tool" 2>/dev/null); then
+            echo "$path"
+            return 0
+        fi
+    done
+    echo "Error: No container runtime found (podman/docker)" >&2
+    exit 1
+}
+
+# Build execution command
+case "$DEPLOYMENT_METHOD" in
+    podman|docker|container)
+        RUNTIME_PATH=$(detect_container_tool)
+        EXEC_CMD="$RUNTIME_PATH exec --user=$USER_ID $SERVICE sh /usr/local/bin/daily_backup"
+        ;;
+    conda|mamba)
+        if [ "$BACKUP_DIR" ];then
+            EXEC_CMD="BACKUP_DIR=$BACKUP_DIR $COMMAND"
+        else
+            EXEC_CMD="$COMMAND"
+        fi
+        ;;
+    *)
+        echo "Error: Unknown or unsupported --deployment-method: $DEPLOYMENT_METHOD"
+        echo "Use --help to see usage."
+        exit 1
+        ;;
+esac
+EXEC_CMD="$EXEC_CMD 1> /dev/null"
+# Get environment variables
+ENV_PATH=$(echo "$PATH")
+ENV_MAMBA_ROOT="${MAMBA_ROOT_PREFIX:-}"
+
+# Build cron job content
+build_cron_script() {
+    {
+        echo "#!/bin/sh"
+        echo "# Run daily backup for $SERVICE"
+        [ -n "$EMAIL" ] && echo "MAILTO=$EMAIL"
+        echo "export PATH=\"$ENV_PATH\""
+        [ -n "$ENV_MAMBA_ROOT" ] && echo "export MAMBA_ROOT_PREFIX=\"$ENV_MAMBA_ROOT\""
+        echo "$EXEC_CMD"
+    }
+}
+
+build_cron_line() {
+    [ -n "$EMAIL" ] && echo "MAILTO=$EMAIL"
+    echo "PATH=\"$ENV_PATH\""
+    [ -n "$ENV_MAMBA_ROOT" ] && echo "MAMBA_ROOT_PREFIX=\"$ENV_MAMBA_ROOT\""
+    echo # Command
+    echo "0 0 * * * $EXEC_CMD"
+}
+
+
+# If debug is enabled, show the content and exit
+if [[ "$DEBUG" == "true" ]]; then
+    echo "🧪 Debug Mode: Generated cron job content"
+    echo "----------------------------------------"
+    if [ -w /etc/cron.daily ]; then
+        build_cron_script
+    else
+        build_cron_line
     fi
-    echo "$cmd" >> "$cron_file"
+    echo "----------------------------------------"
+    exit 0
+fi
+
+# Normal execution path
+
+# Check if cron job already exists
+cron_job_exists() {
+    crontab -l 2>/dev/null | grep -F "$EXEC_CMD" >/dev/null
+}
+
+# Decide where to place the cron job
+if [ -w /etc/cron.daily ]; then
+    cron_dir="/etc/cron.daily"
+    cron_file="$cron_dir/backup_$SERVICE"
+    mkdir -p "$cron_dir"
+    build_cron_script > "$cron_file"
     chmod +x "$cron_file"
 else
-    if [ "$(which crontab 2> /dev/null)" ];then
-        if ! cron_job_exists "$cmd"; then
-            echo "0 0 * * * $cmd" >> "$HOME/.crontab"
-            crontab "$HOME/.crontab"
+    if command -v crontab >/dev/null; then
+        if ! cron_job_exists; then
+            TMP_CRON=$(mktemp)
+            crontab -l 2>/dev/null > "$TMP_CRON" || true
+            build_cron_line >> "$TMP_CRON"
+            crontab "$TMP_CRON"
+            rm -f "$TMP_CRON"
         fi
     fi
 fi

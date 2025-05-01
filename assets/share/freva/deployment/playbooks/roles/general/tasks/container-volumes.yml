@@ -1,0 +1,13 @@
+---
+- name: Create and prepare volumes
+  block:
+    - name: Create volumes
+      shell: >
+        {{ deployment_method }} volume create {{ item }} --ignore
+      loop: "{{ volume_names }}"
+
+    - name: Adjust ownership of volume directories
+      shell: >
+        {{ deployment_method }} run --rm -v {{ item }}:/data:rw alpine
+        chown -R {{uid}}:{{gid}} /data
+      loop: "{{ volume_names }}"

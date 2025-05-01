@@ -1,32 +1,32 @@
 ---
-- hosts: freva_rest
+- hosts: search_server
   vars:
-    ansible_become_user: "{{ freva_rest_ansible_become_user | default('root') }}"
-    ansible_user: "{{freva_rest_ansible_user}}"
-    use_conda: "{{ freva_rest_use_conda | default(false) }}"
-    conda_path: '{{freva_rest_data_path|regex_replace("^~", ansible_env.HOME)}}/{{ project_name }}'
+    ansible_become_user: "{{ search_server_ansible_become_user | default('root') }}"
+    ansible_user: "{{search_server_ansible_user}}"
+    use_conda: "{{ search_server_use_conda | default(false) }}"
+    conda_path: '{{search_server_data_path|regex_replace("^~", ansible_env.HOME)}}/{{ project_name }}'
   tasks:
     - name: Get freva-rest-api container version
       ansible.builtin.script:
         cmd: "{{ asset_dir }}/scripts/inspect.sh ghcr.io/freva-clint/freva-rest-api"
-      become: "{{ freva_rest_ansible_become_user | default('root') is defined and freva_rest_ansible_become_user | default('root') != '' }}"
-      register: freva_rest_container
+      become: "{{ search_server_ansible_become_user | default('root') is defined and search_server_ansible_become_user | default('root') != '' }}"
+      register: search_server_container
       when: use_conda is false
 
     - name: Get freva-rest-api conda version
       shell: "{{conda_path}}/bin/freva-rest-server -V 2> /dev/null | awk '{print $NF}'"
-      become: "{{ freva_rest_ansible_become_user | default('root') is defined and freva_rest_ansible_become_user | default('root') != '' }}"
-      register: freva_rest_conda
+      become: "{{ search_server_ansible_become_user | default('root') is defined and search_server_ansible_become_user | default('root') != '' }}"
+      register: search_server_conda
       when: use_conda is true
 
     - name: Display freva_rest container version
       debug:
-        msg: "{{ freva_rest_container.stdout }}"
+        msg: "{{ search_server_container.stdout }}"
       when: use_conda is false
 
     - name: Display freva_rest conda version
       debug:
-        msg: "{{ freva_rest_conda.stdout }}"
+        msg: "{{ search_server_conda.stdout }}"
       when: use_conda is true
 
     - name: Get solr container version

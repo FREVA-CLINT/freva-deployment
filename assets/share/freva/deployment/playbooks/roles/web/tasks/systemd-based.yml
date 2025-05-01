@@ -1,0 +1,33 @@
+---
+- name: Exiting if core path does not exist on machine
+  fail:
+    msg: >
+      "Error: core not available on machine. "
+      "The core hasn't been deployed yet, or wasn't mounted into its "
+      "expected location: {{core_root_dir}}"
+
+- name: Running common taks
+  include_tasks: "{{ general_tasks }}/main.yml"
+
+- name: Set decoded + parsed secret as fact
+  set_fact:
+    web_information: "{{ web_information_enc | b64decode | from_json}}"
+
+- name: Stopping the {{ web_name }} service
+  systemd:
+    name: "{{ web_name }}"
+    state: stopped
+    enabled: false
+    scope: "{{ 'system' if ansible_become is true else 'user'}}"
+  ignore_errors: true
+  failed_when: false
+
+- name: Removing old services files
+  file:
+    state: absent
+    force: true
+    path: "{{ systemd_unit_dir }}/{{ web_name }}.service"
+
+- name: Playing the {{ deployment_method }} tasks
+  include_tasks:
+    file: "{{ deployment_file | trim }}"

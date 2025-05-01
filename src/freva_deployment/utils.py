@@ -238,13 +238,15 @@ def _update_config(
 
 def _create_new_config(inp_file: Path) -> Path:
     """Update any old configuration file to a newer version."""
-    config_str = inp_file.read_text()
     config = cast(
         Dict[str, Dict[str, Dict[str, Union[str, float, int, bool]]]],
-        tomlkit.loads(config_str),
+        tomlkit.loads(inp_file.read_text()),
     )
     keys_to_check = {
         "freva_rest": [
+            "freva_rest_host",
+            "search_server_host",
+            "mongodb_server_host",
             "redis_host",
             "oidc_url",
             "oidc_client",
@@ -252,15 +254,17 @@ def _create_new_config(inp_file: Path) -> Path:
             "data_loader_portal_hosts",
             "deploy_data_loader",
             "deployment_method",
+            "admin_user",
         ],
-        "web": ["deployment_method"],
-        "db": ["deployment_method"],
+        "web": ["deployment_method", "web_host", "proxy_host", "admin_user"],
+        "db": ["deployment_method", "vault_host", "db_host", "admin_user"],
+        "core": ["core_host"],
     }
     create_backup = False
     config_tmpl = cast(
         Dict[str, Any], tomlkit.loads(AD.inventory_file.read_text())
     )
-    # Legacy solr:
+    # Legacy keys:
     if "solr" in config or "databrowser" in config:
         create_backup = True
         if "solr" in config:
@@ -275,15 +279,18 @@ def _create_new_config(inp_file: Path) -> Path:
             config["freva_rest"]["config"]["freva_rest_port"] = config[
                 "freva_rest"
             ]["config"].pop("databrowser_port", "")
-            config["freva_rest"]["config"]["freva_rest_playbook"] = config[
-                "freva_rest"
-            ]["config"].pop("databrowser_playbook", "")
+
     for section, keys in keys_to_check.items():
+        if isinstance(config[section].get("config"), dict):
+            create_backup = True
+            config[section]["config"][f"{section}_host"] = config[section][
+                "hosts"
+            ]
+            config[section] = config[section]["config"]
+        config[section].pop(f"{section}_playbook", "")
         for key in keys:
-            if key not in config_str:
-                config[section]["config"][key] = config_tmpl[section]["config"][
-                    key
-                ]
+            if key not in tomlkit.dumps(config):
+                config[section][key] = config_tmpl[section][key]
                 create_backup = True
     if create_backup:
         backup_file = inp_file.with_suffix(inp_file.suffix + ".bck")

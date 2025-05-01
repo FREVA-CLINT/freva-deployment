@@ -119,7 +119,8 @@ def get_container_cmd(args: str) -> Tuple[str, str]:
     """Get the correct container command for the system."""
 
     def _get_container_cmd(path: str) -> str:
-        for cmd in ("podman", "docker"):
+        prefer = os.getenv("PREFER") or "podman"
+        for cmd in (prefer,) + ("podman", "docker"):
             container_cmd = shutil.which(cmd, path=path)
             if container_cmd:
                 return cmd

@@ -10,12 +10,12 @@ import shutil
 import string
 import sys
 import time
-from base64 import b64decode, b64encode
+from base64 import b64encode
 from copy import deepcopy
 from getpass import getuser
 from pathlib import Path
 from socket import gethostbyname, gethostname
-from typing import Any, Optional, Tuple, cast
+from typing import Any, Optional, cast
 from urllib.parse import urlparse
 
 import appdirs
@@ -41,7 +41,7 @@ from .utils import (
     get_passwd,
     load_config,
 )
-from .versions import get_steps_from_versions
+from .versions import get_steps_from_versions, get_versions
 
 
 class ConfigType(TypedDict):
@@ -217,69 +217,59 @@ class DeployFactory:
 
     def _prep_vault(self) -> None:
         """Prepare the vault."""
-        self.cfg["vault"]["config"].setdefault("ansible_become_user", "root")
-        self.cfg["vault"]["config"].pop("db_playbook", "")
-        self.cfg["vault"]["config"]["db_port"] = self.cfg["vault"]["config"].get(
-            "port", 3306
-        )
-        self.cfg["vault"]["config"]["version"] = __version__
-        self.cfg["vault"]["config"]["db_user"] = self.cfg["vault"]["config"].get(
-            "user", ""
-        )
-        self.cfg["vault"]["config"]["root_passwd"] = self.master_pass
-        self.cfg["vault"]["config"]["passwd"] = self.db_pass
-        self.cfg["vault"]["config"]["keyfile"] = self.public_key_file
-        self.cfg["vault"]["config"]["email"] = self.cfg["web"]["config"].get(
-            "contacts", ""
-        )
-        self.cfg["vault"]["config"]["db_host"] = self.cfg["db"]["config"].get(
-            "host", self.cfg["db"]["hosts"]
+        self._config_keys.append("vault")
+        self.cfg["vault"].setdefault("ansible_become_user", "root")
+        self.cfg["vault"].pop("db_playbook", "")
+        self.cfg["vault"]["db_port"] = self.cfg["vault"].get("port", 3306)
+        self.cfg["vault"]["version"] = __version__
+        self.cfg["vault"]["db_user"] = self.cfg["vault"].get("user", "")
+        self.cfg["vault"]["root_passwd"] = self.master_pass
+        self.cfg["vault"]["passwd"] = self.db_pass
+        self.cfg["vault"]["keyfile"] = self.public_key_file
+        self.cfg["vault"]["email"] = self.cfg["web"].get("contacts", "")
+        self.cfg["vault"]["db_host"] = self.cfg["db"].get(
+            "host", self.cfg["db"]["db_host"]
         )
 
     def _prep_db(self) -> None:
         """prepare the mariadb service."""
         self._config_keys.append("db")
-        self.cfg["db"]["config"].setdefault("ansible_become_user", "root")
-        host = self.cfg["db"]["hosts"]
-        self.cfg["db"]["config"]["root_passwd"] = self.master_pass
-        self.cfg["db"]["config"]["passwd"] = self.db_pass
-        self.cfg["db"]["config"]["keyfile"] = self.public_key_file
+        self.cfg["db"].setdefault("ansible_become_user", "root")
+        host = self.cfg["db"]["db_host"]
+        self.cfg["db"]["root_passwd"] = self.master_pass
+        self.cfg["db"]["passwd"] = self.db_pass
+        self.cfg["db"]["keyfile"] = self.public_key_file
         data_path = Path(
             cast(
                 str,
-                self.cfg["db"]["config"].get("data_path", "/opt/freva"),
+                self.cfg["db"].get("data_path", "/opt/freva"),
             )
         )
-        self.cfg["db"]["config"]["data_path"] = str(data_path)
+        self.cfg["db"]["data_path"] = str(data_path)
         for key in ("name", "user", "db"):
-            self.cfg["db"]["config"][key] = (
-                self.cfg["db"]["config"].get(key) or "freva"
-            )
-        db_host = self.cfg["db"]["config"].get("host", "").strip()
+            self.cfg["db"][key] = self.cfg["db"].get(key) or "freva"
+        db_host = self.cfg["db"].get("host", "").strip()
         if not db_host:
-            self.cfg["db"]["config"]["host"] = host
-        self.cfg["db"]["config"].setdefault("port", "3306")
-        self.cfg["db"]["config"]["email"] = self.cfg["web"]["config"].get(
-            "contacts", ""
-        )
-        self.playbooks["db"] = self.cfg["db"]["config"].get("db_playbook")
+            self.cfg["db"]["host"] = host
+        self.cfg["db"].setdefault("port", "3306")
+        self.cfg["db"]["email"] = self.cfg["web"].get("contacts", "")
+        self.playbooks["db"] = self.cfg["db"].get("db_playbook")
         self._prep_vault()
         self._prep_web(False)
 
-    def _prep_data_loader(self, password: Optional[str] = None) -> None:
+    def _prep_data_loader(self) -> None:
         """Prepare the data-loader."""
-        self._prep_freva_rest()
         data_path = Path(
             cast(
                 str,
-                self.cfg["freva_rest"]["config"].get("data_path", "/opt/freva"),
+                self.cfg["freva_rest"].get("data_path", "/opt/freva"),
             )
         )
         redis_host = (
-            self.cfg["freva_rest"]["config"].get("redis_host", "")
-            or self.cfg["freva_rest"]["hosts"]
+            self.cfg["freva_rest"].get("redis_host", "")
+            or self.cfg["freva_rest"]["freva_rest_host"]
         )
-        data_portal_host = self.cfg["freva_rest"]["config"].get(
+        data_portal_host = self.cfg["freva_rest"].get(
             "data_loader_portal_hosts", ""
         )
         data_portal_hosts = [
@@ -295,273 +285,219 @@ class DeployFactory:
 
         redis_host, _, redis_port = redis_host.partition(":")
         redis_port = redis_port or "6379"
-        self.cfg["freva_rest"]["config"][
+        self.cfg["freva_rest"][
             "redis_cache_url"
         ] = f"redis://{redis_host}:{redis_port}"
-        self.cfg["freva_rest"]["config"]["redis_host_name"] = redis_host
+        self.cfg["freva_rest"]["redis_host_name"] = redis_host
         proxy_url = (
-            f'http://{self.cfg["freva_rest"]["hosts"]}:'
-            f'{self.cfg["freva_rest"]["config"]["freva_rest_port"]}'
+            f'http://{self.cfg["freva_rest"]["freva_rest_host"]}:'
+            f'{self.cfg["freva_rest"]["freva_rest_port"]}'
         )
-        proxy_url = (
-            self.cfg["web"]["config"].get("project_website").strip() or proxy_url
-        )
+        proxy_url = self.cfg["web"].get("project_website").strip() or proxy_url
         scheme, _, netloc = proxy_url.rpartition("://")
         scheme = scheme or "http"
-        self.cfg["freva_rest"]["config"]["proxy_url"] = f"{scheme}://{netloc}"
+        self.cfg["freva_rest"]["proxy_url"] = f"{scheme}://{netloc}"
         scheduler_host, _, scheduler_port = scheduler_host.partition(":")
-        user_name = self.cfg["freva_rest"]["config"].get(
-            "ansible_user", getuser()
-        )
-        redis_information_enc = self._td.get_remote_file_content(
+        redis_information = get_cache_information(
             redis_host,
-            os.path.join(data_path, ".redis-cache.json"),
-            os.path.join(data_path, self.project_name, ".redis-cache.json"),
-            os.path.join(data_path, "caching", ".redis-cache.json"),
-            os.path.join(data_path, f".redis-cache-{self.project_name}.json"),
-            username=user_name,
-            password=password,
+            redis_port,
+            scheduler_host,
+            scheduler_port or "40000",
         )
-        if not redis_information_enc:
-            redis_information = get_cache_information(
-                redis_host,
-                redis_port,
-                scheduler_host,
-                scheduler_port or "40000",
-            )
-            redis_information["passwd"] = self._create_random_passwd(30, 10)
-            redis_information_enc = b64encode(
-                json.dumps(redis_information).encode("utf-8")
-            ).decode("utf-8")
-        self.cfg["freva_rest"]["config"].setdefault("data_loader", True)
-        deploy = self.cfg["freva_rest"]["config"].get("deploy_data_loader", False)
-        if scheduler_host and deploy:
-            self.playbooks["data-loader"] = str(
-                self.playbook_dir / "data-loader-playbook.yml"
-            )
+        redis_information["passwd"] = self._create_random_passwd(30, 10)
+        redis_information_enc = b64encode(
+            json.dumps(redis_information).encode("utf-8")
+        ).decode("utf-8")
+        self.cfg["freva_rest"].setdefault("data_loader", True)
+        self._config_keys.append("redis")
+        if scheduler_host:
             if data_portal_hosts[1:]:
-                self._config_keys += ["data_portal_hosts"]
-            self._config_keys += [
-                "data_portal_scheduler",
-                "redis_cache",
-            ]
-        if not scheduler_host:
-            self.cfg["freva_rest"]["config"]["data_loader"] = False
+                self._config_keys.append("data_portal_hosts")
+            self._config_keys.append("data_portal_scheduler")
         # Update the config.
         self.cfg["data_portal_scheduler"] = {
-            "hosts": scheduler_host or "",
-            "config": {
-                "information": redis_information_enc,
-                "is_worker": False,
-                "ansible_become_user": self.cfg["freva_rest"]["config"].get(
-                    "ansible_become_user", "root"
-                ),
-                "ansible_user": self.cfg["freva_rest"]["config"].get(
-                    "ansible_user", getuser()
-                ),
-            },
+            "data_portal_scheduler_host": scheduler_host or "",
+            "information": redis_information_enc,
+            "admin_user": self.cfg["freva_rest"].get("admin_user", ""),
+            "is_worker": False,
+            "ansible_become_user": self.cfg["freva_rest"].get(
+                "ansible_become_user", "root"
+            ),
+            "ansible_user": self.cfg["freva_rest"].get("ansible_user", getuser()),
         }
-        shared_cache = self.cfg["freva_rest"]["config"].get("shared_cache", False)
         if data_portal_hosts[1:]:
             self.cfg["data_portal_hosts"] = {
-                "hosts": ",".join(data_portal_hosts[1:]),
-                "config": {
-                    "is_worker": True,
-                    "information": redis_information_enc,
-                    "ansible_become_user": self.cfg["freva_rest"]["config"].get(
-                        "ansible_become_user", "root"
-                    ),
-                    "ansible_user": self.cfg["freva_rest"]["config"].get(
-                        "ansible_user", getuser()
-                    ),
-                },
-            }
-        self.cfg["redis_cache"] = {
-            "hosts": redis_host,
-            "config": {
+                "data_portal_hosts": ",".join(data_portal_hosts[1:]),
+                "is_worker": True,
                 "information": redis_information_enc,
-                "project_name": self.project_name,
-                "port": redis_port,
-                "shared_cache": shared_cache,
-                "data_path": str(data_path),
-                "ansible_become_user": self.cfg["freva_rest"]["config"].get(
+                "admin_user": self.cfg["freva_rest"].get("admin_user", ""),
+                "ansible_become_user": self.cfg["freva_rest"].get(
                     "ansible_become_user", "root"
                 ),
-                "ansible_user": self.cfg["freva_rest"]["config"].get(
+                "ansible_user": self.cfg["freva_rest"].get(
                     "ansible_user", getuser()
                 ),
-            },
+            }
+        self.cfg["redis"] = {
+            "redis_host": redis_host,
+            "information": redis_information_enc,
+            "project_name": self.project_name,
+            "port": redis_port,
+            "admin_user": self.cfg["freva_rest"].get("admin_user", ""),
+            "data_path": str(data_path),
+            "ansible_become_user": self.cfg["freva_rest"].get(
+                "ansible_become_user", "root"
+            ),
+            "ansible_user": self.cfg["freva_rest"].get("ansible_user", getuser()),
+            "information": redis_information_enc,
         }
 
     def _prep_freva_rest(self, prep_web=True) -> None:
         """prepare the freva_rest service."""
         self._config_keys.append("freva_rest")
-        self.cfg["freva_rest"]["config"].setdefault("ansible_become_user", "root")
-        self.cfg["freva_rest"]["config"]["root_passwd"] = self.master_pass
-        self.cfg["freva_rest"]["config"]["db_passwd"] = (
-            self._create_random_passwd(30, 10)
-        )
-        self.cfg["freva_rest"]["config"]["db_user"] = namegenerator.gen()
-        self.cfg["freva_rest"]["config"].pop("core", None)
+        self._prep_data_loader()
+        self.cfg["freva_rest"].setdefault("ansible_become_user", "root")
+        self.cfg["freva_rest"]["root_passwd"] = self.master_pass
+        self.cfg["freva_rest"]["db_passwd"] = self._create_random_passwd(30, 10)
+        freva_rest_host = self.cfg["freva_rest"]["freva_rest_host"]
+        vault_host = self.cfg["db"].get("vault_host") or self.cfg["db"]["db_host"]
+        self.cfg["freva_rest"]["vault_host"] = vault_host
+        self.cfg["freva_rest"]["db_host"] = freva_rest_host
+        self.cfg["freva_rest"]["db_user"] = namegenerator.gen()
+        self.cfg["freva_rest"].pop("core", None)
         services = ["", "databrowser"]
-        if (
-            self.cfg["freva_rest"]["config"]
-            .get("data_loader_portal_hosts", "")
-            .strip()
-        ):
+        if self.cfg["freva_rest"].get("data_loader_portal_hosts", "").strip():
             services.append("zarr-stream")
         data_path = Path(
             cast(
                 str,
-                self.cfg["freva_rest"]["config"].get("data_path", "/opt/freva"),
+                self.cfg["freva_rest"].get("data_path", "/opt/freva"),
             )
         )
-        self.cfg["freva_rest"]["config"]["data_path"] = str(data_path)
-        self.playbooks["freva_rest"] = self.cfg["freva_rest"]["config"].get(
+        self.cfg["freva_rest"]["data_path"] = str(data_path)
+        self.playbooks["freva_rest"] = self.cfg["freva_rest"].get(
             "freva_rest_playbook"
         )
         for key, default in dict(solr_mem="4g", freva_rest_port=7777).items():
-            self.cfg["freva_rest"]["config"][key] = (
-                self.cfg["freva_rest"]["config"].get(key) or default
+            self.cfg["freva_rest"][key] = (
+                self.cfg["freva_rest"].get(key) or default
             )
-        self.cfg["freva_rest"]["config"]["email"] = self.cfg["web"]["config"].get(
-            "contacts", ""
+        self.cfg["freva_rest"]["email"] = self.cfg["web"].get("contacts", "")
+        self.cfg["freva_rest"].setdefault("oidc_url", "")
+        self.cfg["freva_rest"].setdefault("oidc_client", "freva")
+        self.cfg["freva_rest"].setdefault("oidc_client_secret", "")
+        self.cfg["freva_rest"]["data_loader"] = self.cfg.get("redis", {}).get(
+            "use", False
         )
-        self.cfg["freva_rest"]["config"].setdefault("oidc_url", "")
-        self.cfg["freva_rest"]["config"].setdefault("oidc_client", "freva")
-        self.cfg["freva_rest"]["config"].setdefault("oidc_client_secret", "")
-        self.cfg["freva_rest"]["config"]["data_loader"] = (
-            self.cfg.get("redis_cache", {}).get("config", {}).get("use", False)
-        )
-        self.cfg["freva_rest"]["config"]["services"] = " -s ".join(services)
+        self.cfg["freva_rest"]["services"] = "-s ".join(services)
         if prep_web:
             self._prep_web(False)
+        for key in ("mongodb_server", "search_server"):
+            self._config_keys.append(key)
+            self.cfg[key] = deepcopy(self.cfg["freva_rest"])
 
     def _prep_core(self) -> None:
         """prepare the core deployment."""
         self._config_keys.append("core")
-        self.cfg["core"]["config"].setdefault("ansible_become_user", "")
-        self.playbooks["core"] = self.cfg["core"]["config"].get("core_playbook")
+        self.cfg["core"].setdefault("ansible_become_user", "")
+        self.playbooks["core"] = self.cfg["core"].get("core_playbook")
         # Legacy args as we are going to use micromamba
-        self.cfg["core"]["config"]["arch"] = mamba_to_conda_arch(
-            self.cfg["core"]["config"]
+        self.cfg["core"]["arch"] = mamba_to_conda_arch(
+            self.cfg["core"]
             .get("arch", "linux-64")
             .lower()
             .replace("x86_", "")
             .replace("mac", "")
         )
-        self.cfg["core"]["config"]["python_version"] = FREVA_PYTHON_VERSION
-        self.cfg["core"]["config"]["admins"] = (
-            self.cfg["core"]["config"].get("admins") or getuser()
-        )
-        if not self.cfg["core"]["config"]["admins"]:
-            self.cfg["core"]["config"]["admins"] = getuser()
-        install_dir = Path(self.cfg["core"]["config"]["install_dir"])
+        self.cfg["core"]["python_version"] = FREVA_PYTHON_VERSION
+        self.cfg["core"]["admins"] = self.cfg["core"].get("admins") or getuser()
+        if not self.cfg["core"]["admins"]:
+            self.cfg["core"]["admins"] = getuser()
+        install_dir = Path(self.cfg["core"]["install_dir"])
         root_dir = Path(
-            self.cfg["core"]["config"].get("root_dir", "").strip() or install_dir
+            self.cfg["core"].get("root_dir", "").strip() or install_dir
         )
-        self.cfg["core"]["config"]["install_dir"] = str(install_dir)
-        self.cfg["core"]["config"]["root_dir"] = str(root_dir)
-        preview_path = self.cfg["core"]["config"].get("preview_path", "")
-        base_dir_location = self.cfg["core"]["config"].get(
-            "base_dir_location", ""
-        ) or str(root_dir / "work")
-        self.cfg["core"]["config"]["base_dir_location"] = base_dir_location
-        scheduler_output_dir = self.cfg["core"]["config"].get(
-            "scheduler_output_dir", ""
+        self.cfg["core"]["install_dir"] = str(install_dir)
+        self.cfg["core"]["root_dir"] = str(root_dir)
+        preview_path = self.cfg["core"].get("preview_path", "")
+        base_dir_location = self.cfg["core"].get("base_dir_location", "") or str(
+            root_dir / "work"
         )
-        scheduler_system = self.cfg["core"]["config"].get(
-            "scheduler_system", "local"
-        )
+        self.cfg["core"]["base_dir_location"] = base_dir_location
+        scheduler_output_dir = self.cfg["core"].get("scheduler_output_dir", "")
+        scheduler_system = self.cfg["core"].get("scheduler_system", "local")
         if not preview_path:
-            self.cfg["core"]["config"]["preview_path"] = str(
+            self.cfg["core"]["preview_path"] = str(
                 Path(base_dir_location) / "share" / "preview"
             )
         if not scheduler_output_dir:
             scheduler_output_dir = str(Path(base_dir_location) / "share")
         elif Path(scheduler_output_dir).parts[-1] != scheduler_system:
             scheduler_output_dir = Path(scheduler_output_dir) / scheduler_system
-        self.cfg["core"]["config"]["scheduler_output_dir"] = str(
-            scheduler_output_dir
-        )
-        self.cfg["core"]["config"]["keyfile"] = self.public_key_file
-        git_exe = self.cfg["core"]["config"].get("git_path")
-        self.cfg["core"]["config"]["git_path"] = git_exe or "git"
-        self.cfg["core"]["config"][
-            "git_url"
-        ] = "https://github.com/FREVA-CLINT/freva.git"
+        self.cfg["core"]["scheduler_output_dir"] = str(scheduler_output_dir)
+        self.cfg["core"]["keyfile"] = self.public_key_file
+        git_exe = self.cfg["core"].get("git_path")
+        self.cfg["core"]["git_path"] = git_exe or "git"
+        self.cfg["core"]["git_url"] = "https://github.com/FREVA-CLINT/freva.git"
 
     def _prep_web(self, ask_pass: bool = True) -> None:
         """prepare the web deployment."""
         self._config_keys.append("web")
+        self._config_keys.append("proxy")
 
-        self.playbooks["web"] = self.cfg["web"]["config"].get("web_playbook")
+        self.playbooks["web"] = self.cfg["web"].get("web_playbook")
         for key in "oidc_url", "oidc_client", "oidc_client_secret":
-            self.cfg["web"]["config"][key] = self.cfg["freva_rest"]["config"].get(
-                "oidc_url", ""
-            )
-        self.cfg["web"]["config"].setdefault("ansible_become_user", "root")
+            self.cfg["web"][key] = self.cfg["freva_rest"].get("oidc_url", "")
+        self.cfg["web"].setdefault("ansible_become_user", "root")
         self._prep_core()
         freva_rest_host = (
-            f'{self.cfg["freva_rest"]["hosts"]}:'
-            f'{self.cfg["freva_rest"]["config"]["freva_rest_port"]}'
+            f'{self.cfg["freva_rest"]["freva_rest_host"]}:'
+            f'{self.cfg["freva_rest"]["freva_rest_port"]}'
         )
-        self.cfg["web"]["config"]["freva_rest_host"] = freva_rest_host
-        self.cfg["web"]["config"].setdefault("deploy_web_server", True)
+        self.cfg["web"]["freva_rest_host"] = freva_rest_host
+        self.cfg["web"].setdefault("deploy_web_server", True)
         data_path = Path(
             cast(
                 str,
-                self.cfg["web"]["config"].get("data_path", "/opt/freva"),
+                self.cfg["web"].get("data_path", "/opt/freva"),
             )
         )
-        self.cfg["web"]["config"]["data_path"] = str(data_path)
-        admin = self.cfg["core"]["config"]["admins"]
+        self.cfg["web"]["data_path"] = str(data_path)
+        admin = self.cfg["core"]["admins"]
         try:
-            for k, v in self.cfg["web"]["config"].items():
-                self.cfg["web"]["config"].setdefault(k, "")
+            for k, v in self.cfg["web"].items():
+                self.cfg["web"].setdefault(k, "")
         except KeyError:
             raise ConfigurationError(
                 "No web config section given, please configure the web.config"
             ) from None
         if not isinstance(admin, str):
-            self.cfg["web"]["config"]["admin"] = admin[0]
+            self.cfg["web"]["admin"] = admin[0]
         else:
-            self.cfg["web"]["config"]["admin"] = admin
-        allowed_hosts = self.cfg["web"]["config"].get("allowed_hosts") or [
-            "localhost"
-        ]
+            self.cfg["web"]["admin"] = admin
+        allowed_hosts = self.cfg["web"].get("allowed_hosts") or ["localhost"]
         if isinstance(allowed_hosts, str):
             allowed_hosts = [
                 s.strip() for s in allowed_hosts.split(",") if s.strip()
             ]
-        allowed_hosts.append(self.cfg["web"]["hosts"])
+        allowed_hosts.append(self.cfg["web"]["web_host"])
         allowed_hosts.append(f"{self.project_name}-httpd")
-        self.cfg["web"]["config"]["allowed_hosts"] = [
+        self.cfg["web"]["allowed_hosts"] = [
             s.strip() for s in set(allowed_hosts) if s.strip()
         ]
 
         _webserver_items = {
-            "institution_logo": self.cfg["web"]["config"].get(
-                "institution_logo", ""
-            ),
-            "main_color": self.cfg["web"]["config"].get("main_color", "Tomato"),
-            "border_color": self.cfg["web"]["config"].get(
-                "border_color", "#6c2e1f"
-            ),
-            "hover_color": self.cfg["web"]["config"].get(
-                "hover_color", "#d0513a"
-            ),
-            "homepage_text": self.cfg["web"]["config"].get("homepage_text", ""),
-            "imprint": self.cfg["web"]["config"].get("imprint", []),
-            "homepage_heading": self.cfg["web"]["config"].get(
-                "homepage_heading", ""
-            ),
-            "about_us_text": self.cfg["web"]["config"].get("about_us_text", ""),
-            "contacts": self.cfg["web"]["config"].get("contacts", []),
-            "insitution_name": self.cfg["web"]["config"].get(
-                "insitution_name", ""
-            ),
-            "menu_entries": self.cfg["web"]["config"].get("menu_entries", []),
+            "institution_logo": self.cfg["web"].get("institution_logo", ""),
+            "main_color": self.cfg["web"].get("main_color", "Tomato"),
+            "border_color": self.cfg["web"].get("border_color", "#6c2e1f"),
+            "hover_color": self.cfg["web"].get("hover_color", "#d0513a"),
+            "homepage_text": self.cfg["web"].get("homepage_text", ""),
+            "imprint": self.cfg["web"].get("imprint", []),
+            "homepage_heading": self.cfg["web"].get("homepage_heading", ""),
+            "about_us_text": self.cfg["web"].get("about_us_text", ""),
+            "contacts": self.cfg["web"].get("contacts", []),
+            "insitution_name": self.cfg["web"].get("insitution_name", ""),
+            "menu_entries": self.cfg["web"].get("menu_entries", []),
         }
         try:
             with Path(_webserver_items["homepage_text"]).open("r") as f_obj:
@@ -577,45 +513,46 @@ class DeployFactory:
             tomlkit.dump(_webserver_items, f_obj)
 
         if self.local_debug:
-            self.cfg["web"]["config"]["redis_host"] = self.cfg["web"]["hosts"]
+            self.cfg["web"]["redis_host"] = self.cfg["web"]["web_host"]
         else:
-            self.cfg["web"]["config"]["redis_host"] = f"{self.project_name}-cache"
+            self.cfg["web"]["redis_host"] = f"{self.project_name}-cache"
 
-        server_name = self.cfg["web"]["config"].pop("server_name", [])
+        server_name = self.cfg["web"].pop("server_name", [])
         if isinstance(server_name, str):
             server_name = server_name.split(",")
         server_name = ",".join([a for a in server_name if a.strip()])
         if not server_name:
-            server_name = self.cfg["web"]["hosts"]
-        self.cfg["web"]["config"]["server_name"] = server_name
-        web_host = self.cfg["web"]["hosts"]
+            server_name = self.cfg["web"]["web_host"]
+        self.cfg["web"]["server_name"] = server_name
+        web_host = self.cfg["web"]["web_host"]
         if web_host == "127.0.0.1":
             web_host = "localhost"
-        self.cfg["web"]["config"]["host"] = web_host
-        self.cfg["web"]["config"]["csrf_trusted_origins"] = []
-        for url in (server_name, self.cfg["web"]["config"]["project_website"]):
+        self.cfg["web"]["host"] = web_host
+        self.cfg["web"]["csrf_trusted_origins"] = []
+        for url in (server_name, self.cfg["web"]["project_website"]):
             trusted_origin = urlparse(url)
 
             if trusted_origin.scheme:
-                self.cfg["web"]["config"]["csrf_trusted_origins"].append(
+                self.cfg["web"]["csrf_trusted_origins"].append(
                     f"https://{trusted_origin.netloc}"
                 )
             else:
-                self.cfg["web"]["config"]["csrf_trusted_origins"].append(
+                self.cfg["web"]["csrf_trusted_origins"].append(
                     f"https://{trusted_origin.path}"
                 )
-        self.cfg["web"]["config"]["freva_bin"] = os.path.join(
-            self.cfg["core"]["config"]["install_dir"], "bin"
+        self.cfg["web"]["freva_bin"] = os.path.join(
+            self.cfg["core"]["install_dir"], "bin"
         )
         for key in ("core", "web"):
-            self.cfg[key]["config"]["config_toml_file"] = str(self.web_conf_file)
+            self.cfg[key]["config_toml_file"] = str(self.web_conf_file)
         self._prep_vault()
-        self.cfg["vault"]["config"]["ansible_python_interpreter"] = self.cfg[
-            "db"
-        ]["config"].get("ansible_python_interpreter", "/usr/bin/python3")
-        self.cfg["web"]["config"]["root_passwd"] = self.master_pass
-        self.cfg["web"]["config"]["private_keyfile"] = self.private_key_file
-        self.cfg["web"]["config"]["public_keyfile"] = self.public_key_file
+        self.cfg["vault"]["ansible_python_interpreter"] = self.cfg["db"].get(
+            "ansible_python_interpreter", "/usr/bin/python3"
+        )
+        self.cfg["web"]["root_passwd"] = self.master_pass
+        self.cfg["web"]["private_keyfile"] = self.private_key_file
+        self.cfg["web"]["public_keyfile"] = self.public_key_file
+        self.cfg["proxy"] = deepcopy(self.cfg["web"])
 
     def _prep_local_debug(self) -> None:
         """Prepare the system for a potential local debug."""
@@ -625,15 +562,15 @@ class DeployFactory:
         deploy_dir = Path(appdirs.user_cache_dir("freva-test-deployment"))
         deploy_dir.mkdir(exist_ok=True, parents=True)
         host = gethostbyname(gethostname())
-        self.cfg["db"]["config"]["db_host"] = host
-        self.cfg["core"]["config"]["ansible_become_user"] = ""
-        self.cfg["core"]["config"]["git_path"] = shutil.which("git") or ""
-        self.cfg["core"]["config"]["scheduler_system"] = "local"
-        self.cfg["core"]["config"]["scheduler_host"] = [host]
-        self.cfg["core"]["config"]["admins"] = getuser()
-        self.cfg["web"]["config"]["allowed_hosts"] = [host, "localhost"]
-        self.cfg["web"]["config"]["project_website"] = "https://localhost"
-        self.cfg["core"]["config"]["arch"] = get_current_architecture()
+        self.cfg["db"]["db_host"] = host
+        self.cfg["core"]["ansible_become_user"] = ""
+        self.cfg["core"]["git_path"] = shutil.which("git") or ""
+        self.cfg["core"]["scheduler_system"] = "local"
+        self.cfg["core"]["scheduler_host"] = [host]
+        self.cfg["core"]["admins"] = getuser()
+        self.cfg["web"]["allowed_hosts"] = [host, "localhost"]
+        self.cfg["web"]["project_website"] = "https://localhost"
+        self.cfg["core"]["arch"] = get_current_architecture()
         for key in (
             "root_dir",
             "base_dir_location",
@@ -641,21 +578,17 @@ class DeployFactory:
             "scheduler_output_dir",
             "admin_group",
         ):
-            self.cfg["core"]["config"][key] = ""
-        self.cfg["core"]["config"]["install_dir"] = str(deploy_dir / "core")
-        self.cfg["core"]["config"]["root_dir"] = str(deploy_dir / "config")
+            self.cfg["core"][key] = ""
+        self.cfg["core"]["install_dir"] = str(deploy_dir / "core")
+        self.cfg["core"]["root_dir"] = str(deploy_dir / "config")
         for step in self.steps:
-            self.cfg[step]["hosts"] = host
+            self.cfg[step][f"{step}_host"] = host
             if step in ("db", "freva_rest"):
-                self.cfg[step]["config"]["port"] = default_ports[step]
-            self.cfg[step]["config"]["ansible_user"] = getuser()
-            self.cfg[step]["config"][
-                "ansible_python_interpreter"
-            ] = sys.executable
-            if "data_path" in self.cfg[step]["config"]:
-                self.cfg[step]["config"]["data_path"] = str(
-                    deploy_dir / "services"
-                )
+                self.cfg[step]["port"] = default_ports[step]
+            self.cfg[step]["ansible_user"] = getuser()
+            self.cfg[step]["ansible_python_interpreter"] = sys.executable
+            if "data_path" in self.cfg[step]:
+                self.cfg[step]["data_path"] = str(deploy_dir / "services")
 
     def __enter__(self):
         return self
@@ -664,9 +597,23 @@ class DeployFactory:
         self._td.cleanup()
 
     def _read_cfg(self) -> dict[str, Any]:
+        mapper = {
+            "vault": "db",
+            "mongodb_server": "freva_rest",
+            "search_server": "freva_rest",
+            "proxy": "web",
+        }
         try:
             config = dict(load_config(self._inv_tmpl, convert=True).items())
-            config["vault"] = deepcopy(config["db"])
+            for dest, source in mapper.items():
+                host = (
+                    config[source].get(f"{dest}_host")
+                    or config[source][f"{source}_host"]
+                )
+                config[dest] = deepcopy(config[source])
+                config[dest][f"{dest}_host"] = config[source][f"{dest}_host"] = (
+                    host
+                )
             return config
         except FileNotFoundError:
             raise ConfigurationError(f"No such file {self._inv_tmpl}") from None
@@ -675,15 +622,13 @@ class DeployFactory:
 
     def _check_config(self) -> None:
         sections = []
-        config_keys = deepcopy(self._config_keys)
-        if "db" in config_keys:
-            config_keys.append("vault")
+        config_keys = [s for s in set(self._config_keys)]
         for section in self.cfg.keys():
             for step in config_keys:
                 if section.startswith(step) and section not in sections:
                     sections.append(section)
         for section in sections:
-            for key, value in self.cfg[section]["config"].items():
+            for key, value in self.cfg[section].items():
                 if (
                     not value
                     and not self._empty_ok
@@ -700,7 +645,7 @@ class DeployFactory:
         solr_config = cfg.get("databrowser", cfg.get("solr", {}))
         cfg.setdefault("freva_rest", solr_config)
         for step in self.step_order:
-            if cfg[step]["config"].get("ansible_become_user", "") or "root":
+            if cfg[step].get("ansible_become_user", "") or "root":
                 return True
         return False
 
@@ -761,29 +706,23 @@ class DeployFactory:
                 "preview_path",
                 "scheduler_output_dir",
             ):
-                value = self.cfg["core"]["config"].get(key, "")
+                value = self.cfg["core"].get(key, "")
                 config[step]["vars"][f"core_{key}"] = value
-        config[step]["vars"][f"{step}_hostname"] = self.cfg[step]["hosts"]
         config[step]["vars"][f"{step}_name"] = f"{self.project_name}-{step}"
         config[step]["vars"]["asset_dir"] = str(asset_dir)
         config[step]["vars"]["ansible_user"] = (
-            self.cfg[step]["config"].get("ansible_user") or getuser()
+            self.cfg[step].get("ansible_user") or getuser()
         )
         config[step]["vars"][f"{step}_ansible_python_interpreter"] = (
-            self.cfg[step]["config"].get("ansible_python_interpreter")
-            or "/usr/bin/python3"
+            self.cfg[step].get("ansible_python_interpreter") or "/usr/bin/python3"
         )
         dump_file = self._get_files_copy(step)
         if dump_file:
             config[step]["vars"][f"{step}_dump"] = str(dump_file)
 
-    def parse_config(
-        self, steps: list[str]
-    ) -> Tuple[Optional[str], Optional[str]]:
+    def parse_config(self, steps: list[str]) -> Optional[str]:
         """Create config files for anisble and evaluation_system.conf."""
-        versions = json.loads(
-            (Path(__file__).parent / "versions.json").read_text()
-        )
+        versions = get_versions()
         additional_steps = set(steps) - set(self.steps)
         if additional_steps:
             pprint(
@@ -795,30 +734,45 @@ class DeployFactory:
         if not new_steps:
             return None, None
         self._steps = list(new_steps)
-        playbook = self.create_playbooks()
         logger.info("Parsing configurations")
         self._check_config()
+        _ = [getattr(self, f"_prep_{step}")() for step in self.steps]
         config: dict[str, dict[str, dict[str, str | int | bool]]] = {}
-        info: dict[str, dict[str, dict[str, str | int | bool]]] = {}
-        config_keys = [
-            s
-            for s in self._config_keys
-            if self.cfg.get(s, {}).get("hosts", "").strip()
-        ]
-        if "db" in config_keys:
-            config_keys.append("vault")
-        for step in set(config_keys):
-            config[step], info[step] = {}, {}
-            config[step]["hosts"] = self.cfg[step]["hosts"]
-            info[step]["hosts"] = self.cfg[step]["hosts"]
-            config[step]["vars"], info[step]["vars"] = {}, {}
-            for key, value in self.cfg[step]["config"].items():
-                if key in ("root_passwd",) or key.startswith(step):
+        playbooks = "\n".join(
+            [
+                a.read_text()
+                for a in (asset_dir / "playbooks").rglob("*.*")
+                if a.is_file()
+            ]
+        )
+        main_playbook = yaml.safe_load(
+            (asset_dir / "playbooks" / "main-deployment.yml").read_text()
+        )
+        tags = []
+        for entry in main_playbook:
+            for tag in entry.get("tags", []):
+                if tag in self.steps + ["vault"]:
+                    tags.append(entry["hosts"])
+        no_preprend = ("root_passwd", "deployment_method")
+        for step in set(self._config_keys):
+            config[step] = {}
+            config[step]["hosts"] = self.cfg[step][f"{step}_host"]
+            config[step]["vars"] = {}
+
+            for key, value in self.cfg[step].items():
+                if key in no_preprend + (f"{step}_host",) or key.startswith(step):
                     new_key = key
                 else:
                     new_key = f"{step.replace('-', '_')}_{key}"
-                config[step]["vars"][new_key] = value
+                if new_key in playbooks:
+                    config[step]["vars"][new_key] = value
             config[step]["vars"]["project_name"] = self.project_name
+            config[step]["vars"][f"{step}_admin_user"] = self.cfg[step].get(
+                "admin_user", ""
+            )
+            config[step]["vars"]["deployment_method"] = self.cfg.get(
+                "deployment_method", "docker"
+            )
             config[step]["vars"][f"{step.replace('-', '_')}_version"] = (
                 versions.get(step, "")
             )
@@ -826,16 +780,19 @@ class DeployFactory:
             # Add additional keys
             self._set_additional_config_values(step, config)
         max_width = int(max(shutil.get_terminal_size().columns * 0.75, 25))
-        if "freva_rest" in config:
-            config["freva_rest"]["vars"]["solr_version"] = versions["solr"]
+        if "search_server" in config:
+            config["search_server"]["vars"]["solr_version"] = versions["solr"]
         if "db" in config:
             config["db"]["vars"]["vault_version"] = versions["vault"]
             for key, value in config["vault"]["vars"].items():
                 if key.startswith("vault_"):
                     config["db"]["vars"].setdefault(key, value)
-        for step in info:
+        info = {}
+        for step in config:
             for key, value in config[step]["vars"].items():
-                if key in playbook or key == "debug":
+                if step in tags or ("db" in self.steps and step == "vault"):
+                    info.setdefault(step, {})
+                    info[step].setdefault("vars", {})
                     if isinstance(value, str) and "pass" in key:
                         add_value = "***"
                     elif isinstance(value, str) and len(value) > max_width:
@@ -848,7 +805,7 @@ class DeployFactory:
             if passwd:
                 info_str = info_str.replace(passwd, "***")
         RichConsole.print(info_str, style="bold", markup=True)
-        return playbook, yaml.dump(json.loads(json.dumps(config)))
+        return yaml.dump(json.loads(json.dumps(config)))
 
     @property
     def python_prefix(self) -> Path:
@@ -868,77 +825,17 @@ class DeployFactory:
     @property
     def steps(self) -> list[str]:
         """Set all the deployment steps."""
-        steps = []
-        for step in self._steps:
-            steps.append(step)
-            if step == "db" and "vault" not in steps:
-                steps.append("vault")
-        return [s for s in self.step_order if s in steps]
+        return [s for s in self.step_order if s in self._steps]
 
     def _set_deployment_methods(self) -> None:
         """Check the deployment methods."""
-        valid_deployment_methods = ("container", "conda")
-        for step in ("db", "freva_rest", "web"):
-            deployment_method = (
-                self.cfg[step]
-                .get("config", {})
-                .get("deployment_method", "container")
+        valid_deployment_methods = ("podman", "docker", "conda", "k8s")
+        deployment_method = self.cfg.get("deployment_method")
+        if deployment_method not in valid_deployment_methods:
+            raise ConfigurationError(
+                f"Deployment method: {deployment_method} is invalid, should be"
+                f"one of {', '.join(valid_deployment_methods)}"
             )
-            if deployment_method not in valid_deployment_methods:
-                raise ValueError(
-                    f"Deployment method in step: {step} is invalid, should be"
-                    f"one of {', '.join(valid_deployment_methods)}"
-                )
-            self.cfg[step]["config"]["use_conda"] = deployment_method == "conda"
-
-    def create_playbooks(self) -> str:
-        """Create the ansible playbook form all steps."""
-        logger.info("Creating Ansible playbooks")
-        playbook = []
-        self.current_step = "foo"
-        _ = [getattr(self, f"_prep_{step}")() for step in self.steps]
-        steps = deepcopy(self.steps)
-        for step in steps:
-            deployment_method = (
-                self.cfg[step]
-                .get("config", {})
-                .get("deployment_method", "container")
-            )
-            if step != "core":
-                file_suffix = f"-{deployment_method}"
-            else:
-                file_suffix = ""
-            playbook_file = (
-                self.playbooks.get(step)
-                or self.playbook_dir / f"{step}-server-playbook{file_suffix}.yml"
-            )
-            with Path(playbook_file).open(encoding="utf-8") as f_obj:
-                playbook += yaml.safe_load(f_obj)
-
-        if "freva_rest" in steps and "data-loader" in self.playbooks:
-            loader_playbook = []
-            freva_rest_idx = self.steps.index("freva_rest")
-
-            use_conda = self.cfg["freva_rest"]["config"].get("use_conda", False)
-            for step in (
-                "redis_cache",
-                "data_portal_scheduler",
-                "data_portal_hosts",
-            ):
-                if step in self.cfg:
-                    self.cfg[step]["config"]["use_conda"] = use_conda
-            dl_playbook: str = self.playbooks.get("data-loader") or ""
-            with Path(dl_playbook).open(encoding="utf-8") as stream:
-                for step in cast(Any, yaml.safe_load(stream)):
-                    hosts: str = cast(str, step["hosts"])  # type: ignore
-                    if hosts in self._config_keys:
-                        loader_playbook.append(step)
-            playbook = (
-                playbook[:freva_rest_idx]
-                + loader_playbook
-                + playbook[freva_rest_idx:]
-            )
-        return self._td.create_playbook(playbook)
 
     def create_eval_config(self) -> None:
         """Create and dump the evaluation_system.config."""
@@ -960,19 +857,21 @@ class DeployFactory:
                     lines[num] = f"project_name={self.project_name}\n"
                 for key, value in keys:
                     if line.startswith(value):
-                        cfg = self.cfg[key]["config"].get(value, "")
+                        cfg = self.cfg[key].get(value, "")
                         if cfg:
                             lines[num] = f"{value}={cfg}\n"
                 for step in ("freva_rest", "db"):
-                    cfg = self.cfg[step]["config"].get("port", "")
+                    cfg = self.cfg[step].get("port", "")
                     if line.startswith(f"{step}.port"):
                         lines[num] = f"{step}.port={cfg}\n"
                     if line.startswith(f"{step}.host"):
-                        lines[num] = f"{step}.host={self.cfg[step]['hosts']}\n"
+                        lines[num] = (
+                            f"{step}.host={self.cfg[step][f'{step}_host']}\n"
+                        )
                 if line.startswith("solr.host"):
-                    lines[num] = f"solr.host={self.cfg[step]['hosts']}\n"
+                    lines[num] = f"solr.host={self.cfg[step][f'{step}_host']}\n"
                 if line.startswith("db.host"):
-                    lines[num] = f"db.host={self.cfg['db']['config']['host']}\n"
+                    lines[num] = f"db.host={self.cfg['db']['db_host']}\n"
         dump_file = self._get_files_copy("core")
         if dump_file:
             with dump_file.open("w") as f_obj:
@@ -1035,27 +934,6 @@ class DeployFactory:
                 pprint(f" [red][ERROR]: {error}[/]", file=sys.stderr)
             raise KeyboardInterrupt() from None
 
-    def _get_or_set_cache_information(
-        self,
-        envvars: dict[str, str],
-        extravars: dict[str, str],
-        passwords: dict[str, str],
-        verbosity: int,
-    ) -> None:
-        """Update the redis cache informations."""
-        self._prep_data_loader(passwords.get("anslibe_ssh_pass"))
-        information = get_cache_information()
-        self.cfg["freva_rest"]["config"].setdefault(
-            "cache_information",
-            b64encode(json.dumps(information).encode("utf-8")).decode("utf-8"),
-        )
-        self.cfg["web"]["config"]["cache_information"] = self.cfg["freva_rest"][
-            "config"
-        ]["cache_information"] = self.cfg["redis_cache"]["config"]["information"]
-        self.cfg["web"]["config"]["redis_host_name"] = self.cfg["freva_rest"][
-            "config"
-        ]["redis_host_name"]
-
     def get_steps_from_versions(
         self,
         envvars: dict[str, str],
@@ -1074,46 +952,37 @@ class DeployFactory:
         )
         playbook = []
         cfg = deepcopy(self.cfg)
-        if "web" in steps and not cfg.get("web", {}).get("hosts", "").strip():
+        if "web" in steps and not cfg.get("web", {}).get("web_host", "").strip():
             steps = [s for s in steps if s != "web"]
-        if cfg.get("freva_rest") is None:
-            cfg["freva_rest"] = cfg.get("databrowser", cfg.get("solr", {}))
         version_path = self._td.parent_dir / "versions.txt"
         for tasks in playbook_tmpl:
             step = tasks["hosts"]
             if step in steps:
                 playbook.append(tasks)
                 config[step] = {}
-                config[step]["hosts"] = cfg[step]["hosts"]
-                if "ansible_become_user" not in cfg[step]["config"]:
+                config[step]["hosts"] = cfg[f"{step}_hosts"]
+                if "ansible_become_user" not in cfg[step]:
                     become_user = "root"
                 else:
-                    become_user = cfg[step]["config"]["ansible_become_user"]
+                    become_user = cfg[step]["ansible_become_user"]
                 config[step]["vars"] = {
                     f"{step}_ansible_become_user": become_user,
                     "asset_dir": str(asset_dir),
-                    f"{step}_ansible_user": cfg[step]["config"].get(
+                    f"{step}_ansible_user": cfg[step].get(
                         "ansible_user", getuser()
                     ),
-                    f"{step}_use_conda": cfg[step]["config"].get(
-                        "use_conda", False
-                    ),
                     "project_name": self.project_name,
-                    f"{step}_data_path": cfg[step]["config"].get("data_path", ""),
+                    f"{step}_data_path": cfg[step].get("data_path", ""),
                     "version_file_path": str(version_path),
                 }
-                python_exe = self.cfg[step]["config"].get(
-                    "ansible_python_interpreter", ""
-                )
+                python_exe = self.cfg[step].get("ansible_python_interpreter", "")
                 if python_exe:
                     config[step]["vars"][
                         "ansible_python_interpreter"
                     ] = python_exe
         config.setdefault("core", {})
         config["core"].setdefault("vars", {})
-        config["core"]["vars"]["core_install_dir"] = cfg["core"]["config"][
-            "install_dir"
-        ]
+        config["core"]["vars"]["core_install_dir"] = cfg["core"]["install_dir"]
         result = self._td.run_ansible_playbook(
             playbook=playbook,
             inventory=config,
@@ -1192,7 +1061,7 @@ class DeployFactory:
             extravars["ansible_connection"] = "local"
 
         self.passwords = self.get_ansible_password(ask_pass)
-        steps = []
+        steps = [s for s in self.steps]
         self._set_deployment_methods()
         if skip_version_check is False:
             steps = self.get_steps_from_versions(
@@ -1201,25 +1070,21 @@ class DeployFactory:
                 self.passwords.copy(),
                 verbosity,
             )
-        self._get_or_set_cache_information(
-            envvars.copy(), extravars.copy(), self.passwords.copy(), verbosity
-        )
-        playbook, inventory = self.parse_config(steps)
-        if inventory is None or playbook is None:
+        inventory = self.parse_config(steps)
+        if inventory is None:
             logger.info("Services up to date, nothing to do!")
             return None
         logger.debug(inventory)
         self.create_eval_config()
-        logger.info(
-            "Playing the playbooks for %s with ansible", ", ".join(self.steps)
-        )
-        logger.debug(self.playbooks)
+        logger.info("Playing the playbooks for %s with ansible", ", ".join(steps))
+        print(inventory)
         time.sleep(3)
-        # return
         self._td.run_ansible_playbook(
-            playbook=playbook,
+            working_dir=asset_dir,
+            playbook=asset_dir / "playbooks" / "main-deployment.yml",
             inventory=inventory,
             envvars=envvars,
+            roles=steps,
             passwords=self.passwords,
             extravars=extravars,
             verbosity=verbosity,

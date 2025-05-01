@@ -1,0 +1,21 @@
+[Unit]
+Description=Freva mongoDB server
+After=network.target
+
+[Service]
+Type=simple
+ProtectSystem=full
+PermissionsStartOnly=true
+NoNewPrivileges=true
+ProtectHome=true
+KillSignal=SIGTERM
+ExecStart=/bin/sh -c "PATH={{ conda_path }}/bin:$PATH {{ conda_path }}/bin/mongod -f {{ volume_dir }}/config/mongod.yaml --auth --cpu"
+Environment="CONDA_PREFIX={{ conda_path }}"
+Restart=on-failure
+RestartSec=5
+StartLimitBurst=5
+UMask=007
+User={{uid}}
+Group={{gid}}
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,20 @@
+---
+ansible_become: "{{ db_ansible_become_user is defined and db_ansible_become_user != '' }}"
+ansible_python_interpreter: "{{ db_ansible_python_interpreter }}"
+ansible_become_user: "{{ db_ansible_become_user | default('root') }}"
+admin_user: "{{ db_admin_user | default('') }}"
+conda_path: '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/{{ project_name }}/conda'
+data_dir: '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/{{ project_name }}'
+systemd_unit_dir: "{{ '/etc/systemd/system' if  db_ansible_become_user is defined and db_ansible_become_user != '' else ansible_env.HOME + '/.config/systemd/user' }}"
+vault_name: "{{ project_name }}-vault"
+compose_file: '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/{{project_name}}/compose_services/{{vault_name}}-compose.yml'
+old_compose_dir: '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/compose_services'
+volume_dir: '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/{{ project_name }}/vault_service'
+base_path: '{{db_data_path| regex_replace("^~", ansible_env.HOME)}}'
+vault_token_path: "{{ db_data_path|regex_replace('^~', ansible_env.HOME)}}/{{ project_name }}/vault_service/files/keys"
+volume_names:
+  - "{{ vault_name }}_data"
+conda_packages:
+  - go
+cron_job: '{{db_data_path|regex_replace("^~", ansible_env.HOME)}}/{{ project_name }}/freva-service-config/mysql/daily_backup.sh'
+upgrade_info_text: ""

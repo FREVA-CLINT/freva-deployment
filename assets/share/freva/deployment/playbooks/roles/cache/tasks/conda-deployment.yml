@@ -1,0 +1,24 @@
+---
+- name: Running common conda tasks
+  include_tasks: "{{ general_tasks }}/conda.yml"
+
+- name: Adjusting {{ volume_dir }} ownership
+  file:
+    path: "{{ volume_dir }}"
+    owner: "{{ uid }}"
+    group: "{{ gid }}"
+    state: directory
+    recurse: true
+
+- name: Creating caching systemd service
+  template:
+    src: "systemd-conda.j2"
+    dest: "{{ systemd_unit_dir }}/{{ cache_name }}.service"
+    mode: "0644"
+
+- name: Enable and start the freva cache server
+  systemd:
+    name: "{{ cache_name }}"
+    state: restarted
+    enabled: true
+    scope: "{{ 'system' if ansible_become is true else 'user'}}"

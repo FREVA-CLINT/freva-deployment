@@ -35,9 +35,9 @@ class CommandFactory(metaclass=abc.ABCMeta):
         self._print_only = print_only
 
     @staticmethod
-    def get_container_cmd() -> str:
+    def get_container_cmd(prefer: Optional[str] = None) -> str:
         """Get the command of the container."""
-        engines = ["podman", "docker"]
+        engines = [prefer or "podman"] + ["podman", "docker"]
         for cmd in engines:
             cont_cmd = shutil.which(cmd)
             if cont_cmd:
@@ -55,10 +55,11 @@ class CommandFactory(metaclass=abc.ABCMeta):
         -------
         list[str]: Constructed command line arguemnts.
         """
-        container_cmd = Path(self.get_container_cmd()).name
-        command = shutil.which(f"{container_cmd}-compose")
+        prefer = kwargs.pop("prefer")
+        container_cmd = Path(self.get_container_cmd(prefer)).name
+        command = shutil.which(f"{self.command}-compose")
         if not command:
-            install_cmd = f"python3 -m pip install {container_cmd}-compose"
+            install_cmd = f"python3 -m pip install {self.command}-compose"
             try:
                 subprocess.run(
                     shlex.split(install_cmd),
@@ -66,26 +67,44 @@ class CommandFactory(metaclass=abc.ABCMeta):
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE,
                 )
-            except subprocess.CalledProcessError:
+            except subprocess.CalledProcessError as error:
                 txt = (
-                    f"{container_cmd} is available but not {container_cmd}-compose"
+                    f"{self.command} is available but not {self.command}-compose"
                     " which should be installed on the system."
                 )
                 print(txt, file=sys.stderr)
-                raise ValueError(txt)
+                raise ValueError(txt) from error
             command = (
-                shutil.which(f"{container_cmd}-compose")
+                shutil.which(f"{self.command}-compose")
                 or f"{container_cmd}-compose"
             )
         _args = self._kwargs_to_list(**kwargs)
         return [command] + _args + list(args)
+
+    def volume(self, sub_command: str, *flags: str) -> List[str]:
+        """Manage volumes
+
+        Volumes are created in and can be shared between containers
+
+        Parameters
+        ---------
+        sub_command:
+            The sub command that is passed to the container command.
+        *flags: str
+             Additional command line arguments passed to the container command.
+
+        Returns
+        -------
+        list[str]: Constructed command line arguemnts.
+        """
+        return [self.command, "volume", sub_command] + list(flags)
 
     def network(self, sub_command: str, *flags: str) -> List[str]:
         """Interact with the network sub commands.
 
         Parameters
         ----------
-        sub_commnds: str
+        sub_commnd: str
             The sub command that is passed to the container command.
         *flags: str
             Additional command line arguments passed to the container command.
@@ -94,7 +113,7 @@ class CommandFactory(metaclass=abc.ABCMeta):
         -------
         list[str]: Constructed command line arguemnts.
         """
-        return [self.get_container_cmd(), sub_command] + list(flags)
+        return [self.command, sub_command] + list(flags)
 
     def _kwargs_to_list(self, **kwargs: FlagType) -> List[str]:
         cli_command = []
@@ -132,13 +151,13 @@ class CommandFactory(metaclass=abc.ABCMeta):
         list[str]: Constructed commmand line arguments.
         """
 
-        cli_command = [self.get_container_cmd(), "pull"]
+        cli_command = [self.command, "pull"]
         return cli_command + self._kwargs_to_list(**kwargs) + self.images
 
     def stop(self, time_out: Optional[int] = None) -> List[str]:
         """Stop running containers."""
 
-        cli_command = [self.get_container_cmd(), "stop"]
+        cli_command = [self.command, "stop"]
         if time_out is not None:
             cli_command += ["-t", str(time_out)]
         return cli_command + self.images
@@ -156,7 +175,7 @@ class CommandFactory(metaclass=abc.ABCMeta):
         list[str]: Constructed commmand line arguments.
         """
         return (
-            [self.get_container_cmd(), "inspect"]
+            [self.command, "inspect"]
             + self._kwargs_to_list(**kwargs)
             + self.images
         )
@@ -176,7 +195,7 @@ class CommandFactory(metaclass=abc.ABCMeta):
         list[str]: Constructed commmand line arguments.
         """
 
-        cli_command = [self.get_container_cmd(), sub_command, "-f"]
+        cli_command = [self.command, sub_command, "-f"]
         return cli_command + self.images
 
     def run(
@@ -203,7 +222,7 @@ class CommandFactory(metaclass=abc.ABCMeta):
         list[str]: Constructed commmand line arguments.
         """
 
-        cli_command = [self.get_container_cmd(), sub_command]
+        cli_command = [self.command, sub_command]
         return (
             cli_command
             + self._kwargs_to_list(**options)
@@ -302,6 +321,13 @@ def parse_args() -> List[str]:
         "--print-only",
         help="Only print the command",
         action="store_true",
+    )
+    parser.add_argument(
+        "--prefer",
+        type=str,
+        help="Set a prefered container binary.",
+        choices=["docker", "podman"],
+        default="podman",
     )
     subparsers = parser.add_subparsers(title="Subcommands", dest="subcommand")
     parent = add_standard_args()
@@ -542,11 +568,43 @@ def parse_args() -> List[str]:
         action="store_true",
     )
     parser_inspect.add_argument("--type", type=str)
+    # -------------------------------------------------------------------------
+
+    # -------------------------- volume commands -----------------------------
+    parser_volume = subparsers.add_parser(
+        "volume",
+        help="Manage volumes",
+        add_help=False,
+    )
+    parser_volume.add_argument(
+        "command",
+        type=str,
+        help="Subcommands",
+        choices=[
+            "create",
+            "exists",
+            "export",
+            "import",
+            "inspect",
+            "ls",
+            "mount",
+            "purne",
+            "reload",
+            "rm",
+            "unmount",
+        ],
+    )
+    parser_volume.add_argument(
+        "flags",
+        nargs=argparse.REMAINDER,
+        type=str,
+        metavar="flags",
+    )
 
     # -------------------------------------------------------------------------
 
     args = parser.parse_args()
-    container_cmd = Path(Docker.get_container_cmd()).name
+    container_cmd = Path(Docker.get_container_cmd(args.prefer)).name
     container_cls = {
         "podman": Podman,
         "docker": Docker,
@@ -557,7 +615,7 @@ def parse_args() -> List[str]:
     kwargs = {
         k.replace("_", "-"): v
         for (k, v) in args._get_kwargs()
-        if k not in ("subcommand", "container", "command", "print_only")
+        if k not in ("subcommand", "container", "command", "print_only", "prefer")
     }
     if args.subcommand in ("run", "exec"):
         cmd = container_inst.run(args.subcommand, *args.command, **kwargs)
@@ -572,7 +630,9 @@ def parse_args() -> List[str]:
     elif args.subcommand in ("network",):
         cmd = container_inst.network(args.subcommand, args.command, *args.flags)
     elif args.subcommand in ("compose",):
-        cmd = container_inst.compose(*args.command, **kwargs)
+        cmd = container_inst.compose(*args.command, prefer=args.prefer, **kwargs)
+    elif args.subcommand in ("volume",):
+        cmd = container_inst.volume(args.command, *args.flags)
     else:
         cmd = []
     if args.print_only:

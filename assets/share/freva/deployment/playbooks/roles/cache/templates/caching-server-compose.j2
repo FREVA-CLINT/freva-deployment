@@ -1,0 +1,21 @@
+version: '3'
+services:
+  {{cache_name}}:
+{% if (ansible_become == true and ansible_become_user == 'root') or ansible_user == 'root' %}
+    user: {{uid}}:{{gid}}
+{% else %}
+    user: root:0
+{% endif %}
+    image: ghcr.io/freva-clint/freva-redis:{{redis_version}}
+    hostname: {{cache_name}}
+    container_name: {{cache_name}}
+    environment:
+        CONFIG_CONTENT: {{redis_information}}
+    tty: true
+    ports:
+      - "6379:6379"
+    volumes:
+        - data:/data/db
+
+volumes:
+  data:

@@ -1,0 +1,22 @@
+[Unit]
+Description=MariaDB database server
+After=network.target
+
+[Service]
+Type=notify
+ProtectSystem=full
+NoNewPrivileges=true
+ProtectHome=true
+SendSIGKILL=no
+KillSignal=SIGTERM
+PermissionsStartOnly=true
+ExecStartPre=/bin/sh -c "systemctl unset-environment _WSREP_START_POSITION"
+ExecStartPost=/bin/sh -c "systemctl unset-environment _WSREP_START_POSITION"
+ExecStart={{ conda_path }}/bin/start-freva-service mysql
+Restart=on-failure
+RestartSec=5
+StartLimitBurst=5
+
+
+[Install]
+WantedBy=multi-user.target

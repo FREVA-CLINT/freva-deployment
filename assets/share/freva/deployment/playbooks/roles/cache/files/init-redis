@@ -1,0 +1,82 @@
+#!/bin/sh
+#
+# Initialize the Freva Redis instance with TLS and ACL support.
+
+set -euo pipefail
+
+BASEDIR=$(dirname $(dirname $(readlink -f $0)))
+CONFIG="$BASEDIR/config/data-portal-cluster-config.json"
+PIDFILE="$BASEDIR/redis.pid"
+export PATH=$BASEDIR/conda/bin:$PATH
+
+if [ ! -f "$CONFIG" ]; then
+    echo "Config file $CONFIG must exist"
+    exit 1
+fi
+
+TMP_DIR=$(mktemp -d --suffix=_redis -q)
+REDIS_CONFIG="$TMP_DIR/redis.conf"
+trap 'rm -rf "$TMP_DIR"' EXIT INT TERM
+
+JSON=$(base64 --decode < "$CONFIG")
+
+parse_json_value() {
+  local key=$1
+  echo "$JSON" | sed 's/\\n/\n/g' | awk -v k="\"$key\"" '
+    BEGIN { RS=","; FS=":" }
+    $1 ~ k {
+      sub(/^ +| +$/, "", $2);
+      gsub(/^"+|"+$/, "", $2);
+      print $2;
+    }'
+}
+
+REDIS_DATA_DIR="$BASEDIR/data"
+REDIS_LOG_DIR="$BASEDIR/logs"
+REDIS_USER=$(parse_json_value user)
+REDIS_PASSWORD=$(parse_json_value passwd)
+REDIS_CERT=$(parse_json_value ssl_cert)
+REDIS_KEY=$(parse_json_value ssl_key)
+
+REDIS_PASSWORD="${REDIS_PASSWORD:+>$REDIS_PASSWORD}"
+REDIS_USER="${REDIS_USER:+$REDIS_USER}"
+API_REDIS_SSL_CERTFILE="$TMP_DIR/redis-ca-cert.crt"
+API_REDIS_SSL_KEYFILE="$TMP_DIR/redis-key.key"
+
+# Configure Redis user ACL
+if [ -n "$REDIS_USER" ]; then
+    echo "user default off -@all" >> "$REDIS_CONFIG"
+fi
+
+
+mkdir -p "$REDIS_DATA_DIR" "$REDIS_LOG_DIR"
+
+echo "user ${REDIS_USER:-default} on +@all ~* &* ${REDIS_PASSWORD:-nopass}" >> "$REDIS_CONFIG"
+
+# Logging config
+echo "loglevel ${REDIS_LOGLEVEL:-notice}" >> "$REDIS_CONFIG"
+echo "syslog-enabled yes" >> "$REDIS_CONFIG"
+
+# TLS setup
+if [ -n "$REDIS_CERT" ] && [ -n "$REDIS_KEY" ]; then
+    echo "$REDIS_CERT" > "$API_REDIS_SSL_CERTFILE"
+    echo "$REDIS_KEY" > "$API_REDIS_SSL_KEYFILE"
+    chmod 0600 "$API_REDIS_SSL_CERTFILE" "$API_REDIS_SSL_KEYFILE"
+    cat >> "$REDIS_CONFIG" <<EOF
+port 0
+tls-port 6379
+tls-cert-file $API_REDIS_SSL_CERTFILE
+tls-key-file $API_REDIS_SSL_KEYFILE
+tls-ca-cert-file $API_REDIS_SSL_CERTFILE
+tls-protocols TLSv1.3
+EOF
+fi
+
+# Directories and final config
+echo "dir $REDIS_DATA_DIR" >> "$REDIS_CONFIG"
+echo "logfile $REDIS_LOG_DIR/redis.log" >> "$REDIS_CONFIG"
+
+echo "Starting Redis with config:"
+cat "$REDIS_CONFIG"
+echo -e "################### START: $(date) ###################\n" >  $REDIS_LOG_DIR/redis.log
+redis-server "$REDIS_CONFIG"

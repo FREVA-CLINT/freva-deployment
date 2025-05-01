@@ -1,0 +1,41 @@
+[Unit]
+Description=Freva rest API server
+After=network.target
+
+[Service]
+Type=simple
+ProtectSystem=full
+PermissionsStartOnly=true
+NoNewPrivileges=true
+ProtectHome=true
+KillSignal=SIGTERM
+ExecStart=/bin/sh -c "PATH={{ conda_path }}/bin:$PATH {{ conda_path }}/bin/freva-rest-server {{ freva_rest_services }}"
+Environment="CONDA_PREFIX={{ conda_path }}"
+Environment="SOLR_LOGS_DIR={{ log_path }}/solr"
+Environment="API_SOLR_CORE=files"
+Environment="API_PORT={{freva_rest_port}}"
+Environment="API_PROXY={{freva_rest_proxy_url}}"
+Environment="COLUMNS=140"
+Environment="API_OIDC_CLIENT_ID={{freva_rest_oidc_client}}"
+Environment="API_LOG_DIR={{ log_path }}/freva-res-server"
+Environment="API_OIDC_DISCOVERY_URL={{freva_rest_oidc_url}}"
+Environment="API_OIDC_CLIENT_SECRET={{freva_rest_oidc_client_secret}}"
+Environment="API_REDIS_HOST={{cache_information.host}}"
+Environment="API_REDIS_PASSWORD={{cache_information.user}}"
+Environment="API_REDIS_USER={{cache_information.passwd}}"
+Environment="API_REDIS_SSL_CERTFILE={{ volume_dir }}/certs/client-cert.pem"
+Environment="API_REDIS_SSL_KEYFILE={{ volume_dir }}/certs/client-key.pem"
+Environment="API_SOLR_HOST={{freva_rest_search_server_host}}:8983
+Environment="API_MONGO_HOST={{freva_rest_mongodb_server_host}}:27017
+Environment="API_MONGO_PASSWORD={{freva_rest_db_passwd}}
+Environment="API_MONGO_DB=search_stats
+Environment="API_MONGO_USER={{freva_rest_db_user}}
+
+Restart=on-failure
+RestartSec=5
+StartLimitBurst=5
+UMask=007
+User={{uid}}
+Group={{gid}}
+[Install]
+WantedBy=multi-user.target

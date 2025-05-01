@@ -45,14 +45,21 @@ class SubProcess:
     @classmethod
     def run_ansible_playbook(
         cls,
+        cwd: Path,
         command: List[str],
     ) -> None:
         from ansible.cli.playbook import main
 
-        main(command)
+        current_dir = os.path.abspath(os.curdir)
+        try:
+            os.chdir(cwd)
+            main(command)
+        finally:
+            os.chdir(current_dir)
 
 
 def run_command(
+    cwd: str,
     command: List[str],
     env: Optional[Dict[str, str]] = None,
     capture_output: bool = False,
@@ -72,7 +79,7 @@ def run_command(
                 sys.stdout = stdout_buffer
             ctx = get_context()
             proc = ctx.Process(
-                target=SubProcess.run_ansible_playbook, args=(command,)
+                target=SubProcess.run_ansible_playbook, args=(cwd, command)
             )
             proc.start()
             proc.join()
@@ -88,14 +95,14 @@ def run_command(
 
 
 def run_command_with_spinner(
-    command: List[str], env: Dict[str, str], text: str
+    cwd: str, command: List[str], env: Dict[str, str], text: str
 ) -> SubProcess:
     console = Console(stderr=True)
     spinner = Spinner("weather", text=text)
 
     with Live(spinner, refresh_per_second=3, console=console):
         try:
-            result = run_command(command, env=env, capture_output=True)
+            result = run_command(cwd, command, env=env, capture_output=True)
         except KeyboardInterrupt:
             spinner.update(text=text + " [yellow]canceled[/yellow]")
             raise KeyboardInterrupt("User interrupted execution") from None
@@ -116,6 +123,7 @@ class RunnerDir(TemporaryDirectory):
         self.env_dir = self.parent_dir / "env"
         self.inventory_dir = self.parent_dir / "inventory"
         self.project_dir = self.parent_dir / "project"
+        self.aux_file_dir = self.parent_dir / "files"
         for _dir in (self.env_dir, self.inventory_dir, self.project_dir):
             _dir.mkdir(exist_ok=True, parents=True)
 
@@ -251,10 +259,12 @@ class RunnerDir(TemporaryDirectory):
 
     def run_ansible_playbook(
         self,
-        playbook: Union[str, Path, List[Any], Dict[str, Any]],
+        playbook: Optional[Union[str, Path, List[Any], Dict[str, Any]]],
         inventory: Union[str, Path, List[Any], Dict[str, Any]],
+        working_dir: Optional[Union[str, Path]] = None,
         envvars: Optional[Dict[str, str]] = None,
         extravars: Optional[Dict[str, str]] = None,
+        roles: Optional[List[str]] = None,
         cmdline: Optional[str] = None,
         verbosity: int = 0,
         passwords: Optional[Dict[str, str]] = None,
@@ -266,29 +276,37 @@ class RunnerDir(TemporaryDirectory):
         Run an Ansible playbook using multiprocessing.
 
         Parameters:
+        working_dir (str): Current working directory for the playbooks.
         playbook_path (str): Path to the playbook.
         inventory_path (str): Path to the inventory file.
         envvars (Optional[Dict[str, str]]): Environment variables to set for Ansible.
         extravars (Optional[Dict[str, str]]): Extra variables to pass to Ansible.
         cmdline (Optional[str]): Extra command line arguments for Ansible.
         verbosity (int): Verbosity level for Ansible output.
+        rolse (Optional[List[str]]): The roles that should be involved.
         hide_output (bool): Hide stdout and stderr if True, show only on failure.
 
         Raises:
         DeploymentError: If the Ansible playbook execution fails.
         """
+        roles = roles or []
+        working_dir = Path(working_dir or "").expanduser().absolute()
         playbook_path = self.convert_to_file(playbook)
         inventory_path = self.convert_to_file(inventory)
         passwords = passwords or {}
         extravars = extravars or {}
         envvars = envvars or {}
         # Prepare the command
+
         command = ["ansible-playbook", playbook_path, "-i", inventory_path]
 
         # Set environment variables
+        for role in roles:
+            command += ["-t", role]
         for key, passwd in passwords.items():
             envvars[key.upper()] = passwd
             extravars[key] = f'{{{{ lookup("env", "{key.upper()}") }}}}'
+        extravars["playbook_tempdir"] = str(self.aux_file_dir)
         # Add extra variables
         for key, value in extravars.items():
             command.append(f"-e {key}='{value}'")
@@ -303,9 +321,13 @@ class RunnerDir(TemporaryDirectory):
         logger.debug("Running ansible command %s", " ".join(command))
         # Run the command
         if hide_output and verbosity == 0:
-            result = run_command_with_spinner(command, envvars, text)
+            result = run_command_with_spinner(
+                str(working_dir), command, envvars, text
+            )
         else:
-            result = run_command(command, env=envvars, capture_output=False)
+            result = run_command(
+                str(working_dir), command, env=envvars, capture_output=False
+            )
 
         # Determine if the command was successful
         success = result.returncode == 0

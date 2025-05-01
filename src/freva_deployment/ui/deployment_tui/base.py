@@ -9,9 +9,8 @@ from typing import Any, Optional, cast
 
 import npyscreen
 import tomlkit
-from npyscreen.wgwidget import Widget
-
 from freva_deployment.utils import AD, asset_dir, config_file
+from npyscreen.wgwidget import Widget
 
 logging.basicConfig(level=logging.DEBUG)
 logger: logging.Logger = logging.getLogger("deploy-freva-tui")
@@ -157,24 +156,10 @@ class BaseForm(npyscreen.FormMultiPageWithMenus, npyscreen.FormWithMenus):
         try:
             cfg = self.parentApp.config[key].copy()
             if not isinstance(cfg, dict):
-                cfg = {"config": {}}
+                cfg = {}
         except (KeyError, AttributeError, TypeError):
-            cfg = {"config": {}}
-        cfg.setdefault("config", {})
-        for k, values in cfg["config"].items():
-            if values is None:
-                cfg["config"][k] = ""
-        return cfg["config"]
-
-    def get_host(self, key) -> str:
-        """Read the host name(s) from the main windows config."""
-        try:
-            host = self.parentApp.config[key]["hosts"]
-        except (TypeError, KeyError):
-            return ""
-        if isinstance(host, str):
-            host = [v.strip() for v in host.split(",") if v.strip()]
-        return ",".join(host)
+            cfg = {}
+        return cfg
 
     @property
     def num(self) -> str:
@@ -199,11 +184,11 @@ class BaseForm(npyscreen.FormMultiPageWithMenus, npyscreen.FormWithMenus):
                     npyscreen.notify_confirm(msg, title="ERROR")
                     return None
             config[key] = value
-        cfg = dict(hosts=config.pop("hosts"))
-        cfg["config"] = config
-        for key, value in cfg["config"].items():
+        cfg = config.copy()
+        cfg = config
+        for key, value in cfg.items():
             if key in self.list_keys:
-                cfg["config"][key] = value.split(",")
+                cfg[key] = value.split(",")
         return cfg
 
     def draw_form(self) -> None:
@@ -267,9 +252,7 @@ class BaseForm(npyscreen.FormMultiPageWithMenus, npyscreen.FormWithMenus):
 
     def clear_cache(self):
         """Clear the app cache."""
-        with open(
-            self.parentApp.cache_dir / "freva_deployment.json", "w"
-        ) as f:
+        with open(self.parentApp.cache_dir / "freva_deployment.json", "w") as f:
             json.dump({}, f, indent=3)
         self.parentApp.reset()
 
@@ -290,9 +273,9 @@ class BaseForm(npyscreen.FormMultiPageWithMenus, npyscreen.FormWithMenus):
 
     def create(self) -> None:
         """Setup the form."""
-        self.how_exited_handers[
-            npyscreen.wgwidget.EXITED_ESCAPE
-        ] = self.parentApp.exit_application
+        self.how_exited_handers[npyscreen.wgwidget.EXITED_ESCAPE] = (
+            self.parentApp.exit_application
+        )
         self.add_handlers({"^F": self.show_info})
         self.add_handlers({"^O": self.parentApp.load_dialog})
         self.add_handlers({"^S": self.parentApp.save_dialog})

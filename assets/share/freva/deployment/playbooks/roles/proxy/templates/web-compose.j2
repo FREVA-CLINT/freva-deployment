@@ -1,0 +1,20 @@
+version: '3'
+services:
+  {{proxy_name}}:
+    image: docker.io/nginx:latest
+    user: root:0
+    container_name: {{proxy_name}}
+    hostname: {{proxy_name}}
+{% endif %}
+    volumes:
+{% for volume in nginx_volumes %}
+      - {{volume}}
+{% endfor %}
+    ports:
+      - {{web_port_httpd}}:{{web_port_httpd}}
+      - {{web_port_httpsd}}:{{web_port_httpsd}}
+
+
+volumes:
+    django-static:
+    django-migration:

@@ -1,0 +1,104 @@
+---
+- name: Cleaning volumes
+  shell: >
+    {{ deployment_method }} volume rm -f {{ item }}
+  loop: "{{ volume_names }}"
+  when: db_wipe is true
+
+- name: Pulling container
+  shell: |
+    {{ deployment_method }} stop {{ db_name }} || true
+    {{ deployment_method }} rm -f {{ db_name }} || true
+    {{ deployment_method }} rmi -f ghcr.io/freva-clint/freva-mysql || true
+    {{ deployment_method }} pull ghcr.io/freva-clint/freva-mysql:{{db_version}}
+  changed_when: true
+
+- name: Creating volumes
+  include_tasks: "{{ general_tasks }}/container-volumes.yml"
+
+- name: Checking mysql update info
+  shell: >
+    {{ deployment_method }} run --rm
+    -v {{ db_name}}_data:/data:ro
+    alpine sh -c "cat /data/mysql_upgrade_info 2> /dev/null || echo mysql"
+  register:
+    upgrade_info_cmd
+  changed_when: false
+
+- name: "Setting the upgrade_info as fact"
+  set_fact:
+    upgrade_info_text: "{{ upgrade_info_cmd.stdout | lower }}"
+
+- name: Migrate Old MariaDB to MySQL
+  block:
+    - name: Backup MariaDB data directory before migration
+      shell: >
+        {{ deployment_method }} run --rm -v {{db_name}}_data:/data:ro
+        -v mysql_backup:/backup:rw --name backup-db
+        alpine sh -c "tar czf /backup/mysql-backup.tar.gz -C /data ."
+      changed_when: true
+
+    - name: Perform migration using included playbook
+      include_tasks:
+        file: "mariadb_to_mysql_migration.yml"
+
+  rescue:
+
+    - name: Restore original MariaDB data directory
+      shell: >
+        {{ deployment_method }} run --rm
+        -v {{db_name}}_data:/data:z --name restore-db
+        -v mysql_backup:/backup:ro
+        alpine sh -c "rm -rf /data/* && tar xzf /backup/mysql-backup.tar.gz -C /data"
+      changed_when: true
+
+    - name: Fail hard and notify user
+      fail:
+        msg: >
+          MariaDB-to-MySQL migration failed. Original MariaDB data was
+          restored. Aborting deployment.
+
+  always:
+
+    - name: Remove any existing DB backup
+      shell: >
+        {{ deployment_method }} volume rm -f mysql_backup {{db_name}}_backup
+
+
+    - name: Stop temp container if running
+      script: >
+        {{ docker_bin }}
+        compose -f {{ db_tempdir.path }}/temp-container.yaml
+        down --remove-orphans
+      ignore_errors: true
+
+  when: "'mariadb' in upgrade_info_text"
+
+- name: Creating compose directory structure
+  file:
+    path: '{{ base_path }}/{{ project_name }}/compose_services'
+    state: directory
+    recurse: true
+    owner: "{{ uid }}"
+    group: "{{ gid }}"
+
+- name: Creating compose file
+  template:
+    src: "db-server-compose.j2"
+    dest: "{{ compose_file }}"
+
+- name: Creating system services
+  script: >
+    {{asset_dir}}/scripts/create_systemd.py
+    {{db_name}} compose --enable --project-name {{db_name}}
+    -f {{compose_file}} up --remove-orphans
+  environment:
+    DEBUG: '{{ debug }}'
+    PREFER: "{{deployment_method }}"
+
+- pause: seconds=15
+
+- name: health check
+  script: >
+    {{ docker_bin }} exec {{ db_name }}
+    sh -c 'healthchecks -s mysql'

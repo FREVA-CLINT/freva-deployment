@@ -1,6 +1,8 @@
 ansible/*
 *.img
 *.spec
+*.toml
+!assets/share/freva/deployment/config/*.toml
 !deploy-freva-all.spec
 pyinstaller/cowsay
 cloud-init/temp

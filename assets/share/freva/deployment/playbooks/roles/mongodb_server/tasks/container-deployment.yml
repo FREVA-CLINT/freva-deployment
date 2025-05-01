@@ -1,0 +1,32 @@
+---
+- name: Pulling container
+  shell: |
+    {{ deployment_method }} stop {{ mongo_name }} || true
+    {{ deployment_method }} rm -f {{ mongo_name }} || true
+    {{ deployment_method }} rmi -f ghcr.io/freva-clint/freva-mongo || true
+    {{ deployment_method }} pull ghcr.io/freva-clint/freva-mongo:{{mongodb_server_version}}
+  changed_when: true
+
+- name: Creating volumes
+  include_tasks: "{{ general_tasks }}/container-volumes.yml"
+
+- name: Creating compose file
+  template:
+    src: "mongo-compose.j2"
+    dest: "{{ compose_file }}"
+
+- name: Creating {{mongo_name}} service
+  script: >
+    {{asset_dir}}/scripts/create_systemd.py
+    {{mongo_name}} compose --enable --project-name {{mongo_name}}
+    -f {{compose_file}} up --remove-orphans
+  environment:
+    DEBUG: '{{ debug }}'
+    PREFER: "{{deployment_method }}"
+
+- pause: seconds=15
+
+- name: Container healthchecks
+  script: >
+    {{ docker_bin }} exec {{item.name}} {{item.cmd}}
+  with_items: "{{healthchecks}}"

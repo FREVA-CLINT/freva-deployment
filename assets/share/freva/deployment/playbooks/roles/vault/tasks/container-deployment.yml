@@ -1,0 +1,67 @@
+---
+- name: Pulling container
+  shell: |
+    {{ deployment_method }} stop {{ vault_name }} || true
+    {{ deployment_method }} rm -f {{ vault_name }} || true
+    {{ deployment_method }} rmi -f ghcr.io/freva-clint/freva-vault || true
+    {{ deployment_method }} pull ghcr.io/freva-clint/freva-vault:{{ vault_version }}
+  changed_when: true
+
+- name: Creating compose directory structure
+  file:
+    path: '{{ base_path }}/{{ project_name }}/compose_services'
+    state: directory
+    recurse: true
+    owner: "{{ uid }}"
+    group: "{{ gid }}"
+
+- name: Cleaning volumes
+  shell: >
+    {{ deployment_method }} volume rm -f {{ item }}
+  loop: "{{ volume_names }}"
+  when: db_wipe is true
+
+- name: Creating volumes
+  include_tasks: "{{ general_tasks }}/container-volumes.yml"
+
+
+- name: Check vault keys
+  block:
+    - name: Base64 decode vault key path
+      shell: >
+        {{ deployment_method }} run --rm
+        -v {{ vault_name}}_data:/data:ro
+        docker.io/alpine sh -c "base64 -d /data/keys"
+  rescue:
+    - name: Delete vault dir because its content is not valid
+      shell: >
+        {{ deployment_method }} run --rm
+        -v {{ vault_name }}_data:/data:rw
+        docker.io/alpine sh -c "rm -rf /data/* 2> /dev/null || true"
+
+- name: Creating compose file
+  template:
+    src: "vault-server-compose.j2"
+    dest: "{{ compose_file }}"
+
+- name: Creating system services
+  script: >
+    {{asset_dir}}/scripts/create_systemd.py
+    {{vault_name}} compose --enable --project-name {{vault_name}}
+    -f {{compose_file}} up --remove-orphans
+  environment:
+    DEBUG: '{{ debug }}'
+    PREFER: "{{deployment_method }}"
+
+- pause: seconds=15
+
+- name: Inserting server infrastructure
+  script: >
+    {{ docker_bin }} exec
+    -e PATH=/opt/conda/bin:/bin:/usr/bin:/usr/local/bin
+    {{ vault_name }}
+    add-vault-secret data -s db.container {{ vault_name }} -s db.host
+    {{ vault_db_host }} -s db.port {{ vault_db_port }} -s db.db
+    {{ vault_db }}
+    -s db.passwd '{{ debug | ternary(root_passwd, vault_passwd) }}'
+    -s db.user {{ debug | ternary('root', vault_db_user) }}

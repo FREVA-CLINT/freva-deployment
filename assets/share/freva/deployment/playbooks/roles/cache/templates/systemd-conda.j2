@@ -1,0 +1,23 @@
+[Unit]
+Description=Freva cache service
+After=network.target
+
+[Service]
+Type=simple
+ProtectSystem=full
+PermissionsStartOnly=true
+NoNewPrivileges=true
+ProtectHome=true
+KillSignal=SIGTERM
+ExecStart={{conda_path}}/bin/start-freva-service redis
+Environment="DEPLOYMENT_METHOD={{deployment_method}}"
+Restart=on-failure
+RestartSec=5
+StartLimitIntervalSec=60
+StartLimitBurst=5
+User={{uid}}
+Group={{gid}}
+UMask=007
+
+[Install]
+WantedBy=multi-user.target

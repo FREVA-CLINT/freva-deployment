@@ -1,0 +1,59 @@
+---
+
+- name: Cleaning existing directory structure
+  file:
+    path: '{{ base_path }}/{{ project_name }}/{{ db_service }}'
+    state: absent
+  when: db_wipe is true
+
+- name: Creating service directory structure
+  file:
+    state: directory
+    path: "{{ volume_dir }}/{{ item }}"
+    owner: "{{uid}}"
+    group: "{{gid}}"
+    recurse: true
+  with_items:
+    - "data"
+    - "backups"
+    - "bin"
+    - "log"
+
+- name: Running common conda tasks
+  include_tasks: "{{ general_tasks }}/conda.yml"
+
+- name: Adjusting mysql dir ownership
+  file:
+    path: "{{ data_dir }}/db_service"
+    owner: "{{ uid }}"
+    group: "{{ gid }}"
+    state: directory
+    recurse: true
+
+- name: Creating mysql systemd service
+  template:
+    src: "systemd-mysql-conda.j2"
+    dest: "{{ systemd_unit_dir }}/{{ db_name}}.service"
+    mode: "0644"
+
+- name: Enable and start the freva mysql server
+  systemd:
+    name: "{{ db_name }}"
+    state: started
+    enabled: true
+    scope: "{{ 'system' if ansible_become is true else 'user'}}"
+
+- pause: seconds=15
+
+- name: DB health check
+  shell: >
+    {{ conda_path }}/bin/mysql -u root -p${MYSQL_ROOT_PASSWORD}
+    -e "SHOW GLOBAL STATUS LIKE 'Threads_connected';"
+  environment:
+    MYSQL_ROOT_PASSWORD: "{{ root_passwd }}"
+
+- name: Download daily mysql backup script
+  get_url:
+    url: https://raw.githubusercontent.com/FREVA-CLINT/freva-service-config/refs/heads/main/mysql/daily_backup.sh
+    dest: "{{ volume_dir }}/bin/mysql-daily-backup.sh"
+    mode: '0755'

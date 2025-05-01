@@ -1,0 +1,67 @@
+---
+- name: Running common taks
+  include_tasks: "{{ general_tasks }}/main.yml"
+
+- name: Stopping the services
+  systemd:
+    name: "{{ db_name }}"
+    state: stopped
+    enabled: false
+    scope: "{{ 'system' if ansible_become is true else 'user'}}"
+  ignore_errors: true
+  failed_when: false
+
+- name: Removing old services files
+  file:
+    state: absent
+    force: true
+    path: "{{ systemd_unit_dir }}/{{ vault_name }}.service"
+
+- name: Creating project path
+  file:
+    state: directory
+    owner: "{{ uid }}"
+    group: "{{ gid }}"
+    recurse: true
+    path: "{{ base_path }}/{{ project_name }}"
+
+- name: Playing the {{ deployment_method }} tasks
+  block:
+    - name: Creating temporary directory
+      tempfile:
+        prefix: db-playbook.
+        state: directory
+      register: db_tempdir
+
+    - name: Adjusting db path ownership
+      file:
+        state: directory
+        recurse: true
+        path: "{{ db_tempdir.path }}"
+        owner: "{{ gid }}"
+        group: "{{ gid }}"
+
+    - name: Setting additional variables
+      set_fact:
+        temp_compose_file: "{{ db_tempdir.path }}/temp-container.yaml"
+
+    - name: Playing the {{ deployment_method }} tasks
+      include_tasks:
+        file: "{{ deployment_file | trim }}"
+
+  always:
+    - name: Removing temporary directory
+      file:
+        path: "{{ db_tempdir.path }}"
+        state: absent
+
+- name: Creating cron jobs
+  script: >
+    {{asset_dir}}/scripts/create_cron.sh
+    --service {{ db_name }}
+    --email {{ db_email }}
+    --user {{ uid }}
+    --deployment-method {{ deployment_method }}
+    --backup-dir {{ volume_dir }}/backups
+    --command {{ volume_dir }}/bin/mysql-daily-backup.sh
+  when: cron.stat.exists == true

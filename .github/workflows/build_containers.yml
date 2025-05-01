@@ -120,7 +120,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: assets/share/freva/deployment/vault/
-          platforms: linux/amd64
+          platforms: linux/amd64,linux/arm64,linux/ppc64le
           push: true
           build-args: VERSION=${{steps.repository.outputs.tag}}
           tags: |

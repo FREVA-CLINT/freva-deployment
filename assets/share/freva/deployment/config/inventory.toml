@@ -1,20 +1,13 @@
-# This is the "default" freva deployment configuration file.
-#
-# - The file's syntax follows the `toml` markup language (https://toml.io).
-# - Comments begin with the "#" character.
-# - Blank lines are ignored.
-# - Groups of hosts are delimited by [header] elements.
-# - These groups define different deployment steps.
-# - Additional configuration for each group is set in the config section of each header -> [header.config].
-# - You can enter host names or IP addresses.
-# - A host name/IP can be a member of multiple groups.
-
-## The first part of this configuration defines general settings
-## that are common among all deployment steps.
-
-# The project name for this freva instance.
 # NOTE: this key must be the first in the file.
 project_name = "freva"
+
+## The `deployment_method` key sets the option of how the installation
+## of the service is realised. `docker`, `podman` leverages podman or docker,
+## `conda` uses conda-forge to install the service while `k8s` involves a
+### kubernetes based deployment
+## Chosse between: "docker", "podman", "conda", "k8s"
+deployment_method = "podman"
+
 
 ## Specify the path to the SSL certificate files used for secure connections
 ## to the vault server or as web certificates.
@@ -29,39 +22,17 @@ private_keyfile = ""
 ## Path to the chain file.
 chain_keyfile = ""
 
-[web]
-# Set the host names where all web UI services will be deployed.
-hosts = "localhost"
-
-# If you have multiple hosts following a pattern, you can specify
-# them like this:
-## hosts = "alpha.example.org,beta.example.org,192.168.1.100,192.168.1.110"
-## hosts = "www[001:006].example.com"
-
-## Example: A collection of database servers in the "dbservers" group.
-
-## Another example of host ranges, this time without leading zeros:
-## hosts = "db-[99:101]-node.example.com"
-
-[freva_rest]
-## Set the host names running the freva-rest service.
-hosts = "localhost"
-
 [db]
-## Set the host names running the MariaDB service.
-hosts = "localhost"
-
-[core]
-### Set the host names where the freva command line interface will be installed.
-hosts = "localhost"
-
-### CONFIGURATION VARIABLES
-## The following section defines important variables required for
-## correct system deployment.
-
-[db.config]
-
 ## Config variables for the database service.
+
+## Specify the host name were the database server should be deployed
+db_host = "localhost"
+
+## The freva infrastructure uitilises a small vault server that stores
+## database secrets for client connections. You can specify the host name
+## where this server should be running. If you don't set it (default)
+## the vault server will be deployed on the database host.
+vault_host = ""
 
 ## The database runs in a Docker container. You can change the port
 ## that is exposed to the external network. Every DB connection from
@@ -80,13 +51,8 @@ db = "frevadb"
 ## If left blank, the current username will be used.
 ansible_user = ""
 
-## You can set the db_host separately; if none is given (default),
-## the one from the host names above will be used, this is mainly used
-## for local debugging purpose.
-db_host = ""
-
 ## Set the become (sudo) username to change to for installing the services.
-## Leave blank to utilize a non-privileged user-based installation.
+## Leave blank to utilise a non-privileged user-based installation.
 ## Non-privileged installation means the system will be installed in the
 ## user space of the user that logs on to the system.
 ansible_become_user = "root"
@@ -104,20 +70,45 @@ wipe = false
 ## By default, this is set to /opt/freva/<project_name>/db_service.
 data_path = "/opt/freva"
 
-## The `deployment_method` key sets the option of how the installation
-## of the service is realised `container` leverages podman/docker while
-## `conda` uses conda-forge to install the service.
-## Chosse between: "container", "conda"
-deployment_method="container"
+## Set the username that will own all files created by the service such as
+## database files etc. This can be useful if multiple users take turn in
+## deploying and administering the service. The value of the username
+## will default to the user that deploys the service
+admin_user = ""
 
-## In case you want to set a custom path to an Ansible playbook,
-## you can do this here. By default, the deployment will use the playbook
-## located in the user config directory.
-## NOTE: Only adjust this if you know what you are doing. If you leave this
-## blank, the system will use the default playbook (standard procedure).
-db_playbook = ""
+[freva_rest]
+## Specify the host name were the ferva-rest-api server should be deployed
+freva_rest_host = "localhost"
 
-[freva_rest.config]
+## To search for data the freva-rest-api needs a metadata index service.
+## Typically this services apache solr. You can set the host where this
+## index server should be running at. Leave empty to deploy the service
+## on the same host as the freva-rest-api
+search_server_host = ""
+
+## Search statistics and user data related will be stored in a mongoDB
+# service You can set the host where the server should be running at.
+## Leave empty to deploy the service on the same host as the freva-rest-api
+mongodb_server_host = ""
+
+### The the host name of the redis-cache, this cache is used for caching
+### different kinds of data. If not set this will fall back to the host name
+### of the rest-api server.
+redis_host = ""
+
+### Set the hostname(s) for the data-loading portal. The data-loading portal
+### is a services that provisions data via zarr. The data-loading portal is
+### a distributed system, meaning that you can set multiple hostnames that
+### form a distributed memory. The first entry will be used as the master
+### scheduler and the consecutive ones as workers. If you leave this blank
+## then the service will be disabled.
+data_loader_portal_hosts = ""
+
+### Ideally you only deploy the data loader service once. If the service
+### is up and running you can skip setting it up again by setting the
+### deploy_data_loader flag to false (default).
+deploy_data_loader = false
+
 ## Set the amount of memory allocated to the search engine (Solr).
 solr_mem = "4g"
 
@@ -125,7 +116,7 @@ solr_mem = "4g"
 freva_rest_port = 7777
 
 ## Set the become (sudo) username to change to for installing the services.
-## Leave blank to utilize a non-privileged user-based installation.
+## Leave blank to utiilise a non-privileged user-based installation.
 ## Non-privileged installation means the system will be installed in the
 ## user space of the user that logs on to the system.
 ansible_become_user = "root"
@@ -149,34 +140,10 @@ wipe = false
 ## By default, this is set to /opt/freva.
 data_path = "/opt/freva"
 
-## The `deployment_method` key sets the option of how the installation
-## of the service is realised `container` leverages podman/docker while
-## `conda` uses conda-forge to install the service.
-## Chosse between: "container", "conda"
-deployment_method="container"
-
-### The the host name of the redis-cache, this cache is used for caching
-### different kinds of data. If not set this will fall back to the host name
-### of the rest-api server.
-redis_host = ""
-
 ### Indicate whether or not the redis-caching services will be shared among
 ### other freva instances. In this case the name of the service will simply
 ### be called redis-cache service otherwise <project_name>-cache
 shared_cache = false
-
-### Set the hostname(s) for the data-loading portal. The data-loading portal
-### is a services that provisions data via zarr. The data-loading portal is
-### a distributed system, meaning that you can set multiple hostnames that
-### form a distributed memory. The first entry will be used as the master
-### scheduler and the consecutive ones as workers. If you leave this blank
-## then the service will be disabled.
-data_loader_portal_hosts = ""
-
-### Ideally you only deploy the data loader service once. If the service
-### is up and running you can skip setting it up again by setting the
-### deploy_data_loader flag to false (default).
-deploy_data_loader = false
 
 ### Authentication is done via open id connect. This deployment assumes that
 ## you have set up and configured a open id connect host. Set the url
@@ -192,15 +159,16 @@ oidc_client = "freva"
 ### you can define it here, if not then you don't have to set it
 oidc_client_secret = ""
 
+## Set the username that will own all files created by the service such as
+## database files etc. This can be useful if multiple users take turn in
+## deploying and administering the service. The value of the username
+## will default to the user that deploys the service
+admin_user = ""
 
-## In case you want to set a custom path to an Ansible playbook,
-## you can do this here. By default, the deployment will use the playbook
-## located in the user config directory.
-## NOTE: Only adjust this if you know what you are doing. If you leave this
-## blank, the system will use the default playbook (standard procedure).
-freva_rest_playbook = ""
+[core]
+## Specify the host name were the client should be deployed
+core_host = "localhost"
 
-[core.config]
 ## List of users that can alter the configuration of the freva command line interface.
 ## If blank, the user that runs the deployment is chosen.
 admins = ""
@@ -281,14 +249,17 @@ admin_group = ""
 ## Useful for a truly fresh start (default: false).
 wipe = false
 
-## In case you want to set a custom path to an Ansible playbook,
-## you can do this here. By default, the deployment will use the playbook
-## located in the user config directory.
-## NOTE: Only adjust this if you know what you are doing. If you leave this
-## blank, the system will use the default playbook (standard procedure).
-core_playbook = ""
+[web]
+## Specify the host name were the web ui service should be deployed
+web_host = "localhost"
 
-[web.config]
+## Typically the web ui server should be accessed vai a nginx reverse proxy
+## server. This proxy server makes sure that connections are secure. You
+## can specify the hostname of where the reverse proxy should be running.
+## You can leave this entry blank to deploy it on the same host as the
+## web ui server
+proxy_host = ""
+
 ## Set the URL of the web user interface.
 project_website = "www.freva.dkrz.de"
 
@@ -306,12 +277,6 @@ ansible_user = ""
 ## Set the path where the permanent web data should be stored.
 ## By default, this is set to /opt/freva.
 data_path = "/opt/freva"
-
-## The `deployment_method` key sets the option of how the installation
-## of the service is realised `container` leverages podman/docker while
-## `conda` uses conda-forge to install the service.
-## Chosse between: "container", "conda"
-deployment_method="container"
 
 ## Set the main HTML color scheme.
 main_color = "Tomato"
@@ -367,15 +332,15 @@ menu_entries = [
     ["Help", "plugins:about", "doc_menu"]
 ]
 
-## In case you want to set a custom path to an Ansible playbook,
-## you can do this here. By default, the deployment will use the playbook
-## located in the user config directory.
-## NOTE: Only adjust this if you know what you are doing. If you leave this
-## blank, the system will use the default playbook (standard procedure).
-web_playbook = ""
-
 ## Set the become (sudo) username to change to for installing the services.
-## Leave blank to utilize a non-privileged user-based installation.
+## Leave blank to utiilise a non-privileged user-based installation.
 ## Non-privileged installation means the system will be installed in the
 ## user space of the user that logs on to the system.
 ansible_become_user = "root"
+
+
+## Set the username that will own all files created by the service such as
+## database files etc. This can be useful if multiple users take turn in
+## deploying and administering the service. The value of the username
+## will default to the user that deploys the service
+admin_user = ""

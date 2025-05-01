@@ -1,0 +1,56 @@
+---
+- name: Running common conda tasks
+  include_tasks: "{{ general_tasks }}/conda.yml"
+
+- name: Initialising search service
+  block:
+    - name: Initialising search services {{ search_server_volume_dir }}
+      shell:
+        cmd: >
+          {{conda_path}}/libexec/freva-rest-server/scripts/init-{{ search_server_service }}
+      environment:
+        API_DATA_DIR: "{{ volume_dir }}/data/mongodb"
+        API_LOG_DIR: "{{ log_path  }}/{{ search_server_name }}"
+        API_CONFIG_DIR: "{{ volume_dir }}/config"
+        CONDA_PREFIX: "{{ conda_path }}"
+        PATH: "/bin:/usr/bin:/usr/local/bin:{{conda_path}}/bin"
+  always:
+    - name: Adjusting the ownership of {{ volume_dir }}
+      file:
+        path: "{{ volume_dir }}"
+        state: directory
+        recurse: true
+        owner: "{{ uid }}"
+        group: "{{ gid }}"
+
+- name: Creating systemd unit service
+  template:
+    src: "systemd-conda-{{ search_server_service }}.j2"
+    dest: "{{ systemd_unit_dir }}/{{ search_server_name }}.service"
+    mode: "0644"
+
+- name: Reload systemd daemon
+  systemd:
+    daemon_reload: true
+    scope: "{{ 'system' if ansible_become is true else 'user'}}"
+
+- name: Enable and start the {{ search_server_name }} service
+  systemd:
+    name: "{{ search_server_name }}"
+    state: started
+    enabled: true
+    scope: "{{ 'system' if ansible_become is true else 'user'}}"
+
+- pause: seconds=15
+
+- name: Performing healthchecks
+  shell: "{{ item.cmd }}"
+  with_items: "{{ healthchecks }}"
+  environment:
+    PATH: "{{conda_path}}/bin:/usr/bin:/bin:/usr/local/bin"
+
+- name: Download daily {{ search_server_service }}  backup script
+  get_url:
+    url: https://raw.githubusercontent.com/FREVA-CLINT/freva-service-config/refs/heads/main/{{ search_server_service }}/daily_backup.sh
+    dest: "{{ volume_dir }}/bin/{{search_server_service}}-daily-backup.sh"
+    mode: '0755'

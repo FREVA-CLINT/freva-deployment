@@ -1,0 +1,15 @@
+---
+ansible_become: "{{ redis_ansible_become_user is defined and redis_ansible_become_user != '' }}"
+systemd_unit_dir: "{{ '/etc/systemd/system' if  redis_ansible_become_user is defined and redis_ansible_become_user != '' else ansible_env.HOME + '/.config/systemd/user' }}"
+ansible_become_user: "{{ redis_ansible_become_user | default('root') }}"
+admin_user: "{{ redis_admin_user | default('') }}"
+conda_path: '{{redis_data_path|regex_replace("^~", ansible_env.HOME)}}/cacheing/conda'
+volume_dir: '{{redis_data_path|regex_replace("^~", ansible_env.HOME)}}/cacheing'
+base_path: '{{redis_data_path| regex_replace("^~", ansible_env.HOME)}}'
+cache_name: "freva-cacheing"
+volume_names:
+compose_file: '/opt/freva/cacheing/compose_services/freva-cacheing-compose.yml'
+conda_packages:
+  - redis-server
+volume_names:
+  - "{{ cache_name }}_data"

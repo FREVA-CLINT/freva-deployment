@@ -1,0 +1,25 @@
+[Unit]
+Description=Freva mongoDB server
+After=network.target
+
+[Service]
+Type=simple
+ProtectSystem=full
+PermissionsStartOnly=true
+NoNewPrivileges=true
+ProtectHome=true
+KillSignal=SIGTERM
+ExecStart=/bin/sh -c "PATH={{ conda_path }}/bin:$PATH {{ conda_path }}/bin/solr start -f -force -s {{search_server_volume_dir}} "
+Environment="CONDA_PREFIX={{ conda_path }}"
+Environment="SOLR_JETTY_HOST=0.0.0.0"
+Environment="SOLR_HEAP={{ search_server_solr_mem }}"
+Environment="SOLR_PID_DIR={{ volume_dir }}/run"
+Environment="SOLR_LOGS_DIR={{ log_path }}/solr"
+Restart=on-failure
+RestartSec=5
+StartLimitBurst=5
+UMask=007
+User={{uid}}
+Group={{gid}}
+[Install]
+WantedBy=multi-user.target
