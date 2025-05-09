@@ -50,6 +50,6 @@
 - name: Getting service startup scripts
   shell: >
     {{ conda_path }}/bin/curl
-    https://raw.githubusercontent.com/FREVA-CLINT/freva-service-config/refs/heads/add-conda-recipe/conda-services/create.sh | bash
+    https://raw.githubusercontent.com/FREVA-CLINT/freva-service-config/refs/heads/main/conda-services/create.sh | bash
   environment:
     CONDA_PREFIX: "{{ conda_path }}"

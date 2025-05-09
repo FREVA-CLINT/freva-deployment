@@ -11,14 +11,6 @@
   ignore_errors: true
   failed_when: false
 
-- name: Creating project path
-  file:
-    state: directory
-    owner: "{{ uid }}"
-    group: "{{ gid }}"
-    recurse: true
-    path: "{{ base_path }}/{{ project_name }}"
-
 - name: Playing the {{ deployment_method }} tasks
   block:
     - name: Creating temporary directory

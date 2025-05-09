@@ -67,4 +67,4 @@
     --project-name {{ project_name }}
   register: migration_result
   failed_when: migration_result.rc not in [0, 3]
-  changed_when: result.rc == 3
+  changed_when: migration_result.rc == 3
