@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
-
-import os
+import argparse
 import platform
-import stat
-import sys
+import tarfile
 import urllib.request as req
 from pathlib import Path
+from tempfile import NamedTemporaryFile
 
 
 def reporthook(count: float, block_size: float, total_size: float) -> None:
@@ -23,20 +22,7 @@ def reporthook(count: float, block_size: float, total_size: float) -> None:
         print()
 
 
-def download():
-    """Download the conda forge install script."""
-    try:
-        dest_dir = Path(sys.argv[1])
-    except IndexError:
-        dest_dir = Path("/tmp")
-    prefix = (
-        "https://github.com/conda-forge/miniforge/releases/latest/"
-        "download/Miniforge3"
-    )
-    conda_url = "{}-{}-{}.sh".format(
-        prefix, platform.system(), platform.machine()
-    )
-    target = dest_dir / "conda.sh"
+def _url_retrieve(conda_url: str, target: str) -> None:
     print("Retrieving conda install script: {}".format(conda_url))
     try:
         req.urlretrieve(
@@ -46,9 +32,64 @@ def download():
         )
     except Exception as error:
         print(error)
+
+
+def _mamba_forge(dest_dir: Path) -> None:
+    target = dest_dir / "conda.sh"
+    _url_retrieve(
+        "https://github.com/conda-forge/miniforge/releases/latest/"
+        f"download/Miniforge3-{platform.system()}-{platform.machine()}.sh",
+        str(target),
+    )
     target.chmod(0o755)
 
 
-if __name__ == "__main__":
+def _micromamba(dest_dir: Path) -> None:
+    system = platform.system().lower()
+    plt = platform.machine()
+    target = dest_dir / "bin" / "micromamba"
+    if system != "linux":
+        raise ValueError("Only Linux based deployment is supported.")
+    if plt.startswith("x86"):
+        plt = "64"
+    with NamedTemporaryFile(suffix=".tar") as temp_f:
+        _url_retrieve(
+            f"https://micro.mamba.pm/api/micromamba/linux-{plt}/latest",
+            temp_f.name,
+        )
+        with tarfile.open(temp_f.name, mode="r:bz2") as tar:
+            member = tar.getmember("bin/micromamba")
+            print("🔧 Extracting: bin/micromamba")
+            tar.extract(member, path=str(dest_dir))
+    target.chmod(0o755)
 
-    download()
+
+def download(mamba: str = "micromamba", dest_dir: Path = Path("/tmp")) -> None:
+    """Download the conda forge install script."""
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    if "forge" in mamba:
+        _mamba_forge(dest_dir)
+    else:
+        _micromamba(dest_dir)
+
+
+def _cli() -> argparse.ArgumentParser:
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "target_path", type=Path, help="Where to download the mamba exe."
+    )
+    parser.add_argument(
+        "--type",
+        "-t",
+        type=str,
+        default="micromamba",
+        choices=("micromamba", "mambaforge"),
+    )
+    args = parser.parse_args()
+    return args
+
+
+if __name__ == "__main__":
+    args = _cli()
+    download(args.type, args.target_path)

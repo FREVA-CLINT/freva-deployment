@@ -1,32 +1,37 @@
 ---
-- name: Exiting if core path does not exist on machine
-  fail:
-    msg: >
-      "Error: core not available on machine. "
-      "The core hasn't been deployed yet, or wasn't mounted into its "
-      "expected location: {{core_root_dir}}"
+- name: Ensure required paths exist
+  include_tasks: "{{ role_path }}/tasks/check-path.yml"
+  loop:
+    - { desc: "plugin results dir", path: "{{ core_preview_path }}" }
+    - { desc: "core config file", path: "{{ core_root_dir }}/freva/evaluation_system.conf" }
+  loop_control:
+    label: "{{ item.desc }}"
 
 - name: Running common taks
-  include_tasks: "{{ general_tasks }}/main.yml"
+  include_tasks: "common_tasks.yml"
 
-- name: Set decoded + parsed secret as fact
-  set_fact:
-    web_information: "{{ web_information_enc | b64decode | from_json}}"
-
-- name: Stopping the {{ web_name }} service
+- name: Stopping the {{ web_name }} services
   systemd:
-    name: "{{ web_name }}"
+    name: "{{ item }}"
     state: stopped
     enabled: false
     scope: "{{ 'system' if ansible_become is true else 'user'}}"
   ignore_errors: true
   failed_when: false
+  loop:
+    - "{{ web_name }}"
+    - "{{ web_cache_name }}"
+    - "{{ web_proxy_name }}"
 
 - name: Removing old services files
   file:
     state: absent
     force: true
-    path: "{{ systemd_unit_dir }}/{{ web_name }}.service"
+    path: "{{ systemd_unit_dir }}/{{ item }}.service"
+  loop:
+    - "{{ web_name }}"
+    - "{{ web_cache_name }}"
+    - "{{ web_proxy_name }}"
 
 - name: Playing the {{ deployment_method }} tasks
   include_tasks:

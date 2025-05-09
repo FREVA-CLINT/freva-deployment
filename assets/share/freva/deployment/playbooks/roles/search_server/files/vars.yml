@@ -5,22 +5,17 @@ ansible_python_interpreter: "{{ search_server_ansible_python_interpreter }}"
 admin_user: "{{ search_server_admin_user | default('') }}"
 conda_path: '{{search_server_data_path|regex_replace("^~", ansible_env.HOME)}}/{{ project_name }}/conda'
 systemd_unit_dir: "{{ '/etc/systemd/system' if  db_ansible_become_user is defined and db_ansible_become_user != '' else ansible_env.HOME + '/.config/systemd/user' }}"
-freva_rest_name: "{{ project_name }}-freva_rest"
 compose_file: '{{search_server_data_path|regex_replace("^~", ansible_env.HOME)}}/{{project_name}}/compose_services/{{search_server_name}}-compose.yml'
 old_compose_dir: '{{search_server_data_path|regex_replace("^~", ansible_env.HOME)}}/compose_services'
-volume_dir: '{{search_server_data_path|regex_replace("^~", ansible_env.HOME)}}/{{ project_name }}/freva_rest'
 base_path: '{{search_server_data_path| regex_replace("^~", ansible_env.HOME)}}'
 conda_packages:
-  - freva-rest-server
-healthchecks:
-  - name: "{{search_server_name}}-freva_rest"
-    cmd:  'solr status'
+  - apache-solr
+
 search_server_service: "solr"
-solr_data: '{{search_server_data_path|regex_replace("^~", ansible_env.HOME)}}/{{project_name}}/solr_service'
-databrowser_path: '{{search_server_data_path|regex_replace("^~", ansible_env.HOME)}}/{{project_name}}/databrowser'
-search_server_volume_dir: '{{search_server_data_path|regex_replace("^~", ansible_env.HOME)}}/{{project_name}}/freva_rest/data/{{search_server_service}}'
+service: "{{ search_server_service }}"
+data_dir: '{{search_server_data_path|regex_replace("^~", ansible_env.HOME)}}/{{ project_name }}/services/{{service}}'
 search_server_name: "{{ project_name }}-{{ search_server_service }}"
-log_path: '{{search_server_data_path|regex_replace("^~", ansible_env.HOME)}}/{{project_name}}/freva_rest/log'
-cron_job: '{{search_server_data_path|regex_replace("^~", ansible_env.HOME)}}/{{ project_name }}/freva-service-config/solr/daily_backup.sh'
+wipe: "{{ search_server_wipe }}"
 volume_names:
   - "{{ search_server_name }}_data"
+  - "{{ search_server_name }}_logs"

@@ -1,6 +1,6 @@
 ---
 - name: Running common taks
-  include_tasks: "{{ general_tasks }}/main.yml"
+  include_tasks: "common_tasks.yml"
 
 - name: Stopping the {{vault_name }} service
   systemd:

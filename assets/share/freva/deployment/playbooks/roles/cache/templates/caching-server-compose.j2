@@ -9,13 +9,14 @@ services:
     image: ghcr.io/freva-clint/freva-redis:{{redis_version}}
     hostname: {{cache_name}}
     container_name: {{cache_name}}
-    environment:
-        CONFIG_CONTENT: {{redis_information}}
     tty: true
     ports:
       - "6379:6379"
     volumes:
-        - data:/data/db
+        - data:/data/db:z
+        - logs:/data/logs:z
+        - {{data_dir}}/config:/data/config:z
 
 volumes:
   data:
+  logs:

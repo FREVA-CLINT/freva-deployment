@@ -1,10 +1,4 @@
 ---
-- name: Cleaning volumes
-  shell: >
-    {{ deployment_method }} volume rm -f {{ item }}
-  loop: "{{ volume_names }}"
-  when: db_wipe is true
-
 - name: Pulling container
   shell: |
     {{ deployment_method }} stop {{ db_name }} || true
@@ -14,7 +8,7 @@
   changed_when: true
 
 - name: Creating volumes
-  include_tasks: "{{ general_tasks }}/container-volumes.yml"
+  include_tasks: "container-volumes.yml"
 
 - name: Checking mysql update info
   shell: >

@@ -1,14 +1,28 @@
 ---
 - name: Running common conda tasks
-  include_tasks: "{{ general_tasks }}/conda.yml"
+  include_tasks: "conda.yml"
 
-- name: Adjusting {{ volume_dir }} ownership
+- name: Adjusting {{ data_dir }} ownership
   file:
-    path: "{{ volume_dir }}"
+    path: "{{ data_dir }}"
     owner: "{{ uid }}"
     group: "{{ gid }}"
     state: directory
     recurse: true
+
+- name: Creating environment file
+  template:
+    src: "service.env.j2"
+    dest: "{{ data_dir }}/config/service.env"
+    owner: "{{ uid }}"
+    group: "{{ gid }}"
+  vars:
+    service_name: "{{ cache_name }}"
+    env_vars:
+      CONDA_PREFIX: "{{ conda_path }}"
+      API_DATA_DIR: "{{ data_dir }}/data"
+      API_LOG_DIR: "{{ data_dir }}/logs"
+      API_CONFIG_DIR: "{{ conda_path }}/share/freva-rest-server/mysql"
 
 - name: Creating caching systemd service
   template:

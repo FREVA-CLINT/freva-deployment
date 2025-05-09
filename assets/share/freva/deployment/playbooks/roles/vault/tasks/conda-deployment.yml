@@ -1,23 +1,4 @@
 ---
-- name: Set vault valume path
-  set_fact:
-    exists: vault_volume.stat.exists
-    upgrade_info_text: "vault"
-
-- name: Creating project {{ base_path }}/{{ project_name }}/vault_service
-  file:
-    state: directory
-    owner: "{{ uid }}"
-    group: "{{ gid }}"
-    recurse: true
-    path: "{{ base_path }}/{{ project_name }}/vault_service"
-
-- name: Cleaning existing directory structure
-  file:
-    path: '{{ base_path }}/{{ project_name }}/{{ vault_service }}'
-    state: absent
-  when: db_wipe is true
-
 - name: Register path to vault keys
   stat:
     path: "{{ vault_token_path }}"
@@ -31,26 +12,28 @@
     - name: Delete vault dir because its content is not valid
       file:
         state: absent
-        path: "{{ base_path }}/{{ project_name }}/vault_service"
+        path: "{{ data_dir }}"
   when: token_path.stat.exists
 
-- name: Creating service directory structure
-  file:
-    state: directory
-    path: "{{ item }}"
-    owner: "{{uid}}"
-    group: "{{gid}}"
-    recurse: true
-  with_items:
-    - "{{ base_path }}/{{ project_name }}/vault_service"
-    - "{{ base_path }}/{{ project_name }}/vault_service/config"
-    - "{{ base_path }}/{{ project_name }}/vault_service/files"
-
 - name: Running common conda tasks
-  include_tasks: "{{ general_tasks }}/conda.yml"
+  include_tasks: "conda.yml"
 
 - name: Build vault service
   include_tasks: "{{ role_path }}/tasks/build-vault.yml"
+
+- name: Creating environment file
+  template:
+    src: "service.env.j2"
+    dest: "{{ data_dir }}/config/service.env"
+    owner: "{{ uid }}"
+    group: "{{ gid }}"
+  vars:
+    service_name: "{{ vault_name }}"
+    env_vars:
+      KEY_FILE: "{{ data_dir }}/data/keys"
+      ROOT_PW: "{{ root_passwd }}"
+      VERSION: "{{ vault_version }}"
+      CONDA_PREFIX:  "{{ conda_path }}"
 
 - name: Enable and start the freva vault server
   systemd:

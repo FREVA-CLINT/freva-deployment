@@ -1,39 +1,31 @@
 ---
-
-- name: Cleaning existing directory structure
-  file:
-    path: '{{ base_path }}/{{ project_name }}/{{ db_service }}'
-    state: absent
-  when: db_wipe is true
-
-- name: Creating service directory structure
-  file:
-    state: directory
-    path: "{{ volume_dir }}/{{ item }}"
-    owner: "{{uid}}"
-    group: "{{gid}}"
-    recurse: true
-  with_items:
-    - "data"
-    - "backups"
-    - "bin"
-    - "log"
-
 - name: Running common conda tasks
-  include_tasks: "{{ general_tasks }}/conda.yml"
+  include_tasks: "conda.yml"
 
-- name: Adjusting mysql dir ownership
-  file:
-    path: "{{ data_dir }}/db_service"
+- name: Creating environment file
+  template:
+    src: "service.env.j2"
+    dest: "{{ data_dir }}/config/service.env"
     owner: "{{ uid }}"
     group: "{{ gid }}"
-    state: directory
-    recurse: true
+  vars:
+    service_name: "{{ db_name }}"
+    env_vars:
+      MYSQL_ROOT_PASSWORD: "{{ root_passwd }}"
+      MYSQL_PASSWORD: "{{ db_passwd }}"
+      MYSQL_DATABASE: "{{ db }}"
+      MYSQL_USER: "{{ db_user }}"
+      PROJECT: "{{ project_name }}"
+      HOST: "{{ db_host }}"
+      CONDA_PREFIX: "{{ conda_path }}"
+      API_DATA_DIR: "{{ data_dir }}/data"
+      API_LOG_DIR: "{{ data_dir }}/logs"
+      API_CONFIG_DIR: "{{ conda_path }}/share/freva-rest-server/mysql"
 
 - name: Creating mysql systemd service
   template:
     src: "systemd-mysql-conda.j2"
-    dest: "{{ systemd_unit_dir }}/{{ db_name}}.service"
+    dest: "{{ systemd_unit_dir }}/{{ db_name }}.service"
     mode: "0644"
 
 - name: Enable and start the freva mysql server
@@ -55,5 +47,5 @@
 - name: Download daily mysql backup script
   get_url:
     url: https://raw.githubusercontent.com/FREVA-CLINT/freva-service-config/refs/heads/main/mysql/daily_backup.sh
-    dest: "{{ volume_dir }}/bin/mysql-daily-backup.sh"
+    dest: "{{ data_dir }}/bin/mysql-daily-backup.sh"
     mode: '0755'

@@ -1,66 +1,23 @@
 ---
 - name: Running common conda tasks
-  include_tasks: "{{ general_tasks }}/conda.yml"
+  include_tasks: "conda.yml"
 
-- name: Cleaning existing directory {{ volume_dir }}
-  file:
-    path: '{{ volume_dir }}'
-    state: absent
-  when: freva_rest_wipe is true
-
-- name: Creating service data directory structure in {{ volume_dir }}
-  file:
-    path: "{{ item }}"
-    state: directory
-    recurse: true
-    owner: "{{ uid }}"
-    group: "{{ gid }}"
-  with_items:
-    - '{{ volume_dir }}/data'
-    - '{{ volume_dir }}/data/mongodb'
-    - '{{ volume_dir }}/config'
-    - '{{ volume_dir }}/run'
-    - '{{ log_path }}/mongodb'
-
-- name: Initialising mongo service
-  block:
-    - name: Creating temp file
-      tempfile:
-        state: directory
-        suffix: "_mongo"
-      register: mongo_conf
-
-    - name: Initialising mongo services {{ volume_dir }}/data/mongodb
-      shell:
-        cmd: "{{conda_path}}/libexec/freva-rest-server/scripts/init-mongo"
-      environment:
-        API_MONGO_USER: "{{ mongodb_server_db_user }}"
-        API_MONGO_PASSWORD: "{{ mongodb_server_db_passwd }}"
-        API_DATA_DIR: "{{ volume_dir }}/data/mongodb"
-        API_LOG_DIR: "{{ mongo_conf.path  }}"
-        API_CONFIG_DIR: "{{ mongo_conf.path }}"
-        CONDA_PREFIX: "{{ conda_path }}"
-        PATH: "/bin:/usr/bin:/usr/local/bin:{{conda_path}}/bin"
-  always:
-    - name: Deleting tempfile
-      file:
-        state: absent
-        path: "{{ mongo_conf.path }}"
-    - name: Adjusting the ownership of {{ volume_dir }}
-      file:
-        path: "{{ volume_dir }}"
-        state: directory
-        recurse: true
-        owner: "{{ uid }}"
-        group: "{{ gid }}"
-
-
-- name: Creating mongod config-file
+- name: Creating environment file
   template:
-    src: "mongo-config.j2"
-    dest: "{{ volume_dir }}/config/mongod.yaml"
+    src: "service.env.j2"
+    dest: "{{ data_dir }}/config/service.env"
     owner: "{{ uid }}"
     group: "{{ gid }}"
+  vars:
+    service_name: "{{ mongo_name }}"
+    env_vars:
+      API_MONGO_PASSWORD: "{{mongodb_server_db_passwd}}"
+      API_MONGO_DB: "search_stats"
+      API_MONGO_USER: "{{mongodb_server_db_user}}"
+      CONDA_PREFIX: "{{ conda_path }}"
+      API_DATA_DIR: "{{ data_dir }}/data"
+      API_LOG_DIR: "{{ data_dir }}/logs"
+      API_CONFIG_DIR: "{{ data_dir }}/config"
 
 - name: Creating systemd unit service
   template:
@@ -83,7 +40,11 @@
 - pause: seconds=15
 
 - name: Performing healthchecks
-  shell: "{{item.cmd}}"
-  with_items: "{{healthchecks}}"
+  shell: >
+    {{conda_path}}/libexec/freva-rest-server/healthchecks.sh
+    -s mongo
   environment:
     PATH: "{{conda_path}}/bin:/usr/bin:/bin:/usr/local/bin"
+    API_MONGO_PASSWORD: "{{mongodb_server_db_passwd}}"
+    API_MONGO_DB: "search_stats"
+    API_MONGO_USER: "{{mongodb_server_db_user}}"

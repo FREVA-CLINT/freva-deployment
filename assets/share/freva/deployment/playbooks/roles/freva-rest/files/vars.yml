@@ -1,4 +1,5 @@
 ---
+service: freva_rest
 ansible_become: "{{ freva_rest_ansible_become_user is defined and freva_rest_ansible_become_user != '' }}"
 ansible_become_user: "{{ freva_rest_ansible_become_user | default('root') }}"
 ansible_python_interpreter: "{{ freva_rest_ansible_python_interpreter }}"
@@ -8,9 +9,9 @@ systemd_unit_dir: "{{ '/etc/systemd/system' if  freva_rest_ansible_become_user i
 freva_rest_name: "{{ project_name }}-freva_rest"
 compose_file: '{{freva_rest_data_path|regex_replace("^~", ansible_env.HOME)}}/{{project_name}}/compose_services/{{freva_rest_name}}-compose.yml'
 old_compose_dir: '{{freva_rest_data_path|regex_replace("^~", ansible_env.HOME)}}/compose_services'
-volume_dir: '{{freva_rest_data_path|regex_replace("^~", ansible_env.HOME)}}/{{ project_name }}/freva_rest'
+data_dir: '{{freva_rest_data_path|regex_replace("^~", ansible_env.HOME)}}/{{ project_name }}/services/{{service}}'
 base_path: '{{freva_rest_data_path| regex_replace("^~", ansible_env.HOME)}}'
 conda_packages:
   - freva-rest-server
-log_path: '{{freva_rest_data_path|regex_replace("^~", ansible_env.HOME)}}/{{project_name}}/freva_rest/log'
-cert_path: '{{freva_rest_data_path|regex_replace("^~", ansible_env.HOME)}}/{{project_name}}/freva_rest/certs'
+volume_names:
+  - "{{ freva_rest_name }}_logs"

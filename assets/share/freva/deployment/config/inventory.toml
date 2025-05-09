@@ -253,15 +253,13 @@ wipe = false
 ## Specify the host name were the web ui service should be deployed
 web_host = "localhost"
 
-## Typically the web ui server should be accessed vai a nginx reverse proxy
-## server. This proxy server makes sure that connections are secure. You
-## can specify the hostname of where the reverse proxy should be running.
-## You can leave this entry blank to deploy it on the same host as the
-## web ui server
-proxy_host = ""
-
 ## Set the URL of the web user interface.
 project_website = "www.freva.dkrz.de"
+
+## Freva can connect to a GPT service (that has to be set up seperately)
+## you can set the <HOSTNAME>:<PORT> of this service - if configured.
+## if you leave this blank, the website will not provid the chat interface.
+chatbot_host=""
 
 ## Ansible needs a Python 3 interpreter on the target server. This interpreter
 ## can be set for custom Python 3 instances. By default, Ansible will try

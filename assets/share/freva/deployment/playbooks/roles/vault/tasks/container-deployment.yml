@@ -22,7 +22,7 @@
   when: db_wipe is true
 
 - name: Creating volumes
-  include_tasks: "{{ general_tasks }}/container-volumes.yml"
+  include_tasks: "container-volumes.yml"
 
 
 - name: Check vault keys

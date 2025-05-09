@@ -252,16 +252,6 @@ class WebScreen(BaseForm):
                 ),
                 True,
             ),
-            proxy_host=(
-                self.add_widget_intelligent(
-                    TextInfo,
-                    section="web",
-                    key="proxy_host",
-                    name=f"{self.num}Hostname where reverse proxy is deployed on",
-                    value=cfg.get("web") or cfg.get("web_host"),
-                ),
-                True,
-            ),
             data_path=(
                 self.add_widget_intelligent(
                     TextInfo,
@@ -291,6 +281,16 @@ class WebScreen(BaseForm):
                     value=cfg.get("project_website", ""),
                 ),
                 True,
+            ),
+            chatbot_host=(
+                self.add_widget_intelligent(
+                    TextInfo,
+                    section="web",
+                    key="chatbot_host",
+                    name=f"{self.num}Url to the FrevaGPT service",
+                    value=cfg.get("chatbot_host", ""),
+                ),
+                False,
             ),
             main_color=(
                 self.add_widget_intelligent(

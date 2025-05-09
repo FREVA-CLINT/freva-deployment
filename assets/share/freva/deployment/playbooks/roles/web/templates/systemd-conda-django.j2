@@ -1,6 +1,7 @@
 [Unit]
-Description=Freva mongoDB server
-After=network.target
+Description=Freva Web app
+After={{web_cache_name}}.service {{web_proxy_name}}.service
+Requires={{web_cache_name}}.service {{web_proxy_name}}.service
 
 [Service]
 Type=simple
@@ -9,8 +10,9 @@ PermissionsStartOnly=true
 NoNewPrivileges=true
 ProtectHome=true
 KillSignal=SIGTERM
-ExecStart={{ conda_path }}/bin/start-freva-service -s mongo
-EnvironmentFile={{ data_dir }}/config/service.env
+ExecStart=/bin/sh init_django.sh
+WorkingDirectory={{ data_dir }}/app
+EnvironmentFile={{ data_dir }}/config/service-django.env
 Environment="PATH={{conda_path}}/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin"
 StandardOutput=journal
 StandardError=journal

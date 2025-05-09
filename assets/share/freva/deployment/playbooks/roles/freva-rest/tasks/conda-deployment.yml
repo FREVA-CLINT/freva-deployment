@@ -1,29 +1,44 @@
 ---
 - name: Running common conda tasks
-  include_tasks: "{{ general_tasks }}/conda.yml"
+  include_tasks: "conda.yml"
 
-- name: Creating service data directory structure in {{ volume_dir }}
-  file:
-    path: "{{ item }}"
-    state: directory
-    recurse: true
+- name: Write SSL cert and key to files
+  copy:
+    content: "{{ item.content }}"
+    dest: "{{ data_dir }}/config/{{ item.filename }}"
+  loop:
+    - { filename: "client-cert.pem", content: "{{ cache_information.ssl_cert }}" }
+    - { filename: "client-key.pem",  content: "{{ cache_information.ssl_key }}"  }
+  when: (cache_information.ssl_cert | length > 0) and (cache_information.ssl_key | length > 0)
+
+- name: Creating environment file
+  template:
+    src: "service.env.j2"
+    dest: "{{ data_dir }}/config/service.env"
     owner: "{{ uid }}"
     group: "{{ gid }}"
-  with_items:
-    - '{{ log_path }}/freva-rest-server'
-    - "{{ cert_path }}"
-
-- name: Writing ssl cert to file
-  copy:
-    content: "{{ cache_information.ssl_cert }}"
-    dest: "{{ volume_dir }}/certs/client-cert.pem"
-  when: cache_information.ssl_cert | length > 0
-
-- name: Writing ssl key to file
-  copy:
-    content: "{{ cache_information.ssl_key }}"
-    dest: "{{ volume_dir }}/certs/client-key.pem"
-  when: cache_information.ssl_cert | length > 0
+  vars:
+    service_name: "{{ freva_rest_name }}"
+    env_vars:
+      API_SOLR_CORE: "files"
+      API_PORT: "{{freva_rest_port}}"
+      API_PROXY: "{{freva_rest_proxy_url}}"
+      COLUMNS: 140
+      API_OIDC_CLIENT_ID: "{{freva_rest_oidc_client}}"
+      API_OIDC_DISCOVERY_URL: "{{freva_rest_oidc_url}}"
+      API_OIDC_CLIENT_SECRET: "{{freva_rest_oidc_client_secret}}"
+      API_REDIS_HOST: "{{cache_information.host}}"
+      API_REDIS_PASSWORD: "{{cache_information.passwd}}"
+      API_REDIS_USER: "{{cache_information.user}}"
+      API_REDIS_SSL_CERTFILE: "{{ data_dir }}/config/client-cert.pem"
+      API_REDIS_SSL_KEYFILE: "{{ data_dir }}/config/client-key.pem"
+      API_LOG_DIR: "{{ data_dir }}/logs"
+      API_SOLR_HOST: "{{freva_rest_search_server_host}}:8983"
+      API_MONGO_HOST: "{{freva_rest_mongodb_server_host}}:27017"
+      API_MONGO_PASSWORD: "{{freva_rest_db_passwd}}"
+      API_MONGO_DB: "search_stats"
+      API_MONGO_USER: "{{freva_rest_db_user}}"
+      CONDA_PREFIX: "{{ conda_path }}"
 
 - name: Creating systemd unit service
   template:

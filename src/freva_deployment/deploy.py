@@ -158,7 +158,6 @@ class DeployFactory:
         self.cfg = self._read_cfg()
         self.project_name = self.cfg.pop("project_name", None)
         self._random_key = RandomKeys(self.project_name or "freva")
-        self.playbooks: dict[str, Optional[str]] = {}
         if not self.project_name:
             raise ConfigurationError("You must set a project name") from None
         self._prep_local_debug()
@@ -253,7 +252,6 @@ class DeployFactory:
             self.cfg["db"]["host"] = host
         self.cfg["db"].setdefault("port", "3306")
         self.cfg["db"]["email"] = self.cfg["web"].get("contacts", "")
-        self.playbooks["db"] = self.cfg["db"].get("db_playbook")
         self._prep_vault()
         self._prep_web(False)
 
@@ -293,7 +291,9 @@ class DeployFactory:
             f'http://{self.cfg["freva_rest"]["freva_rest_host"]}:'
             f'{self.cfg["freva_rest"]["freva_rest_port"]}'
         )
-        proxy_url = self.cfg["web"].get("project_website").strip() or proxy_url
+        proxy_url = (
+            self.cfg["web"].get("project_website", "").strip() or proxy_url
+        )
         scheme, _, netloc = proxy_url.rpartition("://")
         scheme = scheme or "http"
         self.cfg["freva_rest"]["proxy_url"] = f"{scheme}://{netloc}"
@@ -365,7 +365,7 @@ class DeployFactory:
         self.cfg["freva_rest"]["db_host"] = freva_rest_host
         self.cfg["freva_rest"]["db_user"] = namegenerator.gen()
         self.cfg["freva_rest"].pop("core", None)
-        services = ["", "databrowser"]
+        services = ["databrowser"]
         if self.cfg["freva_rest"].get("data_loader_portal_hosts", "").strip():
             services.append("zarr-stream")
         data_path = Path(
@@ -375,9 +375,6 @@ class DeployFactory:
             )
         )
         self.cfg["freva_rest"]["data_path"] = str(data_path)
-        self.playbooks["freva_rest"] = self.cfg["freva_rest"].get(
-            "freva_rest_playbook"
-        )
         for key, default in dict(solr_mem="4g", freva_rest_port=7777).items():
             self.cfg["freva_rest"][key] = (
                 self.cfg["freva_rest"].get(key) or default
@@ -389,7 +386,7 @@ class DeployFactory:
         self.cfg["freva_rest"]["data_loader"] = self.cfg.get("redis", {}).get(
             "use", False
         )
-        self.cfg["freva_rest"]["services"] = "-s ".join(services)
+        self.cfg["freva_rest"]["services"] = "-s " + " -s ".join(services)
         if prep_web:
             self._prep_web(False)
         for key in ("mongodb_server", "search_server"):
@@ -400,7 +397,6 @@ class DeployFactory:
         """prepare the core deployment."""
         self._config_keys.append("core")
         self.cfg["core"].setdefault("ansible_become_user", "")
-        self.playbooks["core"] = self.cfg["core"].get("core_playbook")
         # Legacy args as we are going to use micromamba
         self.cfg["core"]["arch"] = mamba_to_conda_arch(
             self.cfg["core"]
@@ -443,9 +439,7 @@ class DeployFactory:
     def _prep_web(self, ask_pass: bool = True) -> None:
         """prepare the web deployment."""
         self._config_keys.append("web")
-        self._config_keys.append("proxy")
 
-        self.playbooks["web"] = self.cfg["web"].get("web_playbook")
         for key in "oidc_url", "oidc_client", "oidc_client_secret":
             self.cfg["web"][key] = self.cfg["freva_rest"].get("oidc_url", "")
         self.cfg["web"].setdefault("ansible_become_user", "root")
@@ -485,7 +479,7 @@ class DeployFactory:
         self.cfg["web"]["allowed_hosts"] = [
             s.strip() for s in set(allowed_hosts) if s.strip()
         ]
-
+        self.cfg["web"].setdefault("main_color", "Tomato")
         _webserver_items = {
             "institution_logo": self.cfg["web"].get("institution_logo", ""),
             "main_color": self.cfg["web"].get("main_color", "Tomato"),
@@ -511,11 +505,6 @@ class DeployFactory:
             pass
         with self.web_conf_file.open("w") as f_obj:
             tomlkit.dump(_webserver_items, f_obj)
-
-        if self.local_debug:
-            self.cfg["web"]["redis_host"] = self.cfg["web"]["web_host"]
-        else:
-            self.cfg["web"]["redis_host"] = f"{self.project_name}-cache"
 
         server_name = self.cfg["web"].pop("server_name", [])
         if isinstance(server_name, str):
@@ -552,7 +541,24 @@ class DeployFactory:
         self.cfg["web"]["root_passwd"] = self.master_pass
         self.cfg["web"]["private_keyfile"] = self.private_key_file
         self.cfg["web"]["public_keyfile"] = self.public_key_file
-        self.cfg["proxy"] = deepcopy(self.cfg["web"])
+        self.cfg["web"]["key_content"] = b64encode(
+            Path(self.private_key_file).read_bytes()
+        ).decode("utf-8")
+        self.cfg["web"]["cert_content"] = b64encode(
+            Path(self.public_key_file).read_bytes()
+        ).decode("utf-8")
+        self.cfg["web"]["eval_conf_file"] = str(
+            Path(self.cfg["core"]["root_dir"])
+            / "freva"
+            / "evaluation_system.conf"
+        )
+        chatbot_host = self.cfg["web"].get("chatbot_host", "") or "localhost"
+        self.cfg["web"]["vault_host"] = self.cfg["db"].get("vault_host") or self[
+            "db"
+        ].get("db_host", "localhost")
+        self.cfg["web"]["chatbot_host"] = chatbot_host
+        self.cfg["web"]["redis_username"] = namegenerator.gen()
+        self.cfg["web"]["redis_password"] = self._create_random_passwd()
 
     def _prep_local_debug(self) -> None:
         """Prepare the system for a potential local debug."""
@@ -601,7 +607,6 @@ class DeployFactory:
             "vault": "db",
             "mongodb_server": "freva_rest",
             "search_server": "freva_rest",
-            "proxy": "web",
         }
         try:
             config = dict(load_config(self._inv_tmpl, convert=True).items())
@@ -773,9 +778,10 @@ class DeployFactory:
             config[step]["vars"]["deployment_method"] = self.cfg.get(
                 "deployment_method", "docker"
             )
-            config[step]["vars"][f"{step.replace('-', '_')}_version"] = (
-                versions.get(step, "")
-            )
+            if step in versions:
+                config[step]["vars"][f"{step.replace('-', '_')}_version"] = (
+                    versions[step]
+                )
             config[step]["vars"]["debug"] = self.local_debug
             # Add additional keys
             self._set_additional_config_values(step, config)
@@ -787,6 +793,8 @@ class DeployFactory:
             for key, value in config["vault"]["vars"].items():
                 if key.startswith("vault_"):
                     config["db"]["vars"].setdefault(key, value)
+        if "web" in config:
+            config["web"]["vars"]["proxy_version"] = versions.get("nginx", "")
         info = {}
         for step in config:
             for key, value in config[step]["vars"].items():

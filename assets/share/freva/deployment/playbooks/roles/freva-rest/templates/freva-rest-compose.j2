@@ -33,3 +33,9 @@ services:
     container_name: {{freva_rest_name}}
     command:  {{freva_rest_services}}
     tty: true
+    volumes:
+      - logs:/tmp/logs:z
+
+
+volumes:
+    logs:

@@ -1,10 +1,4 @@
 ---
-- name: Cleaning volumes
-  shell: >
-    {{ deployment_method }} volume rm -f {{ item }}
-  loop: "{{ volume_names }}"
-  when: search_server_wipe is true
-
 - name: Deleting container
   shell: |
     {{ deployment_method }} stop {{ search_server_name }} || true

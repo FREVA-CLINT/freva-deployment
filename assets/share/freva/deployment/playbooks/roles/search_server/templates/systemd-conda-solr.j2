@@ -1,5 +1,5 @@
 [Unit]
-Description=Freva mongoDB server
+Description=Freva Search backend server
 After=network.target
 
 [Service]
@@ -9,12 +9,11 @@ PermissionsStartOnly=true
 NoNewPrivileges=true
 ProtectHome=true
 KillSignal=SIGTERM
-ExecStart=/bin/sh -c "PATH={{ conda_path }}/bin:$PATH {{ conda_path }}/bin/solr start -f -force -s {{search_server_volume_dir}} "
-Environment="CONDA_PREFIX={{ conda_path }}"
-Environment="SOLR_JETTY_HOST=0.0.0.0"
-Environment="SOLR_HEAP={{ search_server_solr_mem }}"
-Environment="SOLR_PID_DIR={{ volume_dir }}/run"
-Environment="SOLR_LOGS_DIR={{ log_path }}/solr"
+ExecStart={{ conda_path }}/bin/start-freva-service -s {{search_server_service}}
+EnvironmentFile={{ data_dir }}/config/service.env
+Environment="PATH={{conda_path}}/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin"
+StandardOutput=journal
+StandardError=journal
 Restart=on-failure
 RestartSec=5
 StartLimitBurst=5

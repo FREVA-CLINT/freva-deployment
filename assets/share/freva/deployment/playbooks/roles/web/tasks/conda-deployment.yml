@@ -1,44 +1,149 @@
 ---
 - name: Running common conda tasks
-  include_tasks: "{{ general_tasks }}/conda.yml"
+  include_tasks: "conda.yml"
 
-- name: Creating service data directory structure in {{ volume_dir }}
+- name: Get the web app
+  unarchive:
+    src: https://github.com/FREVA-CLINT/freva-web/releases/download/{{ web_version }}/freva-web-bundle.tar.gz
+    dest: "{{ data_dir }}/app"
+    remote_src: true
+    keep_newer: false
+
+- name: Installing dependencies
+  shell:
+    cmd: |
+      {{conda_path}}/bin/mamba env update -p {{conda_path}} -y --file {{ data_dir }}/app/conda-env.yml
+      {{conda_path}}/bin/mamba install -c conda-forge --override-channels -y -q jinja2
+  environment:
+    MAMBA_ROOT_PREFIX: "{{conda_path}}"
+
+- name: Adjusting web app ownership
   file:
-    path: "{{ item }}"
+    path: "{{ data_dir }}/app"
     state: directory
     recurse: true
     owner: "{{ uid }}"
     group: "{{ gid }}"
-  with_items:
-    - '{{ log_path }}/freva-rest-server'
-    - "{{ cert_path }}"
 
-- name: Writing ssl cert to file
-  copy:
-    content: "{{ cache_information.ssl_cert }}"
-    dest: "{{ volume_dir }}/certs/client-cert.pem"
-  when: cache_information.ssl_cert | length > 0
+- name: Get free Redis port using Python
+  shell: >
+    {{ conda_path }}/bin/python3 -c
+    "import socket; s=socket.socket(); s.bind(('', 0)); print(s.getsockname()[1]); s.close()"
+  register: redis_port_result
+  changed_when: false
 
-- name: Writing ssl key to file
-  copy:
-    content: "{{ cache_information.ssl_key }}"
-    dest: "{{ volume_dir }}/certs/client-key.pem"
-  when: cache_information.ssl_cert | length > 0
-
-- name: Creating systemd unit service
+- name: Creating environment file for proxy
   template:
-    src: "systemd-conda.j2"
-    dest: "{{ systemd_unit_dir }}/{{ freva_rest_name }}.service"
-    mode: "0644"
+    src: "service.env.j2"
+    dest: "{{ data_dir }}/config/service-nginx.env"
+    owner: "{{ uid }}"
+    group: "{{ gid }}"
+  vars:
+    service_name: "{{ web_proxy_name }}"
+    env_vars:
+      API_LOG_DIR: "{{ data_dir }}/logs"
+      API_CONFIG_DIR: "{{ conda_path }}/share/freva-rest-server/nginx"
+      CHATBOT_HOST: '{{ web_chatbot_host.replace("http://", "") }}'
+      CONDA_PREFIX: "{{ conda_path }}"
+      FILL_COLOR: "{{ web_main_color }}"
+      FREVA_REST_HOST: '{{ web_freva_rest_host.replace("http://", "") }}'
+      PORT_HTTPSD: "{{ web_port_httpsd }}"
+      PROJECT_NAME: "{{ project_name }}"
+      PROXY_USER: "{{ admin_user }}"
+      PROXY_GROUP: "{{ admin_group }}"
+      SERVER_CERT: "{{ web_cert_content }}"
+      SERVER_KEY: "{{ web_key_content }}"
+      SERVER_ROOT: "{{ data_dir }}/app/static"
+      VAULT_HOST: '{{ web_vault_host.replace("http://", "") }}:5002'
+      WEB_SERVER_NAME: "localhost"
+      WEB_SERVER_PORT: "8000"
 
-- name: Reload systemd daemon
-  systemd:
-    daemon_reload: true
-    scope: "{{ 'system' if ansible_become is true else 'user'}}"
 
-- name: Enable and start the {{ freva_rest_name }} service
+- name: Creating environment file for redis
+  template:
+    src: "service.env.j2"
+    dest: "{{ data_dir }}/config/service-redis.env"
+    owner: "{{ uid }}"
+    group: "{{ gid }}"
+  vars:
+    service_name: "{{ web_cache_name }}"
+    env_vars:
+      API_LOG_DIR: "{{ data_dir }}/logs"
+      API_CONFIG_DIR: "{{ data_dir }}/config"
+      CONDA_PREFIX: "{{ conda_path }}"
+      REDIS_PASSWORD: "{{ web_redis_password }}"
+      REDIS_USERNAME: "{{ web_redis_username }}"
+      REDIS_PORT: "{{ redis_port_result.stdout }}"
+
+- name: Creating environment file for web app
+  template:
+    src: "service.env.j2"
+    dest: "{{ data_dir }}/config/service-django.env"
+    owner: "{{ uid }}"
+    group: "{{ gid }}"
+  vars:
+    service_name: "{{ web_name }}"
+    env_vars:
+      ALLOWED_HOSTS: "{{web_allowed_hosts | join(',')}}"
+      API_LOG_DIR: "{{ data_dir }}/logs"
+      CHATBOT_HOST: '{{ web_chatbot_host.replace("http://", "") }}'
+      COLUMNS: "140"
+      CONDA_PREFIX: "{{ conda_path }}"
+      CSRF_TRUSTED_ORIGINS: "{{ web_csrf_trusted_origins | join(',') }}"
+      DJANGO_SUPERUSER_EMAIL: "freva@dkrz.de"
+      DJANGO_SUPERUSER_PASSWORD: "{{ root_passwd }}"
+      EVALUATION_SYSTEM_CONFIG_FILE: "{{ core_root_dir|regex_replace('^~', ansible_env.HOME) }}/freva/evaluation_system.conf"
+      FREVA_REST_URL: 'http://{{ web_freva_rest_host.replace("http://", "") }}'
+      FREVA_BIN: "{{ web_freva_bin }}"
+      FREVA_WEB_CONFIG_FILE: "{{ web_config_file }}"
+      SCHEDULER_HOST: "{{ web_scheduler_host | join(',') }}"
+      REDIS_HOST: "localhost"
+      REDIS_PASSWD: "{{ web_redis_password }}"
+      REDIS_USER: "{{ web_redis_username }}"
+      REDIS_PORT: "{{ redis_port_result.stdout }}"
+
+- name: Create systemd services
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ systemd_unit_dir }}/{{ item.dest }}.service"
+  loop:
+    - { src: systemd-conda-redis.j2, dest: "{{ web_cache_name }}" }
+    - { src: systemd-conda-nginx.j2, dest: "{{ web_proxy_name }}" }
+    - { src: systemd-conda-django.j2, dest: "{{ web_name }}" }
+
+- name: Reload systemd
   systemd:
-    name: "{{ freva_rest_name }}"
-    state: started
+    daemon_reload: yes
+    scope: "{{ 'system' if ansible_become is true else 'user' }}"
+
+- name: Enable and start web services
+  systemd:
+    name: "{{ item }}"
     enabled: true
+    state: started
     scope: "{{ 'system' if ansible_become is true else 'user'}}"
+  loop:
+    - "{{ web_proxy_name }}.service"
+    - "{{ web_cache_name }}.service"
+    - "{{ web_name }}.service"
+
+- name: Run health checks
+  shell:
+    cmd: "{{ item }}"
+    chdir: "{{ data_dir }}/app"
+  environment:
+    GIT_PYTHON_REFRESH: "quiet"
+    EVALUATION_SYSTEM_CONFIG_FILE: "{{core_root_dir|regex_replace('^~', ansible_env.HOME)}}/freva/evaluation_system.conf"
+  loop:
+    - "{{ conda_path }}/libexec/freva-rest-server/healthchecks.sh -s nginx"
+    - "{{ conda_path }}/bin/python manage.py check"
+
+- name: Display message about Nginx ports
+  debug:
+    msg: >
+      The Nginx web server is deployed on port {{ web_port_httpd }} instead of 80
+      and {{ web_port_httpsd }} instead of 443.
+      Since you are not running as root, consider setting up a reverse proxy
+      to forward connections from port 80 and 443 to ports {{ web_port_httpd }}
+      and {{ web_port_httpsd }} respectively.
+  when: ansible_become_user != 'root'

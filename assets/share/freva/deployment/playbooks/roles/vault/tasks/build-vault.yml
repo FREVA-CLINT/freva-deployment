@@ -62,23 +62,15 @@
   copy:
     src: "{{ asset_dir }}/vault/{{ item }}"
     dest: "{{ conda_path }}/libexec/freva-rest-server/vault/{{ item }}"
-  with_items:
+  loop:
     - "runserver.py"
     - "policy-file.hcl"
     - "add-vault-secret"
-    - "requirements.txt"
 
 - name: Adjusting vault config file
   template:
     src: "vault-server-conda.j2"
     dest: "{{ conda_path }}/libexec/freva-rest-server/vault/vault-server-tls.hcl"
-
-- name: Installing pip requirements
-  shell:
-    cmd: >
-      {{ conda_path }}/bin/python -m pip install -r
-      {{ conda_path }}/libexec/freva-rest-server/vault/requirements.txt
-      --root-user-action ignore
 
 - name: Adding helper scripts
   copy:
@@ -89,11 +81,8 @@
 - name: Creating vault systemd service
   template:
     src: "systemd-vault-conda.j2"
-    dest: "{{ item }}"
+    dest: "{{ systemd_unit_dir }}/{{ vault_name }}.service"
     mode: "0644"
-  with_items:
-    - "{{ conda_path }}/share/freva-rest-server/systemd/vault.service"
-    - "{{ systemd_unit_dir }}/{{ project_name }}-vault.service"
 
 - name: Reload systemd daemon
   systemd:

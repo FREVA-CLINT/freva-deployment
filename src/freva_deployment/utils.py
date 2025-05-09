@@ -256,7 +256,12 @@ def _create_new_config(inp_file: Path) -> Path:
             "deployment_method",
             "admin_user",
         ],
-        "web": ["deployment_method", "web_host", "proxy_host", "admin_user"],
+        "web": [
+            "deployment_method",
+            "web_host",
+            "admin_user",
+            "chatbot_host",
+        ],
         "db": ["deployment_method", "vault_host", "db_host", "admin_user"],
         "core": ["core_host"],
     }

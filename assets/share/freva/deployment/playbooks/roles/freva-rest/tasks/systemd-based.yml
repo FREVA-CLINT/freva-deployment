@@ -1,6 +1,6 @@
 ---
 - name: Running common taks
-  include_tasks: "{{ general_tasks }}/main.yml"
+  include_tasks: "common_tasks.yml"
 
 - block:
     - name: Create tempfile for secrets
@@ -29,9 +29,6 @@
         file:
           path: "{{ secrets_file.path }}"
           state: absent
-
-- debug:
-    msg: "{{cache_information}}"
 
 - name: Stopping the {{ freva_rest_name }} service
   systemd:

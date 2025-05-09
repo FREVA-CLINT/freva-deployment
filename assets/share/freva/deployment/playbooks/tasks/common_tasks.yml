@@ -15,10 +15,16 @@
   command: id -g {{ admin_user }}
   register: gid_result
 
+- name: Get primary group of admin_user
+  command: id -gn {{ admin_user }}
+  register: admin_group_result
+  changed_when: false
+
 - name: Set UID and GID as facts
   set_fact:
     uid: "{{ uid_result.stdout }}"
     gid: "{{ gid_result.stdout }}"
+    admin_group: "{{ admin_group_result.stdout }}"
 
 - name: Ensure the user systemd directory exists
   file:
@@ -47,13 +53,18 @@
     path: /etc/cron.daily
   register: cron
 
-- include_tasks:
-    file: "{{ general_tasks }}/service-config.yml"
-  when: data_dir is defined
+- name: Removing old service-config directory
+  file:
+    state: absent
+    path: "{{ data_dir }}/freva-service-config"
 
 - name: Migrating volume directories
   script: >
     {{ asset_dir }}/scripts/migrate-volumes.sh
+    --service {{ service }}
     --engine {{ deployment_method }}
     --old-parent-dir {{ base_path }}
     --project-name {{ project_name }}
+  register: migration_result
+  failed_when: migration_result.rc not in [0, 3]
+  changed_when: result.rc == 3

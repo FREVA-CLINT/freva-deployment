@@ -21,7 +21,6 @@ SYSTEMD_TMPL = dict(
         ExecStop='/bin/sh -c "{delete_command}"',
         Restart="on-failure",
         RestartSec=5,
-        StartLimitIntervalSec=60,
         StartLimitBurst=5,
     ),
     Install=dict(WantedBy="default.target"),

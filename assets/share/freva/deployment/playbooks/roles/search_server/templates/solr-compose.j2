@@ -14,9 +14,11 @@ services:
     ports:
       - 8983:8983
     volumes:
-      - data:/data/db
+      - data:/data/db:z
+      - logs:/data/logs:z
     container_name: {{ search_server_name }}
     tty: true
 
 volumes:
     data:
+    logs:

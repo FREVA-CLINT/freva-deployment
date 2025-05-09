@@ -70,7 +70,18 @@
   roles:
     - freva-rest
 
-- name: Deploy Web Server
+- name: Prepare Web App
+  hosts: core
+  tags:
+    - web
+  vars_files:
+    - "./vars.yml"
+  become: "{{ core_ansible_become_user is defined and core_ansible_become_user != '' }}"
+  become_user: "{{ core_become_user | default(core_ansible_user) }}"
+  roles:
+    - web-prep
+
+- name: Deploy Web App
   hosts: web
   tags:
     - web
@@ -79,7 +90,7 @@
   become: "{{ web_ansible_become_user is defined and web_ansible_become_user != '' }}"
   become_user: "{{ web_become_user | default('root') }}"
   roles:
-    - web-core
+    - web
 
 - name: Deploy Freva Core
   hosts: core

@@ -73,7 +73,7 @@ def get_versions(_versions: List[Dict[str, str]] = []) -> Dict[str, str]:
         "https://raw.githubusercontent.com/FREVA-CLINT/freva-service-config"
         "/refs/heads/main/{service}/requirements.txt"
     )
-    for service in ("mongo", "solr", "mysql", "redis"):
+    for service in ("mongo", "solr", "nginx", "redis"):
         try:
             with urlopen(url.format(service=service)) as res:
                 text = res.read().decode()
@@ -86,7 +86,6 @@ def get_versions(_versions: List[Dict[str, str]] = []) -> Dict[str, str]:
                 version = line.strip().split("=")[-1]
                 _versions[0][service] = version
                 break
-    _versions[0]["db"] = _versions[0].pop("mysql")
     _versions[0]["mongodb_server"] = _versions[0].pop("mongo")
     version_file.write_text(json.dumps(_versions[0]))
     return _versions[0]

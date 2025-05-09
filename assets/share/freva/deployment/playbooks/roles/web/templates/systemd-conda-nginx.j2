@@ -1,5 +1,5 @@
 [Unit]
-Description=Freva mongoDB server
+Description=Freva web Porxy server
 After=network.target
 
 [Service]
@@ -9,8 +9,8 @@ PermissionsStartOnly=true
 NoNewPrivileges=true
 ProtectHome=true
 KillSignal=SIGTERM
-ExecStart={{ conda_path }}/bin/start-freva-service -s mongo
-EnvironmentFile={{ data_dir }}/config/service.env
+ExecStart={{conda_path}}/bin/start-freva-service -s nginx
+EnvironmentFile={{ data_dir }}/config/service-nginx.env
 Environment="PATH={{conda_path}}/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin"
 StandardOutput=journal
 StandardError=journal
@@ -18,7 +18,5 @@ Restart=on-failure
 RestartSec=5
 StartLimitBurst=5
 UMask=007
-User={{uid}}
-Group={{gid}}
 [Install]
 WantedBy=multi-user.target

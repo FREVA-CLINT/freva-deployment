@@ -1,6 +1,6 @@
 ---
 - name: Running common taks
-  include_tasks: "{{ general_tasks }}/main.yml"
+  include_tasks: "common_tasks.yml"
 
 - name: Adjust infrastructure
   shell:
@@ -17,7 +17,7 @@
 
 - name: Register config path
   stat:
-    path: "{{ volume_dir }}/config/data-portal-cluster-config.json"
+    path: "{{ data_dir }}/config/data-portal-cluster-config.json"
   register: config_path
 
 - name: Set fact
@@ -41,22 +41,18 @@
         force: true
         path: "{{ systemd_unit_dir }}/{{ cache_name }}.service"
 
-    - name: Creating paths {{ volume_dir }}
+    - name: Creating paths {{ data_dir }}
       file:
         state: directory
         owner: "{{ uid }}"
         group: "{{ gid }}"
         recurse: true
-        path: "{{ volume_dir }}/{{ item }}"
-      with_items:
-        - "config"
-        - "logs"
-        - "data"
+        path: "{{ data_dir }}/config"
 
-    - name: Writing redis-cache information
+    - name: Writing redis-cache information to {{ data_dir }}
       copy:
         content: "{{ redis_information }}"
-        dest: "{{ volume_dir }}/config/data-portal-cluster-config.json"
+        dest: "{{ data_dir }}/config/data-portal-cluster-config.json"
         owner: "{{ uid }}"
         group: "{{ gid }}"
 
@@ -68,15 +64,15 @@
       include_tasks:
         file: "{{ deployment_file | trim }}"
   rescue:
-    - name: Cleaning up {{ volume_dir }}
+    - name: Cleaning up {{ data_dir }}
       file:
         state: absent
-        path: "{{ volume_dir }}"
+        path: "{{ data_dir }}"
 
   when: not config_path.stat.exists
 
 - name: Copy cache config to {{ cache_secrets }}
   fetch:
-    src: "{{ volume_dir }}/config/data-portal-cluster-config.json"
+    src: "{{ data_dir }}/config/data-portal-cluster-config.json"
     dest: "{{ cache_secrets }}"
     flat: true

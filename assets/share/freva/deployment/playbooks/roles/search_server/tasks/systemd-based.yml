@@ -1,27 +1,21 @@
 ---
 - name: Running common taks
-  include_tasks: "{{ general_tasks }}/main.yml"
+  include_tasks: "common_tasks.yml"
 
 - name: Stopping the services
   systemd:
-    name: "{{ item }}"
+    name: "{{search_server_name}}"
     state: stopped
     enabled: false
     scope: "{{ 'system' if ansible_become is true else 'user'}}"
   ignore_errors: true
   failed_when: false
-  with_items:
-    - "{{freva_rest_name}}"
-    - "{{search_server_name}}"
 
 - name: Removing old services files
   file:
     state: absent
     force: true
-    path: "{{ systemd_unit_dir }}/{{ item }}.service"
-  with_items:
-    - "{{freva_rest_name}}"
-    - "{{search_server_name}}"
+    path: "{{ systemd_unit_dir }}/{{ search_server_name }}.service"
 
 - name: Playing the {{ deployment_method }} tasks
   include_tasks:
@@ -34,6 +28,6 @@
     --email {{ db_email }}
     --user {{ uid }}
     --deployment-method {{ deployment_method }}
-    --command {{ volume_dir }}/bin/{{ search_server_service }}-daily-backup.sh
-    --backup-dir {{ volume_dir }}/backups
+    --command {{ data_dir }}/bin/{{ search_server_service }}-daily-backup.sh
+    --backup-dir {{ data_dir }}/backups
   when: cron.stat.exists == true
