@@ -287,10 +287,10 @@ def _create_new_config(inp_file: Path) -> Path:
     for section, keys in keys_to_check.items():
         if isinstance(config[section].get("config"), dict):
             create_backup = True
-            config[section]["config"][f"{section}_host"] = config[section][
-                "hosts"
-            ]
-            config[section] = config[section]["config"]
+            config[section]["config"][f"{section}_host"] = str(
+                config[section]["hosts"]
+            )
+            config[section] = config[section]["config"]  # type: ignore
         config[section].pop(f"{section}_playbook", "")
         for key in keys:
             if key not in tomlkit.dumps(config):

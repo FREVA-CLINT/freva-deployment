@@ -15,7 +15,7 @@ from copy import deepcopy
 from getpass import getuser
 from pathlib import Path
 from socket import gethostbyname, gethostname
-from typing import Any, Optional, cast
+from typing import Any, Dict, List, Optional, Union, cast
 from urllib.parse import urlparse
 
 import appdirs
@@ -560,9 +560,9 @@ class DeployFactory:
             / "evaluation_system.conf"
         )
         chatbot_host = self.cfg["web"].get("chatbot_host", "") or "localhost"
-        self.cfg["web"]["vault_host"] = self.cfg["db"].get("vault_host") or self[
-            "db"
-        ].get("db_host", "localhost")
+        self.cfg["web"]["vault_host"] = self.cfg["db"].get(
+            "vault_host"
+        ) or self.cfg["db"].get("db_host", "localhost")
         self.cfg["web"]["chatbot_host"] = chatbot_host
         self.cfg["web"]["redis_username"] = namegenerator.gen()
         self.cfg["web"]["redis_password"] = self._create_random_passwd()
@@ -744,7 +744,7 @@ class DeployFactory:
             time.sleep(3)
         new_steps = set(steps + self.steps)
         if not new_steps:
-            return None, None
+            return None
         self._steps = list(new_steps)
         logger.info("Parsing configurations")
         self._check_config()
@@ -804,7 +804,7 @@ class DeployFactory:
                     config["db"]["vars"].setdefault(key, value)
         if "web" in config:
             config["web"]["vars"]["proxy_version"] = versions.get("nginx", "")
-        info = {}
+        info: Dict[str, Any] = {}
         for step in config:
             for key, value in config[step].get("vars", {}).items():
                 if step in tags or ("db" in self.steps and step == "vault"):

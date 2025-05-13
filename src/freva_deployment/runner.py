@@ -260,7 +260,7 @@ class RunnerDir(TemporaryDirectory):
     def run_ansible_playbook(
         self,
         playbook: Optional[Union[str, Path, List[Any], Dict[str, Any]]],
-        inventory: Union[str, Path, List[Any], Dict[str, Any]],
+        inventory: Optional[Union[str, Path, List[Any], Dict[str, Any]]],
         working_dir: Optional[Union[str, Path]] = None,
         envvars: Optional[Dict[str, str]] = None,
         extravars: Optional[Dict[str, str]] = None,
@@ -291,8 +291,8 @@ class RunnerDir(TemporaryDirectory):
         """
         roles = roles or []
         working_dir = Path(working_dir or "").expanduser().absolute()
-        playbook_path = self.convert_to_file(playbook)
-        inventory_path = self.convert_to_file(inventory)
+        playbook_path = self.convert_to_file(playbook or "")
+        inventory_path = self.convert_to_file(inventory or "")
         passwords = passwords or {}
         extravars = extravars or {}
         envvars = envvars or {}
