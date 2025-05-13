@@ -91,6 +91,9 @@ commands =
 
 [testenv:docs]
 deps = .[doc]
+setenv =
+    LC_ALL = C
+    LANG = C
 allowlist_externals = make
 commands = make -C docs clean
            make -C docs html

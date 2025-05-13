@@ -3,10 +3,10 @@
   vars:
     image: "ghcr.io/freva-clint/freva-rest-api"
     service_command: "freva-rest-server -V | awk '{print $NF}'"
-    role: "freva_rest"
+    role: "freva-rest"
   tasks:
     - name: Include role vars
-      include_vars: "./roles/{{ role }}/files/vars.yml"
+      include_vars: "{{asset_dir}}/playbooks/roles/{{ role }}/files/vars.yml"
 
     - name: Checking container versions
       script: >
@@ -23,7 +23,7 @@
       register: version_cmd
       when: deployment_method == "conda"
 
-    - name: Display {{ rol }} version
+    - name: Display freva_rest version
       debug:
         msg: "{{ version_cmd.stdout }}"
 
@@ -36,7 +36,7 @@
     role: "web"
   tasks:
     - name: Include role vars
-      include_vars: "./roles/{{ role }}/files/vars.yml"
+      include_vars: "{{asset_dir}}/playbooks/roles/{{ role }}/files/vars.yml"
 
     - name: Checking container versions
       script: >
@@ -53,7 +53,7 @@
       register: version_cmd
       when: deployment_method == "conda"
 
-    - name: Display {{ rol }} version
+    - name: Display web version
       debug:
         msg: "{{ version_cmd.stdout }}"
 
@@ -62,23 +62,24 @@
     image: "ghcr.io/freva-clint/freva-vault"
     service_command: >
       {{ansible_python_interpreter}} -c
-      "import json; print(json.load(open('{{data_dir}}/app/package.json')).get('version', '0.0.0'))"
+      "import json;
+      print(json.load(open('{{data_dir}}/app/package.json')).get('version', '0.0.0'))"
     role: "vault"
   tasks:
     - name: Include role vars
-      include_vars: "./roles/{{ role }}/files/vars.yml"
+      include_vars: "{{asset_dir}}/playbooks/roles/{{ role }}/files/vars.yml"
 
-  - name: Get vault version
-    register: version_cmd
-    shell:
-      cmd: >
-        {{ansible_python_interpreter}} -c "from urllib.request import urlopen;
-        import json;
-        conn=urlopen('http://localhost:5002/vault/status');
-        print(json.loads(conn.read().decode()).get('version', '0.0.0'));
-        conn.close()" 2> /dev/null || echo
+    - name: Get vault version
+      register: version_cmd
+      shell:
+        cmd: >
+          {{ansible_python_interpreter}} -c "from urllib.request import urlopen;
+          import json;
+          conn=urlopen('http://localhost:5002/vault/status');
+          print(json.loads(conn.read().decode()).get('version', '0.0.0'));
+          conn.close()" 2> /dev/null || echo
 
-    - name: Display {{ rol }} version
+    - name: Display vault version
       debug:
         msg: "{{ version_cmd.stdout }}"
 
@@ -90,7 +91,9 @@
     - name: Get core version
       register: core
       shell:
-        cmd: "{{ core_install_dir | regex_replace('^~', ansible_env.HOME) }}/bin/freva -V 2> /dev/null | awk '{print $NF}';"
+        cmd: >
+          {{ core_install_dir | regex_replace('^~', ansible_env.HOME) }}/bin/freva
+          -V 2> /dev/null | awk '{print $NF}';
 
     - name: Display core version
       debug:

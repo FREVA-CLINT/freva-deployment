@@ -30,19 +30,14 @@ from the [release page](release:{{version}}).
   - [s390x](exe:linux-s390x.tar.gz)
   - [i386](exe:linux-i386.tar.gz)
 
-- **Windows**
-  - [amd64](exe:windows-x64.zip)
-  > ``💡`` This version uses a patched version of ansible. We can't guaranty
-  > a working deployment software on windows.
 
 - **macOS**
   - [amd64](exe:osx-x64.tar.gz)
   - [arm64](exe:osx-arm64.tar.gz)
 
 After downloading version {{version}} file for your operating system and
-architecture, you have to extract the archived folder (zip on windows,
-tar.gz on Unix) and run the `deploy-freva` (`deploy-freva.exe` on windows)
-command in the extracted folder:
+architecture, you have to extract the archived folder and run the
+`deploy-freva` command in the extracted folder:
 
 ```console
 Usage: deploy-freva [-h] [-v] [-V] [--cowsay] {cmd,migrate} ...
@@ -78,9 +73,6 @@ This command installs ansible and all required python packages.
 > python3 -m pip install libselinux-python3
 > ```
 >
-> ``💡`` The ansible library is not supported on *Windows* and needs to be patched.
-> you can either use the above mentioned pre compiled windows binary or install
-> the deployment software on Windows Subsystem for Linux - WSL (preferred).
 
 ## 3. Using docker
 
@@ -105,20 +97,3 @@ The deployment software consists of *three* different sub-commands:
 or tick the *local deployment only* box in the setup page of the text user
 interface if you only want to try out the deployment on your local machine.
 Without having to install anything on remote machines.
-
-
-
-## Installing docker/podman to the service servers
-Because the services of MariaDB, DatabrowserAPI and Apache httpd will be deployed
-on container images, docker or podman needs to be available on the target servers.
-Since version *v2309.0.0* of the deployment the containers are set up
-using `doker-compose` or `podman-compose`. The deployment will install,
-`docker-compose` or `podman-compose` if not already available on the servers.
-
-
-Hence, on the servers that will be running docker
-you will need root access. There exists an option to install and run docker
-without root, information on a root-less docker option
-can be found [on the docker docs](https://docs.docker.com/engine/security/rootless/)
-> ``💡`` The deployment will automatically check the availability of docker
-or podman and chose the software that is available on each server.

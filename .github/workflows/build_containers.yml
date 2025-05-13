@@ -90,7 +90,7 @@ jobs:
         name: Get tag
         id: repository
         run: |
-          echo "tag=$(python src/freva_deployment/__init__.py -v)" >> $GITHUB_OUTPUT
+          echo -n "tag=$(grep 'VERSION =' assets/share/freva/deployment/vault/runserver.py|awk '{print $NF}'|sed 's/"//g'|sed "s/'//g")" >> $GITHUB_OUTPUT
       -
         name: Set up QEMU
         uses: docker/setup-qemu-action@v2

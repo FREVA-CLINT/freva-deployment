@@ -267,7 +267,7 @@ class WebScreen(BaseForm):
                     TextInfo,
                     section="web",
                     key="admin_user",
-                    name=(f"{self.num}User name that should own the data"),
+                    name=(f"{self.num}User name that should own persistent data"),
                     value=cfg.get("admin_user", ""),
                 ),
                 False,
@@ -577,7 +577,7 @@ class DBScreen(BaseForm):
                     TextInfo,
                     section="db",
                     key="admin_user",
-                    name=(f"{self.num}User name that should own the data"),
+                    name=(f"{self.num}User name that should own persistent data"),
                     value=cfg.get("admin_user", ""),
                 ),
                 False,
@@ -732,9 +732,9 @@ class FrevaRestScreen(BaseForm):
             admin_user=(
                 self.add_widget_intelligent(
                     TextInfo,
-                    section="web",
+                    section="freva_rest",
                     key="admin_user",
-                    name=(f"{self.num}User name that should own the data"),
+                    name=(f"{self.num}User name that should own persistent data"),
                     value=cfg.get("admin_user", ""),
                 ),
                 False,
@@ -934,6 +934,14 @@ class RunForm(npyscreen.FormMultiPageAction):
             ComboInfo,
             key="deployment_method",
             name=f"{self.num}Deployment Method",
+            info=(
+                "The `deployment_method` key sets the option of how the "
+                "installation of the service is realised. `docker`, "
+                "`podman` leverages podman or docker, `conda` uses "
+                "conda-forge to install the service while `k8s` "
+                "involves a kubernetes based deployment "
+                'Chosse between: "docker", "podman", "conda", "k8s"'
+            ),
             value=get_index(
                 DEPLOYMENT_METHODS,
                 cast(

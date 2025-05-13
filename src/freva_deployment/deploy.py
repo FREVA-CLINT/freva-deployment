@@ -733,7 +733,7 @@ class DeployFactory:
             config[step]["vars"][f"{step}_dump"] = str(dump_file)
 
     def parse_config(self, steps: list[str]) -> Optional[str]:
-        """Create config files for anisble and evaluation_system.conf."""
+        """Create config files for ansible and evaluation_system.conf."""
         versions = get_versions()
         additional_steps = set(steps) - set(self.steps)
         if additional_steps:
@@ -966,13 +966,14 @@ class DeployFactory:
         cfg = deepcopy(self.cfg)
         if "web" in steps and not cfg.get("web", {}).get("web_host", "").strip():
             steps = [s for s in steps if s != "web"]
+        steps.append("vault")
         version_path = self._td.parent_dir / "versions.txt"
         for tasks in playbook_tmpl:
             step = tasks["hosts"]
             if step in steps:
                 playbook.append(tasks)
                 config[step] = {}
-                config[step]["hosts"] = cfg[f"{step}_hosts"]
+                config[step]["hosts"] = cfg[step][f"{step}_host"]
                 if "ansible_become_user" not in cfg[step]:
                     become_user = "root"
                 else:
@@ -980,6 +981,9 @@ class DeployFactory:
                 config[step]["vars"] = {
                     f"{step}_ansible_become_user": become_user,
                     "asset_dir": str(asset_dir),
+                    "deployment_method": self.cfg.get(
+                        "deployment_method", "docker"
+                    ),
                     f"{step}_ansible_user": cfg[step].get(
                         "ansible_user", getuser()
                     ),
@@ -988,10 +992,9 @@ class DeployFactory:
                     "version_file_path": str(version_path),
                 }
                 python_exe = self.cfg[step].get("ansible_python_interpreter", "")
-                if python_exe:
-                    config[step]["vars"][
-                        "ansible_python_interpreter"
-                    ] = python_exe
+                config[step]["vars"][f"{step}_ansible_python_interpreter"] = (
+                    python_exe or "/usr/bin/python"
+                )
         config.setdefault("core", {})
         config["core"].setdefault("vars", {})
         config["core"]["vars"]["core_install_dir"] = cfg["core"]["install_dir"]
@@ -1089,7 +1092,6 @@ class DeployFactory:
         logger.debug(inventory)
         self.create_eval_config()
         logger.info("Playing the playbooks for %s with ansible", ", ".join(steps))
-        print(inventory)
         time.sleep(3)
         self._td.run_ansible_playbook(
             working_dir=asset_dir,

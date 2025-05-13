@@ -105,18 +105,19 @@ def get_steps_from_versions(detected_versions: Dict[str, str]) -> List[str]:
     """
     minimum_version = get_versions()
     steps = []
-    lookup = {"solr": "search_server", "vault": "db"}
-    no_ask_for_downgrade = ("solr", "db")
-    for service, min_version in minimum_version.items():
-        lookup.setdefault(service, service)
+    for service in ("web", "vault", "freva_rest", "core"):
+        if service == "vault":
+            service_name = "db"
+        else:
+            service_name = service
         min_version = Version(minimum_version[service].strip("v"))
         version_str = detected_versions.get(service, "").strip("v").strip()
         if service == "web" and not version_str:
             continue
         version = Version(version_str or "0.0.0")
         if version < min_version:
-            steps.append(lookup[service])
-        elif version > min_version and service not in no_ask_for_downgrade:
+            steps.append(service_name)
+        elif version > min_version:
             # We do have a problem: an installed version has a higher version
             # the the defined minium version, possibly the deployment
             # software is outdated.
@@ -136,7 +137,7 @@ def get_steps_from_versions(detected_versions: Dict[str, str]) -> List[str]:
             else:
                 answ = "n"
             if answ[0] == "y":
-                steps.append(lookup[service])
+                steps.append(service_name)
             else:
                 raise SystemExit(1)
     return steps

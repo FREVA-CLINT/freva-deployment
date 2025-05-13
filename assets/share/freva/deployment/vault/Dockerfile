@@ -23,8 +23,6 @@ RUN set -eux \
     -o /vault-bin/vault \
     -ldflags="-s -w"
 
-COPY runserver.py /tmp/runserver.py
-RUN set -ex && sed "s/__VERSION__/${VERSION}/" /tmp/runserver.py > /tmp/runserver-final.py
 
 FROM docker.io/mambaorg/micromamba
 ARG VERSION
@@ -37,7 +35,7 @@ ENV VAULT_ADDR='http://127.0.0.1:8200'
 
 WORKDIR /opt/vault
 
-COPY --from=vault-builder /tmp/runserver-final.py /bin/runserver.py
+COPY runserver.py /bin/runserver.py
 COPY --from=vault-builder /vault-bin/vault /bin/vault
 COPY add-vault-secret /bin/add-vault-secret
 COPY vault-server-tls.hcl /opt/vault/

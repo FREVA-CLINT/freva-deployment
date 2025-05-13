@@ -147,6 +147,7 @@ in the `evaluation_system` section:
   ``💡`` The *solr.core* variable might be subject to removal in the future.
   Therefore it is recommended to set this variable to its default value: *files*.
 
+(eval-conf)=
 ## Configuring the `scheduler_options` section
 All workload managers are configured via the `scheduler_options` section. The
 following configuration keys are available:
