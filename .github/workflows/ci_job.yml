@@ -71,12 +71,12 @@ jobs:
         name: Build and push deployment image
         uses: docker/build-push-action@v4
         with:
-          push: true
+          push: false
           build-args: VERSION=${{steps.repository.outputs.tag}}
           tags: |
             ghcr.io/freva-clint/freva-deployment:${{ steps.repository.outputs.tag }}
             ghcr.io/freva-clint/freva-deployment:latest
-          platforms: linux/amd64,linux/arm64,linux/arm/v7,linux/arm/v6,linux/ppc64le,linux/i386
+          platforms: linux/amd64,linux/arm64,linux/ppc64le
 
 
   vault-test:

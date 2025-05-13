@@ -6,10 +6,9 @@ permissions:
   contents: write
   packages: write
 
-on:
+"on":
   workflow_dispatch:
   push:
-    branches: ["**"]
     tags:
       - "v*.*.*"
 
