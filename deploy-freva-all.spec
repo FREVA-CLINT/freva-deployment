@@ -14,18 +14,16 @@ for bin in ("mysqldump",):
 
 
 if sys.platform.lower().startswith("win"):
-    cowsay = ("pyinstaller/cowsay.exe", "bin")
-    hiddenimports = ["cryptography", "ansible_pylibssh", "windows-curses", "pwd", "fcntl"]
+    hiddenimports = ["tomlkit", "cryptography", "ansible_pylibssh", "windows-curses", "pwd", "fcntl"]
 else:
-    cowsay = ("pyinstaller/cowsay", "bin")
-    hiddenimports = ["cryptography", "ansible_pylibssh"]
+    hiddenimports = ["tomlkit", "cryptography", "ansible_pylibssh"]
 
 datas = [
     ("assets/share/freva/deployment", "freva_deployment/assets"),
     ("src/freva_deployment/versions.json", "freva_deployment"),
     ("src/freva_deployment/callback_plugins", "freva_deployment/callback_plugins"),
 ]
-binaries = bins + [cowsay]
+binaries = bins
 tmp_ret = collect_all("ansible")
 datas += tmp_ret[0]
 binaries += tmp_ret[1]

@@ -40,133 +40,6 @@ jobs:
           name: release_url
           path: release_url.txt
 
-  build-windows:
-    needs: [release]
-    runs-on: ${{matrix.os}}
-    strategy:
-      matrix:
-        include:
-          - os: windows-2019
-            target: windows-x64
-            url: https://github.com/Code-Hex/Neo-cowsay/releases/download/v2.0.4/cowsay_2.0.4_Windows_x86_64.zip
-            sh: pwsh
-            extra: win
-    steps:
-      - uses: actions/checkout@v4
-      - name: Create conda env
-        uses: mamba-org/setup-micromamba@v1
-        with:
-          init-shell: powershell bash cmd.exe
-          environment-name: build
-          post-cleanup: 'all'
-          create-args: >
-            python=3.11
-            appdirs
-            ansible-core
-            libclang
-            pymysql
-            mysql-common
-            mysql-client
-            pyyaml
-            rich
-            toml
-            tomlkit
-            requests
-            cryptography
-            mock
-            pyinstaller
-
-      - name: Activate micromamba env
-        run: |
-          micromamba shell hook -s powershell | Out-String | Invoke-Expression
-          micromamba activate
-        shell: pwsh
-
-      - name: Set UTF-8 Code Page
-        run: |
-          chcp 65001
-        shell: pwsh
-
-      - name: Set Locale Environment Variables
-        run: |
-          setx LANG en_US.UTF-8
-          setx LC_ALL en_US.UTF-8
-        shell: pwsh
-
-      - name: Verify Locale and Code Page
-        run: |
-          chcp
-          echo %LANG%
-          echo %LC_ALL%
-        shell: pwsh
-
-      - name: Adding the evaluation config file
-        run: micromamba run -n build python src/freva_deployment/__init__.py
-        shell: pwsh
-
-      - name: Install dependencies
-        run: |
-          micromamba run -n build python -m pip install --upgrade-strategy only-if-needed .[${{matrix.extra}}]
-          micromamba run -n build python -m pip install assets/unix_mock
-        shell: pwsh
-
-      - name: Download cowsay
-        run: micromamba run -n build python pyinstaller/download_cowsay.py ${{ matrix.url }}
-        shell: pwsh
-
-      - name: Build with cmd pyinstaller for deploy-freva.exe
-        env:
-          PYTHONIOENCODING: utf-8
-          LANG: en_US.UTF-8
-          LC_ALL: en_US.UTF-8
-        run: |
-          micromamba run -n build python pyinstaller/pre-win.py
-          micromamba run -n build pyinstaller --noconfirm deploy-freva-all.spec
-        shell: pwsh
-
-      - name: Test built bindary
-        run: ./dist/deploy-freva/deploy-freva.exe --help
-        shell: pwsh
-      - name: Load Release URL File from release job
-        if: startsWith(github.ref, 'refs/tags/')
-        uses: actions/download-artifact@v4
-        with:
-          name: release_url
-          path: release_url
-      - name: Get version
-        id: version
-        run: |
-          echo "tag=$(python src/freva_deployment/__init__.py -v)" >> $GITHUB_OUTPUT
-        shell: bash
-      - name: Create ZIP archive of the folder
-        run: >
-          Compress-Archive -Path .\dist\deploy-freva\*
-          -DestinationPath  .\deploy-freva-v${{steps.version.outputs.tag}}-${{matrix.target}}.zip
-        shell: pwsh
-      - name: Get Release File Name & Upload URL
-        if: startsWith(github.ref, 'refs/tags/')
-        id: release_url
-        shell: bash
-        run: |
-          echo "url=$(cat release_url/release_url.txt)" >> $GITHUB_OUTPUT
-      - name: Upload Release Asset
-        if: startsWith(github.ref, 'refs/tags/')
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.ASSET_TOKEN }}
-        with:
-          upload_url: ${{ steps.release_url.outputs.url }}
-          asset_path: deploy-freva-v${{steps.version.outputs.tag}}-${{matrix.target}}.zip
-          asset_name: deploy-freva-v${{steps.version.outputs.tag}}-${{matrix.target}}.zip
-          asset_content_type: application/zip
-      - name: Upload cmd Asset
-        uses: actions/upload-artifact@v4
-        with:
-          path: deploy-freva-v${{steps.version.outputs.tag}}-${{matrix.target}}.zip
-          name: deploy-freva-v${{steps.version.outputs.tag}}-${{matrix.target}}.zip
-          retention-days: 7
-
-
   build-osx:
     name: Build packages
     needs: [release]
@@ -219,10 +92,6 @@ jobs:
       - name: Install dependencies
         run: |
           micromamba run -n build python -m pip install .[unix]
-        shell: bash
-
-      - name: Download cowsay
-        run: micromamba run -n build python pyinstaller/download_cowsay.py ${{ matrix.url }}
         shell: bash
 
       - name: Build with cmd pyinstaller for ${{ matrix.target }}
@@ -327,12 +196,6 @@ jobs:
 
       - name: Inspect Buildx builder
         run: docker buildx inspect --bootstrap
-
-      - name: Build cowsay binary with golang
-        run: >
-          docker run --rm -v $PWD:/src -e GOBIN=/src/pyinstaller
-          -w /src --platform ${{ matrix.arch }} golang:1.22-alpine
-          go install github.com/Code-Hex/Neo-cowsay/cmd/v2/cowsay@latest
 
       - name: Build Docker image
         uses: docker/build-push-action@v4
