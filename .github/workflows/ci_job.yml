@@ -1,3 +1,4 @@
+---
 name: CLI Test
 run-name: ${{ github.actor }} is testing the cli 🧉
 
@@ -5,20 +6,23 @@ on: [push, workflow_call]
 jobs:
   linting-and-testing:
     runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 5
+      matrix:
+        python-version: [3.9, "3.10", "3.11", "3.12", "3.13"]
     steps:
-    -
-      name: Checkout
-      uses: actions/checkout@v4
-    -
-      name: Set up Python 3.11
-      uses: actions/setup-python@v4
-      with:
-        python-version: "3.11"
-    -
-      name: Install packages
-      run: |
-        python3 -m pip install tox
-        mkdir .mypy_cache
-    -
-      name: Running tests with tox
-      run: tox -p 3 --parallel-no-spinner
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{matrix.python-version}}
+
+      - name: Install packages
+        run: |
+          python3 -m pip install tox flit
+          mkdir .mypy_cache
+
+      - name: Running tests with tox
+        run: tox -p 3 --parallel-no-spinner
