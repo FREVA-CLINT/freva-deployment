@@ -7,6 +7,7 @@ permissions:
   packages: write
 
 on:
+  workflow_dispatch:
   push:
     branches: ["**"]
     tags:
