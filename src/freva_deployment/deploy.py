@@ -128,7 +128,12 @@ class DeployFactory:
     >>> deploy.play(ask_pass=True)
     """
 
-    step_order: tuple[str, ...] = ("core", "db", "freva_rest", "web")
+    step_order: tuple[str, ...] = (
+        "core",
+        "db",
+        "freva_rest",
+        "web",
+    )
     _steps_with_cert: tuple[str, ...] = ("core", "db", "web")
 
     @handled_exception
@@ -308,12 +313,14 @@ class DeployFactory:
         redis_information_enc = b64encode(
             json.dumps(redis_information).encode("utf-8")
         ).decode("utf-8")
-        self.cfg["freva_rest"].setdefault("data_loader", True)
         self._config_keys.append("redis")
-        if scheduler_host:
-            if data_portal_hosts[1:]:
-                self._config_keys.append("data_portal_hosts")
-            self._config_keys.append("data_portal_scheduler")
+        self._config_keys.append("data_portal_hosts")
+        self._config_keys.append("data_portal_scheduler")
+        if not scheduler_host:
+            self.cfg["data_portal_scheduler"] = self.cfg["redis"] = self.cfg[
+                "data_portal_hosts"
+            ] = {}
+            return
         # Update the config.
         self.cfg["data_portal_scheduler"] = {
             "data_portal_scheduler_host": scheduler_host or "",
@@ -368,6 +375,9 @@ class DeployFactory:
         services = ["databrowser"]
         if self.cfg["freva_rest"].get("data_loader_portal_hosts", "").strip():
             services.append("zarr-stream")
+            self.cfg["freva_rest"]["data_loader"] = True
+        else:
+            self.cfg["freva_rest"]["data_loader"] = False
         data_path = Path(
             cast(
                 str,
@@ -383,9 +393,6 @@ class DeployFactory:
         self.cfg["freva_rest"].setdefault("oidc_url", "")
         self.cfg["freva_rest"].setdefault("oidc_client", "freva")
         self.cfg["freva_rest"].setdefault("oidc_client_secret", "")
-        self.cfg["freva_rest"]["data_loader"] = self.cfg.get("redis", {}).get(
-            "use", False
-        )
         self.cfg["freva_rest"]["services"] = "-s " + " -s ".join(services)
         if prep_web:
             self._prep_web(False)
@@ -758,14 +765,16 @@ class DeployFactory:
             for tag in entry.get("tags", []):
                 if tag in self.steps + ["vault"]:
                     tags.append(entry["hosts"])
-        no_preprend = ("root_passwd", "deployment_method")
+        no_prepend = ("root_passwd", "deployment_method")
         for step in set(self._config_keys):
             config[step] = {}
+            if not self.cfg[step].get(f"{step}_host"):
+                continue
             config[step]["hosts"] = self.cfg[step][f"{step}_host"]
             config[step]["vars"] = {}
 
             for key, value in self.cfg[step].items():
-                if key in no_preprend + (f"{step}_host",) or key.startswith(step):
+                if key in no_prepend + (f"{step}_host",) or key.startswith(step):
                     new_key = key
                 else:
                     new_key = f"{step.replace('-', '_')}_{key}"
@@ -797,7 +806,7 @@ class DeployFactory:
             config["web"]["vars"]["proxy_version"] = versions.get("nginx", "")
         info = {}
         for step in config:
-            for key, value in config[step]["vars"].items():
+            for key, value in config[step].get("vars", {}).items():
                 if step in tags or ("db" in self.steps and step == "vault"):
                     info.setdefault(step, {})
                     info[step].setdefault("vars", {})
@@ -824,11 +833,6 @@ class DeployFactory:
     def aux_dir(self) -> Path:
         """Directory with auxillary files."""
         return asset_dir / "config"
-
-    @property
-    def playbook_dir(self) -> Path:
-        """The location of all playbooks."""
-        return asset_dir / "playbooks"
 
     @property
     def steps(self) -> list[str]:

@@ -37,9 +37,9 @@ class MainApp(npyscreen.NPSAppManaged):
         """Get the deploy steps."""
         steps = []
         for step, form_obj in self._forms.items():
-            if form_obj.use.value and step not in steps:
+            if form_obj.use.value:
                 steps.append(step)
-        return steps
+        return list(set(steps))
 
     def onStart(self) -> None:
         """When Application starts, set up the Forms that will be used."""
@@ -195,6 +195,7 @@ class MainApp(npyscreen.NPSAppManaged):
         try:
             return self._save_config_to_file(**kwargs)
         except Exception as error:
+            raise
             npyscreen.notify_confirm(
                 title="Error",
                 message=f"Couldn't save config:\n{error}",

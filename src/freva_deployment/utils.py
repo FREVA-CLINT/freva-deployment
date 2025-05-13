@@ -252,7 +252,6 @@ def _create_new_config(inp_file: Path) -> Path:
             "oidc_client",
             "oidc_client_secret",
             "data_loader_portal_hosts",
-            "deploy_data_loader",
             "deployment_method",
             "admin_user",
         ],

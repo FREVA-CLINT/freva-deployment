@@ -1,39 +1,18 @@
 ---
-- hosts: core
+- name: Include role vars
+  include_vars: "{{ role_path }}/files/vars.yml"
 
-  become: "{{ core_ansible_become_user is defined and core_ansible_become_user != '' }}"
-  vars:
-    ansible_python_interpreter: "{{ core_ansible_python_interpreter }}"
-    conda_bin: "{{ core_install_dir | regex_replace('^~', ansible_env.HOME) }}/bin"
-    conda_sbin: "{{ core_install_dir | regex_replace('^~', ansible_env.HOME) }}/sbin"
-    pkg_mgr: "conda"
-    ansible_become_user: "{{ core_ansible_become_user  | default('root')}}"
-    conda_url: "https://repo.anaconda.com/miniconda/Miniconda3-latest-{{core_arch}}.sh"
-    allow_world_readable_tmpfiles: true
-    conda_exec_path: >
-        "{{ core_conda_exec_path
-        if core_conda_exec_path is defined else '' }}"
-    eval_path: "freva/evaluation_system.conf"
-  tasks:
-    - name: Get UID
-      command: id -u {{ ansible_user }}
-      register: uid_result
+- name: Running common taks
+  include_tasks: "common_tasks.yml"
 
-    - name: Get GID
-      command: id -g {{ ansible_user }}
-      register: gid_result
+- name: Creating temp. dir
+  tempfile:
+    state: directory
+    prefix: evaluation_system
+  register: tempdir
 
-    - name: Set UID and GID as facts
-      set_fact:
-        uid: "{{ uid_result.stdout }}"
-        gid: "{{ gid_result.stdout }}"
-
-    - name: Creating temp. dir
-      tempfile:
-        state: directory
-        prefix: evaluation_system
-      register: tempdir
-
+- name: Setting up core lib
+  block:
     - name: Cloning the evluation_system reposiotry
       git:
         repo: "{{ core_git_url }}"
@@ -47,7 +26,9 @@
 
     - name: Downloading miniforge
       ansible.builtin.script:
-        cmd: "{{ asset_dir }}/scripts/download_conda.py {{ tempdir.path }}"
+        cmd: >
+          {{ asset_dir }}/scripts/download_conda.py
+          {{ tempdir.path }} -t mambaforge
       when: not freva_path.stat.exists
 
     - name: Creating conda dir
@@ -206,6 +187,7 @@
         mode: "{{ '2664' if core_admin_group is defined and core_admin_group != '' else '2644' }}"
         group: "{{ core_admin_group if core_admin_group is defined and core_admin_group != '' else omit}}"
 
+  always:
     - name: Deleting temporary files
       file:
         state: absent

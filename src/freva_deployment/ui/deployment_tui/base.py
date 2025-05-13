@@ -20,11 +20,11 @@ class InfoMixin(Widget):
     """Mixin class to extend npyscreen widgets with an infobox."""
 
     def __init__(
-        self, *args: Any, section: str = "", key: str = "", **kwargs: Any
+        self, *args: Any, section: str = "", key: str = "", info: str = "", **kwargs: Any
     ) -> None:
         name = kwargs.get("name", "Select")
         kwargs["name"] = f"{name}. Press Strg+F for more info."
-        self.info = AD.get_config_info(section, key)
+        self.info = info or AD.get_config_info(section, key)
         super().__init__(*args, **kwargs)
 
     def edit(self) -> None:

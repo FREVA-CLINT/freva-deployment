@@ -1,4 +1,13 @@
 ---
+- name: Deploy Freva Core Library
+  hosts: core
+  tags:
+    - core
+  vars_files:
+    - "./vars.yml"
+  roles:
+    - core
+
 - name: Deploy Database
   hosts: db
   tags:
@@ -26,7 +35,6 @@
   hosts: redis
   tags:
     - freva_rest
-    - freva-rest
   vars_files:
     - "./vars.yml"
   become: "{{ redis_ansible_become_user is defined and redis_ansible_become_user != '' }}"
@@ -34,11 +42,36 @@
   roles:
     - cache
 
+- name: Setup data-loader scheduler
+  hosts: data_portal_scheduler
+  tags:
+    - freva_rest
+  vars_files:
+    - "./vars.yml"
+  vars:
+    loader_service: "scheduler"
+  become: "{{ data_portal_scheduler_ansible_become_user is defined and data_portal_scheduler_ansible_become_user != '' }}"
+  become_user: "{{ data_portal_scheduler_ansible_become_user | default('root') }}"
+  roles:
+    - data-loader
+
+- name: Setup data-loader worker
+  hosts: data_portal_hosts
+  tags:
+    - freva_rest
+  vars_files:
+    - "./vars.yml"
+  vars:
+    loader_service: "worker"
+  become: "{{ data_portal_hosts_ansible_become_user is defined and data_portal_hosts_ansible_become_user != '' }}"
+  become_user: "{{ data_portal_hosts_ansible_become_user | default('root') }}"
+  roles:
+    - data-loader
+
 - name: Setup mongodb server
   hosts: mongodb_server
   tags:
     - freva_rest
-    - freva-rest
   vars_files:
     - "./vars.yml"
   become: "{{ mongodb_server_ansible_become_user is defined and mongodb_server_ansible_become_user != '' }}"
@@ -50,7 +83,6 @@
   hosts: search_server
   tags:
     - freva_rest
-    - freva-rest
   vars_files:
     - "./vars.yml"
   become: "{{ search_server_ansible_become_user is defined and search_server_ansible_become_user != '' }}"
@@ -62,7 +94,6 @@
   hosts: freva_rest
   tags:
     - freva_rest
-    - freva-rest
   vars_files:
     - "./vars.yml"
   become: "{{ freva_rest_ansible_become_user is defined and freva_rest_ansible_become_user != '' }}"
@@ -91,15 +122,6 @@
   become_user: "{{ web_become_user | default('root') }}"
   roles:
     - web
-
-- name: Deploy Freva Core
-  hosts: core
-  tags:
-    - core
-  vars_files:
-    - "./vars.yml"
-  #roles:
-  #  - general
 
 
 - name: Restarting the web service

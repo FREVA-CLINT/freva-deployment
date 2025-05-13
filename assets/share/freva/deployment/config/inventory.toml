@@ -104,11 +104,6 @@ redis_host = ""
 ## then the service will be disabled.
 data_loader_portal_hosts = ""
 
-### Ideally you only deploy the data loader service once. If the service
-### is up and running you can skip setting it up again by setting the
-### deploy_data_loader flag to false (default).
-deploy_data_loader = false
-
 ## Set the amount of memory allocated to the search engine (Solr).
 solr_mem = "4g"
 

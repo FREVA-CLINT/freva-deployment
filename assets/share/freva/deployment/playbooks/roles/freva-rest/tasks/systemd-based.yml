@@ -29,6 +29,7 @@
         file:
           path: "{{ secrets_file.path }}"
           state: absent
+  when: freva_rest_data_loader
 
 - name: Stopping the {{ freva_rest_name }} service
   systemd:

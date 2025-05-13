@@ -749,18 +749,6 @@ class FrevaRestScreen(BaseForm):
                 ),
                 True,
             ),
-            shared_cache=(
-                self.add_widget_intelligent(
-                    CheckboxInfo,
-                    section="freva_rest",
-                    key="shared_cache",
-                    max_height=2,
-                    editable=True,
-                    name=f"{self.num} Share the cache with other projects",
-                    value=cast(bool, cfg.get("shared_cache", False)),
-                ),
-                False,
-            ),
             data_loader_portal_hosts=(
                 self.add_widget_intelligent(
                     TextInfo,
@@ -771,19 +759,6 @@ class FrevaRestScreen(BaseForm):
                         "to provide zarr. Leave blank for none"
                     ),
                     value=cast(str, cfg.get("data_loader_portal_hosts", "")),
-                ),
-                False,
-            ),
-            deploy_data_loader=(
-                self.add_widget_intelligent(
-                    CheckboxInfo,
-                    section="freva_rest",
-                    key="deploy_data_loader",
-                    max_height=2,
-                    editable=True,
-                    name=f"{self.num} Deploy the data-loader service ",
-                    scroll_exit=True,
-                    value=cast(bool, cfg.get("deploy_data_loader", False)),
                 ),
                 False,
             ),
@@ -869,7 +844,6 @@ class RunForm(npyscreen.FormMultiPageAction):
     def on_ok(self) -> None:
         """Define what happens once the `ok` for applying the deployment is hit."""
 
-        self.parentApp.thread_stop.set()
         if not self.project_name.value:
             npyscreen.notify_confirm(
                 "You have to set a project name", title="ERROR"
@@ -922,6 +896,7 @@ class RunForm(npyscreen.FormMultiPageAction):
             "local_debug": bool(self.local_debug.value),
             "gen_keys": bool(gen_keys),
         }
+        self.parentApp.thread_stop.set()
         self.parentApp.exit_application(
             save_file=save_file, msg="Do you want to continue?"
         )

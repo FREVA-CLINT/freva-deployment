@@ -1,0 +1,3 @@
+---
+ansible_become_user: "{{ data_portal_scheduler_ansible_become_user | default('root') }}"
+secrets_file: "{{ '/root' if ansible_become_user == 'root' else ansible_env.HOME}}/.data-portal-cluster-config.json"
