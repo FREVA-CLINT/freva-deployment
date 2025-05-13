@@ -33,6 +33,7 @@ dependencies = [ "appdirs",
              "rich-argparse",
              "toml",
              "tomlkit",
+             "typing_extensions",
              "requests",
 ]
 [project.optional-dependencies]
@@ -86,7 +87,7 @@ parallel_show_output = false
 deps = -e .
 
 commands =
-    deploy-freva-cmd --help
+    deploy-freva cmd --help
     deploy-freva --help
 
 [testenv:docs]
@@ -123,20 +124,15 @@ deps = -e .
        pyinstaller
        cryptography
 allowlist_externals = go
-passenv =
-    COW_EXE
 setenv =
-    GOBIN = {toxinidir}/pyinstaller/
-    COW_EXE = {env:COW_EXE:cowsay}
-commands_pre = go install github.com/Code-Hex/Neo-cowsay/cmd/v2/cowsay@latest
 commands =
           pyinstaller pyinstaller/pyinstaller-deploy-freva.py -c \
           --name deploy-freva --onedir --clean -i docs/_static/freva_owl.ico \
           --add-data 'assets/share/freva/deployment:freva_deployment/assets' \
           --add-data 'src/freva_deployment/versions.json:freva_deployment' \
           --add-data 'src/freva_deployment/callback_plugins:freva_deployment/callback_plugins' \
-          --add-binary 'pyinstaller/{env:COW_EXE:cowsay}:bin' \
           --hidden-import curses \
+          --hidden-import tomlkit \
           --hidden-import windows-curses \
           --hidden-import cryptography \
           --hidden-import ansible_pylibssh \
