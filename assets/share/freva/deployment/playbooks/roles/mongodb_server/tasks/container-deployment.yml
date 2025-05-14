@@ -28,5 +28,4 @@
 
 - name: Container healthchecks
   script: >
-    {{ docker_bin }} exec {{item.name}} {{item.cmd}}
-  with_items: "{{healthchecks}}"
+    {{ docker_bin }} exec {{ mongo_name }} healthchecks -s mongo

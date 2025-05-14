@@ -12,7 +12,7 @@
       script: >
         {{ asset_dir }}/scripts/inspect.sh {{ image }}
       become: "{{ ansible_become_user | default('root') is defined and ansible_become_user | default('root') != '' }}"
-      register: version_cmd
+      register: version_container
       when: deployment_method in ["docker", "podman"]
 
     - name: Checking conda versions
@@ -25,7 +25,13 @@
 
     - name: Display freva_rest version
       debug:
-        msg: "{{ version_cmd.stdout }}"
+        msg: "{{ version_container.stdout }}"
+      when: deployment_method in ["docker", "podman"]
+
+    - name: Display freva_rest version
+      debug:
+        msg: "{{ version_container.stdout }}"
+      when: deployment_method == "conda"
 
 - hosts: web
   vars:
@@ -42,7 +48,7 @@
       script: >
         {{ asset_dir }}/scripts/inspect.sh {{ image }}
       become: "{{ ansible_become_user | default('root') is defined and ansible_become_user | default('root') != '' }}"
-      register: version_cmd
+      register: version_container
       when: deployment_method in ["docker", "podman"]
 
     - name: Checking conda versions
@@ -56,14 +62,16 @@
     - name: Display web version
       debug:
         msg: "{{ version_cmd.stdout }}"
+      when: deployment_method == "conda"
+
+    - name: Display web version
+      debug:
+        msg: "{{ version_container.stdout }}"
+      when: deployment_method in ["docker", "podman"]
+
 
 - hosts: vault
   vars:
-    image: "ghcr.io/freva-clint/freva-vault"
-    service_command: >
-      {{ansible_python_interpreter}} -c
-      "import json;
-      print(json.load(open('{{data_dir}}/app/package.json')).get('version', '0.0.0'))"
     role: "vault"
   tasks:
     - name: Include role vars

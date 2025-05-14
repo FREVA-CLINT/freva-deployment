@@ -1,42 +1,76 @@
 # -*- mode: python ; coding: utf-8 -*-
 import os
+import shutil
 from PyInstaller.utils.hooks import collect_all
 from pathlib import Path
-import re
 import sys
-import shutil
 
+# ---------------------------------------------------
+# Clean old build and dist folders (equivalent to --clean)
+# ---------------------------------------------------
+project_dir = Path.cwd().parent.resolve()
+for folder in ["build", "dist"]:
+    target = project_dir / folder
+    if target.exists() and target.is_dir():
+        print(f"Cleaning existing folder: {target}")
+        shutil.rmtree(target)
+
+
+# ---------------------------------------------------
+# Optional: clean old spec files (only if generated)
+# ---------------------------------------------------
+# spec_file = project_dir / "deploy-freva.spec"
+# if spec_file.exists():
+#     print(f"Removing old spec file: {spec_file}")
+#     spec_file.unlink()
+
+# ---------------------------------------------------
+# Setup binaries
+# ---------------------------------------------------
 bins = []
 for bin in ("mysqldump",):
     exe = shutil.which(bin)
     if exe:
         bins.append((exe, "bin"))
 
-
+# ---------------------------------------------------
+# Hidden imports
+# ---------------------------------------------------
 if sys.platform.lower().startswith("win"):
     hiddenimports = ["tomlkit", "cryptography", "ansible_pylibssh", "windows-curses", "pwd", "fcntl"]
 else:
     hiddenimports = ["tomlkit", "cryptography", "ansible_pylibssh"]
 
+# ---------------------------------------------------
+# Data files
+# ---------------------------------------------------
 datas = [
     ("assets/share/freva/deployment", "freva_deployment/assets"),
     ("src/freva_deployment/versions.json", "freva_deployment"),
     ("src/freva_deployment/callback_plugins", "freva_deployment/callback_plugins"),
 ]
 binaries = bins
-tmp_ret = collect_all("ansible")
-datas += tmp_ret[0]
-binaries += tmp_ret[1]
-hiddenimports += tmp_ret[2]
-tmp_ret = collect_all("ansible_collections")
-datas += tmp_ret[0]
-binaries += tmp_ret[1]
-hiddenimports += tmp_ret[2]
 
+# ---------------------------------------------------
+# Collect all from ansible & ansible_collections
+# ---------------------------------------------------
+for package in ("ansible", "ansible_collections"):
+    all_data = collect_all(package)
+    datas += all_data[0]
+    binaries += all_data[1]
+    hiddenimports += all_data[2]
 
+# ---------------------------------------------------
+# ✅ Filter out accidental _internal folders
+# ---------------------------------------------------
+datas = [d for d in datas if "_internal" not in d[0] and "_internal" not in d[1]]
+binaries = [b for b in binaries if "_internal" not in b[0] and "_internal" not in b[1]]
+# ---------------------------------------------------
+# PyInstaller build
+# ---------------------------------------------------
 a = Analysis(
     ["pyinstaller/pyinstaller-deploy-freva.py"],
-    pathex=[],
+    pathex=[str(project_dir)],
     binaries=binaries,
     datas=datas,
     hiddenimports=hiddenimports,
@@ -47,6 +81,7 @@ a = Analysis(
     noarchive=False,
     optimize=0,
 )
+
 pyz = PYZ(a.pure)
 
 exe = EXE(
@@ -65,8 +100,10 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
+    onefile=True,
     icon=['docs/_static/freva_owl.ico'],
 )
+
 coll = COLLECT(
     exe,
     a.binaries,

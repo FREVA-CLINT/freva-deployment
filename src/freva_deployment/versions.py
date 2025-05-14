@@ -3,6 +3,7 @@
 import argparse
 import json
 import os
+import ssl
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -15,6 +16,8 @@ from rich import print as pprint
 from rich.prompt import Prompt
 
 from .error import ConfigurationError, handled_exception
+
+ssl_context = ssl._create_unverified_context()
 
 
 class VersionAction(argparse._VersionAction):
@@ -73,9 +76,10 @@ def get_versions(_versions: List[Dict[str, str]] = []) -> Dict[str, str]:
         "https://raw.githubusercontent.com/FREVA-CLINT/freva-service-config"
         "/refs/heads/main/{service}/requirements.txt"
     )
+
     for service in ("mongo", "solr", "nginx", "redis"):
         try:
-            with urlopen(url.format(service=service)) as res:
+            with urlopen(url.format(service=service), context=ssl_context) as res:
                 text = res.read().decode()
         except Exception as error:
             raise ConfigurationError(

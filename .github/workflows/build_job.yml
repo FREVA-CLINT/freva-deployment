@@ -47,14 +47,9 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: macos-12
-            target: osx-x64
-            arch: x86_64
-            url: https://github.com/Code-Hex/Neo-cowsay/releases/download/v2.0.4/cowsay_2.0.4_macOS_x86_64.tar.gz
           - os: macos-14
             target: osx-arm64
             arch: arm64
-            url: https://github.com/Code-Hex/Neo-cowsay/releases/download/v2.0.4/cowsay_2.0.4_macOS_arm64.tar.gz
 
     steps:
       - uses: actions/checkout@v4
@@ -100,7 +95,8 @@ jobs:
           LANG: en_US.UTF-8
           LC_ALL: en_US.UTF-8
         run: >
-          micromamba run -n build pyinstaller --noconfirm deploy-freva-all.spec
+          micromamba run -n build pyinstaller --clean
+          --noconfirm deploy-freva-all.spec
         shell: bash
 
       - name: Test built bindary

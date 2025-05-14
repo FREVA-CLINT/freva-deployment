@@ -25,7 +25,7 @@ key was set to `clex-ces` then the following services are created:
 
 The data-loader services for zarr streaming are optional. Additionally
 `clex-ces-web-cache.service` `clex-ces-web-proxy.service` will only be present
-for conda-forge base deployments.
+for *conda-forge* based deployments.
 
 > ``💡`` If you have set up the services as an unprivileged user you need
 to access the services with help of the ``--user`` flag for example:
@@ -66,11 +66,22 @@ for exmaple:
 - `clex-ces-db_data`: Persistent database data
 - `clex-ces-db_logs`: Persistent database logs
 
-Containers are orchestrated using `podman-compose` / `docker-compose`.
+You can inspect the volumes using the following commands:
+
+```console
+
+podman volume ls
+podman volume inspect <project_name>-<service>_<type>
+
+```
+
+
+If you chose the `docker/podman` deployment option then the containers are
+orchestrated using `podman-compose` / `docker-compose`.
 The compose files are also located in the `<data_path>/<project_name>/compose_services`
 location, for example:
 
-- `/opt/freva/cles-ces/compose_services`
+- `/opt/freva/clex-ces/compose_services`
 
 ## Simple backup scripts:
 The `db` and `databrowser` services offer a very simple backup script.

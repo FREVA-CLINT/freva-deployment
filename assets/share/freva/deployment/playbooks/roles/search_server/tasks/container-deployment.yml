@@ -18,9 +18,9 @@
     -f {{ compose_file }} up --remove-orphans
   environment:
     DEBUG: '{{ debug }}'
-    PREFER: "{{deployment_method }}"
+    PREFER: "{{ deployment_method }}"
 
-- pause: seconds=15
+- pause: seconds=30
 
 - name: Container healthchecks
   script: >

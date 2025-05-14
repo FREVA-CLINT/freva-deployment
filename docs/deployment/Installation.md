@@ -32,12 +32,18 @@ from the [release page](release:{{version}}).
 
 
 - **macOS**
-  - [amd64](exe:osx-x64.tar.gz)
   - [arm64](exe:osx-arm64.tar.gz)
 
 After downloading version {{version}} file for your operating system and
-architecture, you have to extract the archived folder and run the
-`deploy-freva` command in the extracted folder:
+architecture, extract the binaries to a meaningful location such as 
+`~/.local/deploy-freva`:
+
+```console
+tar xzf deploy-freva-v{{version}}-linux-x64.tar.gz -C ~/.local
+ln -s ~/.local/deploy-freva/deploy-freva ~/.local/bin/
+```
+
+If you have `~/.local/bin` in you `PATH` variable you can use the deployment:
 
 ```console
 Usage: deploy-freva [-h] [-v] [-V] [--cowsay] {cmd,migrate} ...
