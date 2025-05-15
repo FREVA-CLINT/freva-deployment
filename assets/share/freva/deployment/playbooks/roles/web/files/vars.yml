@@ -24,7 +24,6 @@ conda_packages:
 
 volume_names:
   - "{{ web_name }}_django-static"
-  - "{{ web_name }}_django-migration"
   - "{{ web_name }}_logs"
 
 web_port_httpd: "{{ '80' if ansible_become_user == 'root' or ansible_user == 'root' else '9080' }}"

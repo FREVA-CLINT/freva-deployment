@@ -49,5 +49,6 @@
     --user {{ uid }}
     --deployment-method {{ deployment_method }}
     --backup-dir {{ data_dir }}/backups
-    --command {{ data_dir }}/bin/mysql-daily-backup.sh
+    --src-dir {{ data_dir }}/data
+    --command {{ conda_path }}/libexec/freva-rest-server/daily-backup.sh
   when: cron.stat.exists == true

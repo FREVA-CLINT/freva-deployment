@@ -8,7 +8,7 @@ conda_path: '{{redis_data_path|regex_replace("^~", ansible_env.HOME)}}/{{service
 base_path: '{{redis_data_path| regex_replace("^~", ansible_env.HOME)}}'
 data_dir: '{{redis_data_path|regex_replace("^~", ansible_env.HOME)}}/{{service}}'
 cache_name: "freva-cacheing"
-wipe: true
+wipe: false
 volume_names:
   - "{{ cache_name }}_data"
   - "{{ cache_name }}_logs"

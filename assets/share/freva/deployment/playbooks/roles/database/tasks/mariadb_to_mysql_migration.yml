@@ -47,14 +47,7 @@
 - name: Dump MariaDB databases to shared volume
   script: >
     {{ docker_bin }} compose -f {{ temp_compose_file }} exec temp-db
-    sh -c "mariadb-dump
-    $(mariadb -N -e \"SHOW DATABASES\" \
-      | grep -Ev '^(mysql|information_schema|performance_schema|sys)$')\
-    --skip-add-locks \
-    --skip-comments \
-    --skip-set-charset \
-    --skip-tz-utc \
-    | gzip -9 > /backup/dump.sql.gz"
+    sh -c "mariadb-dump {{ db }} | gzip -9 > /backup/dump.sql.gz"
 
 - name: Stop and remove temporary MariaDB container
   script: >
@@ -96,4 +89,5 @@
 - name: Import SQL dump into MySQL container
   script: >
     {{ docker_bin }} compose -f {{ temp_compose_file }} exec temp-db
-    sh -c "gunzip -c /backup/dump.sql.gz | mysql -uroot -p'{{ root_passwd }}'"
+    sh -c "gunzip -c /backup/dump.sql.gz | mysql -uroot -p'{{ root_passwd }}'
+    {{ db }}"

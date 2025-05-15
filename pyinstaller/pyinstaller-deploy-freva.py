@@ -17,7 +17,10 @@ def main():
             os.environ["ANSIBLE_COW_PATH"] = cow_exe
             break
     os.environ["PATH"] = os.environ["PATH"] + os.pathsep + path
-    main_cli()
+    try:
+        main_cli()
+    except (KeyboardInterrupt, SystemExit):
+        sys.exit(1)
 
 
 if __name__ == "__main__":

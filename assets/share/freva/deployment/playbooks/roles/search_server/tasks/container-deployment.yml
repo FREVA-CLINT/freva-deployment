@@ -20,7 +20,16 @@
     DEBUG: '{{ debug }}'
     PREFER: "{{ deployment_method }}"
 
-- pause: seconds=30
+- name: Wait for Solr to be available
+  uri:
+    url: "http://localhost:8983/solr/latest/admin/ping"
+    status_code: 200
+    timeout: 5
+  register: result
+  retries: 30
+  delay: 5
+  until: result.status == 200
+  when: search_server_service == 'solr'
 
 - name: Container healthchecks
   script: >

@@ -197,7 +197,8 @@ detect_legacy_services() {
       freva-web) rm -rf "$path" ;;
       solr) echo -e "$service\t${path}/data\t${path}" ;;
       mongodb) echo -e "$service\t${path}/stats\t${path}" ;;
-      vault|db) echo -e "$service\t${path}\t${path}" ;;
+      vault) echo -e "$service\t${path}/files\t${path}" ;;
+      db) echo -e "$service\t${path}\t${path}" ;;
       compose*|conda*|freva-cacheing) ;;
       *) rm -rf "$path" ;;
     esac
@@ -216,7 +217,9 @@ while IFS=$'\t' read -r service path del_path; do
 done < <(detect_legacy_services)
 
 # Migrate the explicitly specified service
-migrate "$SERVICE"
+if ! printf "%s\n" "${MIGRATIONS[@]}" | grep -Fxq "$SERVICE"; then
+    migrate "$SERVICE"
+fi
 
 # Report failures
 if [ "${#FAILED_RESTORE[@]}" -ne 0 ]; then

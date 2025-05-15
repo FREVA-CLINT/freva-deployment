@@ -43,9 +43,3 @@
     -e "SHOW GLOBAL STATUS LIKE 'Threads_connected';"
   environment:
     MYSQL_ROOT_PASSWORD: "{{ root_passwd }}"
-
-- name: Download daily mysql backup script
-  get_url:
-    url: https://raw.githubusercontent.com/FREVA-CLINT/freva-service-config/refs/heads/main/mysql/daily_backup.sh
-    dest: "{{ data_dir }}/bin/mysql-daily-backup.sh"
-    mode: '0755'

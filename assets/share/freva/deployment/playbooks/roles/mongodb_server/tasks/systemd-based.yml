@@ -20,3 +20,15 @@
 - name: Playing the {{ deployment_method }} tasks
   include_tasks:
     file: "{{ deployment_file | trim }}"
+
+- name: Creating cron jobs
+  script: >
+    {{asset_dir}}/scripts/create_cron.sh
+    --service {{ mongo_name }}
+    --email {{ mongodb_server_email }}
+    --user {{ uid }}
+    --deployment-method {{ deployment_method }}
+    --backup-dir {{ data_dir }}/backups
+    --src-dir {{ data_dir }}/data
+    --command {{ conda_path }}/libexec/freva-rest-server/daily-backup.sh
+  when: cron.stat.exists == true

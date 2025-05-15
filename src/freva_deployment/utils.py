@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import os
 import re
 import shutil
@@ -10,10 +11,10 @@ import sys
 import sysconfig
 from pathlib import Path
 from typing import Any, Dict, MutableMapping, NamedTuple, Optional, Union, cast
+from urllib.request import urlopen
 
 import appdirs
 import namegenerator
-import requests
 import tomlkit
 from rich.console import Console
 from rich.prompt import Prompt
@@ -334,7 +335,8 @@ def read_db_credentials(db_host: str, port: int = 5002) -> dict[str, str]:
     """Read database config."""
     sha = hashlib.sha512("".encode()).hexdigest()
     url = f"http://{db_host}:{port}/vault/data/{sha}"
-    return requests.get(url, timeout=3).json()
+    with urlopen(url) as res:
+        return json.loads(res.read().decode())
 
 
 def get_email_credentials() -> tuple[str, str]:

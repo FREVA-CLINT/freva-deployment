@@ -23,14 +23,13 @@ services:
       - API_REDIS_SSL_CERTFILE=/certs/client-cert.pem
       - API_REDIS_SSL_KEYFILE=/certs/client-key.pem
       - CACHE_CONFIG={{ cache_information_enc }}
-{% else %}
+{% endif %}
       - API_MONGO_USER={{freva_rest_db_user}}
-      - API_LOG_DIR=/tmp/logs
+      - API_LOGDIR=/tmp/logs
       - API_SOLR_HOST={{freva_rest_search_server_host}}:8983
-      - API_MONGO_HOST={{freva_rest_mongodb_server_host}}:27017
+      - API_MONGO_HOST={{ freva_rest_mongodb_server_host }}:27017
       - API_MONGO_PASSWORD={{freva_rest_db_passwd}}
       - API_MONGO_DB=search_stats
-{% endif %}
     ports:
       - {{freva_rest_port}}:{{freva_rest_port}}
     container_name: {{freva_rest_name}}

@@ -30,7 +30,7 @@
 
     - name: Display freva_rest version
       debug:
-        msg: "{{ version_container.stdout }}"
+        msg: "{{ version_cmd.stdout }}"
       when: deployment_method == "conda"
 
 - hosts: web

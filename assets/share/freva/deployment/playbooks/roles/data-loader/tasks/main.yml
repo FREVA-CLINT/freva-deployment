@@ -5,6 +5,7 @@
 - name: Set deployment task file
   set_fact:
     deployment_file: "{{ role_path }}/tasks/{{('k8s-deployment.yml' if deployment_method == 'k8s' else 'systemd-based.yml')}}"
+    play_file: "{{ role_path }}/tasks/{{('k8s-deployment.yml' if deployment_method == 'k8s' else 'systemd-based.yml') | trim}}"
 
-- name: Run deployment - {{ deployment_file }}
-  include_tasks: "{{ deployment_file | trim }}"
+- name: Playing {{ deployment_method }} deployment
+  include_tasks: "{{ play_file | trim }}"

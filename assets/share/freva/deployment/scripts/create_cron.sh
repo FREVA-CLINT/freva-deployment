@@ -9,6 +9,7 @@ DEPLOYMENT_METHOD="container"
 EMAIL=""
 SERVICE=""
 BACKUP_DIR=""
+SCR_DIR=""
 DEBUG=false
 
 print_help() {
@@ -22,6 +23,7 @@ Options:
   --command PATH           Command to run (default: /usr/local/bin/daily_backup)
   --deployment-method TYPE Deployment method: podman, docker, conda, or mamba (required)
   --backup-dir DIR         Directory where the backups should be stored.
+  --src-dir DIR            Directory where the backups should be stored.
   --debug                  Print cron job content instead of writing it
   --help, -h               Show this help message and exit
 
@@ -60,6 +62,10 @@ while [[ $# -gt 0 ]]; do
             BACKUP_DIR="$2"; shift 2 ;;
         --backup-dir=*)
             BACKUP_DIR="${1#*=}"; shift ;;
+        --src-dir)
+            SRC_DIR="$2"; shift 2 ;;
+        --scr-dir=*)
+            SRC_DIR="${1#*=}"; shift ;;
         --debug)
             DEBUG=true; shift ;;
         --help|-h)
@@ -100,14 +106,10 @@ detect_container_tool() {
 case "$DEPLOYMENT_METHOD" in
     podman|docker|container)
         RUNTIME_PATH=$(detect_container_tool)
-        EXEC_CMD="$RUNTIME_PATH exec --user=$USER_ID $SERVICE sh /usr/local/bin/daily_backup"
+        EXEC_CMD="$RUNTIME_PATH exec --user=$USER_ID $SERVICE sh /usr/local/bin/daily-backup -s /data/db -b /backup"
         ;;
     conda|mamba)
-        if [ "$BACKUP_DIR" ];then
-            EXEC_CMD="BACKUP_DIR=$BACKUP_DIR $COMMAND"
-        else
-            EXEC_CMD="$COMMAND"
-        fi
+        EXEC_CMD="$COMMAND -s $SRC_DIR -b $BACKUP_DIR"
         ;;
     *)
         echo "Error: Unknown or unsupported --deployment-method: $DEPLOYMENT_METHOD"

@@ -15,7 +15,7 @@ from copy import deepcopy
 from getpass import getuser
 from pathlib import Path
 from socket import gethostbyname, gethostname
-from typing import Any, Dict, List, Optional, Union, cast
+from typing import Any, Dict, Optional, cast
 from urllib.parse import urlparse
 
 import appdirs
@@ -1079,11 +1079,16 @@ class DeployFactory:
         steps = [s for s in self.steps]
         self._set_deployment_methods()
         if skip_version_check is False:
-            steps = self.get_steps_from_versions(
-                envvars.copy(),
-                extravars.copy(),
-                self.passwords.copy(),
-                verbosity,
+            steps = list(
+                set(
+                    steps
+                    + self.get_steps_from_versions(
+                        envvars.copy(),
+                        extravars.copy(),
+                        self.passwords.copy(),
+                        verbosity,
+                    )
+                )
             )
         inventory = self.parse_config(steps)
         if inventory is None:
@@ -1091,7 +1096,7 @@ class DeployFactory:
             return None
         logger.debug(inventory)
         self.create_eval_config()
-        logger.info("Playing the playbooks for %s with ansible", ", ".join(steps))
+        RichConsole.print(f"Playing steps: [i]{', '.join(steps)}[/] with ansible")
         time.sleep(3)
         self._td.run_ansible_playbook(
             working_dir=asset_dir,

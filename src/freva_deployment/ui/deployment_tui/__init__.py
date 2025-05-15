@@ -8,7 +8,6 @@ import logging
 from freva_deployment.deploy import DeployFactory
 from freva_deployment.error import DeploymentError
 from freva_deployment.logger import logger, set_log_level
-from freva_deployment.utils import RichConsole
 
 from .main_window import MainApp
 
@@ -43,10 +42,8 @@ def tui(args: argparse.Namespace) -> None:
     main_app.thread_stop.set()
     if setup:
         ask_pass = setup.pop("ask_pass")
-        steps = ", ".join(setup["steps"])
         ssh_port = setup.pop("ssh_port")
         skip_version_check = setup.pop("skip_version_check", False)
-        RichConsole.print(f"Playing steps: [i]{steps}[/] with ansible")
         with DeployFactory(_cowsay=args.cowsay, **setup) as DF:
             try:
                 DF.play(

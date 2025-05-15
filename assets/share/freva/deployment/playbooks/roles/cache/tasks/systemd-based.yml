@@ -1,7 +1,4 @@
 ---
-- name: Running common taks
-  include_tasks: "common_tasks.yml"
-
 - name: Adjust infrastructure
   shell:
     cmd: >
@@ -9,11 +6,6 @@
       sysctl -p &&
       sysctl vm.overcommit_memory=1
   when: ansible_become and ansible_become_user == 'root'
-
-- name: Register systmed unit file
-  stat:
-    path: "{{systemd_unit_dir}}/{{ cache_name }}.service"
-  register: systemd_file
 
 - name: Register config path
   stat:
@@ -26,6 +18,14 @@
 
 - name: Set up caching
   block:
+    - name: Running common taks
+      include_tasks: "common_tasks.yml"
+
+    - name: Register systmed unit file
+      stat:
+        path: "{{systemd_unit_dir}}/{{ cache_name }}.service"
+      register: systemd_file
+
     - name: Stopping the {{ cache_name }} service
       systemd:
         name: "{{ cache_name }}"
@@ -63,11 +63,6 @@
     - name: Playing the {{ cache_deployment_method }} tasks
       include_tasks:
         file: "{{ deployment_file | trim }}"
-  rescue:
-    - name: Cleaning up {{ data_dir }}
-      file:
-        state: absent
-        path: "{{ data_dir }}"
 
   when: not config_path.stat.exists
 
