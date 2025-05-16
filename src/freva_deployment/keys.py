@@ -143,17 +143,24 @@ class RandomKeys:
             )
             .sign(self.private_key, hashes.SHA256(), default_backend())
         )
-
+        # Add SANs
+        san = x509.SubjectAlternativeName(
+            [
+                x509.DNSName(f"{self.common_name}"),
+                x509.DNSName(f"www.{self.common_name}"),
+            ]
+        )
         certificate = (
             x509.CertificateBuilder()
             .subject_name(csr.subject)
             .issuer_name(csr.subject)
+            .add_extension(san, critical=False)
             .public_key(csr.public_key())
             .serial_number(x509.random_serial_number())
             .not_valid_before(datetime.datetime.now(datetime.timezone.utc))
             .not_valid_after(
                 datetime.datetime.now(datetime.timezone.utc)
-                + datetime.timedelta(days=365)
+                + datetime.timedelta(days=10 * 365)
             )
             .sign(self.private_key, hashes.SHA256(), default_backend())
         )

@@ -22,7 +22,7 @@
       CONDA_PREFIX: "{{ conda_path }}"
       API_DATA_DIR: "{{ data_dir }}/data"
       API_LOG_DIR: "{{ data_dir }}/logs"
-      API_CONFIG_DIR: "{{ conda_path }}/share/freva-rest-server/mysql"
+      API_CONFIG_DIR: "{{ data_dir }}/config"
 
 - name: Creating caching systemd service
   template:

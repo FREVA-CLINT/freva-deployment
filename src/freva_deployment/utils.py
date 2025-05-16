@@ -180,17 +180,20 @@ def get_cache_information(
 ) -> Dict[str, str]:
     """Create all information we need to setup the redis cache and the data portal."""
     user = ssl_cert = ssl_key = ""
+    if redis_host:
+        keys = RandomKeys(
+            common_name=redis_host.rpartition("//")[-1].partition(":")[0]
+        )
+        user = namegenerator.gen()
+        ssl_cert = keys.certificate_chain.decode("utf-8")
+        ssl_key = keys.private_key_pem.decode("utf-8")
+
     if scheduler_host and scheduler_port:
         scheduler_host = f"{scheduler_host}:{scheduler_port}"
     if redis_host and redis_port:
         redis_host = f"redis://{redis_host}:{redis_port}"
     elif redis_host and not redis_port:
         redis_host = f"redis://{redis_host}"
-    if redis_host:
-        keys = RandomKeys(common_name=redis_host)
-        user = namegenerator.gen()
-        ssl_cert = keys.certificate_chain.decode("utf-8")
-        ssl_key = keys.private_key_pem.decode("utf-8")
     return {
         "ssl_cert": ssl_cert,
         "ssl_key": ssl_key,
@@ -253,16 +256,14 @@ def _create_new_config(inp_file: Path) -> Path:
             "oidc_client",
             "oidc_client_secret",
             "data_loader_portal_hosts",
-            "deployment_method",
             "admin_user",
         ],
         "web": [
-            "deployment_method",
             "web_host",
             "admin_user",
             "chatbot_host",
         ],
-        "db": ["deployment_method", "vault_host", "db_host", "admin_user"],
+        "db": ["vault_host", "db_host", "admin_user"],
         "core": ["core_host"],
     }
     create_backup = False
@@ -297,6 +298,10 @@ def _create_new_config(inp_file: Path) -> Path:
             if key not in tomlkit.dumps(config):
                 config[section][key] = config_tmpl[section][key]
                 create_backup = True
+    for key in ("deployment_method",):
+        if key not in config:
+            create_backup = True
+            config[key] = config_tmpl[key]
     if create_backup:
         backup_file = inp_file.with_suffix(inp_file.suffix + ".bck")
         logger.info(

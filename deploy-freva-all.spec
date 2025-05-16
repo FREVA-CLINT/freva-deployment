@@ -36,10 +36,7 @@ for bin in ("mysqldump",):
 # ---------------------------------------------------
 # Hidden imports
 # ---------------------------------------------------
-if sys.platform.lower().startswith("win"):
-    hiddenimports = ["tomlkit", "cryptography", "ansible_pylibssh", "windows-curses", "pwd", "fcntl"]
-else:
-    hiddenimports = ["tomlkit", "cryptography", "ansible_pylibssh"]
+hiddenimports = ["tomlkit", "cryptography", "ansible_pylibssh"]
 
 # ---------------------------------------------------
 # Data files

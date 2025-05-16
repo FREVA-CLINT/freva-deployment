@@ -335,7 +335,6 @@ class DeployFactory:
         if data_portal_hosts[1:]:
             self.cfg["data_portal_hosts"] = {
                 "data_portal_hosts": ",".join(data_portal_hosts[1:]),
-                "is_worker": True,
                 "information": redis_information_enc,
                 "admin_user": self.cfg["freva_rest"].get("admin_user", ""),
                 "ansible_become_user": self.cfg["freva_rest"].get(
@@ -629,8 +628,8 @@ class DeployFactory:
             return config
         except FileNotFoundError:
             raise ConfigurationError(f"No such file {self._inv_tmpl}") from None
-        except KeyError:
-            raise ConfigurationError("You must define a db section") from None
+        except KeyError as error:
+            raise ConfigurationError(error) from error
 
     def _check_config(self) -> None:
         sections = []
@@ -768,11 +767,13 @@ class DeployFactory:
         no_prepend = ("root_passwd", "deployment_method")
         for step in set(self._config_keys):
             config[step] = {}
-            if not self.cfg[step].get(f"{step}_host"):
+            if self.cfg[step].get(f"{step}_host"):
+                config[step]["hosts"] = self.cfg[step][f"{step}_host"]
+            elif self.cfg[step].get(step):
+                config[step]["hosts"] = self.cfg[step][step]
+            else:
                 continue
-            config[step]["hosts"] = self.cfg[step][f"{step}_host"]
             config[step]["vars"] = {}
-
             for key, value in self.cfg[step].items():
                 if key in no_prepend + (f"{step}_host",) or key.startswith(step):
                     new_key = key

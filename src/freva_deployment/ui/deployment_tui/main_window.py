@@ -13,7 +13,6 @@ from typing import Any, Dict, List, cast
 import appdirs
 import npyscreen
 import tomlkit
-
 from freva_deployment.utils import asset_dir, config_dir, load_config
 
 from .base import BaseForm, selectFile
@@ -173,7 +172,9 @@ class MainApp(npyscreen.NPSAppManaged):
         try:
             self.config = load_config(config_file)
         except Exception as error:
-            npyscreen.notify_ok(error, title=f"Error loading {config_file}")
+            npyscreen.notify_confirm(
+                str(error), title=f"Error loading {config_file}"
+            )
             return
         self.resetHistory()
         self.editing = True

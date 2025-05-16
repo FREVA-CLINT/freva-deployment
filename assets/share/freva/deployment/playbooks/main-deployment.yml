@@ -50,6 +50,7 @@
     - "./vars.yml"
   vars:
     loader_service: "scheduler"
+    ansible_become_user: "{{ data_portal_scheduler_ansible_become_user | default('root') }}"
   become: "{{ data_portal_scheduler_ansible_become_user is defined and data_portal_scheduler_ansible_become_user != '' }}"
   become_user: "{{ data_portal_scheduler_ansible_become_user | default('root') }}"
   roles:
@@ -63,6 +64,7 @@
     - "./vars.yml"
   vars:
     loader_service: "worker"
+    ansible_become_user: "{{ data_portal_hosts_ansible_become_user | default('root') }}"
   become: "{{ data_portal_hosts_ansible_become_user is defined and data_portal_hosts_ansible_become_user != '' }}"
   become_user: "{{ data_portal_hosts_ansible_become_user | default('root') }}"
   roles:
@@ -129,7 +131,6 @@
   tags:
     - db
     - freva_rest
-    - freva-rest
   vars_files:
     - "./vars.yml"
   tasks:
@@ -153,7 +154,6 @@
       mongo.url: "mongodb://{{freva_rest_db_user}}:{{freva_rest_db_passwd}}@{{freva_rest_db_host}}:27017?timeoutMS=2000"
   tags:
     - freva_rest
-    - freva-rest
   tasks:
     - name: POST request
       uri:

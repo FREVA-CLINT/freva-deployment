@@ -4,7 +4,6 @@
     path: "{{ systemd_unit_dir }}"
     state: directory
     mode: "0755"
-  when: systemd_unit_dir is defined
 
 - name: Writing redis-cache information
   copy:
