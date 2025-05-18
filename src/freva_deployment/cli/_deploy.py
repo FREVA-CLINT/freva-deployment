@@ -46,7 +46,6 @@ class BatchParser:
             nargs="+",
             default=["db", "freva-rest", "web", "core"],
             choices=["web", "core", "db", "freva-rest", "auto"],
-            action="append",
             help=(
                 "The services/code stack to be deployed. Use [b]auto[/b]"
                 " to only deploy outdated services"

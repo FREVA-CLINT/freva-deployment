@@ -24,7 +24,7 @@ import tomlkit
 import yaml
 from rich import print as pprint
 from rich.prompt import Prompt
-from typing_extensions import TypedDict
+from typing_extensions import NotRequired, TypedDict
 
 import freva_deployment.callback_plugins
 from freva_deployment import FREVA_PYTHON_VERSION, __version__
@@ -47,10 +47,8 @@ from .versions import get_steps_from_versions, get_versions
 class ConfigType(TypedDict):
     """Define the type of the yaml config dict."""
 
-    hosts: str
-    vars: dict[str, str]
-    become: str
-    tasks: list[dict[str, Any]]
+    hosts: NotRequired[str]
+    vars: NotRequired[dict[str, str | int | bool | float]]
 
 
 def get_current_architecture() -> str:
@@ -629,7 +627,7 @@ class DeployFactory:
         except FileNotFoundError:
             raise ConfigurationError(f"No such file {self._inv_tmpl}") from None
         except KeyError as error:
-            raise ConfigurationError(error) from error
+            raise ConfigurationError(str(error)) from error
 
     def _check_config(self) -> None:
         sections = []
@@ -707,7 +705,7 @@ class DeployFactory:
     def _set_additional_config_values(
         self,
         step: str,
-        config: dict[str, dict[str, dict[str, str | int | bool]]],
+        config: dict[str, ConfigType],
     ) -> None:
         """Set additional values to the configuration."""
         if step in self._needs_core:
@@ -748,7 +746,7 @@ class DeployFactory:
         logger.info("Parsing configurations")
         self._check_config()
         _ = [getattr(self, f"_prep_{step}")() for step in self.steps]
-        config: dict[str, dict[str, dict[str, str | int | bool]]] = {}
+        config: dict[str, ConfigType] = {}
         playbooks = "\n".join(
             [
                 a.read_text()
@@ -825,9 +823,9 @@ class DeployFactory:
             if passwd:
                 info_str = info_str.replace(passwd, "***")
         RichConsole.print(info_str, style="bold", markup=True)
-        core_host = config.get("core", {}).get("hosts")
+        core_host: Optional[str] = config.get("core", {}).get("hosts")
         if core_host in hosts:
-            config["core"]["hosts"] = gethostbyname(core_host)
+            config["core"]["hosts"] = gethostbyname(core_host) or ""
         return yaml.dump(json.loads(json.dumps(config)))
 
     @property
@@ -965,7 +963,7 @@ class DeployFactory:
         verbosity: int,
     ) -> list[str]:
         """Check the versions of the different freva parts."""
-        config: dict[str, dict[str, dict[str, str | int | bool]]] = {}
+        config: dict[str, ConfigType] = {}
         steps = list(set(self.step_order) - set(self.steps))
         if not steps or self.local_debug:
             # The user has selected all steps anyway, nothing to do here:
@@ -988,24 +986,12 @@ class DeployFactory:
                 if step != "core":
                     hosts.append(host_var)
                 config[step] = {}
-                config[step]["hosts"] = {}
-                config[step]["hosts"][host_var] = {}
+                config[step]["hosts"] = host_var
                 ansible_user = cfg[step].get("ansible_user") or getuser()
                 if "ansible_become_user" not in cfg[step]:
                     become_user = "root"
                 else:
                     become_user = cfg[step]["ansible_become_user"]
-                if len(become_user) > 0:
-                    ansible_become = True
-                    ansible_become_user = become_user
-                else:
-                    ansible_become = False
-                    ansible_become_user = ""
-                config[step]["hosts"][host_var][
-                    "ansible_become_user"
-                ] = ansible_become_user
-                config[step]["hosts"][host_var]["ansible_become"] = ansible_become
-                config[step]["hosts"][host_var]["ansible_user"] = ansible_user
 
                 config[step]["vars"] = {
                     f"{step}_ansible_become_user": become_user,
@@ -1025,14 +1011,9 @@ class DeployFactory:
         config.setdefault("core", {})
         config["core"].setdefault("vars", {})
         config["core"]["vars"]["core_install_dir"] = cfg["core"]["install_dir"]
-        if "hosts" in config["core"]:
-            core_host = list(config["core"]["hosts"].keys())[0]
-            if core_host in hosts:
-                core_ip = gethostbyname(core_host)
-                config["core"]["hosts"][core_ip] = config["core"]["hosts"].pop(
-                    core_host
-                )
-
+        core_host: Optional[str] = config.get("core", {}).get("hosts")
+        if core_host and core_host in hosts:
+            config["core"]["hosts"] = gethostbyname(core_host) or ""
         result = self._td.run_ansible_playbook(
             playbook=playbook,
             inventory=config,
