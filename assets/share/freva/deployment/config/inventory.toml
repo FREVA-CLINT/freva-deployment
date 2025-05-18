@@ -230,10 +230,6 @@ ansible_user = ""
 ## to use the default Python interpreter path /usr/bin/python.
 ansible_python_interpreter = ""
 
-## The core deployment needs git. If git is not in the default PATH variable,
-## you can set the path to the git executable.
-git_path = "/usr/bin/git"
-
 ## If you want to set special group rights for freva configuration files,
 ## you can set the admin_group variable. If `admin_group` is set, then config
 ## files and directories in the `base_dir_location` are only writable to

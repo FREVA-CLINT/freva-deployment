@@ -35,6 +35,7 @@
   hosts: redis
   tags:
     - freva_rest
+    - cache
   vars_files:
     - "./vars.yml"
   become: "{{ redis_ansible_become_user is defined and redis_ansible_become_user != '' }}"
@@ -46,6 +47,8 @@
   hosts: data_portal_scheduler
   tags:
     - freva_rest
+    - data-loader
+
   vars_files:
     - "./vars.yml"
   vars:
@@ -60,6 +63,7 @@
   hosts: data_portal_hosts
   tags:
     - freva_rest
+    - data-loader
   vars_files:
     - "./vars.yml"
   vars:
@@ -74,6 +78,7 @@
   hosts: mongodb_server
   tags:
     - freva_rest
+    - mongodb
   vars_files:
     - "./vars.yml"
   become: "{{ mongodb_server_ansible_become_user is defined and mongodb_server_ansible_become_user != '' }}"
@@ -85,6 +90,7 @@
   hosts: search_server
   tags:
     - freva_rest
+    - search-server
   vars_files:
     - "./vars.yml"
   become: "{{ search_server_ansible_become_user is defined and search_server_ansible_become_user != '' }}"
@@ -96,6 +102,7 @@
   hosts: freva_rest
   tags:
     - freva_rest
+    - freva-rest
   vars_files:
     - "./vars.yml"
   become: "{{ freva_rest_ansible_become_user is defined and freva_rest_ansible_become_user != '' }}"
@@ -107,6 +114,7 @@
   hosts: core
   tags:
     - web
+    - pre-web
   vars_files:
     - "./vars.yml"
   become: "{{ core_ansible_become_user is defined and core_ansible_become_user != '' }}"
@@ -131,6 +139,7 @@
   tags:
     - db
     - freva_rest
+    - freva-rest
   vars_files:
     - "./vars.yml"
   tasks:
@@ -154,6 +163,8 @@
       mongo.url: "mongodb://{{freva_rest_db_user}}:{{freva_rest_db_passwd}}@{{freva_rest_db_host}}:27017?timeoutMS=2000"
   tags:
     - freva_rest
+    - freva-rest
+    - mongodb
   tasks:
     - name: POST request
       uri:

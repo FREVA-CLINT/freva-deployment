@@ -10,7 +10,7 @@ NoNewPrivileges=true
 ProtectHome=true
 KillSignal=SIGTERM
 ExecStart={{conda_path}}/bin/start-freva-service -s redis
-Environment="PATH={{conda_path}}/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin"
+Environment="PATH={{conda_path}}/bin:{{ ansible_env.PATH }}"
 StandardOutput=journal
 StandardError=journal
 EnvironmentFile={{ data_dir }}/config/service-redis.env

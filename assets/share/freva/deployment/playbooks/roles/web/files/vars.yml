@@ -20,6 +20,7 @@ conda_packages:
   - redis-server
   - nginx
   - mamba
+  - libxcrypt1
   - openssl
 
 volume_names:

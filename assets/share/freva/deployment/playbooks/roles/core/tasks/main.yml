@@ -2,8 +2,15 @@
 - name: Include role vars
   include_vars: "{{ role_path }}/files/vars.yml"
 
-- name: Running common taks
-  include_tasks: "common_tasks.yml"
+- name: Getting status of the freva installation
+  stat:
+    path: "{{ core_install_dir | regex_replace('^~', ansible_env.HOME)}}/bin/freva"
+  register: freva_path
+
+- name: Get freva conf path
+  stat:
+    path: "{{ core_root_dir | regex_replace('^~', ansible_env.HOME)}}/freva/evaluation_system.conf"
+  register: eval_path
 
 - name: Creating temp. dir
   tempfile:
@@ -13,67 +20,35 @@
 
 - name: Setting up core lib
   block:
-    - name: Cloning the evluation_system reposiotry
-      git:
-        repo: "{{ core_git_url }}"
-        dest: "{{tempdir.path}}"
-        executable: "{{core_git_path | regex_replace('^~', ansible_env.HOME)}}"
+    - name: Downloading micromamba
+      script: >
+        {{ asset_dir }}/scripts/download_conda.py
+        {{ tempdir.path }}
 
-    - name: Getting status of the conda env
-      stat:
-        path: "{{ core_install_dir | regex_replace('^~', ansible_env.HOME)}}/bin/freva"
-      register: freva_path
-
-    - name: Downloading miniforge
-      ansible.builtin.script:
-        cmd: >
-          {{ asset_dir }}/scripts/download_conda.py
-          {{ tempdir.path }} -t mambaforge
+    - name: Overriding install fact
+      set_fact:
+        conda_cmd: "create"
       when: not freva_path.stat.exists
+
+    - name: "{{conda_cmd}} freva deps"
+      shell: >
+        {{ tempdir.path }}/bin/micromamba {{ conda_cmd }}
+        -p {{ core_install_dir }} -c conda-forge --override-channels
+        -y {{ conda_pkgs | join(' ') }}
+
+    - name: Installing freva - {{ core_version }}
+      shell: >
+        {{ tempdir.path }}/bin/micromamba run
+        -p {{ core_install_dir }} python -m pip install -U --no-deps
+        freva=={{ core_version }}
 
     - name: Creating conda dir
       file:
         path: "{{ core_install_dir }}"
-        owner: "{{uid}}"
-        group: "{{gid}}"
+        mode: "0755"
+        group: "{{ core_admin_group if core_admin_group is defined and core_admin_group != '' else omit}}"
         recurse: true
       when: not freva_path.stat.exists
-
-    - name: Installing freva
-      command:
-        cmd: "{{item}}"
-        chdir: "{{tempdir.path}}"
-      with_items:
-        - "./conda.sh -b -u -f -p {{tempdir.path}}/conda"
-        - "{{tempdir.path}}/conda/bin/conda create -p {{core_install_dir}} -c conda-forge -y freva={{core_version}} conda"
-      when: not freva_path.stat.exists
-
-    - name: Check if mamba exists
-      stat:
-        path: "{{ core_install_dir | regex_replace('^~', ansible_env.HOME)}}/bin/mamba"
-      register: mamba_check
-
-    - name: Set variable for package manager
-      set_fact:
-        pkg_mgr: "mamba"
-      when: mamba_check.stat.exists
-
-    - name: Getting the freva version
-      shell: "{{conda_bin}}/freva -V 2> /dev/null | awk '{print $NF}'"
-      register: freva_version
-
-    - name: Check if the version is lower than {{ core_version }}
-      set_fact:
-        is_version_lower: "{{ freva_version.stdout is version(core_version, '<') }}"
-
-    - name: Updating existing freva
-      shell:
-        cmd: "{{conda_bin}}/{{pkg_mgr}} install -y -q -p {{core_install_dir}} -c conda-forge freva={{core_version}}"
-      environment:
-        PATH: "{{conda_bin}}"
-      when:
-        - freva_path.stat.exists
-        - is_version_lower
 
     - name: Preparing creation of directory structure
       file:
@@ -86,76 +61,55 @@
         state: directory
         mode: "{{ '2775' if core_admin_group is defined and core_admin_group != '' else '2755' }}"
         group: "{{ core_admin_group if core_admin_group is defined and core_admin_group != '' else omit}}"
-      with_items:
+      loop:
         - "{{ core_root_dir | regex_replace('^~', ansible_env.HOME) }}/freva/"
         - "{{ core_root_dir | regex_replace('^~', ansible_env.HOME) }}/plugins/"
 
-    - name: Creating user work directory
+    - name: Ensure core directories exist
       file:
-        path: "{{core_base_dir_location | regex_replace('^~', ansible_env.HOME)}}"
+        path: "{{ item | regex_replace('^~', ansible_env.HOME) }}"
         state: directory
-        mode: "3775"
-      when: core_base_dir_location | length != 0
+        mode: "3777"
+      loop:
+        - "{{ core_base_dir_location }}"
+        - "{{ core_scheduler_output_dir }}"
+        - "{{ core_preview_path }}"
+      when: item | length != 0
       ignore_errors: true
 
-    - name: Creating workload manager output
-      file:
-        path: "{{core_scheduler_output_dir | regex_replace('^~', ansible_env.HOME)}}"
-        state: directory
-        mode: "3775"
-      ignore_errors: true
-      when: core_scheduler_output_dir | length != 0
-
-    - name: Creating preview path
-      file:
-        path: "{{core_preview_path | regex_replace('^~', ansible_env.HOME)}}"
-        state: directory
-        mode: "3775"
-      when: core_preview_path | length != 0
-      ignore_errors: true
-
-    - name: Registering evaluation_sytem path
-      stat:
-        path: "{{ core_root_dir | regex_replace('^~', ansible_env.HOME)}}/freva/evaluation_system.conf"
-      register: eval_conf
-
-    - name: Inserting evaluation_sytem.conf file
-      copy:
-        src: "{{ core_dump }}"
-        dest: "{{ core_root_dir | regex_replace('^~', ansible_env.HOME) }}/freva/evaluation_system.conf"
-        mode: "{{ '2664' if core_admin_group is defined and core_admin_group != '' else '2644' }}"
-        group: "{{ core_admin_group if core_admin_group is defined and core_admin_group != '' else omit}}"
-      when: (eval_conf.stat.exists != true)
+    - name: Cloning the evluation_system reposiotry
+      git:
+        repo: "{{ core_git_url }}"
+        dest: "{{tempdir.path}}/freva"
+        executable: "{{ core_install_dir }}/bin/git"
 
     - name: Inserting evaluation_system.config file to temp location
       copy:
         src: "{{ core_dump }}"
-        dest: "{{tempdir.path}}/evaluation_system.conf"
+        dest: "{{tempdir.path}}/freva/evaluation_system.conf"
 
     - name: Inserting evaluation_system.conf file
       copy:
-        src: "{{tempdir.path}}/evaluation_system.conf"
+        src: "{{tempdir.path}}/freva/evaluation_system.conf"
         dest: "{{ core_root_dir | regex_replace('^~', ansible_env.HOME)}}/freva/evaluation_system.conf"
         remote_src: true
         group: "{{ core_admin_group if core_admin_group is defined and core_admin_group != '' else omit}}"
         mode: "{{ '2664' if core_admin_group is defined and core_admin_group != '' else '2644' }}"
-      when: not freva_path.stat.exists
+      when: not eval_path.stat.exists
 
     - name: Installing additional python packages
       command:
-        cmd: "{{conda_bin}}/python -m pip install {{item}}"
-        creates: "{{conda_bin}}/{{item}}"
+        cmd: "{{ conda_bin }}/python -m pip install {{item}}"
+        creates: "{{ conda_bin }}/{{ item }}"
       with_items:
         - "jupyter-kernel-install"
         - "metadata-inspector"
 
     - name: Installing metadata-crawler
-      ansible.builtin.script:
-        cmd: >
-          {{asset_dir}}/scripts/download.py
-          https://freva.gitlab-pages.dkrz.de/metadata-crawler-source/binaries/data-crawler
-          -o {{conda_sbin}}/data-crawler
-        creates: "{{conda_sbin}}/data-crawler"
+      script: >
+        {{ asset_dir }}/scripts/download.py
+        https://freva.gitlab-pages.dkrz.de/metadata-crawler-source/binaries/data-crawler
+        -o {{ conda_sbin }}/data-crawler
 
     - name: Getting status of drs_config.toml file
       stat:
@@ -174,7 +128,7 @@
     - name: Configuring evaluation_system
       command:
         cmd: "$PYTHON3 deploy.py {{ core_install_dir | regex_replace('^~', ansible_env.HOME) }} -s --no-conda"
-        chdir: "{{tempdir.path}}"
+        chdir: "{{tempdir.path}}/freva"
       environment:
         PYTHON3: "{{ ansible_python_interpreter }}"
         EVALUATION_SYSTEM_CONFIG_FILE: "{{ core_root_dir | regex_replace('^~', ansible_env.HOME) }}/freva/evaluation_system.conf"

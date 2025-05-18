@@ -5,7 +5,6 @@ from pathlib import Path
 from typing import List, cast
 
 import npyscreen
-
 from freva_deployment import AVAILABLE_CONDA_ARCHS
 from freva_deployment.utils import get_current_file_dir
 
@@ -204,16 +203,6 @@ class CoreScreen(BaseForm):
                     key="ansible_user",
                     name=f"{self.num}Username for remote machine",
                     value=cfg.get("ansible_user", getuser()),
-                ),
-                False,
-            ),
-            git_path=(
-                self.add_widget_intelligent(
-                    FileInfo,
-                    section="core",
-                    key="git_path",
-                    name=f"{self.num}Path to the git executable",
-                    value=cfg.get("git_path", ""),
                 ),
                 False,
             ),

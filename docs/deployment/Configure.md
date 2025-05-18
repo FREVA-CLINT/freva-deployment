@@ -11,17 +11,34 @@ A complete Freva instance will need the following services:
 - Freva client - core - library
 
 
-## Container or conda-forge
-From version ``2505.0.0`` of the deployment software you can choose the setup of
-the services. This setup can either be `container` based using docker/podman
-containers to run the services or `conda-forge` based. Unlinke anaconda `conda-forge`
-packages are open source and avoid liscnce conflicts.
+## Container or Conda-Forge Deployment
+
+Starting with version ``2505.0.0`` of the deployment software, you can choose
+how the services are deployed. Two options are supported:
+
+- Container-based deployment using Docker or Podman
+- Conda-Forge-based deployment using open-source packages
+
+Unlike Anaconda, the conda-forge channel provides fully open-source packages,
+avoiding potential licensing conflicts.
+
+
+:::{danger}
+Versions prior to ``2505.0.0`` supported only Docker/Podman container deployments.
+
+If you're upgrading from a version older than ``2505.0.0`` and wish to switch
+to a Conda-based setup, you must first run the deployment software once using
+the ``deployment_method=podman`` (or ``docker``) option. This ensures that all
+persistent service data is migrated before  switching to the Conda environment.
+:::
 
 ## Running the deployment
 The command `deploy-freva` opens a text user interface (tui) that will walk
 you through the setup of the deployment.
-> ``💡`` Navigation is similar to the one of the *nano* text editor.
+:::{tip}
+Navigation is similar to the one of the *nano* text editor.
 The shortcuts start with a `^` which indicates `CTRL+`.
+:::
 
 Please refer to the [usage of the text user interface section](TuiHowto)
 on tui usage instructions.
@@ -35,43 +52,17 @@ in the [example deployment configuration](Config) section.
 If you already have a configuration saved in a toml configuration file you can
 issue the `deploy-freva cmd` command:
 
-```console
-deploy-freva cmd --help
-Usage: deploy-freva cmd [-h] [--config CONFIG] [--steps {web,core,db,freva-rest,auto} [{web,core,db,freva-rest,auto} ...]] [--ask-pass] [--ssh-port SSH_PORT] [-v] [-l]
-                        [-g] [-V]
+{{cli_cmd}}
 
-Deploy freva and its services on different machines.
-
-Options:
-  -h, --help            show this help message and exit
-  --config, -c CONFIG   Path to ansible inventory file. (default: /home/wilfred/.anaconda3/envs/python3_12/share/freva/deployment/inventory.toml)
-  --steps, -s {web,core,db,databrowser,auto} [{web,core,db,databrowser,auto} ...]
-                        The services/code stack to be deployed. Use auto to only deploy outdated services (default: ['db', 'databrowser', 'web', 'core'])
-  --ask-pass            Connect to server via ssh passwd instead of public key. (default: False)
-  --ssh-port SSH_PORT   Set the ssh port, in 99.9% of the cases this should be 22 (default: 22)
-  -v, --verbose         Verbosity level (default: 0)
-  -l, --local           Deploy services on the local machine, debug purpose. (default: False)
-  -g, --gen-keys        Generate public and private web certs, use with caution. (default: False)
-   --skip-version-check  Skip the version check. Use with caution. (default: False)
-  -V, --version         show program's version number and exit
-  --cowsay              Let the cow speak! (default: False)
-
-```
 The `--steps` flags can be used if not all services should be deployed.
 
-## Setting the python and git path
+## Setting the python
 Some systems do not have access to python3.4+ (/usr/bin/python3) or git by default.
 In such cases you can overwrite the `ansible_python_interpreter` in the inventory
 settings of the server section to point ansible to a custom `python3` binary. For example
 
 ```
 ansible_python_interpreter=/sw/spack-rhel6/miniforge3-4.9.2-3-Linux-x86_64-pwdbqi/bin/python3
-```
-
-The same applies to the path to the git binary:
-
-```
-git_path=/sw/spack-levante/git-2.31.1-25ve7r/bin/git
 ```
 
 ## Setting up the deployment without root-privileges
@@ -111,7 +102,7 @@ running user services as soon as the user terminates a login session.
 To avoid this you have to enable 'lingering' states of services for that user:
 
 ```console
-loginctl enable-linger [USER]
+loginctl enable-linger <USER>
 ```
 
 This command can only by applied by the root user. Backups are also done as
@@ -153,9 +144,10 @@ fit together. If you for example want to deploy the rest api the system will
 also check an update of the freva cli if it finds that the cli library doesn't
 fit with the latest version of the rest api. This ensures that all parts of the
 system will work together.
-> ``💡`` You can disable this version checking by using the
-  `--skip-version-check` flag. Use this flag with caution.
-
+:::{tip}
+You can disable this version checking by using the
+`--skip-version-check` flag. Use this flag with caution.
+:::
 
 
 ## Using environment variables

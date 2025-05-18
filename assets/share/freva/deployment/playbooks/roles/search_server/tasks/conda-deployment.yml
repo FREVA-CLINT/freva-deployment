@@ -15,11 +15,11 @@
       API_SOLR_HEAP: "{{ search_server_solr_mem | default('4g') }}"
       SOLR_JETTY_HOST: "0.0.0.0"
       CONDA_PREFIX: "{{ conda_path }}"
-      API_DATA_DIR: "{{ data_dir }}/data"
       SOLR_PID_DIR: "{{ data_dir }}/config"
       SOLR_LOGS_DIR: "{{ data_dir }}/solr"
       API_LOG_DIR: "{{ data_dir }}/logs"
-      API_CONFIG_DIR: "{{ data_dir }}/config"
+      API_DATA_DIR: "{{ data_dir }}/data"
+      API_CONFIG_DIR: "{{ conda_path }}/share/freva-rest-server/{{ search_server_service }}"
 
 - name: Creating systemd unit service
   template:
@@ -55,4 +55,4 @@
     {{conda_path}}/libexec/freva-rest-server/healthchecks.sh
     -s {{ search_server_service }}
   environment:
-    PATH: "{{conda_path}}/bin:/usr/bin:/bin:/usr/local/bin"
+    PATH: "{{conda_path}}/bin:{{ ansible_env.PATH }}"

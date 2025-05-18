@@ -28,10 +28,14 @@ a `^` which indicates `CTRL+`, main shortcuts are:
 - `CTRL+r`: Got to the *run* screen.
 - `CTRL+d`: Clear the application cache.
 - `CTRL+e`: Exit application.
-> ``💡`` The load/save forms can be exited by pressing the `<TAB>` key
+
+:::{tip}
+The load/save forms can be exited by pressing the `<TAB>` key
 which will get you to input field at the bottom of the screen. If the input
 field has text delete it an press the `<ESC>` key, this will bring you get to
 the screen where you started.
+:::
+
 
 Some variables need to be set for the deployment setup while others don't and
 can be configured later.
@@ -94,7 +98,9 @@ The following explains the essential setup steps:
    such as `/usr/bin/git`.
 
 
-> ``💡`` Press CTRL+f for *f*urther information on each configuration item.
+:::{tip}
+Press CTRL+f for *f*urther information on each configuration item.
+:::
 
 ### Notes on the core setup
 It is good practice to use only one conda-forge environment for multiple Freva
@@ -138,7 +144,9 @@ essential setup steps:
    to root. Leave blank if no special user is needed.
 1. Set the login user name for the remote machine.
 
-> ``💡`` Press CTRL+f for *f*urther information on each configuration item.
+:::{{tip}}
+Press CTRL+f for *f*urther information on each configuration item.
+:::
 
 ### Notes on the web ui setup
 Currently there are ties between the core running on the HPC machine and
@@ -239,7 +247,9 @@ following explains the essential setup steps:
    binary is not part of the `$PATH` variable.
 1. Set the login user name for the remote machine.
 
-> ``💡`` Press CTRL+f for *f*urther information on each configuration item.
+:::{tip}
+Press CTRL+f for *f*urther information on each configuration item.
+:::
 
 ### Notes on the database setup
 This step also includes the deployment of a vault service where all information

@@ -264,7 +264,7 @@ class RunnerDir(TemporaryDirectory):
         working_dir: Optional[Union[str, Path]] = None,
         envvars: Optional[Dict[str, str]] = None,
         extravars: Optional[Dict[str, str]] = None,
-        roles: Optional[List[str]] = None,
+        tags: Optional[List[str]] = None,
         cmdline: Optional[str] = None,
         verbosity: int = 0,
         passwords: Optional[Dict[str, str]] = None,
@@ -283,13 +283,13 @@ class RunnerDir(TemporaryDirectory):
         extravars (Optional[Dict[str, str]]): Extra variables to pass to Ansible.
         cmdline (Optional[str]): Extra command line arguments for Ansible.
         verbosity (int): Verbosity level for Ansible output.
-        rolse (Optional[List[str]]): The roles that should be involved.
+        tags (Optional[List[str]]): The roles that should be involved.
         hide_output (bool): Hide stdout and stderr if True, show only on failure.
 
         Raises:
         DeploymentError: If the Ansible playbook execution fails.
         """
-        roles = roles or []
+        tags = tags or []
         working_dir = Path(working_dir or "").expanduser().absolute()
         playbook_path = self.convert_to_file(playbook or "")
         inventory_path = self.convert_to_file(inventory or "")
@@ -301,8 +301,8 @@ class RunnerDir(TemporaryDirectory):
         command = ["ansible-playbook", playbook_path, "-i", inventory_path]
 
         # Set environment variables
-        for role in roles:
-            command += ["-t", role]
+        for tag in tags:
+            command += ["-t", tag]
         for key, passwd in passwords.items():
             envvars[key.upper()] = passwd
             extravars[key] = f'{{{{ lookup("env", "{key.upper()}") }}}}'

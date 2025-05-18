@@ -162,9 +162,12 @@ class DeployFactory:
         self._cfg_tmpl = self.aux_dir / "evaluation_system.conf.tmpl"
         self.cfg = self._read_cfg()
         self.project_name = self.cfg.pop("project_name", None)
-        self._random_key = RandomKeys(self.project_name or "freva")
         if not self.project_name:
             raise ConfigurationError("You must set a project name") from None
+        self._random_key = RandomKeys(
+            self.project_name,
+            self.cfg.get("web", {}).get("web_host", "localhost"),
+        )
         self._prep_local_debug()
         self.current_step = ""
         self._check_steps_()
@@ -438,8 +441,6 @@ class DeployFactory:
             scheduler_output_dir = Path(scheduler_output_dir) / scheduler_system
         self.cfg["core"]["scheduler_output_dir"] = str(scheduler_output_dir)
         self.cfg["core"]["keyfile"] = self.public_key_file
-        git_exe = self.cfg["core"].get("git_path")
-        self.cfg["core"]["git_path"] = git_exe or "git"
         self.cfg["core"]["git_url"] = "https://github.com/FREVA-CLINT/freva.git"
 
     def _prep_web(self, ask_pass: bool = True) -> None:
@@ -576,7 +577,6 @@ class DeployFactory:
         host = gethostbyname(gethostname())
         self.cfg["db"]["db_host"] = host
         self.cfg["core"]["ansible_become_user"] = ""
-        self.cfg["core"]["git_path"] = shutil.which("git") or ""
         self.cfg["core"]["scheduler_system"] = "local"
         self.cfg["core"]["scheduler_host"] = [host]
         self.cfg["core"]["admins"] = getuser()
@@ -759,7 +759,7 @@ class DeployFactory:
         main_playbook = yaml.safe_load(
             (asset_dir / "playbooks" / "main-deployment.yml").read_text()
         )
-        tags = []
+        tags, hosts = [], []
         for entry in main_playbook:
             for tag in entry.get("tags", []):
                 if tag in self.steps + ["vault"]:
@@ -773,6 +773,8 @@ class DeployFactory:
                 config[step]["hosts"] = self.cfg[step][step]
             else:
                 continue
+            if step != "core":
+                hosts.append(config[step]["hosts"])
             config[step]["vars"] = {}
             for key, value in self.cfg[step].items():
                 if key in no_prepend + (f"{step}_host",) or key.startswith(step):
@@ -823,6 +825,9 @@ class DeployFactory:
             if passwd:
                 info_str = info_str.replace(passwd, "***")
         RichConsole.print(info_str, style="bold", markup=True)
+        core_host = config.get("core", {}).get("hosts")
+        if core_host in hosts:
+            config["core"]["hosts"] = gethostbyname(core_host)
         return yaml.dump(json.loads(json.dumps(config)))
 
     @property
@@ -920,6 +925,7 @@ class DeployFactory:
         verbosity: int = 0,
         ssh_port: int = 22,
         skip_version_check: bool = False,
+        tags: Optional[list[str]] = None,
     ) -> None:
         """Play the ansible playbook.
 
@@ -934,6 +940,9 @@ class DeployFactory:
             Set the ssh port, in 99.9% of cases this should be left at port 22
         skip_version_check: bool, default: False
             Skip the version check, use with caution
+        tags: list[str], default: None
+            Instead of running the steps, fine grain the deployment using this
+            specific tasks.
         """
         try:
             self._play(
@@ -941,6 +950,7 @@ class DeployFactory:
                 verbosity=verbosity,
                 ssh_port=ssh_port,
                 skip_version_check=skip_version_check,
+                tags=tags,
             )
         except KeyboardInterrupt as error:
             if str(error):
@@ -969,25 +979,41 @@ class DeployFactory:
             steps = [s for s in steps if s != "web"]
         steps.append("vault")
         version_path = self._td.parent_dir / "versions.txt"
+        hosts = []
         for tasks in playbook_tmpl:
             step = tasks["hosts"]
             if step in steps:
                 playbook.append(tasks)
+                host_var = cfg[step][f"{step}_host"]
+                if step != "core":
+                    hosts.append(host_var)
                 config[step] = {}
-                config[step]["hosts"] = cfg[step][f"{step}_host"]
+                config[step]["hosts"] = {}
+                config[step]["hosts"][host_var] = {}
+                ansible_user = cfg[step].get("ansible_user") or getuser()
                 if "ansible_become_user" not in cfg[step]:
                     become_user = "root"
                 else:
                     become_user = cfg[step]["ansible_become_user"]
+                if len(become_user) > 0:
+                    ansible_become = True
+                    ansible_become_user = become_user
+                else:
+                    ansible_become = False
+                    ansible_become_user = ""
+                config[step]["hosts"][host_var][
+                    "ansible_become_user"
+                ] = ansible_become_user
+                config[step]["hosts"][host_var]["ansible_become"] = ansible_become
+                config[step]["hosts"][host_var]["ansible_user"] = ansible_user
+
                 config[step]["vars"] = {
                     f"{step}_ansible_become_user": become_user,
                     "asset_dir": str(asset_dir),
                     "deployment_method": self.cfg.get(
                         "deployment_method", "docker"
                     ),
-                    f"{step}_ansible_user": cfg[step].get(
-                        "ansible_user", getuser()
-                    ),
+                    f"{step}_ansible_user": ansible_user,
                     "project_name": self.project_name,
                     f"{step}_data_path": cfg[step].get("data_path", ""),
                     "version_file_path": str(version_path),
@@ -999,6 +1025,14 @@ class DeployFactory:
         config.setdefault("core", {})
         config["core"].setdefault("vars", {})
         config["core"]["vars"]["core_install_dir"] = cfg["core"]["install_dir"]
+        if "hosts" in config["core"]:
+            core_host = list(config["core"]["hosts"].keys())[0]
+            if core_host in hosts:
+                core_ip = gethostbyname(core_host)
+                config["core"]["hosts"][core_ip] = config["core"]["hosts"].pop(
+                    core_host
+                )
+
         result = self._td.run_ansible_playbook(
             playbook=playbook,
             inventory=config,
@@ -1028,21 +1062,8 @@ class DeployFactory:
         verbosity: int = 0,
         ssh_port: int = 22,
         skip_version_check: bool = False,
+        tags: Optional[list[str]] = None,
     ) -> None:
-        """Play the ansible playbook.
-
-        Parameters
-        ----------
-        ask_pass: bool, default: True
-            Instruct Ansible to ask for the ssh password instead of using a
-            ssh key
-        verbosity: int, default: 0
-            Verbosity level, default 0
-        ssh_port: int, default: 22
-            Set the ssh port, in 99.9% of cases this should be left at port 22
-        skip_version_check: bool, default: False
-            Skip version check, use with caution.
-        """
         plugin_path = Path(freva_deployment.callback_plugins.__file__).parent
         envvars: dict[str, str] = {
             "ANSIBLE_CONFIG": str(self._td.ansible_config_file),
@@ -1078,6 +1099,7 @@ class DeployFactory:
 
         self.passwords = self.get_ansible_password(ask_pass)
         steps = [s for s in self.steps]
+
         self._set_deployment_methods()
         if skip_version_check is False:
             steps = list(
@@ -1097,14 +1119,16 @@ class DeployFactory:
             return None
         logger.debug(inventory)
         self.create_eval_config()
-        RichConsole.print(f"Playing steps: [i]{', '.join(steps)}[/] with ansible")
+        RichConsole.print(
+            f"Playing tasks: [i]{', '.join(tags or steps)}[/] with ansible"
+        )
         time.sleep(3)
         self._td.run_ansible_playbook(
             working_dir=asset_dir,
             playbook=asset_dir / "playbooks" / "main-deployment.yml",
             inventory=inventory,
             envvars=envvars,
-            roles=steps,
+            tags=tags or steps,
             passwords=self.passwords,
             extravars=extravars,
             verbosity=verbosity,

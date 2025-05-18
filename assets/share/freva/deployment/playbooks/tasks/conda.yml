@@ -43,13 +43,15 @@
     cmd: >
       {{ data_dir }}/bin/micromamba {{ conda_cmd }} -p {{conda_path }}
       -c conda-forge --override-channels
-      -y curl {{ conda_packages | join(' ')}}
+      -y git curl {{ conda_packages | join(' ')}}
   environment:
     MAMBA_ROOT_PREFIX: "{{ conda_path }}"
 
 - name: Getting service startup scripts
   shell: >
-    {{ conda_path }}/bin/curl
-    https://raw.githubusercontent.com/FREVA-CLINT/freva-service-config/refs/heads/main/conda-services/create.sh | bash
+    {{ data_dir }}/bin/micromamba run -p {{ conda_path }} curl
+    https://raw.githubusercontent.com/FREVA-CLINT/freva-service-config/refs/heads/main/conda-services/create.sh
+    | bash
   environment:
     CONDA_PREFIX: "{{ conda_path }}"
+    PATH: "{{ conda_path }}/bin:{{ ansible_env.PATH }}"

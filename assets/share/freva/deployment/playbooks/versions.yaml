@@ -19,7 +19,7 @@
       shell: "{{ service_command }} 2>/dev/null || true"
       become: "{{ ansible_become_user | default('root') is defined and ansible_become_user | default('root') != '' }}"
       environment:
-        PATH: "{{conda_path}}/bin:/usr/bin:/usr:local/bin:/bin"
+        PATH: "{{conda_path}}/bin:{{ ansible_env.PATH }}"
       register: version_cmd
       when: deployment_method == "conda"
 
@@ -55,7 +55,7 @@
       shell: "{{ service_command }} 2>/dev/null || echo"
       become: "{{ ansible_become_user | default('root') is defined and ansible_become_user | default('root') != '' }}"
       environment:
-        PATH: "{{conda_path}}/bin:/usr/bin:/usr:local/bin:/bin"
+        PATH: "{{conda_path}}/bin:{{ ansible_env.PATH }}"
       register: version_cmd
       when: deployment_method == "conda"
 
@@ -86,6 +86,7 @@
           conn=urlopen('http://localhost:5002/vault/status');
           print(json.loads(conn.read().decode()).get('version', '0.0.0'));
           conn.close()" 2> /dev/null || echo
+      become: false
 
     - name: Display vault version
       debug:
@@ -95,14 +96,22 @@
 - hosts: core
   vars:
     ansible_user: "{{core_ansible_user}}"
+    ansible_become: false
+    ansible_facts_become: false
+  become: false
+  gather_facts: false
   tasks:
     - name: Get core version
       register: core
       shell:
         cmd: >
-          {{ core_install_dir | regex_replace('^~', ansible_env.HOME) }}/bin/freva
+          {{ core_install_dir | regex_replace('^~', lookup('env', 'HOME')) }}/bin/freva
           -V 2> /dev/null | awk '{print $NF}';
+      environment:
+        PATH: "{{ core_install_dir }}/bin:{{ ansible_env.PATH }}"
+      become: false
 
     - name: Display core version
       debug:
         msg: "{{ core.stdout }}"
+      become: false

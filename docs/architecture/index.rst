@@ -4,7 +4,7 @@ This chapter explores the foundational components of Freva and how to
 configure them. It serves as a resource for understanding the architectural
 layout of Freva and the essential configurations required for its operation.
 
-.. image:: _static/freva_flowchart-new.jpg
+.. image:: _static/freva_flowchart-new.png
    :width: 320
    :class: floating
    :align: center

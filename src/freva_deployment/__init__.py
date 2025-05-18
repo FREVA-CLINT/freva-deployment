@@ -3,8 +3,8 @@ from urllib.request import urlretrieve
 
 __version__ = "2502.0.0"
 
-FREVA_PYTHON_VERSION = "3.12"
-AVAILABLE_PYTHON_VERSIONS = ["3.8", "3.9", "3.10", "3.11", "3.12"]
+FREVA_PYTHON_VERSION = "3.13"
+AVAILABLE_PYTHON_VERSIONS = ["3.9", "3.10", "3.11", "3.12", "3.13"]
 AVAILABLE_CONDA_ARCHS = [
     "linux-64",
     "linux-aarch64",

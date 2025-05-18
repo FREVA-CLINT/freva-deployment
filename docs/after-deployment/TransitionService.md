@@ -14,24 +14,7 @@ sub-command of the `deploy-freva migrate` sub command helps to transition to thi
 database structure. To migrate a database of an old installation of the Freva
 system to a freshly deployed Freva instance use the following command:
 
-```
-usage: deploy-freva migrate database [-h] [--old-port OLD_PORT] [--old-db OLD_DB] [--old-pw OLD_PW] [--old-user OLD_USER]
-                              new_hostname old_hostname cert-file
-
-Freva database migration
-
-positional arguments:
-  new_hostname         The hostname where the new database is deployed.
-  old_hostname         Hostname of the old database.
-  cert-file            Path to the public certificate file.
-
-options:
-  -h, --help           show this help message and exit
-  --old-port OLD_PORT  The port where the old database server is running on. (default: 3306)
-  --old-db OLD_DB      The name of the old database (default: evaluationsystem)
-  --old-pw OLD_PW      The passowrd to the old database (default: None)
-  --old-user OLD_USER  The old database user (default: evaluationsystem)
-```
+{{cli_mig}}
 
 The `cert-file` positional argument refers to the public certificate file that was
 created during the deployment process and is needed to establish a connection to
@@ -44,8 +27,6 @@ name for your institution as a unique identifier.
 After the command has been applied the new database with its "old" content from
 the previous Freva instance will be ready for use.
 
-> ``💡`` The migrate database sub command uses `mysqldump`. This program needs
-> to be available on your system. Please make sure that it is installed.
 
 ## Transition to new DRS Config
 

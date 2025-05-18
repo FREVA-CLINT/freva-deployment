@@ -7,7 +7,36 @@ conda_url: "https://repo.anaconda.com/miniconda/Miniconda3-latest-{{core_arch}}.
 allow_world_readable_tmpfiles: true
 conda_exec_path: "{{ core_conda_exec_path if core_conda_exec_path is defined else '' }}"
 eval_path: "freva/evaluation_system.conf"
+conda_cmd: "install"
 base_path: ""
 old_compose_dir: ""
 data_dir: ""
 service: ""
+conda_pkgs:
+    - python'>={{ core_python_version }}'
+    - appdirs
+    - curl
+    - gitpython
+    - dask-core
+    - django
+    - humanize
+    - ffmpeg
+    - git
+    - h5netcdf
+    - lazy_import
+    - metadata-inspector
+    - micromamba
+    - mysqlclient
+    - netcdf4
+    - numpy
+    - pymysql
+    - pandas
+    - pillow
+    - pypdf2'!=2.10.1'
+    - requests
+    - rich
+    - setuptools
+    - toml
+    - toolz
+    - typing_extensions
+    - xarray
