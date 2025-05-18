@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import List, cast
 
 import npyscreen
+
 from freva_deployment import AVAILABLE_CONDA_ARCHS
 from freva_deployment.utils import get_current_file_dir
 
