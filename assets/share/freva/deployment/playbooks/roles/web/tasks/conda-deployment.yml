@@ -101,6 +101,10 @@
       REDIS_PASSWD: "{{ web_redis_password }}"
       REDIS_USER: "{{ web_redis_username }}"
       REDIS_PORT: "{{ redis_port_result.stdout }}"
+      OIDC_DISCOVERY_URL: "{{ web_oidc_url }}"
+      OIDC_CLIENT_SECRET: "{{ web_oidc_client_secret }}"
+      OIDC_CLIENT_ID: "{{ web_oidc_client }}"
+      CHATBOT_HOST: '{{ web_chatbot_host.replace("http://", "") }}'
 
 - name: Create systemd services
   template:
