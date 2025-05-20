@@ -490,7 +490,9 @@ def main():
         "-p",
         help="The path where the automation should be deployed to.",
         type=Path,
-        default=Path(__file__).parent,
+        default=Path(
+            os.getenv("FREVA_AUTOMATION_PREFIX_DIR") or Path(__file__).parent
+        ),
     )
     parser.add_argument(
         "--config",
@@ -537,7 +539,7 @@ def main():
     parser.add_argument(
         "--extra-pkg",
         type=str,
-        default=os.getenv("FREVA_AUTOMATION_EXTRA_PGKS"),
+        default=os.getenv("FREVA_AUTOMATION_EXTRA_PGKS") or None,
         help="Extra conda-forge packages that need to be installed. "
         "',' separated.",
     )
@@ -555,6 +557,18 @@ def main():
         default=getuser(),
         help="If the deployment config file defines the `USER` variable. "
         "you can set the value of this variable here.",
+    )
+    parser.add_argument(
+        "--cert-file",
+        type=Path,
+        default=os.getenv("FREVA_AUTOMATION_CERT_FILE") or None,
+        help="Path to the web server certificate file.",
+    )
+    parser.add_argument(
+        "--key-file",
+        type=Path,
+        default=os.getenv("FREVA_AUTOMATION_KEY_FILE") or None,
+        help="Path to the web server private key file.",
     )
 
     args = parser.parse_args()
@@ -608,7 +622,7 @@ def main():
             config_files=merged,
             cron=args.cron,
         )
-        ps.start_caddy(args.port)
+        ps.start_caddy(args.port, args.cert_file, args.key_file)
         ps.linger()
     finally:
         ps.stop_server()
