@@ -566,7 +566,7 @@ def main():
     parser.add_argument(
         "--user",
         type=str,
-        default=getuser(),
+        default=os.getenv("USER") or getuser(),
         help="If the deployment config file defines the `USER` variable. "
         "you can set the value of this variable here.",
     )
@@ -589,14 +589,15 @@ def main():
     extra_pkgs = [
         pkg.strip() for pkg in (args.extra_pkg or "").split(",") if pkg.strip()
     ]
+    if os.environ._get("_CALLED_FROM_BOOTSTRAP"):
+        b = BootstrapConda(args.prefix, extra_pkgs)
+        return
+
     if bootstrap or not (args.prefix / "conda" / "bin" / "prefect").is_file():
         b = BootstrapConda(args.prefix, extra_pkgs)
+        cmd = [b.executable] + list(sys.argv)
         try:
-            if not os.environ.get("_CALLED_FROM_BOOTSTRAP"):
-                cmd = [b.executable] + list(sys.argv)
-                subprocess.check_call(cmd)
-            else:
-                b.call_from_bootstrap()
+            subprocess.check_call(cmd)
         except subprocess.CalledProcessError:
             raise SystemExit(1)
         sys.exit(0)
