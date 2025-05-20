@@ -591,9 +591,8 @@ def main():
     ]
     if bootstrap or not (args.prefix / "conda" / "bin" / "prefect").is_file():
         b = BootstrapConda(args.prefix, extra_pkgs)
-        print(sys._called_from_bootstrap)
         try:
-            if not os.environ.get("_CALLED_FROM_BOOTSTRAP") :
+            if not os.environ.get("_CALLED_FROM_BOOTSTRAP"):
                 cmd = [b.executable] + list(sys.argv)
                 subprocess.check_call(cmd)
             else:
