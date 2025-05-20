@@ -528,7 +528,10 @@ def main():
         "--cron", type=str, default=None, help="Cron schedule (e.g. '0 3 * * *')"
     )
     parser.add_argument(
-        "--port", type=int, default=4200, help="Set the port to run the server."
+        "--port",
+        type=int,
+        default=os.getenv("FREVA_AUTOMATION_SERVER_PORT", "4200"),
+        help="Set the port to run the server.",
     )
     parser.add_argument(
         "--log-dir",
@@ -572,6 +575,7 @@ def main():
     )
 
     args = parser.parse_args()
+    port = int(args.port)
     script_path = Path(__file__).resolve()
     extra_pkgs = [
         pkg.strip() for pkg in (args.extra_pkg or "").split(",") if pkg.strip()
@@ -622,7 +626,7 @@ def main():
             config_files=merged,
             cron=args.cron,
         )
-        ps.start_caddy(args.port, args.cert_file, args.key_file)
+        ps.start_caddy(port, args.cert_file, args.key_file)
         ps.linger()
     finally:
         ps.stop_server()
