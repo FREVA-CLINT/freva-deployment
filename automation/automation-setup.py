@@ -57,8 +57,9 @@ class BootstrapConda:
         with tempfile.NamedTemporaryFile(suffix=".py") as temp_f:
             Path(temp_f.name).write_text(sys.stdin.read())
             cmd = [self.executable, temp_f.name]
-            os.environ["_CALLED_FROM_BOOTSTRAP"] = "1"
-            subprocess.check_call(cmd, env=os.environ)
+            env = os.environ.copy()
+            env.pop("_CALLED_FROM_BOOTSTRAP", None)
+            subprocess.check_call(cmd, env=env)
 
     def __init__(
         self, prefix: Path, extra_pkgs: Optional[List[str]] = None
@@ -590,8 +591,9 @@ def main():
     ]
     if bootstrap or not (args.prefix / "conda" / "bin" / "prefect").is_file():
         b = BootstrapConda(args.prefix, extra_pkgs)
+        print(sys._called_from_bootstrap)
         try:
-            if not hasattr(sys, "_called_from_bootstrap"):
+            if not os.environ.get("_CALLED_FROM_BOOTSTRAP") :
                 cmd = [b.executable] + list(sys.argv)
                 subprocess.check_call(cmd)
             else:
