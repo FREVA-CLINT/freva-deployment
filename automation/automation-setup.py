@@ -16,10 +16,47 @@ from functools import wraps
 from getpass import getuser
 from pathlib import Path
 from tempfile import NamedTemporaryFile
-from typing import Callable, List, Literal, Optional, ParamSpec, Type, TypeVar
+from typing import (
+    Callable,
+    Dict,
+    List,
+    Literal,
+    Optional,
+    ParamSpec,
+    Type,
+    TypeVar,
+)
 
 F = TypeVar("F", bound=Callable)
 P = ParamSpec("P")
+
+SERVICE = """[Unit]
+Description=Automated freva deployments
+After=network.target
+
+[Service]
+Type=simple
+NoNewPrivileges=true
+SendSIGKILL=no
+KillSignal=SIGTERM
+PermissionsStartOnly=true
+ExecStart={prefix}/conda/bin/python automation-setup.py
+StandardOutput=journal
+StandardError=journal
+Environment="PATH={prefix}/conda/bin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin"
+EnvironmentFile={prefix}/setup.conf
+WorkingDirectory={prefix}
+StandardOutput=journal
+StandardError=journal
+Restart=on-failure
+"""
+
+
+def load_env_configs() -> List[Path]:
+    env_var = "FREVA_DEPLOYMENT_CONFIG"
+    return [
+        Path(f.strip()) for f in os.getenv(env_var, "").split(",") if f.strip()
+    ]
 
 
 def mock_decorator(func: Callable[P, F]) -> Callable[P, F]:
@@ -146,7 +183,11 @@ def project_type() -> Type:
     except ImportError:
         return Literal["freva"]
     cfg_file = Path(__file__).parent / ".freva-automation.toml"
-    projects = list(toml.load(cfg_file).keys())
+    try:
+        projects = list(toml.load(cfg_file).keys())
+    except FileNotFoundError:
+        dump_cfg(load_env_configs())
+        projects = list(toml.load(cfg_file).keys())
     return Literal[*projects]
 
 
@@ -157,20 +198,54 @@ def update_deployment_software():
     )
 
 
+def get_env_vars() -> Dict[str, str]:
+    envs = dict(os.environ.copy())
+    if envs.get("FREVA_AUTOMATION_ENV_FILE"):
+        content = Path(envs["FREVA_AUTOMATION_ENV_FILE"]).read_text()
+        for line in content.splitlines():
+            key, _, value = line.partition("=")
+            if key.strip() and value.strip():
+                envs[key.strip()] = value.strip()
+    envs["INTERACTIVE_DEPLOY"] = "0"
+    envs["PATH"] = os.path.dirname(sys.executable) + os.pathsep + envs["PATH"]
+    return envs
+
+
+@task
+def run_scripts(script_path: Path):
+    for path in script_path.glob("*.sh"):
+        try:
+            subprocess.run(
+                ["sh", str(path.absolute())],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=True,
+                env=get_env_vars(),
+            )
+        except subprocess.CalledProcessError as error:
+            print(f"[WARNING] Failed to execute {path}: {error.stderr}")
+
+
 @task
 def run_deployment(
     config_file: Path,
     steps: List[Steps],
     gen_certs: bool = False,
+    use_ssh_pass: bool = False,
+    verbosity: int = 0,
 ):
-    steps = steps or ["auto"]
+    from freva_deployment.deploy import DeployFactory
+
     if "all" in steps:
         cmd = ["deploy", "cmd", "-c", str(config_file)]
     else:
         cmd = ["deploy-freva", "cmd", "-s", *steps, "-c", str(config_file)]
     if gen_certs:
         cmd.append("-g")
-    subprocess.run(cmd, check=True)
+    with DeployFactory(
+        steps=steps or "auto", config_file=config_file, gen_keys=gen_certs
+    ) as DF:
+        DF.play(ask_pass=use_ssh_pass, verbosity=verbosity)
 
 
 @flow
@@ -178,6 +253,8 @@ def freva_deployment_flow(
     project: project_type(),
     steps: Optional[List[Steps]] = None,
     gen_certs: bool = False,
+    verbosity: int = 0,
+    use_ssh_pass: bool = False,
 ):
     """
     Apply the freva deployment for a Project.
@@ -186,10 +263,17 @@ def freva_deployment_flow(
         project: The freva project that should be deployed.
         steps: The steps that should be run.
         gen_certs: Auto generate self signed keys.
+        verbosity: Set the verbosity level
+        use_ssh_pass: Instead of trying to connect via ssh keys, use a ssh password
     """
     update_deployment_software()
+    if os.getenv("SCRIPT_PATH"):
+        run_scripts(Path(os.getenv("SCRIPT_PATH")))
     steps = steps or ["auto"]
-    run_deployment(project, steps, gen_certs)
+    config = toml.loads(
+        (Path(__file__).parent / ".freva-automation.toml").read_text()
+    )
+    run_deployment(config[project], steps, gen_certs, use_ssh_pass, verbosity)
 
 
 def get_user_config_dir(appname: str) -> Path:
@@ -207,18 +291,25 @@ def get_user_config_dir(appname: str) -> Path:
 class PrefectServer:
     """Start the prefect server."""
 
-    def __init__(self, log_dir: Path) -> None:
+    def __init__(self, log_dir: Path, api_port: int) -> None:
 
         self.caddy_bin = shutil.which(
             "caddy", path=str(Path(sys.executable).parent)
         )
+        self.username = os.getenv("FREVA_AUTOMATION_USERNAME")
+        self.password = os.getenv("FREVA_AUTOMATION_PASSWORD")
+        if not self.username or not self.password:
+            raise SystemExit(
+                "FREVA_AUTOMATION_USERNAME and FREVA_AUTOMATION_PASSWORD must be set"
+            )
+
         if not self.caddy_bin:
             raise SystemExit("Caddy bin not found.")
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.bind(("", 0))
             self.port = s.getsockname()[1]
         self.prefect_api_url = f"http://127.0.0.1:{self.port}/api"
-
+        self.api_port = api_port
         log_dir.mkdir(exist_ok=True, parents=True)
 
         self.caddy_dir = Path(tempfile.mkdtemp(prefix="caddy-config-"))
@@ -226,6 +317,10 @@ class PrefectServer:
         self.server_log = (log_dir / "prefect-server.log").open("w")
         self.agent_log = (log_dir / "prefect-agent.log").open("w")
         self.caddy_log = (log_dir / "caddy.log").open("w")
+        self.env = os.environ.copy()
+        self.caddy_host = f"{socket.gethostname()}:{self.api_port}"
+        self.env["PREFECT_API_URL"] = self.prefect_api_url
+        self.env["PREFECT_UI_API_URL"] = f"https://{self.caddy_host}/api"
 
     def linger(self) -> None:
         """Wait unitl the server gets terminated."""
@@ -264,44 +359,44 @@ class PrefectServer:
         for path in script_path.glob("*.sh"):
             try:
                 subprocess.run(
-                    str(path.absolute()),
+                    ["sh", str(path.absolute())],
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE,
                     check=True,
+                    env=get_env_vars(),
                 )
             except subprocess.CalledProcessError as error:
                 print(f"[WARNING] Failed to execute {path}: {error.stderr}")
 
     def start_caddy(
         self,
-        port: int = 8443,
         cert_file: Optional[Path] = None,
         key_file: Optional[Path] = None,
     ) -> None:
         """Create and launch Caddy reverse proxy with basic auth."""
-        username = os.getenv("FREVA_AUTOMATION_USERNAME")
-        password = os.getenv("FREVA_AUTOMATION_PASSWORD")
-        if not username or not password:
-            raise SystemExit(
-                "FREVA_AUTOMATION_USERNAME and FREVA_AUTOMATION_PASSWORD must be set"
-            )
         if cert_file is None or key_file is None:
-            keys = "internal"
-        else:
-            keys = f"{cert_file} {key_file}"
+            from freva_deployment.keys import RandomKeys
+
+            keys = RandomKeys("freva-automation", socket.gethostname())
+            key_file = Path("freva-automation.key").absolute()
+            cert_file = Path("freva-automation.crt").absolute()
+            key_file.write_text(Path(keys.private_key_file).read_text())
+            cert_file.write_text(Path(keys.public_chain_file).read_text())
+
         # Generate bcrypt hash
         hashed_password = subprocess.check_output(
-            [self.caddy_bin, "hash-password", "--plaintext", password], text=True
+            [self.caddy_bin, "hash-password", "--plaintext", self.password],
+            text=True,
         ).strip()
         # Create temp dir for Caddy config
         caddyfile = self.caddy_dir / "Caddyfile"
         caddyfile.write_text(
             f"""
-    http://localhost:{port} {{
+    {self.caddy_host} {{
         reverse_proxy 127.0.0.1:{self.port}
-        tls {keys}
-        basicauth / {{
-        {username} {hashed_password}
+        tls {cert_file} {key_file}
+        basic_auth / {{
+        {self.username} {hashed_password}
     }}
 }}
 """
@@ -317,16 +412,12 @@ class PrefectServer:
             ],
             stdout=self.caddy_log,
             stderr=self.caddy_log,
+            env=self.env,
         )
-        print(
-            "[INFO] Reverse proxy started visit: "
-            f"https://{socket.gethostname()}:{port}"
-        )
+        print("[INFO] Reverse proxy started visit: " f"https://{self.caddy_host}")
 
     def stop_server(self) -> None:
         """Stop all services."""
-        self.server.terminate()
-        self.server.terminate()
         for attr in ("server", "agent", "caddy"):
             proc = getattr(self, attr, None)
             if proc:
@@ -338,10 +429,8 @@ class PrefectServer:
 
     def start_prefect(self) -> None:
         """Start the prefect server."""
-        env = os.environ.copy()
-        env["PREFECT_API_URL"] = self.prefect_api_url
         subprocess.check_call(
-            [sys.executable, "-m", "prefect", "server", "stop"], env=env
+            [sys.executable, "-m", "prefect", "server", "stop"], env=self.env
         )
         print("[INFO] Starting Prefect server...")
         self.server = subprocess.Popen(
@@ -358,7 +447,7 @@ class PrefectServer:
             ],
             stdout=self.server_log,
             stderr=self.server_log,
-            env=env,
+            env=self.env,
         )
         time.sleep(10)
         print("[INFO] Starting Prefect agent...")
@@ -374,7 +463,7 @@ class PrefectServer:
                 "process",
                 "default-agent-pool",
             ],
-            env=env,
+            env=self.env,
         )
         subprocess.check_call(
             [
@@ -386,7 +475,7 @@ class PrefectServer:
                 "-m",
                 "prefect.filesystems",
             ],
-            env=env,
+            env=self.env,
         )
         self.agent = subprocess.Popen(
             [
@@ -398,20 +487,12 @@ class PrefectServer:
                 "--pool",
                 "default-agent-pool",
             ],
-            env=env,
+            env=self.env,
             stdout=self.agent_log,
             stderr=self.agent_log,
         )
         time.sleep(5)
         print(f"[INFO] Prefect web app started at: http://localhost:{self.port}")
-
-
-# --- Functional helpers ---
-def load_env_configs() -> List[Path]:
-    env_var = "FREVA_DEPLOYMENT_CONFIG"
-    return [
-        Path(f.strip()) for f in os.getenv(env_var, "").split(",") if f.strip()
-    ]
 
 
 def write_config(config: dict, output_path: Path):
@@ -589,18 +670,16 @@ def main():
     extra_pkgs = [
         pkg.strip() for pkg in (args.extra_pkg or "").split(",") if pkg.strip()
     ]
-    if os.environ._get("_CALLED_FROM_BOOTSTRAP"):
-        b = BootstrapConda(args.prefix, extra_pkgs)
-        return
-
     if bootstrap or not (args.prefix / "conda" / "bin" / "prefect").is_file():
-        b = BootstrapConda(args.prefix, extra_pkgs)
-        cmd = [b.executable] + list(sys.argv)
-        try:
-            subprocess.check_call(cmd)
-        except subprocess.CalledProcessError:
-            raise SystemExit(1)
-        sys.exit(0)
+        service = args.prefix / "freva-automation.service"
+        args.prefix.mkdir(exist_ok=True, parents=True)
+        script_path = args.prefix / "automation-setup.py"
+        script_path.write_text(sys.stdin.read())
+        if not service.is_file():
+            service.write_text(SERVICE.format(prefix=args.prefix))
+        BootstrapConda(args.prefix, extra_pkgs)
+        print(f"Boot strapping success: check systemd {service} file.")
+        return
 
     if args.version:
         print(f"freva_setup.py version {__version__}")
@@ -630,19 +709,29 @@ def main():
         print("[WARNING]: no config files found.")
         return
     log_dir = Path(args.log_dir).expanduser().absolute()
+    env = os.environ.copy()
     try:
-
-        ps = PrefectServer(log_dir)
-        ps.prep_server(args.script_directory.expanduser(), args.user)
-        ps.start_prefect()
-        register_prefect_deployment(
-            config_files=merged,
-            cron=args.cron,
-        )
-        ps.start_caddy(port, args.cert_file, args.key_file)
-        ps.linger()
+        os.environ["SCRIPT_PATH"] = str(args.script_directory or "")
+        with tempfile.NamedTemporaryFile(suffix=".conf") as temp_f:
+            os.environ["FREVA_AUTOMATION_ENV_FILE"] = temp_f.name
+            Path(temp_f.name).write_text(
+                "\n".join(f"{e}={v}" for e, v in os.environ.items())
+            )
+            ps = PrefectServer(log_dir, port)
+            ps.prep_server(args.script_directory.expanduser(), args.user)
+            ps.start_prefect()
+            register_prefect_deployment(
+                config_files=merged,
+                cron=args.cron,
+            )
+            ps.start_caddy(args.cert_file, args.key_file)
+            ps.linger()
     finally:
-        ps.stop_server()
+        os.environ = env
+        try:
+            ps.stop_server()
+        except UnboundLocalError:
+            pass
 
 
 if __name__ == "__main__":

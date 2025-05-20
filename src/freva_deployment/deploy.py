@@ -765,13 +765,13 @@ class DeployFactory:
         no_prepend = ("root_passwd", "deployment_method")
         for step in set(self._config_keys):
             config[step] = {}
-            if self.cfg[step].get(f"{step}_host"):
+            if self.cfg.get(step, {}).get(f"{step}_host"):
                 config[step]["hosts"] = self.cfg[step][f"{step}_host"]
-            elif self.cfg[step].get(step):
+            elif self.cfg.get(step, {}).get(step):
                 config[step]["hosts"] = self.cfg[step][step]
             else:
                 continue
-            if step != "core":
+            if step != "core" and step in config:
                 hosts.append(config[step]["hosts"])
             config[step]["vars"] = {}
             for key, value in self.cfg[step].items():
