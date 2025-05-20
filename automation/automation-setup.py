@@ -52,6 +52,14 @@ except ImportError as error:
 class BootstrapConda:
     """Install conda into the prefex location."""
 
+    def call_from_bootstrap(self):
+        """Call the script in a bootstrap env."""
+        with tempfile.NamedTemporaryFile(suffix=".py") as temp_f:
+            Path(temp_f.name).write_text(sys.stdin.read())
+            cmd = [self.executable, temp_f.name]
+            os.environ["_CALLED_FROM_BOOTSTRAP"] = "1"
+            subprocess.check_call(cmd, env=os.environ)
+
     def __init__(
         self, prefix: Path, extra_pkgs: Optional[List[str]] = None
     ) -> None:
@@ -582,9 +590,12 @@ def main():
     ]
     if bootstrap or not (args.prefix / "conda" / "bin" / "prefect").is_file():
         b = BootstrapConda(args.prefix, extra_pkgs)
-        cmd = [b.executable] + list(sys.argv)
         try:
-            subprocess.check_call(cmd)
+            if not hasattr(sys, "_called_from_bootstrap"):
+                cmd = [b.executable] + list(sys.argv)
+                subprocess.check_call(cmd)
+            else:
+                b.call_from_bootstrap()
         except subprocess.CalledProcessError:
             raise SystemExit(1)
         sys.exit(0)
