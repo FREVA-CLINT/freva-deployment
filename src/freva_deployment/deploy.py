@@ -987,7 +987,9 @@ class DeployFactory:
                     hosts.append(host_var)
                 config[step] = {}
                 config[step]["hosts"] = host_var
-                ansible_user = cfg[step].get("ansible_user") or getuser()
+                ansible_user = cfg[step].get("ansible_user") or os.getenv(
+                    "ANSIBLE_USER", getuser()
+                )
                 if "ansible_become_user" not in cfg[step]:
                     become_user = "root"
                 else:

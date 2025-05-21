@@ -678,7 +678,7 @@ def main():
     parser.add_argument(
         "--user",
         type=str,
-        default=os.getenv("USER") or getuser(),
+        default=os.getenv("ANSIBLE_USER") or getuser(),
         help="If the deployment config file defines the `USER` variable. "
         "you can set the value of this variable here.",
     )
