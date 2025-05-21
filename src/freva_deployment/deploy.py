@@ -900,7 +900,7 @@ class DeployFactory:
         if ask_pass:
             sudo_pass_msg += ", defaults to ssh password"
         passwords = {}
-        ssh_key = "anslibe_ssh_pass"
+        ssh_key = "ansible_ssh_pass"
         sudo_key = "ansible_become_pass"
         passwords[sudo_key] = os.environ.get("ANSIBLE_BECOME_PASSWORD", "") or ""
         passwords[ssh_key] = os.environ.get("ANSIBLE_SSH_PASSWORD", "") or ""

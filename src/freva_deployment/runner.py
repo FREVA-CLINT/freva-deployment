@@ -118,7 +118,7 @@ class RunnerDir(TemporaryDirectory):
     """Define and create the Ansible runner directory."""
 
     def __init__(self) -> None:
-        super().__init__(prefix="AnsibleRunner")
+        super().__init__(prefix="AnsibleRunner", delete=False)
         self.parent_dir = Path(self.name)
         self.env_dir = self.parent_dir / "env"
         self.inventory_dir = self.parent_dir / "inventory"
@@ -304,8 +304,9 @@ class RunnerDir(TemporaryDirectory):
         for tag in tags:
             command += ["-t", tag]
         for key, passwd in passwords.items():
-            envvars[key.upper()] = passwd
-            extravars[key] = f'{{{{ lookup("env", "{key.upper()}") }}}}'
+            if passwd:
+                envvars[key.upper()] = passwd
+                extravars[key] = f'{{{{ lookup("env", "{key.upper()}") }}}}'
         extravars["playbook_tempdir"] = str(self.aux_file_dir)
         # Add extra variables
         for key, value in extravars.items():

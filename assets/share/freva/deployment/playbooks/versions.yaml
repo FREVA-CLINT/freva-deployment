@@ -4,6 +4,8 @@
     image: "ghcr.io/freva-clint/freva-rest-api"
     service_command: "freva-rest-server -V | awk '{print $NF}'"
     role: "freva-rest"
+    ansible_become_user: "{{ freva_rest_ansible_become_user }}"
+    ansible_user: "{{ freva_rest_ansible_user }}"
   tasks:
     - name: Include role vars
       include_vars: "{{asset_dir}}/playbooks/roles/{{ role }}/files/vars.yml"
@@ -35,6 +37,8 @@
 
 - hosts: web
   vars:
+    ansible_become_user: "{{ web_ansible_become_user }}"
+    ansible_user: "{{ web_ansible_user }}"
     image: "ghcr.io/freva-clint/freva-web"
     service_command: >
       {{ansible_python_interpreter}} -c
@@ -73,6 +77,8 @@
 - hosts: vault
   vars:
     role: "vault"
+    ansible_become_user: "{{ vault_ansible_become_user }}"
+    ansible_user: "{{ vault_ansible_user }}"
   tasks:
     - name: Include role vars
       include_vars: "{{asset_dir}}/playbooks/roles/{{ role }}/files/vars.yml"
@@ -95,7 +101,7 @@
 
 - hosts: core
   vars:
-    ansible_user: "{{core_ansible_user}}"
+    ansible_user: "{{ core_ansible_user }}"
     ansible_become: false
     ansible_facts_become: false
   become: false
