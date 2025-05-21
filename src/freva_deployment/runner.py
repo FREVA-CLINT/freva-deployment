@@ -118,7 +118,7 @@ class RunnerDir(TemporaryDirectory):
     """Define and create the Ansible runner directory."""
 
     def __init__(self) -> None:
-        super().__init__(prefix="AnsibleRunner", delete=False)
+        super().__init__(prefix="AnsibleRunner")
         self.parent_dir = Path(self.name)
         self.env_dir = self.parent_dir / "env"
         self.inventory_dir = self.parent_dir / "inventory"
