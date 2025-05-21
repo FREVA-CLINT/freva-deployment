@@ -214,7 +214,7 @@ jobs:
 
       - name: Test built bindary
         run: >
-          docker run --rm -v -e LANG=C -e LC_ALL=C $PWD:/src -w /src --platform ${{ matrix.arch }}
+          docker run --rm -e LANG=C LC_ALL=C -v $PWD:/src -w /src --platform ${{ matrix.arch }}
           pyinstaller:${{ matrix.target }} /src/dist/deploy-freva/deploy-freva --help
 
       - name: Get version
