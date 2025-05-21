@@ -422,15 +422,26 @@ class PrefectServer:
         # Create temp dir for Caddy config
         caddyfile = self.caddy_dir / "Caddyfile"
         caddyfile.write_text(
-            f"""
-    {self.caddy_host} {{
-        reverse_proxy 127.0.0.1:{self.port}
-        tls {cert_file} {key_file}
-        basic_auth / {{
+            f"""{{
+    auto_https disable_redirects
+
+}}
+
+{self.caddy_host} {{
+    reverse_proxy 127.0.0.1:{self.port}
+    tls {cert_file} {key_file}
+    basicauth / {{
         {self.username} {hashed_password}
     }}
 }}
-"""
+
+:8080 {{
+    redir https://{self.caddy_host}{{uri}} permanent
+}}"""
+        )
+        subprocess.check_call(
+            [self.caddy_bin, "fmt", "--overwrite", "--config", str(caddyfile)],
+            env=self.env,
         )
         self.caddy = subprocess.Popen(
             [
