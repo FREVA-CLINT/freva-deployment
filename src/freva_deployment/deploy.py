@@ -17,6 +17,7 @@ from pathlib import Path
 from socket import gethostbyname, gethostname
 from typing import Any, Dict, Optional, cast
 from urllib.parse import urlparse
+from urllib.request import urlretrieve
 
 import appdirs
 import namegenerator
@@ -27,7 +28,7 @@ from rich.prompt import Prompt
 from typing_extensions import NotRequired, TypedDict
 
 import freva_deployment.callback_plugins
-from freva_deployment import FREVA_PYTHON_VERSION, __version__
+from freva_deployment import AUX_URL, FREVA_PYTHON_VERSION, __version__
 
 from .error import ConfigurationError, handled_exception
 from .keys import RandomKeys
@@ -508,8 +509,7 @@ class DeployFactory:
                 _webserver_items["about_us_text"] = f_obj.read()
         except (FileNotFoundError, IOError, KeyError):
             pass
-        with self.web_conf_file.open("w") as f_obj:
-            tomlkit.dump(_webserver_items, f_obj)
+        tomlkit.dumps(_webserver_items, self.web_conf_file.read_text())
 
         server_name = self.cfg["web"].pop("server_name", [])
         if isinstance(server_name, str):
@@ -866,6 +866,10 @@ class DeployFactory:
             ("core", "scheduler_system"),
         )
         cfg_file = asset_dir / "config" / "evaluation_system.conf.tmpl"
+        if not cfg_file.is_file():
+            cfg_file.partent.mkdir(exist_ok=True, parent=True)
+            urlretrieve(AUX_URL, filename=str(cfg_file))
+
         with cfg_file.open() as f_obj:
             lines = f_obj.readlines()
             for num, line in enumerate(lines):

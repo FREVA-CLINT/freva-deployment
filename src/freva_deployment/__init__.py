@@ -14,6 +14,11 @@ AVAILABLE_CONDA_ARCHS = [
     "osx-arm64",
 ]
 
+AUX_URL = (
+    "https://raw.githubusercontent.com/FREVA-CLINT/freva/main/assets/"
+    "evaluation_system.conf"
+)
+
 
 def download_auxiliry_data():
     """Download any data that needs to be downloaded."""
@@ -32,8 +37,7 @@ def download_auxiliry_data():
             print()
 
     urls = {
-        "https://raw.githubusercontent.com/FREVA-CLINT/"
-        "freva/main/assets/evaluation_system.conf": (
+        AUX_URL: (
             "assets/share/freva/deployment/config/evaluation_system.conf.tmpl"
         )
     }
