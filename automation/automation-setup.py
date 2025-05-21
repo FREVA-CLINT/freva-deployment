@@ -70,7 +70,7 @@ def mock_decorator(func: Callable[P, F]) -> Callable[P, F]:
 try:
     import appdirs
     import toml
-    from prefect import flow, task
+    from prefect import flow, get_run_logger, task
     from prefect.client.orchestration import get_client
     from prefect.client.schemas.filters import (
         DeploymentFilter,
@@ -188,14 +188,9 @@ def project_type() -> Type:
     except FileNotFoundError:
         dump_cfg(load_env_configs())
         projects = list(toml.load(cfg_file).keys())
+    if not projects:
+        return Literal["freva"]
     return Literal[*projects]
-
-
-@task
-def update_deployment_software():
-    subprocess.check_output(
-        [sys.executable, "-m", "pip", "install", "-U", "freva-deployment"]
-    )
 
 
 def get_env_vars() -> Dict[str, str]:
@@ -208,22 +203,27 @@ def get_env_vars() -> Dict[str, str]:
                 envs[key.strip()] = value.strip()
     envs["INTERACTIVE_DEPLOY"] = "0"
     envs["PATH"] = os.path.dirname(sys.executable) + os.pathsep + envs["PATH"]
+    envs["MASTER_PASSWD"] = envs["FREVA_AUTOMATION_PASSWORD"]
     return envs
 
 
 @task
+def update_deployment_software():
+    return
+    subprocess.check_output(
+        [sys.executable, "-m", "pip", "install", "-U", "freva-deployment"]
+    )
+
+
+@task
 def run_scripts(script_path: Path):
+
+    logger = get_run_logger()
     for path in script_path.glob("*.sh"):
         try:
-            subprocess.run(
-                ["sh", str(path.absolute())],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                check=True,
-                env=get_env_vars(),
-            )
+            PrefectServer.execute(["sh", str(path.absolute())])
         except subprocess.CalledProcessError as error:
-            print(f"[WARNING] Failed to execute {path}: {error.stderr}")
+            logger.warning("Could not execute script: %s", path)
 
 
 @task
@@ -234,18 +234,17 @@ def run_deployment(
     use_ssh_pass: bool = False,
     verbosity: int = 0,
 ):
-    from freva_deployment.deploy import DeployFactory
 
-    if "all" in steps:
-        cmd = ["deploy", "cmd", "-c", str(config_file)]
-    else:
-        cmd = ["deploy-freva", "cmd", "-s", *steps, "-c", str(config_file)]
+    step = steps or ["auto"]
+    cmd = ["deploy-freva", "cmd", "-c", f"{config_file}"]
+    if verbosity:
+        cmd.append("-" + "v" * verbosity)
+    if use_ssh_pass:
+        cmd.append("--ask-pass")
     if gen_certs:
         cmd.append("-g")
-    with DeployFactory(
-        steps=steps or "auto", config_file=config_file, gen_keys=gen_certs
-    ) as DF:
-        DF.play(ask_pass=use_ssh_pass, verbosity=verbosity)
+    cmd += ["-s"] + steps
+    PrefectServer.execute(cmd)
 
 
 @flow
@@ -290,6 +289,38 @@ def get_user_config_dir(appname: str) -> Path:
 
 class PrefectServer:
     """Start the prefect server."""
+
+    @staticmethod
+    def execute(cmd):
+        """Execute a command and log the stdout to the prefect logger."""
+
+        logger = get_run_logger()
+        logger.info("Running : %s", " ".join(cmd))
+        env = get_env_vars()
+        proc = subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            bufsize=1,
+            universal_newlines=True,
+            env=env,
+        )
+        assert proc.stdout is not None
+        while True:
+            line = proc.stdout.readline()
+            if not line and proc.poll() is not None:
+                break
+            if line:
+                line = line.rstrip()
+                logger.info(line)
+        if proc.returncode != 0:
+            stderr_output = proc.stderr.read()
+            logger.error(
+                "Process %s exited with code : %i", " ".join(cmd), proc.returncode
+            )
+            logger.error("Captured stderr:\n%s", stderr_output.strip())
+            raise subprocess.CalledProcessError(proc.returncode, cmd)
 
     def __init__(self, log_dir: Path, api_port: int) -> None:
 
