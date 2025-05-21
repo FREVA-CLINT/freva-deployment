@@ -509,7 +509,7 @@ class DeployFactory:
                 _webserver_items["about_us_text"] = f_obj.read()
         except (FileNotFoundError, IOError, KeyError):
             pass
-        tomlkit.dumps(_webserver_items, self.web_conf_file.read_text())
+        self.web_conf_file.write_text(tomlkit.dumps(_webserver_items))
 
         server_name = self.cfg["web"].pop("server_name", [])
         if isinstance(server_name, str):
