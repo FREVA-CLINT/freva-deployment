@@ -867,7 +867,7 @@ class DeployFactory:
         )
         cfg_file = asset_dir / "config" / "evaluation_system.conf.tmpl"
         if not cfg_file.is_file():
-            cfg_file.parent.mkdir(exist_ok=True, parent=True)
+            cfg_file.parent.mkdir(exist_ok=True, parents=True)
             urlretrieve(AUX_URL, filename=str(cfg_file))
 
         with cfg_file.open() as f_obj:
