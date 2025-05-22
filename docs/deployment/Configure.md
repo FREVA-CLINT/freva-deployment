@@ -10,6 +10,9 @@ A complete Freva instance will need the following services:
 - Nginx reverse proxy for connecting to the web ui app (optional)
 - Freva client - core - library
 
+:::{tip}
+Please consult the [Frequently Asked Questions](faq) guide to see how you can fix known issues.
+:::
 
 ## Container or Conda-Forge Deployment
 

@@ -1,24 +1,25 @@
 ---
-- name: Pulling container
-  script: |
-    {{ docker_bin }} {{ item }}
+- name: Getting container engine
+  include_tasks: "get_container_engine.yml"
 
+- name: Pulling container
+  shell: "{{ docker_bin }} {{ item }} || true"
   loop:
-    - "stop {{ db_name }} || true"
-    - "rm -f {{ db_name }} || true"
-    - "rmi -f ghcr.io/freva-clint/freva-mysql || true"
+    - "stop {{ db_name }}"
+    - "rm -f {{ db_name }}"
+    - "rmi -f ghcr.io/freva-clint/freva-mysql"
     - "pull ghcr.io/freva-clint/freva-mysql:{{db_version}}"
   changed_when: true
+  ignore_errors: true
 
 - name: Creating volumes
   include_tasks: "container-volumes.yml"
 
 - name: Checking mysql update info
-  script: >
+  shell: >
     {{ docker_bin }} run --rm
     -v {{ db_name}}_data:/data:ro
-    alpine sh -c
-    cat /data/mysql_upgrade_info 2> /dev/null ||
+    alpine sh -c "cat /data/mysql_upgrade_info 2> /dev/null ||
     cat /data/mariadb_upgrade_info 2> /dev/null
     || echo mysql"
   register:
@@ -30,9 +31,10 @@
     upgrade_info_text: "{{ upgrade_info_cmd.stdout | lower }}"
 
 - name: Migrate Old MariaDB to MySQL
+  when: "'mariadb' in upgrade_info_text"
   block:
     - name: Backup MariaDB data directory before migration
-      script: >
+      shell: >
         {{ docker_bin }} run --rm -v {{db_name}}_data:/data:ro
         -v mysql_backup:/backup:rw --name backup-db
         alpine sh -c "tar czf /backup/mysql-backup.tar.gz -C /data ."
@@ -45,7 +47,7 @@
   rescue:
 
     - name: Restore original MariaDB data directory
-      script: >
+      shell: >
         {{ docker_bin }} run --rm
         -v {{db_name}}_data:/data:z --name restore-db
         -v mysql_backup:/backup:ro
@@ -60,19 +62,16 @@
 
   always:
 
-    - name: Remove any existing DB backup
-      script: >
-        {{ docker_bin }} volume rm -f mysql_backup {{db_name}}_backup
-
-
     - name: Stop temp container if running
-      script: >
-        {{ docker_bin }}
-        compose -f {{ db_tempdir.path }}/temp-container.yaml
+      shell: >
+        {{ compose_bin }} -f {{ db_tempdir.path }}/temp-container.yaml
         down --remove-orphans
       ignore_errors: true
 
-  when: "'mariadb' in upgrade_info_text"
+    - name: Remove any existing DB backup
+      shell: >
+        {{ docker_bin }} volume rm -f mysql_backup
+
 
 - name: Creating compose directory structure
   file:
@@ -99,6 +98,6 @@
 - pause: seconds=15
 
 - name: health check
-  script: >
+  shell: >
     {{ docker_bin }} exec {{ db_name }}
     sh -c 'healthchecks -s mysql'

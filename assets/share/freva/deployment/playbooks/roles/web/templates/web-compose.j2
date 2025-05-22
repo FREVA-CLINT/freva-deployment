@@ -40,10 +40,10 @@ services:
       - FREVA_REST_URL=http://{{web_freva_rest_host.replace("http://", "")}}
       - REDIS_PASSWD={{ web_redis_password }}
       - REDIS_USER={{ web_redis_username }}
-      - OIDC_DISCOVERY_URL: "{{ web_oidc_url }}"
-      - OIDC_CLIENT_SECRET: "{{ web_oidc_client_secret }}"
-      - OIDC_CLIENT_ID: "{{ web_oidc_client }}"
-      - CHATBOT_HOST: '{{ web_chatbot_host.replace("http://", "") }}'
+      - OIDC_DISCOVERY_URL={{ web_oidc_url }}
+      - OIDC_CLIENT_SECRET={{ web_oidc_client_secret }}
+      - OIDC_CLIENT_ID={{ web_oidc_client }}
+      - CHATBOT_HOST={{ web_chatbot_host.replace("http://", "") }}
 
     volumes:
       - {{ core_root_dir | regex_replace('^~', ansible_env.HOME)}}:{{ core_root_dir | regex_replace('^~', ansible_env.HOME)}}:ro

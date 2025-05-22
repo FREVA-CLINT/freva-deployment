@@ -1,10 +1,15 @@
 ---
+- name: Getting container engine
+  include_tasks: "get_container_engine.yml"
+
 - name: Deleting container
-  shell: |
-    {{ deployment_method }} stop {{ search_server_name }} || true
-    {{ deployment_method }} rm -f {{ search_server_name }} || true
-    {{deployment_method}} rmi -f ghcr.io/freva-clint/freva-{{ search_server_service }} || true
+  shell: "{{ docker_bin }} {{ item }} || true"
+  loop:
+    - "stop {{ search_server_name }}"
+    - "rm -f {{ search_server_name }}"
+    - "rmi -f ghcr.io/freva-clint/freva-{{ search_server_service }}"
   changed_when: true
+  ignore_errors: true
 
 - name: Creating compose file
   template:
@@ -32,6 +37,6 @@
   when: search_server_service == 'solr'
 
 - name: Container healthchecks
-  script: >
+  shell: >
     {{ docker_bin }} exec {{ search_server_name }} healthchecks
     -s {{ search_server_service }}

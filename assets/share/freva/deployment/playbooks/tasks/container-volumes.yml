@@ -3,17 +3,17 @@
   block:
     - name: Cleaning volumes
       shell: >
-        {{ deployment_method }} volume rm -f {{ item }}
+        {{ docker_bin }} volume rm -f {{ item }}
       loop: "{{ volume_names  | default([]) }}"
       when: wipe | default(false)
 
     - name: Create volumes
       shell: >
-        {{ deployment_method }} volume create {{ item }} --ignore
+        {{ docker_bin }} volume create {{ item }} || true
       loop: "{{ volume_names  | default([]) }}"
 
     - name: Adjust ownership of volume directories
       shell: >
-        {{ deployment_method }} run --rm -v {{ item }}:/data:rw alpine
+        {{ docker_bin }} run --rm -v {{ item }}:/data:rw alpine
         chown -R {{uid}}:{{gid}} /data
       loop: "{{ volume_names  | default([]) }}"

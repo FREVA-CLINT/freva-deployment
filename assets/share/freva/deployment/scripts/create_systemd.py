@@ -135,25 +135,33 @@ def get_container_cmd(args: str) -> Tuple[str, str]:
     )
     container_cmd = _get_container_cmd(path)
     args_list = shlex.split(args)
-    if "compose" in args:
-        _ = args_list.pop(args_list.index("compose"))
-        container_cmd += "-compose"
-        command = shutil.which(container_cmd)
-        if not command:
-            for cmd in ("ensurepip", "pip install container_cmd"):
-                try:
-                    subprocess.check_call(
-                        shlex.split("python3 -m " + cmd),
-                        stdout=subprocess.PIPE,
-                        stderr=subprocess.PIPE,
-                    )
-                except (subprocess.CalledProcessError, FileNotFoundError):
-                    txt = (
-                        f"{container_cmd} is available but not {container_cmd}-compose"
-                        " which should be installed on the system."
-                    )
-                    print(txt, file=sys.stderr)
-                    raise ValueError(txt)
+    if "compose" in args_list:
+        proc = subprocess.run(
+            [container_cmd, "compose"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+        )
+        if proc.returncode != 0:
+            _ = args_list.pop(args_list.index("compose"))
+            compose_cmd = f"{container_cmd}-compose"
+            command = shutil.which(compose_cmd)
+            if not command:
+                for cmd in ("ensurepip", f"pip install {compose_cmd}"):
+                    try:
+                        subprocess.check_call(
+                            shlex.split("python3 -m " + cmd),
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE,
+                        )
+                    except (subprocess.CalledProcessError, FileNotFoundError):
+                        txt = (
+                            f"{container_cmd} is available but not {compose_cmd}"
+                            " which should be installed on the system."
+                        )
+                        print(txt, file=sys.stderr)
+                        raise ValueError(txt)
+            container_cmd = compose_cmd
     container_path = shutil.which(container_cmd) or container_cmd
     return container_path, " ".join(args_list)
 

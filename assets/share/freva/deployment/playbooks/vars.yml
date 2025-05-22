@@ -1,4 +1,3 @@
 ---
-docker_bin: "{{ asset_dir }}/scripts/docker-or-podman --prefer={{ deployment_method }}"
 conda_url: "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3"
 cache_secrets: "{{ playbook_tempdir }}/data-portal-cluster-config.json"

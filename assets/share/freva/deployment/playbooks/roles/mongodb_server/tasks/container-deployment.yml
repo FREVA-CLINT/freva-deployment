@@ -1,11 +1,16 @@
 ---
+- name: Getting container engine
+  include_tasks: "get_container_engine.yml"
+
 - name: Pulling container
-  shell: |
-    {{ deployment_method }} stop {{ mongo_name }} || true
-    {{ deployment_method }} rm -f {{ mongo_name }} || true
-    {{ deployment_method }} rmi -f ghcr.io/freva-clint/freva-mongo || true
-    {{ deployment_method }} pull ghcr.io/freva-clint/freva-mongo:{{mongodb_server_version}}
+  shell: "{{ docker_bin }} {{ item }} || true"
+  loop:
+    - "stop {{ mongo_name }}"
+    - "rm -f {{ mongo_name }}"
+    - "rmi -f ghcr.io/freva-clint/freva-mongo"
+    - "pull ghcr.io/freva-clint/freva-mongo:{{mongodb_server_version}}"
   changed_when: true
+  ignore_errors: true
 
 - name: Creating volumes
   include_tasks: "container-volumes.yml"
@@ -27,5 +32,5 @@
 - pause: seconds=15
 
 - name: Container healthchecks
-  script: >
+  shell: >
     {{ docker_bin }} exec {{ mongo_name }} healthchecks -s mongo

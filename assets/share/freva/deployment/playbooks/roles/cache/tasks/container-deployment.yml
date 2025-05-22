@@ -1,11 +1,16 @@
 ---
+- name: Getting container engine
+  include_tasks: "get_container_engine.yml"
+
 - name: Pulling container
-  shell: |
-    {{ deployment_method }} stop {{ cache_name }} || true
-    {{ deployment_method }} rm -f {{ cache_name }} || true
-    {{ deployment_method }} rmi -f ghcr.io/freva-clint/freva-redis || true
-    {{ deployment_method }} pull ghcr.io/freva-clint/freva-redis:{{redis_version}}
+  shell: "{{ docker_bin }} {{ item }} || true"
+  loop:
+    - "stop {{ cache_name }}"
+    - "rm -f {{ cache_name }}"
+    - "rmi -f ghcr.io/freva-clint/freva-redis"
+    - "pull ghcr.io/freva-clint/freva-redis:{{redis_version}}"
   changed_when: true
+  ignore_errors: true
 
 - name: Creating volumes
   include_tasks: "container-volumes.yml"
@@ -30,4 +35,4 @@
     -f {{ compose_file }} up --remove-orphans
   environment:
     DEBUG: '{{ debug }}'
-    PREFER: "{{deployment_method }}"
+    PREFER: "{{ deployment_method }}"

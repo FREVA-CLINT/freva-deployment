@@ -10,11 +10,11 @@
     - "{{ db_tempdir.path }}"
 
 - name: Pulling MariaDB Container
-  script: "{{ docker_bin }} pull docker.io/mariadb:11.1"
+  shell: "{{ docker_bin }} pull docker.io/mariadb:11.1"
 
 - name: Adjusting container permissions
   shell: >
-    {{ deployment_method }} run --rm
+    {{ docker_bin }} run --rm
     -v {{db_name}}_data:/data:rw
     alpine sh -c "chmod -R 777 /data && chown -R {{uid}}:{{gid}} /data"
 
@@ -28,30 +28,30 @@
     flags: "--skip-grant-tables --skip-networking"
 
 - name: Start temporary MariaDB container using compose
-  script: >
-    {{ docker_bin }} compose -f {{ temp_compose_file }}
+  shell: >
+    {{ compose_bin }} -f {{ temp_compose_file }}
     --project-name {{ db_name }} up -d
   changed_when: true
 
 - name: Wait for MariaDB socket to be ready
-  script: >
-    {{ docker_bin }} compose -f {{ temp_compose_file }}
-    exec temp-db test -S /var/run/mysqld/mysqld.sock
+  shell: >
+    {{ docker_bin }}  exec temp-db
+    sh -c '[ -S /run/mysqld/mysqld.sock ] || [ -S /var/run/mysqld/mysqld.sock ]'
   retries: 10
   delay: 3
   register: mariadb_ready
   until: mariadb_ready.rc == 0
 
-- pause: seconds=5
+- pause: seconds=10
 
 - name: Dump MariaDB databases to shared volume
-  script: >
-    {{ docker_bin }} compose -f {{ temp_compose_file }} exec temp-db
+  shell: >
+    {{ docker_bin }} exec temp-db
     sh -c "mariadb-dump {{ db }} | gzip -9 > /backup/dump.sql.gz"
 
 - name: Stop and remove temporary MariaDB container
-  script: >
-    {{ docker_bin }} compose --project-name {{ db_name }}
+  shell: >
+    {{ compose_bin }} --project-name {{ db_name }}
     -f {{ temp_compose_file }} down
 
 - name: Creating migration compose file for MySQL
@@ -65,20 +65,20 @@
 
 - name: Remove any existing DB data
   shell: >
-    {{ deployment_method }} run --rm
+    {{ docker_bin }} run --rm
     -v {{db_name}}_data:/data:rw
     alpine sh -c "rm -fr /data/*"
 
 - name: Start temporary MySQL container using compose
-  script: >
-    {{ docker_bin }} compose --project-name {{ db_name }}
+  shell: >
+    {{ compose_bin }} --project-name {{ db_name }}
     -f {{ temp_compose_file }} up -d
   changed_when: true
 
 - name: Wait for MySQL socket to be ready
-  script: >
-    {{ docker_bin }} compose -f {{ temp_compose_file }}
-    exec temp-db test -S /var/run/mysqld/mysqld.sock
+  shell: >
+    {{ docker_bin }} exec temp-db
+    sh -c '[ -S /run/mysqld/mysqld.sock ] || [ -S /var/run/mysqld/mysqld.sock ]'
   retries: 10
   delay: 3
   register: mysql_ready
@@ -87,8 +87,8 @@
 - pause: seconds=5
 
 - name: Import SQL dump into MySQL container
-  script: >
-    {{ docker_bin }} compose -f {{ temp_compose_file }} exec temp-db
+  shell: >
+    {{ docker_bin }} exec temp-db
     sh -c "gunzip -c /backup/dump.sql.gz |
     sed -e 's/utf8mb4_uca1400_ai_ci/utf8mb4_0900_ai_ci/g' |
     mysql -uroot -p'{{ root_passwd }}'
