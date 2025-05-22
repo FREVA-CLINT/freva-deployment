@@ -1,20 +1,26 @@
 ---
 - name: Pulling container
-  shell: |
-    {{ deployment_method }} stop {{ db_name }} || true
-    {{ deployment_method }} rm -f {{ db_name }} || true
-    {{ deployment_method }} rmi -f ghcr.io/freva-clint/freva-mysql || true
-    {{ deployment_method }} pull ghcr.io/freva-clint/freva-mysql:{{db_version}}
+  script: |
+    {{ docker_bin }} {{ item }}
+
+  loop:
+    - "stop {{ db_name }} || true"
+    - "rm -f {{ db_name }} || true"
+    - "rmi -f ghcr.io/freva-clint/freva-mysql || true"
+    - "pull ghcr.io/freva-clint/freva-mysql:{{db_version}}"
   changed_when: true
 
 - name: Creating volumes
   include_tasks: "container-volumes.yml"
 
 - name: Checking mysql update info
-  shell: >
-    {{ deployment_method }} run --rm
+  script: >
+    {{ docker_bin }} run --rm
     -v {{ db_name}}_data:/data:ro
-    alpine sh -c "cat /data/mysql_upgrade_info 2> /dev/null || echo mysql"
+    alpine sh -c
+    cat /data/mysql_upgrade_info 2> /dev/null ||
+    cat /data/mariadb_upgrade_info 2> /dev/null
+    || echo mysql"
   register:
     upgrade_info_cmd
   changed_when: false
@@ -26,8 +32,8 @@
 - name: Migrate Old MariaDB to MySQL
   block:
     - name: Backup MariaDB data directory before migration
-      shell: >
-        {{ deployment_method }} run --rm -v {{db_name}}_data:/data:ro
+      script: >
+        {{ docker_bin }} run --rm -v {{db_name}}_data:/data:ro
         -v mysql_backup:/backup:rw --name backup-db
         alpine sh -c "tar czf /backup/mysql-backup.tar.gz -C /data ."
       changed_when: true
@@ -39,8 +45,8 @@
   rescue:
 
     - name: Restore original MariaDB data directory
-      shell: >
-        {{ deployment_method }} run --rm
+      script: >
+        {{ docker_bin }} run --rm
         -v {{db_name}}_data:/data:z --name restore-db
         -v mysql_backup:/backup:ro
         alpine sh -c "rm -rf /data/* && tar xzf /backup/mysql-backup.tar.gz -C /data"
@@ -55,8 +61,8 @@
   always:
 
     - name: Remove any existing DB backup
-      shell: >
-        {{ deployment_method }} volume rm -f mysql_backup {{db_name}}_backup
+      script: >
+        {{ docker_bin }} volume rm -f mysql_backup {{db_name}}_backup
 
 
     - name: Stop temp container if running
@@ -83,8 +89,8 @@
 
 - name: Creating system services
   script: >
-    {{asset_dir}}/scripts/create_systemd.py
-    {{db_name}} compose --enable --project-name {{db_name}}
+    {{ asset_dir }}/scripts/create_systemd.py
+    {{ db_name }} compose --enable --project-name {{db_name}}
     -f {{compose_file}} up --remove-orphans
   environment:
     DEBUG: '{{ debug }}'

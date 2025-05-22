@@ -89,5 +89,7 @@
 - name: Import SQL dump into MySQL container
   script: >
     {{ docker_bin }} compose -f {{ temp_compose_file }} exec temp-db
-    sh -c "gunzip -c /backup/dump.sql.gz | mysql -uroot -p'{{ root_passwd }}'
+    sh -c "gunzip -c /backup/dump.sql.gz |
+    sed -e 's/utf8mb4_uca1400_ai_ci/utf8mb4_0900_ai_ci/g' |
+    mysql -uroot -p'{{ root_passwd }}'
     {{ db }}"
