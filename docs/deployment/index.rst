@@ -34,4 +34,5 @@ The Freva Rest deployment consists of three mandatory and two optional parts:
    Installation
    Configure
    TuiHowto
+   webui
    Config

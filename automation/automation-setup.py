@@ -49,6 +49,8 @@ WorkingDirectory={prefix}
 StandardOutput=journal
 StandardError=journal
 Restart=on-failure
+# User=<set user for security>
+# Group=<set group for security>
 """
 
 
@@ -103,6 +105,7 @@ class BootstrapConda:
         self, prefix: Path, extra_pkgs: Optional[List[str]] = None
     ) -> None:
         extra_pkgs = extra_pkgs or []
+        prefix = prefix.expanduser().absolute()
         micromamba = prefix / "bin" / "micromamba"
         self.prefix = prefix
         pkgs = list(
@@ -648,29 +651,10 @@ def main():
         help="Verify SHA256 checksum of script",
     )
     parser.add_argument(
-        "-d",
-        "--defaults",
-        type=Path,
-        default=os.getenv("FREVA_AUTOMATION_CONFIG")
-        or os.path.join(
-            get_user_config_dir("freva"), "deployment", "automation.toml"
-        ),
-        help="Path to the default TOML config file",
-    )
-    parser.add_argument(
-        "--cron", type=str, default=None, help="Cron schedule (e.g. '0 3 * * *')"
-    )
-    parser.add_argument(
         "--port",
         type=int,
         default=os.getenv("FREVA_AUTOMATION_SERVER_PORT", "4200"),
         help="Set the port to run the server.",
-    )
-    parser.add_argument(
-        "--log-dir",
-        type=Path,
-        default=os.getenv("FREVA_AUTOMATION_LOG_DIR", "~/.cache/log"),
-        help="Set the log dir for the automation service.",
     )
     parser.add_argument(
         "--extra-pkg",
@@ -713,13 +697,14 @@ def main():
     extra_pkgs = [
         pkg.strip() for pkg in (args.extra_pkg or "").split(",") if pkg.strip()
     ]
-    if bootstrap or not (args.prefix / "conda" / "bin" / "prefect").is_file():
-        service = args.prefix / "freva-automation.service"
+    prefix = args.prefix.absolute().expanduser()
+    if bootstrap or not (prefix / "conda" / "bin" / "prefect").is_file():
+        service = prefix / "freva-automation.service"
         args.prefix.mkdir(exist_ok=True, parents=True)
-        script_path = args.prefix / "automation-setup.py"
+        script_path = prefix / "automation-setup.py"
         script_path.write_text(sys.stdin.read())
         if not service.is_file():
-            service.write_text(SERVICE.format(prefix=args.prefix))
+            service.write_text(SERVICE.format(prefix=prefix))
         BootstrapConda(args.prefix, extra_pkgs)
         print(f"Boot strapping success: check systemd {service} file.")
         return
@@ -742,16 +727,15 @@ def main():
         self_update(SCRIPT_URL, script_path)
         sys.exit(0)
 
-    if not args.defaults:
-        parser.error("the following arguments are required: --defaults")
-
     # Main execution
+    log_dir = prefix / "log"
+    log_dir.mkdir(exist_ok=True, parents=True)
+    defaults = prefix / "automation.toml"
     configs = args.config
-    merged = merge_config_files(args.defaults, configs)
+    merged = merge_config_files(defaults, configs)
     if not merged:
         print("[WARNING]: no config files found.")
         return
-    log_dir = Path(args.log_dir).expanduser().absolute()
     env = os.environ.copy()
     try:
         os.environ["SCRIPT_PATH"] = str(args.script_directory or "")
