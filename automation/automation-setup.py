@@ -311,9 +311,9 @@ class PrefectServer:
             line = proc.stdout.readline()
             if not line and proc.poll() is not None:
                 break
-            if line:
-                line = line.rstrip()
-                logger.info(line)
+            s_line = (line or "").rstrip().strip()
+            if s_line:
+                logger.info(s_line)
         if proc.returncode != 0:
             stderr_output = proc.stderr.read()
             logger.error(
