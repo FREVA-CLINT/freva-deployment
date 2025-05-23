@@ -10,7 +10,9 @@
     - "rmi -f ghcr.io/freva-clint/freva-vault"
     - "pull ghcr.io/freva-clint/freva-vault:{{ vault_version }}"
   changed_when: true
-  ignore_errors: true
+
+- name: Creating volumes
+  include_tasks: "container-volumes.yml"
 
 - name: Creating compose directory structure
   file:
