@@ -76,6 +76,7 @@ try:
         DeploymentFilter,
         DeploymentFilterName,
     )
+    from prefect.exceptions import FailedRun
     from prefect.filesystems import LocalFileSystem
 
     bootstrap = False
@@ -320,7 +321,7 @@ class PrefectServer:
                 "Process %s exited with code : %i", " ".join(cmd), proc.returncode
             )
             logger.error("Captured stderr:\n%s", stderr_output.strip())
-            raise subprocess.CalledProcessError(proc.returncode, cmd)
+            raise FailedRun(f"{' '.join(cmd)} exited: {proc.returncode}")
 
     def __init__(self, log_dir: Path, api_port: int) -> None:
 
