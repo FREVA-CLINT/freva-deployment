@@ -144,7 +144,7 @@ essential setup steps:
    to root. Leave blank if no special user is needed.
 1. Set the login user name for the remote machine.
 
-:::{{tip}}
+:::{tip}
 Press CTRL+f for *f*urther information on each configuration item.
 :::
 

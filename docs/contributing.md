@@ -44,7 +44,7 @@ Options:
   -p, --port     Set the port of the service that is used to configure the VM default: 8000
 ```
 
-:::{{note}}
+:::{note}
 *Before* running the script you will have to install [qemu](https://www.qemu.org/docs/master/).
 The script has only been tested on Linux systems.
 :::
