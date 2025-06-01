@@ -4,14 +4,17 @@ After=network.target
 
 [Service]
 Type=simple
-ProtectSystem=full
 NoNewPrivileges=true
-ProtectHome=true
 SendSIGKILL=no
 KillSignal=SIGTERM
 PermissionsStartOnly=true
+{% if (ansible_become == true and ansible_become_user == 'root') or ansible_user == 'root' %}
+ProtectSystem=full
+ProtectHome=true
 ExecStartPre=/bin/sh -c "systemctl unset-environment _WSREP_START_POSITION"
 ExecStartPost=/bin/sh -c "systemctl unset-environment _WSREP_START_POSITION"
+{% endif %}
+ReadWritePaths={{conda_path }}
 ExecStart={{ conda_path }}/bin/start-freva-service -s mysql
 Environment="PATH={{conda_path}}/bin:{{ ansible_env.PATH }}"
 StandardOutput=journal
@@ -20,8 +23,10 @@ Restart=on-failure
 RestartSec=5
 StartLimitBurst=5
 EnvironmentFile={{ data_dir }}/config/service.env
-User={{ uid }}
-Group={{ gid }}
+{% if (ansible_become == true and ansible_become_user == 'root') or ansible_user == 'root' %}
+User={{uid}}
+Group={{gid}}
+{% endif %}
 
 [Install]
 WantedBy=multi-user.target

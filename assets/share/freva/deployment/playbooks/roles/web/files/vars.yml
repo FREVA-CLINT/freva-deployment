@@ -27,5 +27,5 @@ volume_names:
   - "{{ web_name }}_django-static"
   - "{{ web_name }}_logs"
 
-web_port_httpd: "{{ '80' if ansible_become_user == 'root' or ansible_user == 'root' else '9080' }}"
-web_port_httpsd: "{{ '443' if ansible_become_user == 'root' or ansible_user == 'root'  else '9443' }}"
+web_port_httpd: "{{ '80' if ansible_become_user == 'root' or ansible_user == 'root' else '8080' }}"
+web_port_httpsd: "{{ '443' if ansible_become_user == 'root' or ansible_user == 'root'  else '8443' }}"

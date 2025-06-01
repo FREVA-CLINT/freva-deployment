@@ -4,20 +4,23 @@ After=network.target
 
 [Service]
 Type=simple
-ProtectSystem=full
 PermissionsStartOnly=true
 NoNewPrivileges=true
-ProtectHome=true
 KillSignal=SIGTERM
-ExecStartPre=/bin/sh -c "systemctl unset-environment _WSREP_START_POSITION"
-ExecStartPost=/bin/sh -c "systemctl unset-environment _WSREP_START_POSITION"
 ExecStart={{conda_path}}/bin/start-freva-service -s redis
+{% if (ansible_become == true and ansible_become_user == 'root') or ansible_user == 'root' %}
+ProtectHome=true
+ProtectSystem=full
+User={{uid}}
+Group={{gid}}
+{% endif %}
+ReadWritePaths={{conda_path }}
+StandardOutput=journal
+StandardError=journal
 Restart=on-failure
 RestartSec=5
 StartLimitBurst=5
 EnvironmentFile={{ data_dir }}/config/service.env
-User={{uid}}
-Group={{gid}}
 UMask=007
 
 [Install]

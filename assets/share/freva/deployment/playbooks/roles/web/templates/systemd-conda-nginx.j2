@@ -4,10 +4,13 @@ After=network.target
 
 [Service]
 Type=simple
+{% if (ansible_become == true and ansible_become_user == 'root') or ansible_user == 'root' %}
 ProtectSystem=full
+ProtectHome=true
+{% endif %}
+ReadWritePaths={{conda_path }}
 PermissionsStartOnly=true
 NoNewPrivileges=true
-ProtectHome=true
 KillSignal=SIGTERM
 ExecStart={{conda_path}}/bin/start-freva-service -s nginx
 EnvironmentFile={{ data_dir }}/config/service-nginx.env

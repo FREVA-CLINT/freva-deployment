@@ -92,7 +92,7 @@ fi
 
 # Detect container runtime if needed
 detect_container_tool() {
-    for tool in podman docker; do
+    for tool in $DEPLOYMENT_METHOD podman docker; do
         if path=$(which "$tool" 2>/dev/null); then
             echo "$path"
             return 0
@@ -106,7 +106,7 @@ detect_container_tool() {
 case "$DEPLOYMENT_METHOD" in
     podman|docker|container)
         RUNTIME_PATH=$(detect_container_tool)
-        EXEC_CMD="$RUNTIME_PATH exec --user=$USER_ID $SERVICE sh /usr/local/bin/daily-backup -s /data/db -b /backup"
+        EXEC_CMD="$RUNTIME_PATH exec --user=$USER_ID $SERVICE /usr/local/bin/daily-backup -s /data/db -b /backup"
         ;;
     conda|mamba)
         EXEC_CMD="$COMMAND -s $SRC_DIR -b $BACKUP_DIR"

@@ -24,7 +24,6 @@
     {{ search_server_name }} compose --enable --project-name {{ search_server_name }}
     -f {{ compose_file }} up --remove-orphans
   environment:
-    DEBUG: '{{ debug }}'
     PREFER: "{{ deployment_method }}"
 
 - name: Wait for Solr to be available

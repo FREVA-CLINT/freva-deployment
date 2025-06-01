@@ -91,7 +91,6 @@
     {{ db_name }} compose --enable --project-name {{db_name}}
     -f {{compose_file}} up --remove-orphans
   environment:
-    DEBUG: '{{ debug }}'
     PREFER: "{{deployment_method }}"
 
 - pause: seconds=15

@@ -4,10 +4,7 @@ After=network.target
 
 [Service]
 Type=simple
-ProtectSystem=full
-PermissionsStartOnly=false
 NoNewPrivileges=true
-ProtectHome=true
 KillSignal=SIGTERM
 ExecStartPre=/bin/sh -c "PATH={{ conda_path }}/bin:$PATH \
     {{ conda_path }}/bin/python\
@@ -25,7 +22,13 @@ StandardError=journal
 RestartSec=5
 StartLimitBurst=5
 UMask=007
+ReadWritePaths={{conda_path }}
+{% if (ansible_become == true and ansible_become_user == 'root') or ansible_user == 'root' %}
+ProtectHome=true
+ProtectSystem=full
+PermissionsStartOnly=false
 User={{uid}}
 Group={{gid}}
+{% endif %}
 [Install]
 WantedBy=multi-user.target

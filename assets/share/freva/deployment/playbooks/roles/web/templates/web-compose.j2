@@ -12,9 +12,6 @@ services:
       - REDIS_USERNAME={{ web_redis_username }}
     hostname: {{ web_cache_name }}
     container_name: {{ web_cache_name }}
-{% if debug %}
-    network_mode: host
-{% endif %}
     volumes:
         - logs:/data/logs:z
     tty: true
@@ -24,9 +21,6 @@ services:
     image: ghcr.io/freva-clint/freva-web:{{web_version}}
     container_name: {{ web_name }}
     hostname: {{ web_name }}
-{% if debug %}
-    network_mode: host
-{% endif %}
     environment:
       - EVALUATION_SYSTEM_CONFIG_FILE={{ core_root_dir|regex_replace('^~', ansible_env.HOME) }}/freva/evaluation_system.conf
       - DJANGO_SUPERUSER_PASSWORD={{ root_passwd }}
@@ -87,18 +81,10 @@ services:
       - {{web_port_httpsd}}:{{web_port_httpsd}}
     depends_on:
       - {{ web_name }}
-{% if debug %}
-    network_mode: host
-{% endif %}
 
 networks:
-{% if debug %}
-    hostnet:
-      driver: host
-{% else %}
   {{web_name}}:
     driver: bridge
-{% endif %}
 
 volumes:
     django-static:

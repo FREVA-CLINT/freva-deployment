@@ -200,7 +200,6 @@ detect_legacy_services() {
       vault) echo -e "$service\t${path}/files\t${path}" ;;
       db) echo -e "$service\t${path}\t${path}" ;;
       compose*|conda*|freva-cacheing) ;;
-      *) rm -rf "$path" ;;
     esac
   done
 }

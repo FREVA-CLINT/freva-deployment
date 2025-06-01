@@ -57,7 +57,6 @@
     {{vault_name}} compose --enable --project-name {{vault_name}}
     -f {{compose_file}} up --remove-orphans
   environment:
-    DEBUG: '{{ debug }}'
     PREFER: "{{deployment_method }}"
 
 - pause: seconds=15
@@ -70,5 +69,5 @@
     add-vault-secret data -s db.container {{ vault_name }} -s db.host
     {{ vault_db_host }} -s db.port {{ vault_db_port }} -s db.db
     {{ vault_db }}
-    -s db.passwd '{{ debug | ternary(root_passwd, vault_passwd) }}'
-    -s db.user {{ debug | ternary('root', vault_db_user) }}
+    -s db.passwd '{{ vault_passwd }}'
+    -s db.user {{ vault_db_user }}

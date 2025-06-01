@@ -2,6 +2,26 @@
 - name: Running common conda tasks
   include_tasks: "conda.yml"
 
+- name: Pin Conda package versions
+  block:
+    - name: Ensure conda-meta path exists
+      file:
+        path: "{{conda_path}}/conda-meta"
+        state: directory
+
+    - name: Ensure the pinned file exists
+      file:
+        path: "{{ conda_path }}/conda-meta/pinned"
+        state: touch
+
+    - name: Pin package versions
+      lineinfile:
+        path: "{{ conda_path }}/conda-meta/pinned"
+        line: "{{ item }}"
+        state: present
+      loop: "{{ conda_packages }}"
+      when: conda_packages is defined
+
 - name: Creating environment file
   template:
     src: "service.env.j2"

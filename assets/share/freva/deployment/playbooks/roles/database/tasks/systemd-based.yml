@@ -18,14 +18,7 @@
         prefix: db-playbook.
         state: directory
       register: db_tempdir
-
-    - name: Adjusting db path ownership
-      file:
-        state: directory
-        recurse: true
-        path: "{{ db_tempdir.path }}"
-        owner: "{{ gid }}"
-        group: "{{ gid }}"
+      become: false
 
     - name: Setting additional variables
       set_fact:

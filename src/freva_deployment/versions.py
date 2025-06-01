@@ -64,7 +64,7 @@ def get_versions(_versions: List[Dict[str, str]] = []) -> Dict[str, str]:
         and (
             now - datetime.fromtimestamp(version_file.stat().st_mtime)
         ).total_seconds()
-        < 3600
+        < 3600 * 1000
     ):
         _versions.append(json.loads(version_file.read_text()))
         return _versions[0]

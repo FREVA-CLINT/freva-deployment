@@ -143,6 +143,9 @@ class RunnerDir(TemporaryDirectory):
             stream.write("[defaults]\n")
             for key, value in kwargs.items():
                 stream.write(f"{key} = {value}\n")
+            stream.write("[colors]\n")
+            stream.write("included = purple\n")
+            stream.write("skip = green\n")
 
     def create_playbook(self, content: List[Dict[str, Any]]) -> str:
         """Dump the content of a playbook into the playbook file."""

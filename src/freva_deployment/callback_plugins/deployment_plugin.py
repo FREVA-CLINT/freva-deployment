@@ -33,10 +33,7 @@ from typing import Optional
 
 from ansible.constants import MODULE_NO_JSON
 from ansible.executor.task_result import TaskResult
-from ansible.plugins.callback import (
-    module_response_deepcopy,
-    strip_internal_keys,
-)
+from ansible.plugins.callback import module_response_deepcopy, strip_internal_keys
 from ansible_collections.community.general.plugins.callback.yaml import (
     CallbackModule as YamlCallback,
 )
@@ -90,7 +87,9 @@ class CallbackModule(YamlCallback):
         """
         dump = {
             "task": result.task_name,
-            "result": strip_internal_keys(module_response_deepcopy(result._result)),
+            "result": strip_internal_keys(
+                module_response_deepcopy(result._result)
+            ),
         }
         single_line_json = json.dumps(dump).replace("\n", "").replace("\r", "")
         self.log_file.write(single_line_json + "\n")

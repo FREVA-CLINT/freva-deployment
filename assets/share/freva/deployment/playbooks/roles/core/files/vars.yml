@@ -16,6 +16,7 @@ conda_pkgs:
     - python'>={{ core_python_version }}'
     - appdirs
     - curl
+    - conda
     - gitpython
     - dask-core
     - django
@@ -25,6 +26,7 @@ conda_pkgs:
     - h5netcdf
     - lazy_import
     - metadata-inspector
+    - mamba
     - micromamba
     - mysqlclient
     - netcdf4

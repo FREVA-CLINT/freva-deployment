@@ -32,7 +32,6 @@
     path: "{{ item }}"
     owner: "{{ uid }}"
     group: "{{ gid }}"
-    mode: 1775
   loop:
     - "{{ base_path }}"
     - "{{ base_path }}/{{ project_name }}"

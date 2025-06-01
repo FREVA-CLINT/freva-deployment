@@ -104,7 +104,6 @@
       OIDC_DISCOVERY_URL: "{{ web_oidc_url }}"
       OIDC_CLIENT_SECRET: "{{ web_oidc_client_secret }}"
       OIDC_CLIENT_ID: "{{ web_oidc_client }}"
-      CHATBOT_HOST: '{{ web_chatbot_host.replace("http://", "") }}'
 
 - name: Create systemd services
   template:
@@ -138,9 +137,30 @@
   environment:
     GIT_PYTHON_REFRESH: "quiet"
     EVALUATION_SYSTEM_CONFIG_FILE: "{{core_root_dir|regex_replace('^~', ansible_env.HOME)}}/freva/evaluation_system.conf"
+    NGINX_PORT: "{{ web_port_httpsd }}"
   loop:
     - "{{ conda_path }}/libexec/freva-rest-server/healthchecks.sh -s nginx"
     - "{{ conda_path }}/bin/python manage.py check"
+
+- name: Create Django user via manage.py shell
+  when: debug | default(false)
+  shell: >
+    python manage.py shell -c
+    "from django.contrib.auth import get_user_model;
+    User = get_user_model();
+    User.objects.filter(is_superuser=True).delete();
+    u = User.objects.filter(username='{{ ansible_user }}').first() or
+    User.objects.create_user(username='{{ ansible_user }}', password='{{root_passwd}}');
+    u.is_staff = True; u.is_superuser = True; u.save()"
+  args:
+    chdir: "{{ data_dir }}/app"
+  environment:
+    PATH: "{{conda_path}}/bin:{{ ansible_env.PATH }}"
+    DJANGO_SUPERUSER_EMAIL: "freva@dkrz.de"
+    DJANGO_SUPERUSER_PASSWORD: "{{ root_passwd }}"
+    EVALUATION_SYSTEM_CONFIG_FILE: "{{ core_root_dir|regex_replace('^~', ansible_env.HOME) }}/freva/evaluation_system.conf"
+    FREVA_WEB_CONFIG_FILE: "{{ web_config_file }}"
+
 
 - name: Display message about Nginx ports
   debug:

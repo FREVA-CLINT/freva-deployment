@@ -4,18 +4,28 @@ After=network.target
 
 [Service]
 Type=simple
-ProtectSystem=full
 PermissionsStartOnly=true
 NoNewPrivileges=true
-ProtectHome=true
 KillSignal=SIGTERM
-ExecStart=/bin/sh -c "PATH={{ conda_path }}/bin:$PATH {{ conda_path }}/bin/freva-rest-server {{ freva_rest_services }}"
+{% if debug | default(false) %}
+ExecStart={{ conda_path }}/bin/freva-rest-server {{ freva_rest_services }} --dev
+{% else %}
+ExecStart={{ conda_path }}/bin/freva-rest-server {{ freva_rest_services }}
+{% endif %}
+Environment="PATH={{conda_path}}/bin:{{ ansible_env.PATH }}"
 EnvironmentFile={{ data_dir }}/config/service.env
 Restart=on-failure
 RestartSec=5
 StartLimitBurst=5
 UMask=007
+ReadWritePaths={{conda_path }}
+{% if (ansible_become == true and ansible_become_user == 'root') or ansible_user == 'root' %}
+ProtectHome=true
+ProtectSystem=full
 User={{uid}}
 Group={{gid}}
+{% endif %}
+
+
 [Install]
 WantedBy=multi-user.target

@@ -33,6 +33,17 @@
     - "{{ web_cache_name }}"
     - "{{ web_proxy_name }}"
 
+- name: Append port to CSRF trusted origins if port ≠ 443
+  set_fact:
+    web_csrf_trusted_origins: >-
+      {{
+        web_csrf_trusted_origins
+        if web_port_httpsd == 443 else
+        web_csrf_trusted_origins
+        | map('regex_replace', '$', ':' ~ web_port_httpsd)
+        | list
+      }}
+
 - name: Playing the {{ deployment_method }} tasks
   include_tasks:
     file: "{{ deployment_file | trim }}"

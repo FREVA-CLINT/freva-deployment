@@ -26,4 +26,3 @@
     -f {{ compose_file }} up --remove-orphans
   environment:
     PREFER: "{{ deployment_method }}"
-    DEBUG: '{{ debug }}'

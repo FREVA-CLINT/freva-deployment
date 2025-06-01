@@ -20,6 +20,8 @@
 
 - name: Build vault service
   include_tasks: "{{ role_path }}/tasks/build-vault.yml"
+  when: conda_packages | select('search', '^vault([><=].*)?$') | list | length == 0
+
 
 - name: Creating vault server directory in conda env
   file:
@@ -87,8 +89,8 @@
     {{ conda_path }}/bin/add-vault-secret
     data -s db.container {{ vault_name }} -s db.host {{ vault_db_host }}
     -s db.port {{ vault_db_port }} -s db.db {{ vault_db }}
-    -s db.passwd '{{ debug | ternary(root_passwd, vault_passwd) }}'
-    -s db.user {{ debug | ternary('root', vault_db_user) }}
+    -s db.passwd '{{ vault_passwd }}'
+    -s db.user {{ vault_db_user }}
   environment:
     ROOT_PW: "{{ root_passwd }}"
     PATH: "{{ conda_path }}/bin:{{ ansible_env.PATH }}"

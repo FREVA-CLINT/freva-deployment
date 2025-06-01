@@ -16,7 +16,7 @@ wipe: "{{ vault_wipe }}"
 volume_names:
   - "{{ vault_name }}_data"
 conda_packages:
-  - go
+  - vault>=1.19
   - fastapi
   - pyopenssl
   - uvicorn

@@ -4,10 +4,8 @@ After=network.target
 
 [Service]
 Type=simple
-ProtectSystem=full
 PermissionsStartOnly=true
 NoNewPrivileges=true
-ProtectHome=true
 KillSignal=SIGTERM
 ExecStart={{conda_path}}/bin/start-freva-service -s redis
 Environment="PATH={{conda_path}}/bin:{{ ansible_env.PATH }}"
@@ -18,7 +16,12 @@ Restart=on-failure
 RestartSec=5
 StartLimitBurst=5
 UMask=007
+ReadWritePaths={{conda_path }}
+{% if (ansible_become == true and ansible_become_user == 'root') or ansible_user == 'root' %}
+ProtectHome=true
+ProtectSystem=full
 User={{uid}}
 Group={{gid}}
+{% endif %}
 [Install]
 WantedBy=multi-user.target

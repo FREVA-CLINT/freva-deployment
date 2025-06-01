@@ -65,17 +65,25 @@
         - "{{ core_root_dir | regex_replace('^~', ansible_env.HOME) }}/freva/"
         - "{{ core_root_dir | regex_replace('^~', ansible_env.HOME) }}/plugins/"
 
-    - name: Ensure core directories exist
-      file:
-        path: "{{ item | regex_replace('^~', ansible_env.HOME) }}"
-        state: directory
-        mode: "3777"
-      loop:
-        - "{{ core_base_dir_location }}"
-        - "{{ core_scheduler_output_dir }}"
-        - "{{ core_preview_path }}"
-      when: item | length != 0
-      ignore_errors: true
+    - name: Ensure core directories exist only if missing
+      block:
+        - name: Stat core directories
+          stat:
+            path: "{{ item | regex_replace('^~', ansible_env.HOME) }}"
+          loop:
+            - "{{ core_base_dir_location }}"
+            - "{{ core_scheduler_output_dir }}"
+            - "{{ core_preview_path }}"
+          register: core_dir_stats
+
+        - name: Create core directories if they do not exist
+          file:
+            path: "{{ item.item | regex_replace('^~', ansible_env.HOME) }}"
+            state: directory
+            mode: "3777"
+          loop: "{{ core_dir_stats.results }}"
+          when: not item.stat.exists
+
 
     - name: Cloning the evluation_system reposiotry
       git:
@@ -96,6 +104,39 @@
         group: "{{ core_admin_group if core_admin_group is defined and core_admin_group != '' else omit}}"
         mode: "{{ '2664' if core_admin_group is defined and core_admin_group != '' else '2644' }}"
       when: not eval_path.stat.exists
+
+    - name: Inserting animator plugin
+      block:
+        - name: Getting animator plugin
+          git:
+            repo: "https://gitlab.dkrz.de/freva/plugins4freva/animator.git"
+            dest: "{{ core_root_dir | regex_replace('^~', ansible_env.HOME) }}/plugins/animator"
+            recursive: true
+            executable: "{{ core_install_dir }}/bin/git"
+
+        - name: Uncomment animator plugin block lines
+          replace:
+            path: "{{ core_root_dir | regex_replace('^~', ansible_env.HOME)}}/freva/evaluation_system.conf"
+            regexp: "{{ item.regexp }}"
+            replace: "{{ item.replace }}"
+          loop:
+            - { regexp: '^#(\[plugin:animator\])', replace: '\1' }
+            - { regexp: '^#(python_path=\$\{evaluation_system:root_dir\}/plugins/animator)', replace: '\1' }
+            - { regexp: '^#(module=animator)', replace: '\1' }
+
+        - name: Register plugin core
+          stat:
+            path: "{{ core_root_dir | regex_replace('^~', ansible_env.HOME) }}/plugins/animator/plugin_env"
+          register: plugin_env
+
+        - name: Installing the animator plugin
+          command:
+            cmd: make all
+            chdir: "{{ core_root_dir | regex_replace('^~', ansible_env.HOME) }}/plugins/animator"
+          when: not plugin_env.stat.exists
+
+      when: debug | default(false)
+
 
     - name: Installing additional python packages
       command:
@@ -118,7 +159,7 @@
 
     - name: Inserting drs_config.toml file
       copy:
-        src: "{{tempdir.path}}/assets/drs_config.toml"
+        src: "{{tempdir.path}}/freva/assets/drs_config.toml"
         dest: "{{ core_root_dir | regex_replace('^~', ansible_env.HOME)}}/freva/drs_config.toml"
         remote_src: true
         group: "{{ core_admin_group if core_admin_group is defined and core_admin_group != '' else omit}}"

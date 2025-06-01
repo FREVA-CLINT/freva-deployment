@@ -4,10 +4,8 @@ After=network.target
 
 [Service]
 Type=simple
-ProtectSystem=full
 PermissionsStartOnly=true
 NoNewPrivileges=true
-ProtectHome=true
 KillSignal=SIGTERM
 ExecStartPre=/bin/sh -c "rm -fr /tmp/mongo*"
 ExecStart={{ conda_path }}/bin/start-freva-service -s mongo
@@ -15,11 +13,16 @@ EnvironmentFile={{ data_dir }}/config/service.env
 Environment="PATH={{conda_path}}/bin:{{ ansible_env.PATH }}"
 StandardOutput=journal
 StandardError=journal
+ReadWritePaths={{conda_path }}
 Restart=on-failure
 RestartSec=5
 StartLimitBurst=5
 UMask=007
+{% if (ansible_become == true and ansible_become_user == 'root') or ansible_user == 'root' %}
+ProtectHome=true
+ProtectSystem=full
 User={{ uid }}
 Group={{ gid }}
+{% endif %}
 [Install]
 WantedBy=multi-user.target

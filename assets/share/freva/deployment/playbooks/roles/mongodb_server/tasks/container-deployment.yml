@@ -25,7 +25,6 @@
     {{mongo_name}} compose --enable --project-name {{mongo_name}}
     -f {{compose_file}} up --remove-orphans
   environment:
-    DEBUG: '{{ debug }}'
     PREFER: "{{deployment_method }}"
 
 - pause: seconds=15

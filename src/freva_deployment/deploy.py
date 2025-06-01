@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 import platform
 import random
@@ -43,6 +44,20 @@ from .utils import (
     load_config,
 )
 from .versions import get_steps_from_versions, get_versions
+
+LOCAL_DEBUG_MSG = (
+    "A freva test installation was sucessfully set up on your "
+    "computer!\n\nYou can visit the freva-web app at "
+    "https://localhost:8443\n"
+    "You can log on with user: [b]{user}[/b], password: [b]{password}[/b]"
+    "\n\nTo comepletly wipe the installation use the "
+    "following commands:\n\n"
+    "\tsystemctl stop --user 'freva-*.service' && \\ \n"
+    "\trm -fr ~/.config/systemd/user/freva-*.service && \\ \n"
+    "\tsystemctl daemon-reload --user && \\ \n"
+    "\trm -fr ~/.cache/freva-local\n\n"
+    "You can omit the [i]--debug[/i] flag for a real deploymet."
+)
 
 
 class ConfigType(TypedDict):
@@ -167,7 +182,6 @@ class DeployFactory:
             self.project_name,
             self.cfg.get("web", {}).get("web_host", "localhost"),
         )
-        self._prep_local_debug()
         self.current_step = ""
         self._check_steps_()
 
@@ -233,9 +247,7 @@ class DeployFactory:
         self.cfg["vault"]["passwd"] = self.db_pass
         self.cfg["vault"]["keyfile"] = self.public_key_file
         self.cfg["vault"]["email"] = self.cfg["web"].get("contacts", "")
-        self.cfg["vault"]["db_host"] = self.cfg["db"].get(
-            "host", self.cfg["db"]["db_host"]
-        )
+        self.cfg["vault"]["db_host"] = self.cfg["db"]["db_host"]
 
     def _prep_db(self) -> None:
         """prepare the mariadb service."""
@@ -565,40 +577,51 @@ class DeployFactory:
         self.cfg["web"]["redis_username"] = namegenerator.gen()
         self.cfg["web"]["redis_password"] = self._create_random_passwd()
 
-    def _prep_local_debug(self) -> None:
+    def _prep_local_debug(self, cfg: dict[str, Any]) -> None:
         """Prepare the system for a potential local debug."""
+        self._master_pass = "secret"
         default_ports = {"db": 3306, "freva_rest": 7777}
-        if self.local_debug is False:
-            return
-        deploy_dir = Path(appdirs.user_cache_dir("freva-test-deployment"))
+        cfg["project_name"] = "freva-test-deployment"
+        cfg["deployment_method"] = "conda"
+        deploy_dir = Path(appdirs.user_cache_dir("freva-local"))
         deploy_dir.mkdir(exist_ok=True, parents=True)
         host = gethostbyname(gethostname())
-        self.cfg["db"]["db_host"] = host
-        self.cfg["core"]["ansible_become_user"] = ""
-        self.cfg["core"]["scheduler_system"] = "local"
-        self.cfg["core"]["scheduler_host"] = [host]
-        self.cfg["core"]["admins"] = getuser()
-        self.cfg["web"]["allowed_hosts"] = [host, "localhost"]
-        self.cfg["web"]["project_website"] = "https://localhost"
-        self.cfg["core"]["arch"] = get_current_architecture()
+        cfg["deployment_dir"] = str(deploy_dir)
+        steps = [k for (k, v) in cfg.items() if isinstance(v, dict)]
+        for step in steps:
+            for var in cfg[step]:
+                if var.endswith("_host") or var.endswith("_hosts"):
+                    cfg[step][var] = host
+                if var.endswith("admin_user"):
+                    cfg[step][var] = getuser()
+            cfg[step]["wipe"] = False
+            if step in default_ports:
+                cfg[step]["port"] = default_ports[step]
+            cfg[step]["ansible_user"] = getuser()
+            cfg[step]["ansible_python_interpreter"] = sys.executable
+            cfg[step]["ansible_become_user"] = ""
+            cfg[step]["data_path"] = str(deploy_dir)
+        cfg["db"]["db_host"] = cfg["db"]["vault_host"] = host
+        cfg["core"]["ansible_become_user"] = ""
+        cfg["core"]["scheduler_system"] = "local"
+        cfg["core"]["admins"] = getuser()
+        cfg["web"]["scheduler_host"] = ["localhost"]
+        cfg["web"]["allowed_hosts"] = [host, "localhost", "127.0.0.1"]
+        cfg["web"]["project_website"] = "https://localhost"
+        cfg["core"]["arch"] = get_current_architecture()
         for key in (
             "root_dir",
             "base_dir_location",
             "preview_path",
             "scheduler_output_dir",
             "admin_group",
+            "root_dir",
         ):
-            self.cfg["core"][key] = ""
-        self.cfg["core"]["install_dir"] = str(deploy_dir / "core")
-        self.cfg["core"]["root_dir"] = str(deploy_dir / "config")
-        for step in self.steps:
-            self.cfg[step][f"{step}_host"] = host
-            if step in ("db", "freva_rest"):
-                self.cfg[step]["port"] = default_ports[step]
-            self.cfg[step]["ansible_user"] = getuser()
-            self.cfg[step]["ansible_python_interpreter"] = sys.executable
-            if "data_path" in self.cfg[step]:
-                self.cfg[step]["data_path"] = str(deploy_dir / "services")
+            cfg["core"][key] = ""
+        cfg["core"]["install_dir"] = str(
+            deploy_dir / cfg["project_name"] / "freva-core"
+        )
+        return cfg
 
     def __enter__(self):
         return self
@@ -623,6 +646,8 @@ class DeployFactory:
                 config[dest][f"{dest}_host"] = config[source][f"{dest}_host"] = (
                     host
                 )
+            if self.local_debug:
+                config = self._prep_local_debug(config)
             return config
         except FileNotFoundError:
             raise ConfigurationError(f"No such file {self._inv_tmpl}") from None
@@ -653,9 +678,11 @@ class DeployFactory:
         cfg = deepcopy(self.cfg)
         solr_config = cfg.get("databrowser", cfg.get("solr", {}))
         cfg.setdefault("freva_rest", solr_config)
-        for step in self.step_order:
-            if cfg[step].get("ansible_become_user", "") or "root":
-                return True
+        for step in cfg:
+            if isinstance(cfg[step], dict):
+                ansible_become_user = cfg[step].get("ansible_become_user", "root")
+                if ansible_become_user:
+                    return True
         return False
 
     @property
@@ -822,7 +849,8 @@ class DeployFactory:
         for passwd in (self.master_pass,):
             if passwd:
                 info_str = info_str.replace(passwd, "***")
-        RichConsole.print(info_str, style="bold", markup=True)
+        if logger.level > logging.DEBUG:
+            RichConsole.print(info_str, style="bold", markup=True)
         core_host: Optional[str] = config.get("core", {}).get("hosts")
         if core_host in hosts:
             config["core"]["hosts"] = gethostbyname(core_host) or ""
@@ -1054,7 +1082,7 @@ class DeployFactory:
         plugin_path = Path(freva_deployment.callback_plugins.__file__).parent
         envvars: dict[str, str] = {
             "ANSIBLE_CONFIG": str(self._td.ansible_config_file),
-            "ANSIBLE_NOCOWS": self._no_cowsay,
+            "ANSIBLE_NOCOWS": self._no_cowsay.lower(),
             "ANSIBLE_COW_PATH": os.getenv(
                 "ANSIBLE_COW_PATH", shutil.which("cowsay") or ""
             ),
@@ -1067,9 +1095,9 @@ class DeployFactory:
             callback_plugins=str(plugin_path),
             host_key_checking="False",
             retry_files_enabled="False",
-            nocows=str(bool(int(self._no_cowsay))),
-            action_warnings=str(verbosity > 0),
-            devel_warning=str(verbosity > 0),
+            nocows=str(bool(int(self._no_cowsay))).lower(),
+            action_warnings=str(verbosity > 0).lower(),
+            devel_warning=str(verbosity > 0).lower(),
             cowpath=os.getenv("ANSIBLE_COW_PATH", shutil.which("cowsay") or ""),
             cow_selection="random",
             interpreter_python="auto_silent",
@@ -1081,8 +1109,6 @@ class DeployFactory:
             "ansible_config": str(self._td.ansible_config_file),
             "ansible_ssh_args": "-o ForwardX11=no -o StrictHostKeyChecking=no",
         }
-        if self.local_debug:
-            extravars["ansible_connection"] = "local"
 
         self.passwords = self.get_ansible_password(ask_pass)
         steps = [s for s in self.steps]
@@ -1104,10 +1130,13 @@ class DeployFactory:
         if inventory is None:
             logger.info("Services up to date, nothing to do!")
             return None
+        if self.local_debug:
+            logger.info("Overriding configuration for local deployment!")
+            extravars["ansible_connection"] = "local"
         logger.debug(inventory)
         self.create_eval_config()
-        RichConsole.print(
-            f"Playing tasks: [i]{', '.join(tags or steps)}[/] with ansible"
+        RichConsole.rule(
+            f"[r]Playing tasks: [i]{', '.join(tags or steps)}[/] with ansible[/]"
         )
         time.sleep(3)
         self._td.run_ansible_playbook(
@@ -1120,3 +1149,13 @@ class DeployFactory:
             extravars=extravars,
             verbosity=verbosity,
         )
+        if self.local_debug:
+            RichConsole.rule("[b red]:bulb:   NOTE:[/]")
+            RichConsole.print(
+                LOCAL_DEBUG_MSG.format(
+                    project_name=self.project_name,
+                    user=getuser(),
+                    password=self.master_pass,
+                )
+            )
+            RichConsole.rule("")

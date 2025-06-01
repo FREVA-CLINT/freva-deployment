@@ -1,4 +1,7 @@
 ---
+- name: Getting binaries
+  include_tasks: "paths.yml"
+
 - name: Ensure the user systemd directory exists
   file:
     path: "{{ systemd_unit_dir }}"
