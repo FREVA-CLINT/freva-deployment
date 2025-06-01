@@ -33,7 +33,10 @@ from typing import Optional
 
 from ansible.constants import MODULE_NO_JSON
 from ansible.executor.task_result import TaskResult
-from ansible.plugins.callback import module_response_deepcopy, strip_internal_keys
+from ansible.plugins.callback import (
+    module_response_deepcopy,
+    strip_internal_keys,
+)
 from ansible_collections.community.general.plugins.callback.yaml import (
     CallbackModule as YamlCallback,
 )

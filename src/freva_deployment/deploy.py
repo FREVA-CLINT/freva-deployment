@@ -577,7 +577,7 @@ class DeployFactory:
         self.cfg["web"]["redis_username"] = namegenerator.gen()
         self.cfg["web"]["redis_password"] = self._create_random_passwd()
 
-    def _prep_local_debug(self, cfg: dict[str, Any]) -> None:
+    def _prep_local_debug(self, cfg: dict[str, Any]) -> dict[str, Any]:
         """Prepare the system for a potential local debug."""
         self._master_pass = "secret"
         default_ports = {"db": 3306, "freva_rest": 7777}
