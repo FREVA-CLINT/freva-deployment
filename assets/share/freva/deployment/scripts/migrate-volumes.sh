@@ -14,6 +14,19 @@ EOF
   exit 1
 }
 
+# Determine container runtime
+get_container_cmd() {
+
+  local order=($1 podman docker)
+  for cmd in "${order[@]}"; do
+    if command -v "$cmd" &> /dev/null; then
+      echo "$cmd"
+      return
+    fi
+  done
+  echo ""
+}
+
 # Setup
 BACKUP_DIR="$(mktemp -d /tmp/freva-migration-XXXXXX)"
 FAILED_RESTORE=()
@@ -35,7 +48,7 @@ done
   echo "❌ Engine must be 'docker', 'podman' or 'conda'"
   exit 1
 }
-
+OCI_PATH=$(get_container_cmd $ENGINE)
 # Normalize service folder names
 normalize_service_name() {
   local path=$1
@@ -53,18 +66,6 @@ normalize_service_name() {
   esac
 }
 
-# Determine container runtime
-get_container_cmd() {
-  local order=(podman docker)
-  for cmd in "${order[@]}"; do
-    if command -v "$cmd" &> /dev/null; then
-      echo "$cmd"
-      return
-    fi
-  done
-  echo ""
-}
-
 # Migrate bind-mounted data to volume
 migrate_volume() {
   local service="$1"
@@ -78,17 +79,16 @@ migrate_volume() {
   echo "   📁 Source path: $src_path"
 
   MIGRATIONS+=("$service")
-
-  if ! $ENGINE volume inspect "$vol" &>/dev/null; then
+  if ! $OCI_PATH volume inspect "$vol" &>/dev/null; then
     echo "   📦 Creating volume: $vol"
-    $ENGINE volume create "$vol" &>/dev/null
+    $OCI_PATH volume create "$vol" &>/dev/null
   fi
 
   echo "   🗃️ Backing up volume to: $volume_backup"
-  $ENGINE run --rm -v "$vol:/data:ro" -v "$BACKUP_DIR:/backup:Z" alpine \
+  $OCI_PATH run --rm -v "$vol:/data:ro" -v "$BACKUP_DIR:/backup:Z" alpine \
     tar czf "/backup/$(basename "$volume_backup")" -C /data .
 
-  if ! $ENGINE run --rm \
+  if ! $OCI_PATH run --rm \
     -v "$vol:/data" \
     -v "$src_path:/backup:ro,Z" \
     alpine sh -c "cp -a /backup/. /data/"; then
@@ -146,14 +146,12 @@ migrate() {
     fi
     rm -rf $data_path
   else
-    local cmd
-    cmd=$(get_container_cmd)
     local vol="${PROJECT_NAME}-${service}_data"
 
-    if [ -n "$cmd" ] && [ ! -d "$data_path/data" ]; then
+    if [ -n "$OCI_PATH" ] && [ ! -d "$data_path/data" ]; then
       mkdir -p "${data_path}"
       local vol_path
-      vol_path=$($cmd volume inspect "$vol" --format='{{.Mountpoint}}' 2>/dev/null || true)
+      vol_path=$($OCI_PATH volume inspect "$vol" --format='{{.Mountpoint}}' 2>/dev/null || true)
 
       if [ -n "$vol_path" ] && [ -d "$vol_path" ]; then
         MIGRATIONS+=("$service")
@@ -166,7 +164,7 @@ migrate() {
       for suffix in "${suffixes[@]}"; do
         vol="$PROJECT_NAME-${service}_$suffix"
         echo "   📦 Deleting volume: ${vol}"
-        $cmd volume rm -f "$vol" &>/dev/null || true
+        $OCI_PATH volume rm -f "$vol" &>/dev/null || true
       done
 
       rm -f "$OLD_PARENT_DIR/$PROJECT_NAME/compose_services/"*"$service"*.yml 2>/dev/null
