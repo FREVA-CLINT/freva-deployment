@@ -24,5 +24,14 @@
 
 - name: Set command facts
   set_fact:
-    python_bin: "{{ python3_env_cmd.stdout if python3_env_cmd.rc == 0 else python_env_cmd.stdout }}"
-    bash_cmd: "{{ bash_env_cmd.stdout }}"
+    python_bin: >-
+      {{
+        (ansible_python_interpreter | trim)
+        if (ansible_python_interpreter is defined)
+        else (
+          (python3_env_cmd.stdout | trim)
+          if python3_env_cmd.rc == 0
+          else (python_env_cmd.stdout | trim)
+        )
+      }}
+    bash_cmd: "{{ bash_env_cmd.stdout | trim }}"
