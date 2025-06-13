@@ -16,6 +16,15 @@
 - name: Creating volumes
   include_tasks: "container-volumes.yml"
 
+- name: Creating compose directory structure
+  file:
+    path: '{{ base_path }}/{{ project_name }}/compose_services'
+    state: directory
+    recurse: true
+    owner: "{{ uid }}"
+    group: "{{ gid }}"
+
+
 - name: Creating compose file
   template:
     src: "web-compose.j2"
