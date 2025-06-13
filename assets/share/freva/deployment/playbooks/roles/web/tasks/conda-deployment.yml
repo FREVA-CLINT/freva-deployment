@@ -9,13 +9,21 @@
     remote_src: true
     keep_newer: false
 
-- name: Installing dependencies
+- name: Installing conda dependencies
   shell:
     cmd: |
       {{conda_path}}/bin/mamba env update -p {{conda_path}} -y --file {{ data_dir }}/app/conda-env.yml
       {{conda_path}}/bin/mamba install -c conda-forge --override-channels -y -q jinja2
   environment:
     MAMBA_ROOT_PREFIX: "{{conda_path}}"
+
+- name: Install pip dependencies
+  shell:
+    cmd: >
+      {{conda_path}}/bin/python -m pip install --no-input -U
+      --progress-bar off --no-color
+      --root-user-action ignore {{ pip_packages | join(' ') }}
+
 
 - name: Adjusting web app ownership
   file:

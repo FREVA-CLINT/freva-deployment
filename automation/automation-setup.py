@@ -33,6 +33,7 @@ P = ParamSpec("P")
 SERVICE = """[Unit]
 Description=Automated freva deployments
 After=network.target
+Watns=network.target
 
 [Service]
 Type=simple
@@ -49,8 +50,12 @@ WorkingDirectory={prefix}
 StandardOutput=journal
 StandardError=journal
 Restart=on-failure
+RestartSec=5
 # User=<set user for security>
 # Group=<set group for security>
+
+[Install]
+WantedBy=multi-user.target
 """
 
 

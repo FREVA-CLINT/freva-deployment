@@ -41,7 +41,7 @@
 - name: Installing mamba packages {{conda_packages | join(' ')}}
   shell:
     cmd: >
-      {{ data_dir }}/bin/micromamba {{ conda_cmd }} -p {{conda_path }}
+      {{ data_dir }}/bin/micromamba {{ conda_cmd }} -p {{ conda_path }}
       -c conda-forge --override-channels
       -y git curl {{ conda_packages | join(' ')}}
   environment:

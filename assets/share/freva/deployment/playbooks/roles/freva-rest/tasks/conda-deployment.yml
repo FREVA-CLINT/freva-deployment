@@ -2,6 +2,10 @@
 - name: Running common conda tasks
   include_tasks: "conda.yml"
 
+- name: Setting up dev keycloak
+  include_tasks: "{{ role_path }}/tasks/keycloak-install.yml"
+  when: debug | default(false)
+
 - name: Write SSL cert and key to files
   copy:
     content: "{{ item.content }}"

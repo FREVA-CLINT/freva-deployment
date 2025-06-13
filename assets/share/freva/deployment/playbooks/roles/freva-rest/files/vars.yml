@@ -15,3 +15,9 @@ conda_packages:
   - freva-rest-server
 volume_names:
   - "{{ freva_rest_name }}_logs"
+
+keycloak_dir: "{{ data_dir }}/keycloak"
+keycloak_version: "26.2.5"
+keycloak_url: "https://github.com/keycloak/keycloak/releases/download/{{ keycloak_version }}/keycloak-{{ keycloak_version }}.tar.gz"
+keycloak_realm_import_url: "https://raw.githubusercontent.com/FREVA-CLINT/freva-service-config/refs/heads/main/keycloak/import/realm-export.json"
+keycloak_realm_file_path: "{{ keycloak_dir }}/data/import/realm-export.json"

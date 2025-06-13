@@ -23,6 +23,15 @@ conda_packages:
   - libxcrypt1
   - openssl
 
+pip_packages:
+  - django-datatable-view
+  - django-templated-email
+  - django-debug-toolbar-user-panel
+  - django-compressor
+  - django-bootstrap-v5
+  - django-model-utils
+  - djproxy
+
 volume_names:
   - "{{ web_name }}_django-static"
   - "{{ web_name }}_logs"

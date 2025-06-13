@@ -610,6 +610,13 @@ class DeployFactory:
         cfg["web"]["allowed_hosts"] = [host, "localhost", "127.0.0.1"]
         cfg["web"]["project_website"] = "https://localhost"
         cfg["core"]["arch"] = get_current_architecture()
+        cfg["freva_rest"]["oidc_url"] = (
+            "http://localhost:8080/realms/freva/"
+            ".well-known/openid-configuration"
+        )
+        cfg["freva_rest"]["oidc_client"] = "freva"
+        cfg["freva_rest"]["oidc_client_secret"] = ""
+        cfg["freva_rest"]["oidc_token_claims"] = ""
         for key in (
             "root_dir",
             "base_dir_location",

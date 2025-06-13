@@ -134,6 +134,8 @@
             cmd: make all
             chdir: "{{ core_root_dir | regex_replace('^~', ansible_env.HOME) }}/plugins/animator"
           when: not plugin_env.stat.exists
+          environment:
+            PATH: "{{ core_install_dir }}/bin:{{ ansible_env.PATH }}"
 
       when: debug | default(false)
 

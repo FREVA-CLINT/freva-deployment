@@ -2,9 +2,9 @@
 - name: Set admin user variable
   set_fact:
     admin_user: >
-        {{ admin_user
-          if (adminu_user is defined and admin_user | length > 0 and ansible_become | default(false) and ansible_become_user | default('root') == 'root')
-          else ansible_user
+        {{ admin_user | trim
+          if (admin_user is defined and admin_user | length > 0 and ansible_become | default(false) and ansible_become_user | default('root') == 'root')
+          else ansible_user | trim
         }}
 
 - name: Get UID
