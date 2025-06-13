@@ -53,14 +53,14 @@
     - docker_bin is search('podman')
   block:
     - name: Ensure pip is installed
-      package:
-        name: python3-pip
-        state: present
+      shell:
+        cmd: >
+          {{ python_bin }} -m ensurepip
 
     - name: Install podman-compose via pip
-      pip:
-        name: podman-compose
-        executable: pip3
+      shell:
+        cmd: >
+          {{ python_bin }} -m pip install podman-compose
 
     - name: Re-check for podman-compose after install
       command: which podman-compose

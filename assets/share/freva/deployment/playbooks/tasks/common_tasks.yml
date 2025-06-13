@@ -1,4 +1,7 @@
 ---
+- name: Getting binaries
+  include_tasks: "paths.yml"
+
 - name: Set admin user variable
   set_fact:
     admin_user: >

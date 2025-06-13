@@ -55,6 +55,3 @@
   environment:
     CONDA_PREFIX: "{{ conda_path }}"
     PATH: "{{ conda_path }}/bin:{{ ansible_env.PATH }}"
-
-- name: Getting binaries
-  include_tasks: "paths.yml"
