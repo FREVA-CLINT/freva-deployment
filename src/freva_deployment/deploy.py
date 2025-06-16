@@ -16,7 +16,7 @@ from copy import deepcopy
 from getpass import getuser
 from pathlib import Path
 from socket import gethostbyname, gethostname
-from typing import Any, Dict, Optional, cast
+from typing import Any, Dict, Optional, Union, cast
 from urllib.parse import urlparse
 from urllib.request import urlretrieve
 
@@ -846,12 +846,11 @@ class DeployFactory:
                 if step in tags or ("db" in self.steps and step == "vault"):
                     info.setdefault(step, {})
                     info[step].setdefault("vars", {})
+                    add_value: Union[str, int, float] = value
                     if isinstance(value, str) and "pass" in key:
                         add_value = "***"
                     elif isinstance(value, str) and len(value) > max_width:
                         add_value = value[:max_width] + "..."
-                    else:
-                        add_value = value
                     info[step]["vars"][key] = add_value
         info_str = yaml.dump(json.loads(json.dumps(info)))
         for passwd in (self.master_pass,):
