@@ -160,6 +160,14 @@ oidc_client_secret = ""
 ## will default to the user that deploys the service
 admin_user = ""
 
+# A dict of claim-based filters in {<key1.key2> = [<pattern>]}. Each filter
+# matches if the decoded JWT contains the specified claim
+# (e.g., group, role) and its value includes the given pattern. Patterns can
+# be plain substrings or regular expressions.
+# Nested claims are defined by '.' separation.
+oidc_token_claims = {}
+
+
 [core]
 ## Specify the host name were the client should be deployed
 core_host = "localhost"

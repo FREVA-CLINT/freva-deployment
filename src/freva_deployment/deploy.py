@@ -407,6 +407,19 @@ class DeployFactory:
         self.cfg["freva_rest"].setdefault("oidc_url", "")
         self.cfg["freva_rest"].setdefault("oidc_client", "freva")
         self.cfg["freva_rest"].setdefault("oidc_client_secret", "")
+        token_claims = self.cfg["freva_rest"].get("oidc_token_claims") or {}
+        if isinstance(token_claims, str):
+            self.cfg["freva_rest"]["oidc_token_claims"] = token_claims
+        else:
+            token_claims_str = []
+            for key, values in token_claims.items():
+                if isinstance(values, str):
+                    values = [values]
+                for v in values:
+                    token_claims_str.append(f"{key}:{v}")
+            self.cfg["freva_rest"]["oidc_token_claims"] = ",".join(
+                token_claims_str
+            )
         self.cfg["freva_rest"]["services"] = "-s " + " -s ".join(services)
         if prep_web:
             self._prep_web(False)

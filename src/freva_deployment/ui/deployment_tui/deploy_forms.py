@@ -9,7 +9,14 @@ import npyscreen
 from freva_deployment import AVAILABLE_CONDA_ARCHS
 from freva_deployment.utils import get_current_file_dir
 
-from .base import BaseForm, CheckboxInfo, ComboInfo, FileInfo, TextInfo
+from .base import (
+    BaseForm,
+    CheckboxInfo,
+    ComboInfo,
+    DictInfo,
+    FileInfo,
+    TextInfo,
+)
 
 DEPLOYMENT_METHODS = ["docker", "podman", "conda", "k8s"]
 
@@ -780,6 +787,18 @@ class FrevaRestScreen(BaseForm):
                     key="oidc_client_secret",
                     name=(f"{self.num}OIDC client secret. Leave blank for none"),
                     value=cast(str, cfg.get("oidc_client_secret", "")),
+                ),
+                False,
+            ),
+            oidc_token_claims=(
+                self.add_widget_intelligent(
+                    DictInfo,
+                    section="freva_rest",
+                    key="oidc_token_claims",
+                    name=f"{self.num}OIDC authorization filters",
+                    value=cast(
+                        dict[str, list[str]], cfg.get("oidc_token_claims", {})
+                    ),
                 ),
                 False,
             ),

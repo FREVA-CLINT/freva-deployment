@@ -270,7 +270,12 @@ class MainApp(npyscreen.NPSAppManaged):
             if step in ("certificates", "project_name", "deployment_method"):
                 continue
             for key, config in settings.items():
-                config_tmpl[step][key] = config
+                if isinstance(config, dict):
+                    table = tomlkit.inline_table()
+                    table.update(config)
+                    config_tmpl[step][key] = table
+                else:
+                    config_tmpl[step][key] = config
         Path(self.save_file).parent.mkdir(exist_ok=True, parents=True)
         with open(self.save_file, "w") as f:
             toml_string = tomlkit.dumps(config_tmpl)

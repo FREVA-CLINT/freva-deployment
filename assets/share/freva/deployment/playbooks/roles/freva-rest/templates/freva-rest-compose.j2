@@ -16,6 +16,7 @@ services:
       - API_OIDC_CLIENT_ID={{freva_rest_oidc_client}}
       - API_OIDC_DISCOVERY_URL={{freva_rest_oidc_url}}
       - API_OIDC_CLIENT_SECRET={{freva_rest_oidc_client_secret}}
+      - API_OIDC_TOKEN_CLAIMS={{ freva_rest_oidc_token_claims }}
 {% if freva_rest_data_loader == true %}
       - API_REDIS_HOST={{cache_information.host}}
       - API_REDIS_PASSWORD={{cache_information.passwd}}
