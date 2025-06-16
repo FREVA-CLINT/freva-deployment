@@ -15,7 +15,6 @@ upgrade_info_text: ""
 
 volume_names:
   - "{{ db_name }}_data"
-  - "{{ db_name }}_backup"
   - "{{ db_name }}_logs"
 
 conda_packages:

@@ -57,7 +57,7 @@ normalize_service_name() {
   case "$dir" in
     conda|services) echo "conda" ;;
     web_service) echo "freva-web" ;;
-    freva_rest|databro*) echo "mongodb" ;;
+    freva_rest|databro*) echo "mongo" ;;
     solr_service) echo "solr" ;;
     vault_service) echo "vault" ;;
     db_service) echo "db" ;;
@@ -194,7 +194,7 @@ detect_legacy_services() {
     case "$service" in
       freva-web) rm -rf "$path" ;;
       solr) echo -e "$service\t${path}/data\t${path}" ;;
-      mongodb) echo -e "$service\t${path}/stats\t${path}" ;;
+      mongo) echo -e "$service\t${path}/stats\t${path}" ;;
       vault) echo -e "$service\t${path}/files\t${path}" ;;
       db) echo -e "$service\t${path}\t${path}" ;;
       compose*|conda*|freva-cacheing) ;;

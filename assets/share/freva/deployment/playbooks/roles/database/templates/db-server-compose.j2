@@ -11,7 +11,6 @@ services:
     environment:
       - ROOT_PW={{ root_passwd }}
       - HOST={{ db_host }}
-      - NUM_BACKUPS=7
       - PROJECT={{ project_name }}
       - MYSQL_USER={{db_user}}
       - MYSQL_PASSWORD={{db_passwd}}
@@ -20,12 +19,10 @@ services:
     volumes:
       - data:/data/db:z
       - logs:/data/logs:z
-      - backup:/backup:z
     container_name: {{db_name}}
     tty: true
     ports:
       - {{db_port}}:3306
 volumes:
   data:
-  backup:
   logs:

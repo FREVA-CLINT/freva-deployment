@@ -15,7 +15,6 @@
   loop:
     - "{{ data_dir }}"
     - "{{ data_dir }}/data"
-    - "{{ data_dir }}/backups"
     - "{{ data_dir }}/logs"
     - "{{ data_dir }}/config"
     - "{{ data_dir }}/bin"

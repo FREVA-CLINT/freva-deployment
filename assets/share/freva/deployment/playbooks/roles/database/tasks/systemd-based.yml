@@ -33,15 +33,3 @@
       file:
         path: "{{ db_tempdir.path }}"
         state: absent
-
-- name: Creating cron jobs
-  script: >
-    {{asset_dir}}/scripts/create_cron.sh
-    --service {{ db_name }}
-    --email {{ db_email }}
-    --user {{ uid }}
-    --deployment-method {{ deployment_method }}
-    --backup-dir {{ data_dir }}/backups
-    --src-dir {{ data_dir }}/data
-    --command {{ conda_path }}/libexec/freva-rest-server/daily-backup.sh
-  when: cron.stat.exists == true
