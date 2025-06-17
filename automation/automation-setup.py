@@ -33,8 +33,8 @@ P = ParamSpec("P")
 SERVICE = """[Unit]
 Description=Automated freva deployments
 After=network.target
-Watns=network.target
-
+Wants=network.target
+After=network.target
 [Service]
 Type=simple
 NoNewPrivileges=true
@@ -565,19 +565,21 @@ def merge_config_files(default_path: Path, env_configs: List[Path]) -> List[Path
     return [f for f in map(Path, config["configs"]) if f.is_file()]
 
 
-async def deployment_exists(name: str) -> bool:
+async def delete_existing_deployment(name: str):
+    """Delete existing deployments."""
     async with get_client() as client:
         deployments = await client.read_deployments(
             deployment_filter=DeploymentFilter(
                 name=DeploymentFilterName(any_=[name])
             )
         )
-        return len(deployments) > 0
+        for dep in deployments:
+            await client.delete_deployment(dep.id)
+            print(f"[INFO] Deleted existing deployment: {dep.id}")
 
 
 def register_prefect_deployment(
     config_files: List[str],
-    cron: Optional[str],
     name: str = "freva-deployment-instance",
 ) -> None:
     basepath = Path(__file__).parent.absolute()
@@ -589,19 +591,15 @@ def register_prefect_deployment(
 
     dump_cfg(config_files)
     this_file = Path(__file__).name
-    exists = asyncio.run(deployment_exists(name))
-    if not exists:
-        freva_deployment_flow.from_source(
-            source=Path(__file__).parent,
-            entrypoint=f"{this_file}:freva_deployment_flow",
-        ).deploy(
-            name=name,
-            tags=["Deployment"],
-            cron=cron,
-            work_pool_name="default-agent-pool",
-        )
-    else:
-        print(f"[INFO] Deployment '{name}' already exists. Skipping.")
+    asyncio.run(delete_existing_deployment(name))
+    freva_deployment_flow.from_source(
+        source=Path(__file__).parent,
+        entrypoint=f"{this_file}:freva_deployment_flow",
+    ).deploy(
+        name=name,
+        tags=["Deployment"],
+        work_pool_name="default-agent-pool",
+    )
 
 
 # --- Self-update & checksum logic ---
@@ -754,7 +752,6 @@ def main():
             ps.start_prefect()
             register_prefect_deployment(
                 config_files=merged,
-                cron=args.cron,
             )
             ps.start_caddy(args.cert_file, args.key_file)
             ps.linger()
