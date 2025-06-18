@@ -5,20 +5,13 @@ from pathlib import Path
 from typing import List, cast
 
 import npyscreen
-
 from freva_deployment import AVAILABLE_CONDA_ARCHS
 from freva_deployment.utils import get_current_file_dir
 
-from .base import (
-    BaseForm,
-    CheckboxInfo,
-    ComboInfo,
-    DictInfo,
-    FileInfo,
-    TextInfo,
-)
+from .base import BaseForm, CheckboxInfo, ComboInfo, DictInfo, FileInfo, TextInfo
 
 DEPLOYMENT_METHODS = ["docker", "podman", "conda", "k8s"]
+EXPOSE_METHODS = ["ingress", "hostport", "reverse_proxy"]
 
 
 def get_index(values: list[str], target: str, default: int = 0) -> int:
@@ -235,6 +228,7 @@ class WebScreen(BaseForm):
         """Add widgets to the screen."""
         self.list_keys = "imprint", "scheduler_host", "allowed_hosts"
         cfg = self.get_config(self.step)
+
         for key in self.list_keys:
             if key in cfg and isinstance(cfg[key], str):
                 value = cast(str, cfg[key])
@@ -277,6 +271,25 @@ class WebScreen(BaseForm):
                     key="project_website",
                     name=f"{self.num}Url of the Freva home page",
                     value=cfg.get("project_website", ""),
+                ),
+                True,
+            ),
+            expose_method=(
+                self.add_widget_intelligent(
+                    ComboInfo,
+                    key="expose_method",
+                    name=f"{self.num}K8s Expose Method",
+                    value=get_index(
+                        EXPOSE_METHODS,
+                        cast(
+                            str,
+                            cfg.get(
+                                "expose_method",
+                                "ingress",
+                            ),
+                        ),
+                    ),
+                    values=EXPOSE_METHODS,
                 ),
                 True,
             ),
@@ -516,6 +529,25 @@ class DBScreen(BaseForm):
                 ),
                 True,
             ),
+            expose_method=(
+                self.add_widget_intelligent(
+                    ComboInfo,
+                    key="expose_method",
+                    name=f"{self.num}K8s Expose Method",
+                    value=get_index(
+                        EXPOSE_METHODS,
+                        cast(
+                            str,
+                            cfg.get(
+                                "expose_method",
+                                "ingress",
+                            ),
+                        ),
+                    ),
+                    values=EXPOSE_METHODS,
+                ),
+                True,
+            ),
             wipe=(
                 self.add_widget_intelligent(
                     CheckboxInfo,
@@ -692,6 +724,25 @@ class FrevaRestScreen(BaseForm):
                 ),
                 False,
             ),
+            expose_method=(
+                self.add_widget_intelligent(
+                    ComboInfo,
+                    key="expose_method",
+                    name=f"{self.num}K8s Expose Method",
+                    value=get_index(
+                        EXPOSE_METHODS,
+                        cast(
+                            str,
+                            cfg.get(
+                                "expose_method",
+                                "ingress",
+                            ),
+                        ),
+                    ),
+                    values=EXPOSE_METHODS,
+                ),
+                True,
+            ),
             wipe=(
                 self.add_widget_intelligent(
                     CheckboxInfo,
@@ -710,7 +761,10 @@ class FrevaRestScreen(BaseForm):
                     ComboInfo,
                     section="freva_rest",
                     key="solr_mem",
-                    name=f"{self.num}Virtual memory (in GB) for the search engine service",
+                    name=(
+                        f"{self.num}Virtual memory (in GB) for the search "
+                        "engine service"
+                    ),
                     value=solr_mem_select,
                     values=solr_mem_values,
                 ),

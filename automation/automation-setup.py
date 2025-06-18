@@ -331,7 +331,9 @@ class PrefectServer:
             logger.error("Captured stderr:\n%s", stderr_output.strip())
             raise FailedRun(f"{' '.join(cmd)} exited: {proc.returncode}")
 
-    def __init__(self, log_dir: Path, api_port: int) -> None:
+    def __init__(
+        self, log_dir: Path, api_port: int, endpoint: Optional[str] = None
+    ) -> None:
 
         self.caddy_bin = shutil.which(
             "caddy", path=str(Path(sys.executable).parent)
@@ -348,7 +350,6 @@ class PrefectServer:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.bind(("", 0))
             self.port = s.getsockname()[1]
-        self.prefect_api_url = f"http://127.0.0.1:{self.port}/api"
         self.api_port = api_port
         log_dir.mkdir(exist_ok=True, parents=True)
 
@@ -359,8 +360,15 @@ class PrefectServer:
         self.caddy_log = (log_dir / "caddy.log").open("w")
         self.env = os.environ.copy()
         self.caddy_host = f"{socket.gethostname()}:{self.api_port}"
+        if endpoint:
+            self.prefect_api_url = f"http://127.0.0.1:{self.port}/{endpoint}/api"
+            self.env["PREFECT_UI_API_URL"] = (
+                f"https://{self.caddy_host}/{endpoint}/api"
+            )
+        else:
+            self.env["PREFECT_UI_API_URL"] = f"https://{self.caddy_host}/api"
+            self.prefect_api_url = f"http://127.0.0.1:{self.port}/api"
         self.env["PREFECT_API_URL"] = self.prefect_api_url
-        self.env["PREFECT_UI_API_URL"] = f"https://{self.caddy_host}/api"
 
     def linger(self) -> None:
         """Wait unitl the server gets terminated."""
@@ -473,10 +481,9 @@ class PrefectServer:
             proc = getattr(self, attr, None)
             if proc:
                 proc.terminate()
-
-        self.server_log.close()
-        self.agent_log.close()
-        self.caddy_log.close()
+            log = getattr(self, f"{attr}_log", None)
+            if log:
+                log.close()
 
     def start_prefect(self) -> None:
         """Start the prefect server."""
@@ -682,6 +689,12 @@ def main():
         "you can set the value of this variable here.",
     )
     parser.add_argument(
+        "--endpoint",
+        type=str,
+        default=os.getenv("FREVA_AUTOMATION_SERVER_ENDPOINT") or None,
+        help="Set the reverse proxy endoint that serves the web app.",
+    )
+    parser.add_argument(
         "--cert-file",
         type=Path,
         default=os.getenv("FREVA_AUTOMATION_CERT_FILE") or None,
@@ -693,7 +706,11 @@ def main():
         default=os.getenv("FREVA_AUTOMATION_KEY_FILE") or None,
         help="Path to the web server private key file.",
     )
-
+    parser.add_argument(
+        "--no-reverse-proxy",
+        action="store_true",
+        help="Do not start a caddy reverse proxy.",
+    )
     args = parser.parse_args()
     port = int(args.port)
     script_path = Path(__file__).resolve()
@@ -705,7 +722,8 @@ def main():
         service = prefix / "freva-automation.service"
         args.prefix.mkdir(exist_ok=True, parents=True)
         script_path = prefix / "automation-setup.py"
-        script_path.write_text(sys.stdin.read())
+        if not script_path.is_file() or not Path(sys.argv[0]).is_file():
+            script_path.write_text(sys.stdin.read())
         if not service.is_file():
             service.write_text(SERVICE.format(prefix=prefix))
         BootstrapConda(args.prefix, extra_pkgs)
@@ -753,7 +771,8 @@ def main():
             register_prefect_deployment(
                 config_files=merged,
             )
-            ps.start_caddy(args.cert_file, args.key_file)
+            if args.no_reverse_proxy is False:
+                ps.start_caddy(args.cert_file, args.key_file)
             ps.linger()
     finally:
         os.environ = env
