@@ -40,6 +40,7 @@ services:
       - CHATBOT_HOST={{ web_chatbot_host.replace("http://", "") }}
 
     volumes:
+      - /var/lib/sss/pipes:/var/lib/sss/pipes:ro
       - {{ core_root_dir | regex_replace('^~', ansible_env.HOME)}}:{{ core_root_dir | regex_replace('^~', ansible_env.HOME)}}:ro
       - {{ core_scheduler_output_dir|regex_replace('^~', ansible_env.HOME)}}:{{ core_scheduler_output_dir | regex_replace('^~', ansible_env.HOME)}}:ro
       - django-static:/opt/freva_web/static:z
