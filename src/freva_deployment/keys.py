@@ -47,9 +47,7 @@ class RandomKeys:
                 " in order to generate certificates."
             )
 
-    def check_cert_key_pair(
-        self, cert_path: Path | str, key_path: Path | str
-    ) -> bool:
+    def check_cert_key_pair(self, cert_path: str, key_path: str) -> bool:
         """Validate a certificate/key pair by checking:
             - The certificate is currently valid (not expired).
             - The certificate and private key match.
