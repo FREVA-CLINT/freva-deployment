@@ -11,56 +11,100 @@ or users can be instructed to use the source command for their shell. If
 file into the `MODULEPATH` location.
 
 
-# Databrowser, database and web services:
-If the target machine where the services (databrowser, mariadb, web) were deployed
-are Linux machines you will have access to a `systemd` unit of the created
+# Persisent micro service data:
+If you chose podman/docker or conda based deployment of the micro-services
+you will have access to a `systemd` unit of the created
 service. In general the services can be accessed by
 `<project_name>-<service_name>.service` If for example the `project_name`
 key was set to `clex-ces` then the following services are created:
 
 - database: `clex-ces-db.service`, `clex-ces-vault.serice`
-- databrowser: `clex-ces-databrowser.service`
-- web ui: `clex-ces-web.service`
+- freva-rest: `clex-ces-freva-rest.service` `clex-ces-mongo.service`
+- web ui: `clex-ces-web.service` `clex-ces-web-cache.service` `clex-ces-web-proxy.service`
+- data-loader: `freva-caching.service` `data-loader@schduler.service` `data-loader@worker.service`
 
-> ``💡`` If you have set up the services as an unprivileged user you need
+The data-loader services for zarr streaming are optional. Additionally
+`clex-ces-web-cache.service` `clex-ces-web-proxy.service` will only be present
+for *conda-forge* based deployments.
+
+:::{note}
+If you have set up the services as an unprivileged user you need
 to access the services with help of the ``--user`` flag for example:
 
 ```console
 systemclt --user restart clex-ces-web.service
 ```
+:::
 
 ## Access of service data on the host machine
-The data of the services, like the database or databrowser cores
-are stored "outside" the docker containers on the host machine. The default
-location for all the service data is `/opt/freva` or whatever folder was set
-as `data_path` variable. The following logic applies:
 
-- `<data_path>/services/<project_name>/<service_name>_service/`
+### Conda-forge base deployments
+The data of the services, like the database or databrowser cores
+should be persistent. The default location for all the service data
+is `/opt/freva` or whatever folder was set as `data_path` variable.
+The following logic applies:
+
+- `<data_path>/<project_name>/services/<project_name>/<service_name>/`
 
 for example:
 
-- `/opt/freva/services/clex-ces/db_service`
+- `/opt/freva/clex-ces/services/db/`
 
-The compose files are also located in the `<data_path>` location, for example:
+The conda environments are stored in:
 
-- `/opt/freva/services/compose_services`
+- `<data_path>/<project_name>/conda`
+
+for example:
+
+- `/opt/freva/clex-ces/conda`
+
+### Container based deployment
+Persistent data for container based deployments in stored in docker/podman managed
+volumes. The volume names follow the following structure:
+
+`<project_name>-<service>_<name>`
+
+for exmaple:
+- `clex-ces-db_data`: Persistent database data
+- `clex-ces-db_logs`: Persistent database logs
+
+You can inspect the volumes using the following commands:
+
+```console
+
+podman volume ls
+podman volume inspect <project_name>-<service>_<type>
+
+```
+
+
+If you chose the `docker/podman` deployment option then the containers are
+orchestrated using `podman-compose` / `docker-compose`.
+The compose files are also located in the `<data_path>/<project_name>/compose_services`
+location, for example:
+
+- `/opt/freva/clex-ces/compose_services`
 
 ## Simple backup scripts:
-The `db` and `databrowser` services offer a very simple backup script that can
-be run from outside the container. To issue a backup command simply call the
-following command `docker/podman exec -it <project_name>-solr/db /usr/local/bin/daily_backup`.
-For example:
+Services with persistant data - `db`, `mongo` and `solr` offer a very simple
+backup script.
 
-```
-podman exec -it clex-ces-solr /usr/local/bin/daily_backup
-```
+Depending on the chosen deployment method this backup is either executed directly on the
+host machine (conda-forge based deployment) or in a container.
 
-If you have `anacron` set up on your host machine then a cron script to
+If you have `anacron` installed on your host machine then a cron script to
 automatically backup databases and solr cores is applied nightly.
-By default the script keeps the last 7 backups. Backup data can be found in:
+By default the script keeps the last 7 backups.
+For conda-forge base deployments the backup data can be found in:
 
-- `db`:`/opt/freva/<project_name>/db_service>/backup`
-- `solr`: `/opt/freva/<project_name>/solr_service/<core_name>/data/snapshot.YYYYMMDDHHMMSSMS`
+```bash
+<data_path>/<project_name>/services/<service>/backup
+```
+Container deployments (docker/podman) utilise the following volumes:
+
+```bash
+<project_name>-<service>_backup
+```
 
 This is only a rudimentary backup solution, ideally you should transfer those
 backups regularly to a different location. You can also disable this
@@ -68,9 +112,12 @@ rudimentary backup strategy by deleting the backup scripts in `/etc/cron.daily`
 and replace it by a more sophisticated backup mechanism.
 
 
-> ``💡`` If you have set up the services as an unprivileged user you can
+:::{important}
+If you have set up the services as an unprivileged user you can
 access the backup scripts using the `crontab` command.
+:::
 
+(the-web-ui-admin-panel)=
 ## The web UI admin Panel
 
 The web user interface is manged by django which offers a powerful admin

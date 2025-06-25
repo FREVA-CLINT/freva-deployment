@@ -6,7 +6,7 @@
 The freva admin documentation!
 ==============================
 
-.. image:: architecture/_static/freva_flowchart-new.jpg
+.. image:: architecture/_static/freva_flowchart-new.png
    :width: 320
    :align: center
 
@@ -48,9 +48,10 @@ components of Freva work with each other is introduced. This is followed by a
 documentation on how to install the Freva deployment software. After this section
 basic deployment setup and servicing Freva will be introduced.
 
-.. note::
+.. tip::
 
-    Please check :ref:`whatsnew` for any update announcments.
+    Please check :ref:`whatsnew` for any update announcments. Consult the
+    :doc:`FAQ section <faq>` for fixing known issues.
 
 
 
@@ -72,5 +73,6 @@ basic deployment setup and servicing Freva will be introduced.
 .. toctree::
    :maxdepth: 1
 
+   faq
    whatsnew
    contributing

@@ -2,22 +2,23 @@ from __future__ import annotations
 
 from getpass import getuser
 from pathlib import Path
-from typing import Dict, List, cast
+from typing import List, cast
 
 import npyscreen
 
-from freva_deployment import AVAILABLE_CONDA_ARCHS, AVAILABLE_PYTHON_VERSIONS
+from freva_deployment import AVAILABLE_CONDA_ARCHS
 from freva_deployment.utils import get_current_file_dir
 
 from .base import (
     BaseForm,
     CheckboxInfo,
     ComboInfo,
+    DictInfo,
     FileInfo,
-    PasswordInfo,
     TextInfo,
-    logger,
 )
+
+DEPLOYMENT_METHODS = ["docker", "podman", "conda", "k8s"]
 
 
 def get_index(values: list[str], target: str, default: int = 0) -> int:
@@ -71,20 +72,20 @@ class CoreScreen(BaseForm):
         arch = cast(str, cfg.get("arch", AVAILABLE_CONDA_ARCHS[0]))
         arch_idx = get_index(AVAILABLE_CONDA_ARCHS, arch, 0)
         self.input_fields: dict[str, tuple[npyscreen.TitleText, bool]] = dict(
-            hosts=(
+            core_host=(
                 self.add_widget_intelligent(
                     TextInfo,
                     section="core",
                     key="hosts",
                     name=f"{self.num}Server Name(s) where core is deployed",
-                    value=self.get_host("core"),
+                    value=cfg.get("core_host"),
                 ),
                 True,
             ),
             install_dir=(
                 self.add_widget_intelligent(
                     FileInfo,
-                    section="core.config",
+                    section="core",
                     key="install_dir",
                     name=f"{self.num}Anaconda installation dir. for core",
                     value=cfg.get("install_dir", ""),
@@ -94,7 +95,7 @@ class CoreScreen(BaseForm):
             root_dir=(
                 self.add_widget_intelligent(
                     FileInfo,
-                    section="core.config",
+                    section="core",
                     key="root_dir",
                     name=(f"{self.num}Freva configuration direcory"),
                     value=cfg.get("root_dir", ""),
@@ -104,7 +105,7 @@ class CoreScreen(BaseForm):
             base_dir_location=(
                 self.add_widget_intelligent(
                     TextInfo,
-                    section="core.config",
+                    section="core",
                     key="base_dir_location",
                     name=(f"{self.num}User data directory"),
                     value=cfg.get("base_dir_location", ""),
@@ -114,7 +115,7 @@ class CoreScreen(BaseForm):
             preview_path=(
                 self.add_widget_intelligent(
                     TextInfo,
-                    section="core.config",
+                    section="core",
                     key="preview_path",
                     name=(f"{self.num}Plugin output dir for the web UI. "),
                     value=cfg.get("preview_path", ""),
@@ -124,10 +125,12 @@ class CoreScreen(BaseForm):
             scheduler_system=(
                 self.add_widget_intelligent(
                     ComboInfo,
-                    section="core.config",
+                    section="core",
                     key="scheduler_system",
                     name=f"{self.num}Workload manger",
-                    value=self.scheduler_index(cast(str, cfg.get("scheduler_system"))),
+                    value=self.scheduler_index(
+                        cast(str, cfg.get("scheduler_system"))
+                    ),
                     values=self.scheduler_systems,
                 ),
                 True,
@@ -135,7 +138,7 @@ class CoreScreen(BaseForm):
             scheduler_output_dir=(
                 self.add_widget_intelligent(
                     TextInfo,
-                    section="core.config",
+                    section="core",
                     key="scheduler_output_dir",
                     name=f"{self.num}Ouput dir. of the scheduler system",
                     value=cfg.get("scheduler_output_dir", ""),
@@ -145,7 +148,7 @@ class CoreScreen(BaseForm):
             admins=(
                 self.add_widget_intelligent(
                     TextInfo,
-                    section="core.config",
+                    section="core",
                     key="admins",
                     name=f"{self.num}Set the admin user(s) - comma separated",
                     value=cfg.get("admins", getuser()),
@@ -155,7 +158,7 @@ class CoreScreen(BaseForm):
             admin_group=(
                 self.add_widget_intelligent(
                     TextInfo,
-                    section="core.config",
+                    section="core",
                     key="admin_group",
                     name=(
                         f"{self.num}Set the Freva admin group - "
@@ -168,7 +171,7 @@ class CoreScreen(BaseForm):
             ansible_become_user=(
                 self.add_widget_intelligent(
                     TextInfo,
-                    section="core.config",
+                    section="core",
                     key="ansible_become_user",
                     name=(
                         f"{self.num}Become (sudo) user name to change to on "
@@ -181,7 +184,7 @@ class CoreScreen(BaseForm):
             arch=(
                 self.add_widget_intelligent(
                     ComboInfo,
-                    section="core.config",
+                    section="core",
                     key="arch",
                     name=(f"{self.num}Set the target architecture"),
                     value=arch_idx,
@@ -189,46 +192,25 @@ class CoreScreen(BaseForm):
                 ),
                 True,
             ),
-            core_playbook=(
-                self.add_widget_intelligent(
-                    TextInfo,
-                    section="core.config",
-                    key="core_playbook",
-                    name=(
-                        f"{self.num}Set the path to the playbook used for"
-                        " setting up the system"
-                    ),
-                    value=cfg.get("core_playbook", ""),
-                ),
-                False,
-            ),
             ansible_python_interpreter=(
                 self.add_widget_intelligent(
                     TextInfo,
-                    section="core.config",
+                    section="core",
                     key="ansible_python_interpreter",
                     name=f"{self.num}Python path on remote machine",
-                    value=cfg.get("ansible_python_interpreter", "/usr/bin/python3"),
+                    value=cfg.get(
+                        "ansible_python_interpreter", "/usr/bin/python3"
+                    ),
                 ),
                 False,
             ),
             ansible_user=(
                 self.add_widget_intelligent(
                     TextInfo,
-                    section="core.config",
+                    section="core",
                     key="ansible_user",
                     name=f"{self.num}Username for remote machine",
                     value=cfg.get("ansible_user", getuser()),
-                ),
-                False,
-            ),
-            git_path=(
-                self.add_widget_intelligent(
-                    FileInfo,
-                    section="core.config",
-                    key="git_path",
-                    name=f"{self.num}Path to the git executable",
-                    value=cfg.get("git_path", ""),
                 ),
                 False,
             ),
@@ -258,40 +240,60 @@ class WebScreen(BaseForm):
                 value = cast(str, cfg[key])
                 cfg[key] = [v.strip() for v in value.split(",") if v.strip()]
         self.input_fields: dict[str, tuple[npyscreen.TitleText, bool]] = dict(
-            hosts=(
+            web_host=(
                 self.add_widget_intelligent(
                     TextInfo,
                     section="web",
-                    key="hosts",
-                    name=f"{self.num}Server Name(s) the web service is deployed on",
-                    value=self.get_host("web"),
+                    key="web_host",
+                    name=f"{self.num}Hostname where web service is deployed on",
+                    value=cfg.get("web_host"),
                 ),
                 True,
             ),
             data_path=(
                 self.add_widget_intelligent(
                     TextInfo,
-                    section="web.config",
+                    section="web",
                     key="data_path",
                     name=f"{self.num}Parent directory for any permanent data",
                     value=cast(str, cfg.get("data_path", "/opt/freva")),
                 ),
                 True,
             ),
+            admin_user=(
+                self.add_widget_intelligent(
+                    TextInfo,
+                    section="web",
+                    key="admin_user",
+                    name=(f"{self.num}User name that should own persistent data"),
+                    value=cfg.get("admin_user", ""),
+                ),
+                False,
+            ),
             project_website=(
                 self.add_widget_intelligent(
                     TextInfo,
-                    section="web.config",
+                    section="web",
                     key="project_website",
                     name=f"{self.num}Url of the Freva home page",
                     value=cfg.get("project_website", ""),
                 ),
                 True,
             ),
+            chatbot_host=(
+                self.add_widget_intelligent(
+                    TextInfo,
+                    section="web",
+                    key="chatbot_host",
+                    name=f"{self.num}Url to the FrevaGPT service",
+                    value=cfg.get("chatbot_host", ""),
+                ),
+                False,
+            ),
             main_color=(
                 self.add_widget_intelligent(
                     TextInfo,
-                    section="web.config",
+                    section="web",
                     key="main_color",
                     name=f"{self.num}Html color of the main color theme",
                     value=cfg.get("main_color", "Tomato"),
@@ -301,7 +303,7 @@ class WebScreen(BaseForm):
             border_color=(
                 self.add_widget_intelligent(
                     TextInfo,
-                    section="web.config",
+                    section="web",
                     key="border_color",
                     name=f"{self.num}Html color for the borders",
                     value=cfg.get("border_color", "#6c2e1f"),
@@ -311,7 +313,7 @@ class WebScreen(BaseForm):
             hover_color=(
                 self.add_widget_intelligent(
                     TextInfo,
-                    section="web.config",
+                    section="web",
                     key="hover_color",
                     name=f"{self.num}Html color for hover modes",
                     value=cfg.get("hover_color", "#d0513a"),
@@ -321,7 +323,7 @@ class WebScreen(BaseForm):
             institution_logo=(
                 self.add_widget_intelligent(
                     TextInfo,
-                    section="web.config",
+                    section="web",
                     key="institution_logo",
                     name=f"{self.num}Path to the institution logo",
                     value=cfg.get(
@@ -333,7 +335,7 @@ class WebScreen(BaseForm):
             about_us_text=(
                 self.add_widget_intelligent(
                     TextInfo,
-                    section="web.config",
+                    section="web",
                     key="about_us_text",
                     name=f"{self.num}About us text - short blurb about Freva",
                     value=cfg.get("about_us_text", "Testing"),
@@ -343,7 +345,7 @@ class WebScreen(BaseForm):
             contacts=(
                 self.add_widget_intelligent(
                     TextInfo,
-                    section="web.config",
+                    section="web",
                     key="contacts",
                     name=f"{self.num}Contact email address",
                     value=str(cfg.get("contacts", "freva@dkrz.de")),
@@ -353,7 +355,7 @@ class WebScreen(BaseForm):
             imprint=(
                 self.add_widget_intelligent(
                     TextInfo,
-                    section="web.config",
+                    section="web",
                     key="imprint",
                     name=f"{self.num}Institution address - comma separated",
                     value=",".join(
@@ -377,7 +379,7 @@ class WebScreen(BaseForm):
             homepage_text=(
                 self.add_widget_intelligent(
                     TextInfo,
-                    section="web.config",
+                    section="web",
                     key="homepage_text",
                     name=f"{self.num}More in detail project description",
                     value=cfg.get(
@@ -401,17 +403,19 @@ class WebScreen(BaseForm):
             homepage_heading=(
                 self.add_widget_intelligent(
                     TextInfo,
-                    section="web.config",
+                    section="web",
                     key="homepage_heading",
                     name=f"{self.num}A brief describtion of the project",
-                    value=cfg.get("homepage_heading", "Lorem ipsum dolor sit amet"),
+                    value=cfg.get(
+                        "homepage_heading", "Lorem ipsum dolor sit amet"
+                    ),
                 ),
                 True,
             ),
             scheduler_host=(
                 self.add_widget_intelligent(
                     TextInfo,
-                    section="web.config",
+                    section="web",
                     key="scheduler_host",
                     name=f"{self.num}Scheduler hostname(s) - comma separated",
                     value=",".join(
@@ -426,7 +430,7 @@ class WebScreen(BaseForm):
             allowed_hosts=(
                 self.add_widget_intelligent(
                     TextInfo,
-                    section="web.config",
+                    section="web",
                     key="allowed_hosts",
                     name=f"{self.num}Set additional hostnames django can serve",
                     value=",".join(
@@ -438,23 +442,10 @@ class WebScreen(BaseForm):
                 ),
                 True,
             ),
-            web_playbook=(
-                self.add_widget_intelligent(
-                    TextInfo,
-                    section="web.config",
-                    key="web_playbook",
-                    name=(
-                        f"{self.num}Set the path to the playbook used for"
-                        " setting up the system"
-                    ),
-                    value=cfg.get("web_playbook", ""),
-                ),
-                False,
-            ),
             ansible_become_user=(
                 self.add_widget_intelligent(
                     TextInfo,
-                    section="web.config",
+                    section="web",
                     key="ansible_become_user",
                     name=(
                         f"{self.num}Become (sudo) user name to change to on "
@@ -467,17 +458,19 @@ class WebScreen(BaseForm):
             ansible_python_interpreter=(
                 self.add_widget_intelligent(
                     FileInfo,
-                    section="web.config",
+                    section="web",
                     key="ansible_python_interpreter",
                     name=f"{self.num}Pythonpath on remote machine",
-                    value=cfg.get("ansible_python_interpreter", "/usr/bin/python3"),
+                    value=cfg.get(
+                        "ansible_python_interpreter", "/usr/bin/python3"
+                    ),
                 ),
                 False,
             ),
             ansible_user=(
                 self.add_widget_intelligent(
                     TextInfo,
-                    section="web.config",
+                    section="web",
                     key="ansible_user",
                     name=f"{self.num}Username for remote machine",
                     value=cfg.get("ansible_user", getuser()),
@@ -503,13 +496,23 @@ class DBScreen(BaseForm):
             6,
         )
         self.input_fields: dict[str, tuple[npyscreen.TitleText, bool]] = dict(
-            hosts=(
+            db_host=(
                 self.add_widget_intelligent(
                     TextInfo,
                     section="db",
-                    key="hosts",
-                    name=f"{self.num}Server Name(s) where the database service is deployed",
-                    value=self.get_host("db"),
+                    key="db_host",
+                    name=f"{self.num}Hostname where the database service is deployed",
+                    value=cfg.get("db_host"),
+                ),
+                True,
+            ),
+            vault_host=(
+                self.add_widget_intelligent(
+                    TextInfo,
+                    section="db",
+                    key="vault_host",
+                    name=f"{self.num}Hostname where the vault service is deployed",
+                    value=cfg.get("vault_host") or cfg.get("db_host"),
                 ),
                 True,
             ),
@@ -529,7 +532,7 @@ class DBScreen(BaseForm):
             user=(
                 self.add_widget_intelligent(
                     TextInfo,
-                    section="db.config",
+                    section="db",
                     key="user",
                     name=f"{self.num}Database user",
                     value=cfg.get("user", "evaluation_system"),
@@ -539,7 +542,7 @@ class DBScreen(BaseForm):
             db=(
                 self.add_widget_intelligent(
                     TextInfo,
-                    section="db.config",
+                    section="db",
                     key="db",
                     name=f"{self.num}Database name",
                     value=cfg.get("db", "evaluation_system"),
@@ -549,7 +552,7 @@ class DBScreen(BaseForm):
             port=(
                 self.add_widget_intelligent(
                     ComboInfo,
-                    section="db.config",
+                    section="db",
                     key="port",
                     name=f"{self.num}Database Port",
                     value=port_idx,
@@ -560,30 +563,27 @@ class DBScreen(BaseForm):
             data_path=(
                 self.add_widget_intelligent(
                     TextInfo,
-                    section="db.config",
+                    section="db",
                     key="data_path",
                     name=(f"{self.num}Parent directory for any permanent data"),
                     value=cast(str, cfg.get("data_path", "/opt/freva")),
                 ),
                 True,
             ),
-            db_playbook=(
+            admin_user=(
                 self.add_widget_intelligent(
                     TextInfo,
-                    section="db.config",
-                    key="db_playbook",
-                    name=(
-                        f"{self.num}Set the path to the db playbook used for"
-                        " setting up the system"
-                    ),
-                    value=cfg.get("db_playbook", ""),
+                    section="db",
+                    key="admin_user",
+                    name=(f"{self.num}User name that should own persistent data"),
+                    value=cfg.get("admin_user", ""),
                 ),
                 False,
             ),
             ansible_become_user=(
                 self.add_widget_intelligent(
                     TextInfo,
-                    section="db.config",
+                    section="db",
                     key="ansible_become_user",
                     name=(
                         f"{self.num}Become (sudo) user name to change to on "
@@ -596,17 +596,19 @@ class DBScreen(BaseForm):
             ansible_python_interpreter=(
                 self.add_widget_intelligent(
                     FileInfo,
-                    section="db.config",
+                    section="db",
                     key="ansible_python_interpreter",
                     name=f"{self.num}Pythonpath on remote machine",
-                    value=cfg.get("ansible_python_interpreter", "/usr/bin/python3"),
+                    value=cfg.get(
+                        "ansible_python_interpreter", "/usr/bin/python3"
+                    ),
                 ),
                 False,
             ),
             ansible_user=(
                 self.add_widget_intelligent(
                     TextInfo,
-                    section="db.config",
+                    section="db",
                     key="ansible_user",
                     name=f"{self.num}Username for remote machine",
                     value=cfg.get("ansible_user", getuser()),
@@ -636,15 +638,59 @@ class FrevaRestScreen(BaseForm):
             7,
         )
         self.input_fields: dict[str, tuple[npyscreen.TitleText, bool]] = dict(
-            hosts=(
+            freva_rest_host=(
                 self.add_widget_intelligent(
                     TextInfo,
                     section="freva_rest",
-                    key="hosts",
-                    name=f"{self.num}Server Name(s) where the freva-rest service is deployed",
-                    value=self.get_host("freva_rest"),
+                    key="freva_rest_host",
+                    name=(
+                        f"{self.num}Server Name(s) where the "
+                        "freva-rest service is deployed"
+                    ),
+                    value=cfg.get("freva_rest_host", ""),
                 ),
                 True,
+            ),
+            search_server_host=(
+                self.add_widget_intelligent(
+                    TextInfo,
+                    section="freva_rest",
+                    key="redis_host",
+                    name=f"{self.num} Set the index server host name",
+                    value=cast(
+                        str,
+                        cfg.get("search_server_host")
+                        or cfg.get("freva_rest_host"),
+                    ),
+                ),
+                False,
+            ),
+            mongodb_server_host=(
+                self.add_widget_intelligent(
+                    TextInfo,
+                    section="freva_rest",
+                    key="redis_host",
+                    name=f"{self.num} Set the mongoDB host name",
+                    value=cast(
+                        str,
+                        cfg.get("mongodb_server_host")
+                        or cfg.get("freva_rest_host"),
+                    ),
+                ),
+                False,
+            ),
+            redis_host=(
+                self.add_widget_intelligent(
+                    TextInfo,
+                    section="freva_rest",
+                    key="redis_host",
+                    name=f"{self.num} Set the redis host name",
+                    value=cast(
+                        str,
+                        cfg.get("redis_host") or cfg.get("freva_rest_host"),
+                    ),
+                ),
+                False,
             ),
             wipe=(
                 self.add_widget_intelligent(
@@ -662,7 +708,7 @@ class FrevaRestScreen(BaseForm):
             solr_mem=(
                 self.add_widget_intelligent(
                     ComboInfo,
-                    section="freva_rest.config",
+                    section="freva_rest",
                     key="solr_mem",
                     name=f"{self.num}Virtual memory (in GB) for the search engine service",
                     value=solr_mem_select,
@@ -673,7 +719,7 @@ class FrevaRestScreen(BaseForm):
             freva_rest_port=(
                 self.add_widget_intelligent(
                     ComboInfo,
-                    section="freva_rest.config",
+                    section="freva_rest",
                     key="freva_rest_port",
                     name=f"{self.num}Freva-rest API port",
                     value=freva_rest_port_idx,
@@ -681,33 +727,30 @@ class FrevaRestScreen(BaseForm):
                 ),
                 True,
             ),
+            admin_user=(
+                self.add_widget_intelligent(
+                    TextInfo,
+                    section="freva_rest",
+                    key="admin_user",
+                    name=(f"{self.num}User name that should own persistent data"),
+                    value=cfg.get("admin_user", ""),
+                ),
+                False,
+            ),
             data_path=(
                 self.add_widget_intelligent(
                     TextInfo,
-                    section="freva_rest.config",
+                    section="freva_rest",
                     key="data_path",
                     name=f"{self.num}Parent directory for any permanent data",
                     value=cast(str, cfg.get("data_path", "/opt/freva")),
                 ),
                 True,
             ),
-            redis_host=(
-                self.add_widget_intelligent(
-                    TextInfo,
-                    section="freva_rest.config",
-                    key="redis_host",
-                    name=f"{self.num} Set the redis host name",
-                    value=cast(
-                        str,
-                        cfg.get("redis_host") or self.get_host("freva_rest"),
-                    ),
-                ),
-                False,
-            ),
             data_loader_portal_hosts=(
                 self.add_widget_intelligent(
                     TextInfo,
-                    section="freva_rest.config",
+                    section="freva_rest",
                     key="data_loader_portal_hosts",
                     name=(
                         f"{self.num} ',' separated hostname(s) data-loading portal "
@@ -717,23 +760,10 @@ class FrevaRestScreen(BaseForm):
                 ),
                 False,
             ),
-            deploy_data_loader=(
-                self.add_widget_intelligent(
-                    CheckboxInfo,
-                    section="freva_rest.config",
-                    key="deploy_data_loader",
-                    max_height=2,
-                    editable=True,
-                    name=f"{self.num} set up the data-loader service ",
-                    scroll_exit=True,
-                    value=cast(bool, cfg.get("deploy_data_loader", False)),
-                ),
-                False,
-            ),
             oidc_url=(
                 self.add_widget_intelligent(
                     TextInfo,
-                    section="freva_rest.config",
+                    section="freva_rest",
                     key="oidc_url",
                     name=(f"{self.num}Config url of the OIDC service"),
                     value=cast(str, cfg.get("oidc_url", "")),
@@ -743,7 +773,7 @@ class FrevaRestScreen(BaseForm):
             oidc_client=(
                 self.add_widget_intelligent(
                     TextInfo,
-                    section="freva_rest.config",
+                    section="freva_rest",
                     key="oidc_client",
                     name=(f"{self.num}Name of the OIDC client (app name)"),
                     value=cast(str, cfg.get("oidc_client", "freva")),
@@ -753,30 +783,29 @@ class FrevaRestScreen(BaseForm):
             oidc_client_secret=(
                 self.add_widget_intelligent(
                     TextInfo,
-                    section="freva_rest.config",
+                    section="freva_rest",
                     key="oidc_client_secret",
                     name=(f"{self.num}OIDC client secret. Leave blank for none"),
                     value=cast(str, cfg.get("oidc_client_secret", "")),
                 ),
                 False,
             ),
-            freva_rest_playbook=(
+            oidc_token_claims=(
                 self.add_widget_intelligent(
-                    FileInfo,
-                    section="freva_rest.config",
-                    key="freva_rest_playbook",
-                    name=(
-                        f"{self.num}Set the path to the playbook used for"
-                        " setting up the system"
+                    DictInfo,
+                    section="freva_rest",
+                    key="oidc_token_claims",
+                    name=f"{self.num}OIDC authorization filters",
+                    value=cast(
+                        dict[str, list[str]], cfg.get("oidc_token_claims", {})
                     ),
-                    value=cfg.get("freva_rest_playbook", ""),
                 ),
                 False,
             ),
             ansible_become_user=(
                 self.add_widget_intelligent(
                     TextInfo,
-                    section="freva_rest.config",
+                    section="freva_rest",
                     key="ansible_become_user",
                     name=(
                         f"{self.num}Become (sudo) user name to change to on "
@@ -789,17 +818,19 @@ class FrevaRestScreen(BaseForm):
             ansible_python_interpreter=(
                 self.add_widget_intelligent(
                     FileInfo,
-                    section="freva_rest.config",
+                    section="freva_rest",
                     key="ansible_python_interpreter",
                     name=f"{self.num}Pythonpath on remote machine",
-                    value=cfg.get("ansible_python_interpreter", "/usr/bin/python3"),
+                    value=cfg.get(
+                        "ansible_python_interpreter", "/usr/bin/python3"
+                    ),
                 ),
                 False,
             ),
             ansible_user=(
                 self.add_widget_intelligent(
                     TextInfo,
-                    section="freva_rest.config",
+                    section="freva_rest",
                     key="ansible_user",
                     name=f"{self.num}Username for remote machine",
                     value=cfg.get("ansible_user", getuser()),
@@ -823,9 +854,10 @@ class RunForm(npyscreen.FormMultiPageAction):
     def on_ok(self) -> None:
         """Define what happens once the `ok` for applying the deployment is hit."""
 
-        self.parentApp.thread_stop.set()
         if not self.project_name.value:
-            npyscreen.notify_confirm("You have to set a project name", title="ERROR")
+            npyscreen.notify_confirm(
+                "You have to set a project name", title="ERROR"
+            )
             return
         missing_form: None | str = self.parentApp.check_missing_config()
         if missing_form:
@@ -853,9 +885,7 @@ class RunForm(npyscreen.FormMultiPageAction):
                         and gen_keys is False
                     ):
                         if keyfile:
-                            msg = (
-                                f"{key_type} certificate file `{key_file}` must exist."
-                            )
+                            msg = f"{key_type} certificate file `{key_file}` must exist."
                         else:
                             msg = f"You must give a {key_type} certificate file"
                         npyscreen.notify_confirm(msg, title="ERROR")
@@ -876,6 +906,7 @@ class RunForm(npyscreen.FormMultiPageAction):
             "local_debug": bool(self.local_debug.value),
             "gen_keys": bool(gen_keys),
         }
+        self.parentApp.thread_stop.set()
         self.parentApp.exit_application(
             save_file=save_file, msg="Do you want to continue?"
         )
@@ -908,6 +939,27 @@ class RunForm(npyscreen.FormMultiPageAction):
             npyscreen.TitleText,
             name=f"{self.num}Set the name of the project",
             value=project_name,
+        )
+        self.deployment_method = self.add_widget_intelligent(
+            ComboInfo,
+            key="deployment_method",
+            name=f"{self.num}Deployment Method",
+            info=(
+                "The `deployment_method` key sets the option of how the "
+                "installation of the service is realised. `docker`, "
+                "`podman` leverages podman or docker, `conda` uses "
+                "conda-forge to install the service while `k8s` "
+                "involves a kubernetes based deployment "
+                'Chosse between: "docker", "podman", "conda", "k8s"'
+            ),
+            value=get_index(
+                DEPLOYMENT_METHODS,
+                cast(
+                    str,
+                    self.parentApp.config.get("deployment_method", "docker"),
+                ),
+            ),
+            values=DEPLOYMENT_METHODS,
         )
         self.inventory_file = self.add_widget_intelligent(
             npyscreen.TitleFilename,

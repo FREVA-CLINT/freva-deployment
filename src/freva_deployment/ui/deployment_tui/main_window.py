@@ -38,9 +38,9 @@ class MainApp(npyscreen.NPSAppManaged):
         """Get the deploy steps."""
         steps = []
         for step, form_obj in self._forms.items():
-            if form_obj.use.value and step not in steps:
+            if form_obj.use.value:
                 steps.append(step)
-        return steps
+        return list(set(steps))
 
     def onStart(self) -> None:
         """When Application starts, set up the Forms that will be used."""
@@ -70,7 +70,7 @@ class MainApp(npyscreen.NPSAppManaged):
             except Exception:
                 pass
         for step in self._steps_lookup.keys():
-            self.config.setdefault(step, {"hosts": "", "config": {}})
+            self.config.setdefault(step, {})
         self._add_froms()
 
     def reset(self) -> None:
@@ -90,12 +90,18 @@ class MainApp(npyscreen.NPSAppManaged):
             CoreScreen,
             name="Core deployment",
         )
-        self._forms["web"] = self.addForm("SECOND", WebScreen, name="Web deployment")
-        self._forms["db"] = self.addForm("THIRD", DBScreen, name="Database deployment")
+        self._forms["web"] = self.addForm(
+            "SECOND", WebScreen, name="Web deployment"
+        )
+        self._forms["db"] = self.addForm(
+            "THIRD", DBScreen, name="Database deployment"
+        )
         self._forms["freva_rest"] = self.addForm(
             "FOURTH", FrevaRestScreen, name="Freva Rest deployment"
         )
-        self._setup_form = self.addForm("SETUP", RunForm, name="Apply the Deployment")
+        self._setup_form = self.addForm(
+            "SETUP", RunForm, name="Apply the Deployment"
+        )
 
     def exit_application(self, *args, **kwargs) -> None:
         value = npyscreen.notify_ok_cancel(
@@ -157,7 +163,9 @@ class MainApp(npyscreen.NPSAppManaged):
             the_selected_file = str(the_selected_file.expanduser().absolute())
             self.check_missing_config(stop_at_missing=False)
             self._setup_form.inventory_file.value = the_selected_file
-            self.save_config_to_file(save_file=the_selected_file, write_toml_file=True)
+            self.save_config_to_file(
+                save_file=the_selected_file, write_toml_file=True
+            )
 
     def _update_config(self, config_file: Path | str) -> None:
         """Update the main window after a new configuration has been loaded."""
@@ -165,7 +173,9 @@ class MainApp(npyscreen.NPSAppManaged):
         try:
             self.config = load_config(config_file)
         except Exception as error:
-            npyscreen.notify_ok(error, title=f"Error loading {config_file}")
+            npyscreen.notify_confirm(
+                str(error), title=f"Error loading {config_file}"
+            )
             return
         self.resetHistory()
         self.editing = True
@@ -214,6 +224,9 @@ class MainApp(npyscreen.NPSAppManaged):
             if value and "cfd" not in value.lower():
                 cert_files[key] = str(Path(value).expanduser().absolute())
         project_name = self._setup_form.project_name.value
+        deployment_method = self._setup_form.deployment_method.values[
+            self._setup_form.deployment_method.value
+        ]
         bools = {}
         for key, value in (
             ("ssh_pw", self._setup_form.use_ssh_pw.value),
@@ -230,6 +243,7 @@ class MainApp(npyscreen.NPSAppManaged):
             ssh_port = 22
         self.config["certificates"] = cert_files
         self.config["project_name"] = project_name or ""
+        self.config["deployment_method"] = deployment_method
         config = {
             **bools,
             **{
@@ -251,12 +265,17 @@ class MainApp(npyscreen.NPSAppManaged):
             config_tmpl = self.config
         config_tmpl["certificates"] = cert_files
         config_tmpl["project_name"] = project_name
+        config_tmpl["deployment_method"] = deployment_method
         for step, settings in self.config.items():
-            if step in ("certificates", "project_name"):
+            if step in ("certificates", "project_name", "deployment_method"):
                 continue
-            config_tmpl[step]["hosts"] = settings["hosts"]
-            for key, config in settings["config"].items():
-                config_tmpl[step]["config"][key] = config
+            for key, config in settings.items():
+                if isinstance(config, dict):
+                    table = tomlkit.inline_table()
+                    table.update(config)
+                    config_tmpl[step][key] = table
+                else:
+                    config_tmpl[step][key] = config
         Path(self.save_file).parent.mkdir(exist_ok=True, parents=True)
         with open(self.save_file, "w") as f:
             toml_string = tomlkit.dumps(config_tmpl)

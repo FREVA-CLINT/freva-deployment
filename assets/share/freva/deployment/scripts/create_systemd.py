@@ -2,6 +2,7 @@
 import argparse
 import os
 import shlex
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -18,7 +19,9 @@ SYSTEMD_TMPL = dict(
         ExecStartPre='/bin/sh -c "{delete_command}"',
         ExecStart='/bin/sh -c "{container_cmd} {container_args}"',
         ExecStop='/bin/sh -c "{delete_command}"',
-        Restart="no",
+        Restart="on-failure",
+        RestartSec=5,
+        StartLimitBurst=5,
     ),
     Install=dict(WantedBy="default.target"),
 )
@@ -44,11 +47,24 @@ def parse_args() -> Tuple[str, str, List[str], bool]:
         default=False,
         help="Do not restart but only start the unit",
     )
+    app.add_argument(
+        "--print-unit-only",
+        action="store_true",
+        default=False,
+        help="Only print the unit that would be created and started.",
+    )
     args, other = app.parse_known_args()
     enable = args.enable
     if os.environ.get("DEBUG", "false").lower() == "true":
         enable = False
-    return " ".join(other), args.name, args.requires, enable, args.gracious
+    return (
+        " ".join(other),
+        args.name,
+        args.requires,
+        enable,
+        args.gracious,
+        args.print_unit_only,
+    )
 
 
 def _parse_dict(tmp_dict: Dict[str, Dict[str, str]]) -> str:
@@ -61,13 +77,20 @@ def _parse_dict(tmp_dict: Dict[str, Dict[str, str]]) -> str:
 
 
 def load_unit(
-    unit: str, content: str, enable: bool = True, gracious: bool = False
+    unit: str,
+    content: str,
+    enable: bool = True,
+    gracious: bool = False,
+    print_unit_only: bool = False,
 ) -> None:
     """Load a given systemd unit."""
     files = (
         "/etc/systemd/system/{}.service".format(unit),
         "~/.local/share/systemd/user/{}.service".format(unit),
     )
+    if print_unit_only:
+        print(content)
+        return
     flags = ("", "--user")
     for file, flag in zip(files, flags):
         out_file = Path(file).expanduser()
@@ -93,28 +116,70 @@ def load_unit(
 
 def get_container_cmd(args: str) -> Tuple[str, str]:
     """Get the correct container command for the system."""
-    path = os.environ.get("PATH", "") + ":" + "/usr/local/bin"
-    env = os.environ.copy()
-    env["PATH"] = path
-    cmd = ["/tmp/docker-or-podman", "--print-only"] + shlex.split(args)
-    res = subprocess.run(
-        cmd,
-        check=True,
-        stdout=subprocess.PIPE,
-        env=env,
+
+    def _get_container_cmd(path: str) -> str:
+        prefer = os.getenv("PREFER") or "podman"
+        for cmd in (prefer,) + ("podman", "docker"):
+            container_cmd = shutil.which(cmd, path=path)
+            if container_cmd:
+                return cmd
+        raise ValueError("Docker or Podman must be installed")
+
+    home_bin = os.path.join(os.path.expanduser("~"), ".local", "bin")
+    path = (
+        os.environ.get("PATH", "")
+        + os.pathsep
+        + "/usr/local/bin"
+        + os.pathsep
+        + home_bin
     )
-    out = res.stdout.decode().split()
-    if out:
-        return out[0], " ".join(out[1:])
-    return "", ""
+    container_cmd = _get_container_cmd(path)
+    args_list = shlex.split(args)
+    if "compose" in args_list:
+        proc = subprocess.run(
+            [container_cmd, "compose"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+        )
+        if "podman" in container_cmd:
+            container_cmd = "podman-compose"
+            args_list = [a for a in args_list if a != "compose"]
+        if proc.returncode != 0:
+            _ = args_list.pop(args_list.index("compose"))
+            compose_cmd = f"{container_cmd}-compose"
+            command = shutil.which(compose_cmd)
+            if not command:
+                for cmd in ("ensurepip", f"pip install {compose_cmd}"):
+                    try:
+                        subprocess.check_call(
+                            shlex.split("python3 -m " + cmd),
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE,
+                        )
+                    except (subprocess.CalledProcessError, FileNotFoundError):
+                        txt = (
+                            f"{container_cmd} is available but not {compose_cmd}"
+                            " which should be installed on the system."
+                        )
+                        print(txt, file=sys.stderr)
+                        raise ValueError(txt)
+            container_cmd = compose_cmd
+    container_path = shutil.which(container_cmd) or container_cmd
+    return container_path, " ".join(args_list)
 
 
 def create_unit(
-    args: str, unit: str, requires: List[str], enable: bool, gracious: bool
+    args: str,
+    unit: str,
+    requires: List[str],
+    enable: bool,
+    gracious: bool,
+    print_unit_only: bool = False,
 ) -> None:
     """Create the systemd unit."""
     container_cmd, container_args = get_container_cmd(args)
-    cmd = args.split()
+    cmd = shlex.split(args)
     if "compose" in cmd and "up" in cmd:
         new_cmd = []
         for word in cmd:
@@ -150,7 +215,13 @@ def create_unit(
                 SYSTEMD_TMPL["Unit"][key] += " {}.service".format(service)
             except KeyError:
                 SYSTEMD_TMPL["Unit"][key] = " {}.service".format(service)
-    load_unit(unit, _parse_dict(SYSTEMD_TMPL), enable, gracious=gracious)
+    load_unit(
+        unit,
+        _parse_dict(SYSTEMD_TMPL),
+        enable,
+        gracious=gracious,
+        print_unit_only=print_unit_only,
+    )
 
 
 if __name__ == "__main__":

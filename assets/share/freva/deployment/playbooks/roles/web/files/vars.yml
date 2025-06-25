@@ -1,0 +1,42 @@
+---
+service: web
+ansible_become: "{{ web_ansible_become_user is defined and web_ansible_become_user != '' }}"
+ansible_become_user: "{{ web_ansible_become_user | default('root') }}"
+ansible_python_interpreter: "{{ web_ansible_python_interpreter }}"
+admin_user: "{{ web_admin_user | default('') }}"
+base_path: '{{web_data_path| regex_replace("^~", ansible_env.HOME)}}'
+systemd_unit_dir: "{{ '/etc/systemd/system' if  web_ansible_become_user is defined and web_ansible_become_user != '' else ansible_env.HOME + '/.config/systemd/user' }}"
+web_name: "{{ project_name }}-web"
+web_cache_name: "{{ project_name }}-web-cache"
+web_proxy_name: "{{ project_name }}-web-proxy"
+web_config_file: "{{ core_root_dir | regex_replace('^~', ansible_env.HOME)}}/freva/web/freva_web_conf.toml"
+compose_file: '{{web_data_path|regex_replace("^~", ansible_env.HOME)}}/{{project_name}}/compose_services/{{web_name}}-compose.yml'
+old_compose_dir: '{{web_data_path|regex_replace("^~", ansible_env.HOME)}}/compose_services'
+data_dir: '{{ base_path }}/{{ project_name }}/services/{{service}}'
+conda_path: '{{ data_dir }}/app/conda'
+wipe: true
+
+conda_packages:
+  - redis-server
+  - nginx
+  - mamba
+  - libxcrypt1
+  - webpack-cli
+  - nodejs
+  - openssl
+
+pip_packages:
+  - django-datatable-view
+  - django-templated-email
+  - django-debug-toolbar-user-panel
+  - django-compressor
+  - django-bootstrap-v5
+  - django-model-utils
+  - djproxy
+
+volume_names:
+  - "{{ web_name }}_django-static"
+  - "{{ web_name }}_logs"
+
+web_port_httpd: "{{ '80' if ansible_become_user == 'root' or ansible_user == 'root' else '8080' }}"
+web_port_httpsd: "{{ '443' if ansible_become_user == 'root' or ansible_user == 'root'  else '8443' }}"

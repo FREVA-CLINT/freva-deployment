@@ -1,29 +1,54 @@
-FROM docker.io/hashicorp/vault:latest
+FROM docker.io/mambaorg/micromamba:latest AS vault-builder
 ARG VERSION
+USER root
+ENV PATH=/opt/conda/bin:$PATH
+
+RUN set -eux && \
+    micromamba install -q -y -c conda-forge --override-channels go curl jq\
+    && micromamba clean -a -y
+
+# Set working directory
+WORKDIR /build
+
+# Fetch latest Vault source code
+RUN curl -sSL $(curl -s https://api.github.com/repos/hashicorp/vault/releases/latest | jq -r '.tarball_url') | tar xz --strip-components=1
+
+# Build Vault
+RUN set -eux \
+    && mkdir -p /vault-bin \
+    && CGO_ENABLED=0 GO111MODULE=on go build \
+    -buildmode=pie \
+    -trimpath \
+    -modcacherw \
+    -o /vault-bin/vault \
+    -ldflags="-s -w"
+
+
+FROM docker.io/mambaorg/micromamba
+ARG VERSION
+USER root
 LABEL org.opencontainers.image.authors="DRKZ-CLINT"
 LABEL org.opencontainers.image.source="https://github.com/FREVA-CLINT/freva-deployment.git"
 LABEL org.opencontainers.image.version="$VERSION"
 
 ENV VAULT_ADDR='http://127.0.0.1:8200'
-ENV VERSION=$VERSION
-ENV HOME=/vault
-COPY runserver.py /bin/runserver.py
-COPY add-vault-secret /bin/add-vault-secret
-RUN apk add --update --no-cache gcc musl-dev python3-dev py3-pip libffi-dev build-base
-RUN set -ex &&\
-    mkdir -p /opt/vault && chown -R vault:vault /opt/vault &&\
-    chmod +x /bin/runserver.py /bin/add-vault-secret &&\
-    mkdir -p /data && chown -R vault:vault /data &&\
-    ln -sf python3 /usr/bin/python
-COPY --chown=vault:vault vault-server-tls.hcl /opt/vault/
-COPY --chown=vault:vault policy-file.hcl /opt/vault/
 
-RUN python3 -m pip install --break-system-packages --no-cache-dir --upgrade pip setuptools &&\
-    python3 -m pip install --break-system-packages --no-cache-dir hvac requests pyopenssl fastapi uvicorn &&\
-    rm -rf /root/.cache/pip /var/cache/apk/* /tmp/*
+WORKDIR /opt/vault
+
+COPY runserver.py /bin/runserver.py
+COPY --from=vault-builder /vault-bin/vault /bin/vault
+COPY add-vault-secret /bin/add-vault-secret
+COPY vault-server-tls.hcl /opt/vault/
+COPY policy-file.hcl /opt/vault/
+
+RUN set -eux \
+ && chmod +x /bin/runserver.py /bin/add-vault-secret \
+ && mkdir -p /vault/file \
+ && micromamba install -y -c conda-forge --override-channels fastapi pyopenssl uvicorn requests hvac \
+ && micromamba clean -a -y \
+ && chmod -R 1777 /vault && ln -s /opt/bin/python /bin/python
 
 EXPOSE 5002
-VOLUME /vault
-CMD python3 /bin/runserver.py &&\
+CMD python3 /bin/runserver.py && \
     uvicorn --workers 2 --app-dir /bin runserver:app \
     --host 0.0.0.0 --port 5002

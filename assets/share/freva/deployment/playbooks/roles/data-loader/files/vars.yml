@@ -1,0 +1,3 @@
+---
+systemd_unit_dir: "{{ '/etc/systemd/system' if  ansible_become_user is defined and ansible_become_user != '' else ansible_env.HOME + '/.config/systemd/user' }}"
+secrets_file: "{{ '/root' if ansible_become_user == 'root' else ansible_env.HOME}}/.data-portal-cluster-config.json"

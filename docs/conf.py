@@ -6,12 +6,15 @@
 
 # -- Path setup --------------------------------------------------------------
 
+import io
+
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
 import os
 import sys
+from contextlib import redirect_stderr, redirect_stdout
 from datetime import date
 
 # from recommonmark.parser import CommonMarkParser
@@ -20,7 +23,28 @@ sys.path.insert(0, os.path.abspath("."))
 sys.path.insert(0, os.path.abspath("../../src"))
 
 from freva_deployment import __version__
+from freva_deployment.cli import main_cli
 
+
+def get_cli_output(sub_cmd=""):
+    if sub_cmd:
+        cmd = [sub_cmd, "--help"]
+    else:
+        cmd = ["--help"]
+    command = f"deploy-freva {sub_cmd} --help"
+    buf = io.StringIO()
+    try:
+        with redirect_stderr(buf), redirect_stdout(buf):
+            main_cli(cmd)
+    except SystemExit:
+        pass
+    output = buf.getvalue()
+    return f"```console\n{command}\n{output}```"
+
+
+cli_tui = get_cli_output()
+cli_cmd = get_cli_output("cmd")
+cli_mig = get_cli_output("migrate")
 # -- Project information -----------------------------------------------------
 
 project = "freva-deployment"
@@ -41,7 +65,6 @@ extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.intersphinx",
     "sphinx.ext.napoleon",
-    #    "recommonmark",
     "sphinx_copybutton",
     "sphinx_togglebutton",
 ]
@@ -81,10 +104,6 @@ html_sidebars = {
     ],  # This ensures we test for custom sidebars
 }
 
-# source_parsers = {
-#    ".md": CommonMarkParser,
-# }
-# source_suffix = [".rst", ".md"]
 html_theme_options = {
     "icon_links": [
         {
@@ -98,7 +117,6 @@ html_theme_options = {
             "icon": "fa-custom fa-pypi",
         },
     ],
-    # "navbar_start": [],  # Remove navigation links from the top bar
     "navbar_center": ["navbar-nav"],  # Add navigation links to the left sidebar
     "collapse_navigation": False,
     "navigation_depth": 4,
@@ -117,6 +135,9 @@ myst_heading_anchors = 2
 myst_substitutions = {
     "rtd": "[Read the Docs](https://readthedocs.org/)",
     "version": __version__,
+    "cli_tui": cli_tui,
+    "cli_cmd": cli_cmd,
+    "cli_mig": cli_mig,
 }
 myst_url_schemes = {
     "http": None,
@@ -128,7 +149,7 @@ myst_url_schemes = {
 rst_prolog = """
 .. version replace:: {version}
 """.format(
-    version=__version__
+    version=__version__,
 )
 
 # ReadTheDocs has its own way of generating sitemaps, etc.

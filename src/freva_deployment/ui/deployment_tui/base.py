@@ -4,6 +4,7 @@ import curses
 import json
 import logging
 import os
+import re
 from pathlib import Path
 from typing import Any, Optional, cast
 
@@ -21,11 +22,16 @@ class InfoMixin(Widget):
     """Mixin class to extend npyscreen widgets with an infobox."""
 
     def __init__(
-        self, *args: Any, section: str = "", key: str = "", **kwargs: Any
+        self,
+        *args: Any,
+        section: str = "",
+        key: str = "",
+        info: str = "",
+        **kwargs: Any,
     ) -> None:
         name = kwargs.get("name", "Select")
         kwargs["name"] = f"{name}. Press Strg+F for more info."
-        self.info = AD.get_config_info(section, key)
+        self.info = info or AD.get_config_info(section, key)
         super().__init__(*args, **kwargs)
 
     def edit(self) -> None:
@@ -35,6 +41,68 @@ class InfoMixin(Widget):
 
 class TextInfo(InfoMixin, npyscreen.TitleText):
     """Extend the TitleText widget by an infobox."""
+
+
+class DictInfo(npyscreen.TitleText):
+    """Extend the TitleText widget by an infobox."""
+
+    def __init__(
+        self,
+        *args: Any,
+        section: str = "",
+        key: str = "",
+        info: str = "",
+        value: Optional[dict[str, list[str]]] = None,
+        **kwargs: Any,
+    ) -> None:
+        name = kwargs.get("name", "Select")
+        kwargs["name"] = f"{name}. Press Strg+F for more info."
+        self.info = info or AD.get_config_info(section, key)
+        try:
+            value_str = tomlkit.dumps(value or {}).strip().replace('"', "")
+        except Exception:
+            value_str = ""
+        super().__init__(
+            *args,
+            value=value_str,
+            **kwargs,
+        )
+
+    def edit(self) -> None:
+        self.parent.current_info = self.info
+        super().edit()
+
+    @property
+    def dict_value(self) -> dict[str, list[str]]:
+        result: dict[str, list[str]] = {}
+        # Replace colons with '=' to mimic TOML inline table
+        user_input = super().value
+        cleaned = re.sub(r"(\w+)\s*:", r"\1 =", user_input)
+        # Quote bare words (values like aa, bb)
+        cleaned = (
+            "{"
+            + (
+                re.sub(
+                    r'(?<!["\'])\b([a-zA-Z_][a-zA-Z0-9_-]*)\b(?!["\'])',
+                    r'"\1"',
+                    cleaned,
+                )
+                .lstrip("{")
+                .rstrip("}")
+            )
+            + "}"
+        )
+        try:
+            toml_res: dict[str, Any] = tomlkit.loads(f"result = {cleaned}")
+        except Exception:
+            toml_res = {}
+        for key, values in (toml_res.get("result") or {}).items():
+            if isinstance(values, str):
+                result[key] = [values]
+            else:
+                result[key] = values
+
+        return result
 
 
 class FileInfo(InfoMixin, npyscreen.TitleFilename):
@@ -157,24 +225,10 @@ class BaseForm(npyscreen.FormMultiPageWithMenus, npyscreen.FormWithMenus):
         try:
             cfg = self.parentApp.config[key].copy()
             if not isinstance(cfg, dict):
-                cfg = {"config": {}}
+                cfg = {}
         except (KeyError, AttributeError, TypeError):
-            cfg = {"config": {}}
-        cfg.setdefault("config", {})
-        for k, values in cfg["config"].items():
-            if values is None:
-                cfg["config"][k] = ""
-        return cfg["config"]
-
-    def get_host(self, key) -> str:
-        """Read the host name(s) from the main windows config."""
-        try:
-            host = self.parentApp.config[key]["hosts"]
-        except (TypeError, KeyError):
-            return ""
-        if isinstance(host, str):
-            host = [v.strip() for v in host.split(",") if v.strip()]
-        return ",".join(host)
+            cfg = {}
+        return cfg
 
     @property
     def num(self) -> str:
@@ -189,9 +243,11 @@ class BaseForm(npyscreen.FormMultiPageWithMenus, npyscreen.FormWithMenus):
         """Check if the from entries are valid."""
         config = {}
         for key, (obj, mandatory) in self.input_fields.items():
-            try:
+            if hasattr(obj, "dict_value"):
+                value = obj.dict_value
+            elif hasattr(obj, "values"):
                 value = obj.values[obj.value]
-            except AttributeError:
+            else:
                 value = obj.value
             if isinstance(value, str):
                 if not value and self.use.value and mandatory and notify:
@@ -199,11 +255,11 @@ class BaseForm(npyscreen.FormMultiPageWithMenus, npyscreen.FormWithMenus):
                     npyscreen.notify_confirm(msg, title="ERROR")
                     return None
             config[key] = value
-        cfg = dict(hosts=config.pop("hosts"))
-        cfg["config"] = config
-        for key, value in cfg["config"].items():
+        cfg = config.copy()
+        cfg = config
+        for key, value in cfg.items():
             if key in self.list_keys:
-                cfg["config"][key] = value.split(",")
+                cfg[key] = value.split(",")
         return cfg
 
     def draw_form(self) -> None:
@@ -267,9 +323,7 @@ class BaseForm(npyscreen.FormMultiPageWithMenus, npyscreen.FormWithMenus):
 
     def clear_cache(self):
         """Clear the app cache."""
-        with open(
-            self.parentApp.cache_dir / "freva_deployment.json", "w"
-        ) as f:
+        with open(self.parentApp.cache_dir / "freva_deployment.json", "w") as f:
             json.dump({}, f, indent=3)
         self.parentApp.reset()
 
@@ -290,9 +344,9 @@ class BaseForm(npyscreen.FormMultiPageWithMenus, npyscreen.FormWithMenus):
 
     def create(self) -> None:
         """Setup the form."""
-        self.how_exited_handers[
-            npyscreen.wgwidget.EXITED_ESCAPE
-        ] = self.parentApp.exit_application
+        self.how_exited_handers[npyscreen.wgwidget.EXITED_ESCAPE] = (
+            self.parentApp.exit_application
+        )
         self.add_handlers({"^F": self.show_info})
         self.add_handlers({"^O": self.parentApp.load_dialog})
         self.add_handlers({"^S": self.parentApp.save_dialog})

@@ -1,0 +1,29 @@
+---
+- name: Getting binaries
+  include_tasks: "paths.yml"
+
+- name: Ensure the user systemd directory exists
+  file:
+    path: "{{ systemd_unit_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: Writing redis-cache information
+  copy:
+    src: "{{ cache_secrets }}"
+    dest: "{{ secrets_file }}"
+    force: true
+
+- name: Creating systemd unit file
+  template:
+    src: "systemd-service.j2"
+    dest: "{{ systemd_unit_dir }}/data-loader@.service"
+    mode: '0644'
+
+- name: Starting data-loader {{ loader_service }}
+  systemd:
+    name: data-loader@{{ loader_service }}.service
+    daemon_reload: true
+    state: started
+    enabled: true
+    scope: "{{ 'system' if ansible_become_user == 'root' else 'user'}}"

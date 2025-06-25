@@ -1,0 +1,26 @@
+# MongoDB Configuration File
+
+# Where to store data.
+storage:
+  dbPath: {{ volume_dir }}/data/mongodb
+  journal:
+    enabled: true
+# Network interfaces.
+net:
+  port: 27017
+  bindIp: 0.0.0.0
+
+# Security settings.
+security:
+  authorization: enabled  # Enables role-based access control.
+
+# Process management.
+processManagement:
+  fork: false  # Run the MongoDB server as a daemon.
+  pidFilePath: {{ volume_dir }}/run/mongod.pid  # Location of the process ID file.
+
+# Logging.
+systemLog:
+  destination: file
+  logAppend: false
+  path: {{ log_path }}/mongodb/mongod.log

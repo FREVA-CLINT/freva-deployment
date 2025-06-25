@@ -13,7 +13,7 @@ from freva_deployment import __version__
 
 from ..deploy import DeployFactory
 from ..error import DeploymentError
-from ..logger import logger, set_log_level
+from ..logger import set_log_level
 from ..utils import config_dir
 from ..versions import VersionAction, display_versions
 
@@ -47,7 +47,7 @@ class BatchParser:
             default=["db", "freva-rest", "web", "core"],
             choices=["web", "core", "db", "freva-rest", "auto"],
             help=(
-                "The services/code stack to be deployed. Use [it]auto[/it]"
+                "The services/code stack to be deployed. Use [b]auto[/b]"
                 " to only deploy outdated services"
             ),
         )
@@ -99,6 +99,28 @@ class BatchParser:
             ),
         )
         self.parser.add_argument(
+            "-t",
+            "--tags",
+            type=str,
+            nargs="+",
+            default=None,
+            choices=[
+                "core",
+                "db",
+                "cache",
+                "data-loader",
+                "freva-rest",
+                "mongodb",
+                "search-server",
+                "pre-web",
+                "web",
+            ],
+            help=(
+                "Fine grain deployment. Instead of using steps you can "
+                "set those ansible tasks ([i]tags[/i]) to be deployed."
+            ),
+        )
+        self.parser.add_argument(
             "--cowsay",
             action="store_true",
             help="Let the cow speak!",
@@ -113,8 +135,11 @@ class BatchParser:
     def run_cli(args: argparse.Namespace) -> None:
         """Run the command line interface."""
         set_log_level(args.verbose)
+        steps = [s.replace("-", "_") for s in args.steps]
+        if args.tags:
+            steps = []
         with DeployFactory(
-            steps=[s.replace("-", "_") for s in args.steps],
+            steps=steps,
             config_file=args.config,
             local_debug=args.local,
             gen_keys=args.gen_keys,
@@ -126,6 +151,7 @@ class BatchParser:
                     args.verbose,
                     ssh_port=args.ssh_port,
                     skip_version_check=args.skip_version_check,
+                    tags=args.tags or None,
                 )
             except KeyboardInterrupt:
                 raise SystemExit(130)

@@ -1,0 +1,49 @@
+---
+- name: Ensure required paths exist
+  include_tasks: "{{ role_path }}/tasks/check-path.yml"
+  loop:
+    - { desc: "plugin results dir", path: "{{ core_preview_path }}" }
+    - { desc: "core config file", path: "{{ core_root_dir }}/freva/evaluation_system.conf" }
+  loop_control:
+    label: "{{ item.desc }}"
+
+- name: Running common taks
+  include_tasks: "common_tasks.yml"
+
+- name: Stopping the {{ web_name }} services
+  systemd:
+    name: "{{ item }}"
+    state: stopped
+    enabled: false
+    scope: "{{ 'system' if ansible_become is true else 'user'}}"
+  ignore_errors: true
+  failed_when: false
+  loop:
+    - "{{ web_name }}"
+    - "{{ web_cache_name }}"
+    - "{{ web_proxy_name }}"
+
+- name: Removing old services files
+  file:
+    state: absent
+    force: true
+    path: "{{ systemd_unit_dir }}/{{ item }}.service"
+  loop:
+    - "{{ web_name }}"
+    - "{{ web_cache_name }}"
+    - "{{ web_proxy_name }}"
+
+- name: Append port to CSRF trusted origins if port ≠ 443
+  set_fact:
+    web_csrf_trusted_origins: >-
+      {{
+        web_csrf_trusted_origins
+        if web_port_httpsd == 443 else
+        web_csrf_trusted_origins
+        | map('regex_replace', '$', ':' ~ web_port_httpsd)
+        | list
+      }}
+
+- name: Playing the {{ deployment_method }} tasks
+  include_tasks:
+    file: "{{ deployment_file | trim }}"

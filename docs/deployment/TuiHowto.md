@@ -1,13 +1,13 @@
 # Usage of the text user interface
-We have create a simple text user interface (tui) that helps you setting up a
+We have created a simple text user interface (tui) that helps you setting up a
 Freva instance at your institution. At this stage the documentation assumes that
-you have installed the necessary server infrastructure and pre-requisites.
+you have familiarised yourself with the necessary server infrastructure and pre-requisites.
 Please refer to the [installation](Installation) and [configuration section](Configure)
 for more details.
 
 After [Installation](Installation) the command `deploy-freva` will open
-the tui. The tui is organized in five different screens. The first four screens
-are used to configure the services (core, solr, database, web) the last screen
+the tui. The tui is organised in five different screens. The first four screens
+are used to configure the services (core, database, freva-rest, web) the last screen
 (run screen) configures variables that are common amongst all services.
 The code of the tui is written using the [npyscreen](https://npyscreen.readthedocs.io/index.html)
 library.
@@ -28,37 +28,40 @@ a `^` which indicates `CTRL+`, main shortcuts are:
 - `CTRL+r`: Got to the *run* screen.
 - `CTRL+d`: Clear the application cache.
 - `CTRL+e`: Exit application.
-> ``💡`` The load/save forms can be exited by pressing the `<TAB>` key
+
+:::{tip}
+The load/save forms can be exited by pressing the `<TAB>` key
 which will get you to input field at the bottom of the screen. If the input
 field has text delete it an press the `<ESC>` key, this will bring you get to
 the screen where you started.
+:::
+
 
 Some variables need to be set for the deployment setup while others don't and
 can be configured later.
 
 ## Core setup
-The first screen configures the setup of Freva at the HPC system. We refer to
-this step as the *core* deployment. At the top of the screen you'll see a tick
-box, which indicates whether or not this step is used for deployment. If this
-box is *un*ticked - tick/untick using the `<SPACE>` key - the deployment will
-skip the core installation on the HPC system. The following explains the
-essential setup steps:
+The first screen configures the setup of Freva client library at the HPC system.
+We refer to this step as the *core* deployment. At the top of the
+screen you'll see a tick box, which indicates whether or not this step is
+used for deployment. If this box is *un*ticked - tick/untick using the `<SPACE>`
+key - the deployment will skip the core installation on the HPC system.
+The following explains the essential setup steps:
 
 ![](_static/tui_core.png)
 
 1. The host name(s) where the core installation is executed. You can use all
    [multi host patterns](https://docs.ansible.com/ansible/latest/user_guide/intro_patterns.html#common-patterns)
    that ansible supports.
-1. The installation directory of the anaconda environment where the
+1. The installation directory of the conda-forge environment where the
    `freva` python library shall be installed installed.
 1. Set the directory where project specific configuration is stored. See also
    the `root_dir` description in the
-   [basic configuration section](Folders.html#configuring-the-evaluation-system-section).
+   [Basic configuration section](eval-conf).
 1. Set the user plugin output directory. If you want to use a *local* output
    directory structure you can leave this variable blank. See also the
-   [basic configuration section](Folders.html#configuring-the-evaluation-system-section).
-1. Set the preview path mentioned in the
-   [basic configuration section](Folders.html#configuring-the-evaluation-system-section).
+   [Basic configuration section](eval-conf).
+1. Set the preview path mentioned in the [Basic configuration section](eval-conf).
 1. Set the workload manager system from the dropdown menu.
 1. Set the output directory of the `stdout`/`stderr` of the workload manger.
    ``💡`` the workload manager type, like pbs, will be automatically
@@ -95,16 +98,18 @@ essential setup steps:
    such as `/usr/bin/git`.
 
 
-> ``💡`` Press CTRL+f for *f*urther information on each configuration item.
+:::{tip}
+Press CTRL+f for *f*urther information on each configuration item.
+:::
 
 ### Notes on the core setup
-It is good practice to use only one anaconda environment for multiple Freva
+It is good practice to use only one conda-forge environment for multiple Freva
 instances. Each Freva instance only differs in its configuration
 (`evaluation_system.conf`)
 
 ## Web ui setup
 The second screen configures the setup web ui. At the top of the screen
-you'll see a tick box, which indicates whether or not this step is used for
+you'll see a tick box, that indicates whether or not this step is used for
 deployment. If this box is *un*ticked - tick/untick using the `<SPACE>` key -
 the deployment will skip the web ui setup entirely. The following explains the
 essential setup steps:
@@ -113,8 +118,9 @@ essential setup steps:
 
 1. The host name where the web ui should be installed. This should be a single
    host name.
-1. Set the path where the permanent database data should be stored.
-   By default, this is set to `/opt/freva/<project_name>/web_service`.
+1. Set the path where the persitent data should be stored. This settings
+   will only come into effect for `conda` based deployments.
+1. User name that should own the persistent data (admin-user).
 1. The url the web ui can be accessed. Users will use this url to get access
    to the url.
 1. Main html color scheme.
@@ -132,17 +138,15 @@ essential setup steps:
 1. Host name(s) - usually HPC login node(s) - the web backend code submits
    plugin jobs from. The backend will logon to this host name and submit a
    plugin job.
-1. If you want to customise the installation process you can set the path
-   to a custom ansible playbook here. If this is set then the deployment
-   will use this playbook instead of the default playbook that ships with
-   the system. Leave blank for default behaviour.
 1. Set the path to the `python3.4+` binary, this should be set if the python
    binary is not part of the `$PATH` variable.
 1. Set the user name that should execute the container commands, defaults
    to root. Leave blank if no special user is needed.
 1. Set the login user name for the remote machine.
 
-> ``💡`` Press CTRL+f for *f*urther information on each configuration item.
+:::{tip}
+Press CTRL+f for *f*urther information on each configuration item.
+:::
 
 ### Notes on the web ui setup
 Currently there are ties between the core running on the HPC machine and
@@ -162,14 +166,11 @@ an instance of Freva has been deployed on `/work/clex/freva-clex` then
 this directory should be available via the same path on the machine running
 the web ui application. The same applies to all paths defined in the
 plugin section in the `evaluation_system.conf`. Please also refer to the
-[Architecture section](Architecture.html#web-based-user-interface) for more
-information.
+[Architecture section](web-ui) for more information.
 
 The web ui application service needs two more services, that are
 automatically set up. Those are a redis service, which is used as a database
 query cache and an apache httpd service that is used as reverse proxy.
-The httpd configuration for the reverse proxy will be saved
-`<datat_dir>/<project_name>/web_service/`.
 
 During the deployment process of the web ui you will be ask your login
 credentials for the smtp email server. An email server is necessary because
@@ -192,26 +193,26 @@ following explains the essential setup steps:
 
 1. The host name where the freva-rest server should be installed. This should be a single
    host name.
+1. The host name where the search backend server should be set up.
+1. The host name where the mongoDB server should be set up.
+1. The host name where the redis broker should be set up (optional)
 1. Tick this box (`<SPACE>`) if you want to delete any pre existing databrowser data.
-1. Select how much memory you want to allocate for the databrowser server process.
+1. Select how much memory you want to allocate for the search backend process.
 1. Select the port the freva-rest server is running on.
-1. Set the path where the permanent database data should be stored.
-   By default, this is set to `/opt/freva/<project_name>/freva_rest_service`.
-1. If you want to customise the installation process you can set the path
-   to a custom ansible playbook here. If this is set then the deployment
-   will use this playbook instead of the default playbook that ships with
-   the system. Leave blank for default behaviour.
+1. The user name (admin-user) that should own persitent data and run the serivces.
+1. Set the path where persistent data should be stored. This settings will
+   only have an effect for conda based deployments.
+1. The host name(s) - comma separated - where the zarr streaming server should be
+   set up (optional).
 1. URL of the openid-connect service that manages the user authentication
 1. Client name of the openid-connect service, defaults to `freva`.
 1. Client secret of the open-connect service, you can leave this blank if
    the client doesn't require any secrets.
-1. Set the path to the `python3.4+` binary, this should be set if the python
-   binary is not part of the `$PATH` variable.
 1. Set the user name that should execute the container commands, defaults
    to root. Leave blank if no special user is needed.
+1. Set the path to the `python3.4+` binary, this should be set if the python
+   binary is not part of the `$PATH` variable.
 1. Set the login user name for the remote machine.
-
-> ``💡`` Press CTRL+f for *f*urther information on each configuration item.
 
 ### Notes on the freva-rest setup
 Any existing data is *not* overridden if you deploy
@@ -229,25 +230,26 @@ following explains the essential setup steps:
 
 ![](_static/tui_db.png)
 
+1. Tick this box (`<SPACE>`) if you want to delete any pre existing databases.
 1. The host name where the database server should be installed. This should be a single
    host name.
-1. Tick this box (`<SPACE>`) if you want to delete any pre existing databases.
+1. The host name whre the vault server should be installed. Defaults to the DB
+   host name.
+1. Delete all existing, persistent data.
 1. Set the database user name.
 1. Set the database name.
 1. Set the port the database server is running on.
-1. Set the path where the permanent database data should be stored.
-   By default, this is set to `/opt/freva/<project_name>/db_service`.
-1. If you want to customise the installation process you can set the path
-   to a custom *database* ansible playbook here. If this is set then the
-   deployment will use this playbook instead of the default playbook that
-   ships with the system. Leave blank for default behaviour.
+1. Set the path where the persistent data should be stored. This settings
+   will only have an effect if a conda-based deployment is chosen.
 1. Set the user name that should execute the container commands, defaults
    to root. Leave blank if no special user is needed.
 1. Set the path to the `python3.4+` binary, this should be set if the python
    binary is not part of the `$PATH` variable.
 1. Set the login user name for the remote machine.
 
-> ``💡`` Press CTRL+f for *f*urther information on each configuration item.
+:::{tip}
+Press CTRL+f for *f*urther information on each configuration item.
+:::
 
 ### Notes on the database setup
 This step also includes the deployment of a vault service where all information
@@ -268,12 +270,9 @@ available:
 
 1. Set a unique project name for this specific Freva instance, for example
    `clex-ces`.
+1. The deployment method you want to choose.
 1. If desired you can save the already configured settings to a
 [`toml`](https://toml.io/en/) configuration file.
-1. If you've set up a service that keeps track of all installed Freva instances
-at your institution you can specify the host name here. Please refer to the
-[service map section](Installation.html#setting-up-a-service-that-maps-the-server-structure-optional)
-for more details.
 1. Select the path to the public certificate files.
 1. Select the path to the private certificate file - this is only needed if you
    wish to deploy the web ui.

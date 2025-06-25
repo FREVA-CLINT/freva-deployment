@@ -1,11 +1,7 @@
 #!/bin/bash
 # Simple script that lets us inspect stuff
 #
-if [ $(whoami) == "root" ];then
-    order=(docker podman)
-else
-    order=(podman docker)
-fi
+order=(podman docker)
 path=""
 for cmd in ${order[*]};do
     if [ "$(which $cmd 2> /dev/null)" ];then
@@ -17,14 +13,19 @@ if [ -z "$path" ];then
     echo "Docker nor Podman on the system."
     exit 1
 fi
-if [ "$($path image ls --filter reference=$1)" ];then
-    tag=$($path image ls --filter reference=$1|awk '{print $2}'|grep -iv tag|grep -iv none|grep -iv latest|sort | tail -n 1)
-    if [ $tag ];then
-        version=$($path inspect $1:$tag --format='{{index .Config.Labels "org.opencontainers.image.version"}}')
+image=$($path image ls --filter reference=$1 --format "table {{.Tag}}" | grep -iv tag 2> /dev/null)
+if [ "$image" ];then
+    tag=$(echo $image|awk '{print $0}')
+    if [ "$tag" ];then
+        version=$($path inspect $1:$tag --format='{{index .Config.Labels "org.opencontainers.image.version"}}' 2> /dev/null)
         if [ "$version" ];then
             echo $version
+            exit 0
         else # Fall back
             echo $tag
+            exit 0
         fi
     fi
+else
+    echo ""
 fi

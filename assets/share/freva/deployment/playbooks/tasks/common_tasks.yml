@@ -1,0 +1,85 @@
+---
+- name: Getting binaries
+  include_tasks: "paths.yml"
+
+- name: Set admin user variable
+  set_fact:
+    admin_user: >
+        {{ admin_user | trim
+          if (admin_user is defined and admin_user | length > 0 and ansible_become | default(false) and ansible_become_user | default('root') == 'root')
+          else ansible_user | trim
+        }}
+
+- name: Get UID
+  command: id -u {{ admin_user }}
+  register: uid_result
+
+- name: Get GID
+  command: id -g {{ admin_user }}
+  register: gid_result
+
+- name: Get primary group of admin_user
+  command: id -gn {{ admin_user }}
+  register: admin_group_result
+  changed_when: false
+
+- name: Set UID and GID as facts
+  set_fact:
+    uid: "{{ uid_result.stdout }}"
+    gid: "{{ gid_result.stdout }}"
+    admin_group: "{{ admin_group_result.stdout }}"
+
+- name: Creating base paths
+  file:
+    state: directory
+    path: "{{ item }}"
+    owner: "{{ uid }}"
+    group: "{{ gid }}"
+  loop:
+    - "{{ base_path }}"
+    - "{{ base_path }}/{{ project_name }}"
+
+- name: Ensure the user systemd directory exists
+  file:
+    path: "{{ systemd_unit_dir }}"
+    state: directory
+    mode: "0755"
+  when: systemd_unit_dir is defined
+
+- name: Removing old compose directory structure
+  file:
+    path: "{{ item }}"
+    state: absent
+    force: true
+  loop:
+    - "{{ old_compose_dir }}"
+    - "{{ base_path }}/freva-service-config"
+  when: base_path | length > 0 and old_compose_dir | length > 0
+
+- name: Registering systemctl path
+  stat:
+    path: /usr/bin/systemctl
+  register: systemctl
+
+- name: Registering anacron path
+  stat:
+    path: /etc/cron.daily
+  register: cron
+
+- name: Removing old service-config directory
+  file:
+    state: absent
+    path: "{{ base_path }}/freva-service-config"
+  when: base_path | length > 0
+
+- name: Migrating volume directories
+  script: >
+    {{ asset_dir }}/scripts/migrate-volumes.sh
+    --service {{ service }}
+    --engine {{ deployment_method }}
+    --old-parent-dir {{ base_path }}
+    --project-name {{ project_name }}
+  register: migration_result
+  failed_when: migration_result.rc not in [0, 3]
+  changed_when: migration_result.rc == 3
+  when: service | length > 0 and base_path | length > 0

@@ -1,71 +1,123 @@
 ---
 - hosts: freva_rest
   vars:
-    ansible_become_user: "{{ freva_rest_ansible_become_user | default('root') }}"
-    ansible_user: "{{freva_rest_ansible_user}}"
+    image: "ghcr.io/freva-clint/freva-rest-api"
+    service_command: "freva-rest-server -V | awk '{print $NF}'"
+    role: "freva-rest"
+    ansible_become_user: "{{ freva_rest_ansible_become_user }}"
+    ansible_user: "{{ freva_rest_ansible_user }}"
   tasks:
-    - name: Get freva-rest-api version
-      ansible.builtin.script:
-        cmd: "{{ asset_dir }}/scripts/inspect.sh ghcr.io/freva-clint/freva-rest-api"
-      become: "{{ freva_rest_ansible_become_user | default('root') is defined and freva_rest_ansible_become_user | default('root') != '' }}"
-      register: freva_rest
-    - name: Display freva-rest-api version
+    - name: Include role vars
+      include_vars: "{{asset_dir}}/playbooks/roles/{{ role }}/files/vars.yml"
+
+    - name: Checking container versions
+      script: >
+        {{ asset_dir }}/scripts/inspect.sh {{ image }}
+      become: "{{ ansible_become_user | default('root') is defined and ansible_become_user | default('root') != '' }}"
+      register: version_container
+      when: deployment_method in ["docker", "podman"]
+
+    - name: Checking conda versions
+      shell: "{{ service_command }} 2>/dev/null || true"
+      become: "{{ ansible_become_user | default('root') is defined and ansible_become_user | default('root') != '' }}"
+      environment:
+        PATH: "{{conda_path}}/bin:{{ ansible_env.PATH }}"
+      register: version_cmd
+      when: deployment_method == "conda"
+
+    - name: Display freva_rest version
       debug:
-        msg: "{{ freva_rest.stdout }}"
-    - name: Get solr version
-      register: solr
-      ansible.builtin.script:
-        cmd: "{{ asset_dir }}/scripts/inspect.sh solr"
-      become: "{{ freva_rest_ansible_become_user | default('root') is defined and freva_rest_ansible_become_user | default('root') != '' }}"
-    - name: Display solr version
+        msg: "{{ version_container.stdout }}"
+      when: deployment_method in ["docker", "podman"]
+
+    - name: Display freva_rest version
       debug:
-        msg: "{{ solr.stdout }}"
+        msg: "{{ version_cmd.stdout }}"
+      when: deployment_method == "conda"
 
 - hosts: web
   vars:
-    ansible_become_user: "{{ web_ansible_become_user | default('root') }}"
-    ansible_user: "{{web_ansible_user}}"
+    ansible_become_user: "{{ web_ansible_become_user }}"
+    ansible_user: "{{ web_ansible_user }}"
+    image: "ghcr.io/freva-clint/freva-web"
+    service_command: >
+      {{ansible_python_interpreter}} -c
+      "import json; print(json.load(open('{{data_dir}}/app/package.json')).get('version', '0.0.0'))"
+    role: "web"
   tasks:
-    - name: Get web version
-      register: web
-      ansible.builtin.script:
-        cmd: "{{ asset_dir }}/scripts/inspect.sh ghcr.io/freva-clint/freva-web"
-      become: "{{ web_ansible_become_user | default('root') is defined and web_ansible_become_user | default('root') != '' }}"
+    - name: Include role vars
+      include_vars: "{{asset_dir}}/playbooks/roles/{{ role }}/files/vars.yml"
+
+    - name: Checking container versions
+      script: >
+        {{ asset_dir }}/scripts/inspect.sh {{ image }}
+      become: "{{ ansible_become_user | default('root') is defined and ansible_become_user | default('root') != '' }}"
+      register: version_container
+      when: deployment_method in ["docker", "podman"]
+
+    - name: Checking conda versions
+      shell: "{{ service_command }} 2>/dev/null || echo"
+      become: "{{ ansible_become_user | default('root') is defined and ansible_become_user | default('root') != '' }}"
+      environment:
+        PATH: "{{conda_path}}/bin:{{ ansible_env.PATH }}"
+      register: version_cmd
+      when: deployment_method == "conda"
+
     - name: Display web version
       debug:
-        msg: "{{ web.stdout }}"
+        msg: "{{ version_cmd.stdout }}"
+      when: deployment_method == "conda"
 
-- hosts: db
+    - name: Display web version
+      debug:
+        msg: "{{ version_container.stdout }}"
+      when: deployment_method in ["docker", "podman"]
+
+
+- hosts: vault
   vars:
-    ansible_become_user: "{{ db_ansible_become_user | default('root') }}"
-    ansible_user: "{{db_ansible_user}}"
+    role: "vault"
+    ansible_become_user: "{{ vault_ansible_become_user }}"
+    ansible_user: "{{ vault_ansible_user }}"
   tasks:
+    - name: Include role vars
+      include_vars: "{{asset_dir}}/playbooks/roles/{{ role }}/files/vars.yml"
+
     - name: Get vault version
-      register: vault
-      ansible.builtin.script:
-        cmd: "{{ asset_dir }}/scripts/inspect.sh ghcr.io/freva-clint/freva-vault"
-      become: "{{ db_ansible_become_user | default('root') is defined and db_ansible_become_user | default('root') != '' }}"
+      register: version_cmd
+      shell:
+        cmd: >
+          {{ansible_python_interpreter}} -c "from urllib.request import urlopen;
+          import json;
+          conn=urlopen('http://localhost:5002/vault/status');
+          print(json.loads(conn.read().decode()).get('version', '0.0.0'));
+          conn.close()" 2> /dev/null || echo
+      become: false
+
     - name: Display vault version
       debug:
-        msg: "{{ vault.stdout }}"
-    - name: Get db version
-      register: db
-      ansible.builtin.script:
-        cmd: "{{ asset_dir }}/scripts/inspect.sh mariadb"
-      become: "{{ db_ansible_become_user | default('root') is defined and db_ansible_become_user | default('root') != '' }}"
-    - name: Display db version
-      debug:
-        msg: "{{ db.stdout }}"
+        msg: "{{ version_cmd.stdout }}"
 
 
 - hosts: core
   vars:
-    ansible_user: "{{core_ansible_user}}"
+    ansible_user: "{{ core_ansible_user }}"
+    ansible_become: false
+    ansible_facts_become: false
+  become: false
+  gather_facts: false
   tasks:
     - name: Get core version
       register: core
       shell:
-        cmd: "{{ core_install_dir | regex_replace('^~', ansible_env.HOME) }}/bin/freva -V 2> /dev/null | awk '{print $NF}';"
+        cmd: >
+          {{ core_install_dir | regex_replace('^~', lookup('env', 'HOME')) }}/bin/freva
+          -V 2> /dev/null | awk '{print $NF}';
+      environment:
+        PATH: "{{ core_install_dir }}/bin:{{ ansible_env.PATH }}"
+      become: false
+
     - name: Display core version
       debug:
         msg: "{{ core.stdout }}"
+      become: false

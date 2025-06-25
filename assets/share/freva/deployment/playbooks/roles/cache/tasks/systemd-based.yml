@@ -1,0 +1,73 @@
+---
+- name: Adjust infrastructure
+  shell:
+    cmd: >
+      echo 'vm.overcommit_memory = 1' | tee -a /etc/sysctl.conf &&
+      sysctl -p &&
+      sysctl vm.overcommit_memory=1
+  when: ansible_become and ansible_become_user == 'root'
+
+- name: Register config path
+  stat:
+    path: "{{ data_dir }}/config/data-portal-cluster-config.json"
+  register: config_path
+
+- name: Set fact
+  set_fact:
+    cache_deployment_method: "{{ deployment_method }}"
+
+- name: Set up caching
+  block:
+    - name: Running common taks
+      include_tasks: "common_tasks.yml"
+
+    - name: Register systmed unit file
+      stat:
+        path: "{{systemd_unit_dir}}/{{ cache_name }}.service"
+      register: systemd_file
+
+    - name: Stopping the {{ cache_name }} service
+      systemd:
+        name: "{{ cache_name }}"
+        state: stopped
+        enabled: false
+        scope: "{{ 'system' if ansible_become is true else 'user'}}"
+      ignore_errors: true
+      failed_when: false
+
+    - name: Removing old services files
+      file:
+        state: absent
+        force: true
+        path: "{{ systemd_unit_dir }}/{{ cache_name }}.service"
+
+    - name: Creating paths {{ data_dir }}
+      file:
+        state: directory
+        owner: "{{ uid }}"
+        group: "{{ gid }}"
+        recurse: true
+        path: "{{ data_dir }}/config"
+
+    - name: Writing redis-cache information to {{ data_dir }}
+      copy:
+        content: "{{ redis_information }}"
+        dest: "{{ data_dir }}/config/data-portal-cluster-config.json"
+        owner: "{{ uid }}"
+        group: "{{ gid }}"
+
+    - name: Overriding facts
+      set_fact:
+        deployment_file: "{{ role_path }}/tasks/{{('container-deployment.yml' if cache_deployment_method in ['docker', 'podman'] else 'conda-deployment.yml')| trim }}"
+
+    - name: Playing the {{ cache_deployment_method }} tasks
+      include_tasks:
+        file: "{{ deployment_file | trim }}"
+  when: not config_path.stat.exists
+
+
+- name: Copy cache config to {{ cache_secrets }}
+  fetch:
+    src: "{{ data_dir }}/config/data-portal-cluster-config.json"
+    dest: "{{ cache_secrets }}"
+    flat: true

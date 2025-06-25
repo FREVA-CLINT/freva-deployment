@@ -90,7 +90,9 @@ class CallbackModule(YamlCallback):
         """
         dump = {
             "task": result.task_name,
-            "result": strip_internal_keys(module_response_deepcopy(result._result)),
+            "result": strip_internal_keys(
+                module_response_deepcopy(result._result)
+            ),
         }
         single_line_json = json.dumps(dump).replace("\n", "").replace("\r", "")
         self.log_file.write(single_line_json + "\n")

@@ -7,28 +7,37 @@ What's new
    :maxdepth: 0
    :titlesonly:
 
+v2505.0.0
+~~~~~~~~~
+* Introduced ``conda-forge`` based deployment.
+  Instead of soley relying on deploying the micro-services within 
+  docker containers. The servers can be set up with help of conda-forge
+  environments.
+* More flexibility for setting up micro-services.
+* Internal playbook restructuring.
+
 v2410.0.3
-~~~~~~~~
+~~~~~~~~~
 * bug-fixes in ci and furnish readthedocs
 
 v2410.0.0
-~~~~~~~~
+~~~~~~~~~
 * Add a routine to reset the mongo root password
 * Add mongo user data facet validator
 
 v2408.0.1
-~~~~~~~~
+~~~~~~~~~
 * Some bug-fixes.
 
 
 v2408.0.0
-~~~~~~~~
+~~~~~~~~~
 * Add zarr-streaming deployment.
 * Implement openid-connect for authentication.
 
 
 v2407.3.0
-~~~~~~~~
+~~~~~~~~~
 * Bumped version of freva_rest to 2407.0.0
 
 

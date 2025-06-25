@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import os
 import re
 import shutil
@@ -10,10 +11,10 @@ import sys
 import sysconfig
 from pathlib import Path
 from typing import Any, Dict, MutableMapping, NamedTuple, Optional, Union, cast
+from urllib.request import urlopen
 
 import appdirs
 import namegenerator
-import requests
 import tomlkit
 from rich.console import Console
 from rich.prompt import Prompt
@@ -57,8 +58,12 @@ class AssetDir:
 
     def __init__(self):
         self._inventory_content = None
-        self._user_asset_dir = Path(appdirs.user_data_dir()) / "freva" / "deployment"
-        self._user_config_dir = Path(appdirs.user_config_dir()) / "freva" / "deployment"
+        self._user_asset_dir = (
+            Path(appdirs.user_data_dir()) / "freva" / "deployment"
+        )
+        self._user_config_dir = (
+            Path(appdirs.user_config_dir()) / "freva" / "deployment"
+        )
 
     @property
     def is_bundeled(self) -> bool:
@@ -175,17 +180,20 @@ def get_cache_information(
 ) -> Dict[str, str]:
     """Create all information we need to setup the redis cache and the data portal."""
     user = ssl_cert = ssl_key = ""
+    if redis_host:
+        keys = RandomKeys(
+            common_name=redis_host.rpartition("//")[-1].partition(":")[0]
+        )
+        user = namegenerator.gen()
+        ssl_cert = keys.certificate_chain.decode("utf-8")
+        ssl_key = keys.private_key_pem.decode("utf-8")
+
     if scheduler_host and scheduler_port:
         scheduler_host = f"{scheduler_host}:{scheduler_port}"
     if redis_host and redis_port:
         redis_host = f"redis://{redis_host}:{redis_port}"
     elif redis_host and not redis_port:
         redis_host = f"redis://{redis_host}"
-    if redis_host:
-        keys = RandomKeys(common_name=redis_host)
-        user = namegenerator.gen()
-        ssl_cert = keys.certificate_chain.decode("utf-8")
-        ssl_key = keys.private_key_pem.decode("utf-8")
     return {
         "ssl_cert": ssl_cert,
         "ssl_key": ssl_key,
@@ -234,24 +242,36 @@ def _update_config(
 
 def _create_new_config(inp_file: Path) -> Path:
     """Update any old configuration file to a newer version."""
-    config_str = inp_file.read_text()
     config = cast(
         Dict[str, Dict[str, Dict[str, Union[str, float, int, bool]]]],
-        tomlkit.loads(config_str),
+        tomlkit.loads(inp_file.read_text()),
     )
     keys_to_check = {
         "freva_rest": [
+            "freva_rest_host",
+            "search_server_host",
+            "mongodb_server_host",
             "redis_host",
             "oidc_url",
             "oidc_client",
             "oidc_client_secret",
+            "oidc_token_claims",
             "data_loader_portal_hosts",
-            "deploy_data_loader",
-        ]
+            "admin_user",
+        ],
+        "web": [
+            "web_host",
+            "admin_user",
+            "chatbot_host",
+        ],
+        "db": ["vault_host", "db_host", "admin_user"],
+        "core": ["core_host"],
     }
     create_backup = False
-    config_tmpl = cast(Dict[str, Any], tomlkit.loads(AD.inventory_file.read_text()))
-    # Legacy solr:
+    config_tmpl = cast(
+        Dict[str, Any], tomlkit.loads(AD.inventory_file.read_text())
+    )
+    # Legacy keys:
     if "solr" in config or "databrowser" in config:
         create_backup = True
         if "solr" in config:
@@ -263,17 +283,26 @@ def _create_new_config(inp_file: Path) -> Path:
                     ]["config"].pop(key)
         else:
             config["freva_rest"] = config.pop("databrowser")
-            config["freva_rest"]["config"]["freva_rest_port"] = config["freva_rest"][
-                "config"
-            ].pop("databrowser_port", "")
-            config["freva_rest"]["config"]["freva_rest_playbook"] = config[
+            config["freva_rest"]["config"]["freva_rest_port"] = config[
                 "freva_rest"
-            ]["config"].pop("databrowser_playbook", "")
+            ]["config"].pop("databrowser_port", "")
+
     for section, keys in keys_to_check.items():
+        if isinstance(config[section].get("config"), dict):
+            create_backup = True
+            config[section]["config"][f"{section}_host"] = str(
+                config[section]["hosts"]
+            )
+            config[section] = config[section]["config"]  # type: ignore
+        config[section].pop(f"{section}_playbook", "")
         for key in keys:
-            if key not in config_str:
-                config[section]["config"][key] = config_tmpl[section]["config"][key]
+            if key not in tomlkit.dumps(config):
+                config[section][key] = config_tmpl[section][key]
                 create_backup = True
+    for key in ("deployment_method",):
+        if key not in config:
+            create_backup = True
+            config[key] = config_tmpl[key]
     if create_backup:
         backup_file = inp_file.with_suffix(inp_file.suffix + ".bck")
         logger.info(
@@ -292,13 +321,15 @@ def load_config(inp_file: str | Path, convert: bool = False) -> dict[str, Any]:
     variables = cast(
         dict[str, str], tomlkit.loads(config_file.read_text())["variables"]
     )
-    config = tomlkit.loads(inp_file.read_text())
+    config = tomlkit.loads(inp_file.read_text(encoding="utf-8"))
     if convert:
         _convert_dict(config, variables, inp_file.parent)
     return config
 
 
-def get_setup_for_service(service: str, setups: list[ServiceInfo]) -> tuple[str, str]:
+def get_setup_for_service(
+    service: str, setups: list[ServiceInfo]
+) -> tuple[str, str]:
     """Get the setup of a service configuration."""
     for setup in setups:
         if setup.name == service:
@@ -306,15 +337,12 @@ def get_setup_for_service(service: str, setups: list[ServiceInfo]) -> tuple[str,
     raise ConfigurationError("Service not found")
 
 
-def read_db_credentials(
-    cert_file: Path, db_host: str, port: int = 5002
-) -> dict[str, str]:
+def read_db_credentials(db_host: str, port: int = 5002) -> dict[str, str]:
     """Read database config."""
-    with cert_file.open() as f_obj:
-        key = "".join([k.strip() for k in f_obj.readlines() if not k.startswith("-")])
-        sha = hashlib.sha512(key.encode()).hexdigest()
+    sha = hashlib.sha512("".encode()).hexdigest()
     url = f"http://{db_host}:{port}/vault/data/{sha}"
-    return requests.get(url).json()
+    with urlopen(url) as res:
+        return json.loads(res.read().decode())
 
 
 def get_email_credentials() -> tuple[str, str]:
@@ -336,7 +364,9 @@ def get_email_credentials() -> tuple[str, str]:
         if not username:
             username = Prompt.ask("[green b]Username[/] for mail server")
         if not password:
-            password = Prompt.ask("[green b]Password[/] for mail server", password=True)
+            password = Prompt.ask(
+                "[green b]Password[/] for mail server", password=True
+            )
     return username, password
 
 
@@ -394,7 +424,9 @@ def _create_passwd(min_characters: int, msg: str = "") -> str:
     """Create passwords."""
     master_pass = Prompt.ask(msg or password_prompt, password=True)
     _passwd_is_good(master_pass, min_characters)
-    master_pass_2 = Prompt.ask("[bold green]re-enter[/] master password", password=True)
+    master_pass_2 = Prompt.ask(
+        "[bold green]re-enter[/] master password", password=True
+    )
     if master_pass != master_pass_2:
         raise ValueError("Passwords do not match")
     return master_pass

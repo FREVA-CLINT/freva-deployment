@@ -17,7 +17,10 @@ def main():
             os.environ["ANSIBLE_COW_PATH"] = cow_exe
             break
     os.environ["PATH"] = os.environ["PATH"] + os.pathsep + path
-    main_cli()
+    try:
+        main_cli()
+    except (KeyboardInterrupt, SystemExit):
+        sys.exit(1)
 
 
 if __name__ == "__main__":
@@ -36,4 +39,6 @@ if __name__ == "__main__":
         locale.getlocale = lambda: ("UTF-8", "UTF-8")
         sys.getfilesystemencoding = lambda: "utf-8"
         os.environ["PYTHONIOENCODING"] = "utf-8"
+        os.environ["LC_ALL"] = "C"
+        os.environ["LANG"] = "C"
     main()

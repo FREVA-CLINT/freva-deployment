@@ -1,10 +1,10 @@
 import argparse
 from urllib.request import urlretrieve
 
-__version__ = "2410.0.3"
+__version__ = "2502.0.0"
 
-FREVA_PYTHON_VERSION = "3.12"
-AVAILABLE_PYTHON_VERSIONS = ["3.8", "3.9", "3.10", "3.11", "3.12"]
+FREVA_PYTHON_VERSION = "3.13"
+AVAILABLE_PYTHON_VERSIONS = ["3.9", "3.10", "3.11", "3.12", "3.13"]
 AVAILABLE_CONDA_ARCHS = [
     "linux-64",
     "linux-aarch64",
@@ -13,6 +13,11 @@ AVAILABLE_CONDA_ARCHS = [
     "osx-64",
     "osx-arm64",
 ]
+
+AUX_URL = (
+    "https://raw.githubusercontent.com/FREVA-CLINT/freva/main/assets/"
+    "evaluation_system.conf"
+)
 
 
 def download_auxiliry_data():
@@ -32,8 +37,7 @@ def download_auxiliry_data():
             print()
 
     urls = {
-        "https://raw.githubusercontent.com/FREVA-CLINT/"
-        "freva/main/assets/evaluation_system.conf": (
+        AUX_URL: (
             "assets/share/freva/deployment/config/evaluation_system.conf.tmpl"
         )
     }

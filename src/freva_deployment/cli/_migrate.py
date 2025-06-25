@@ -84,7 +84,7 @@ def _get_python_path_from_env() -> Path:
 
 def _add_new_db(db_config: dict[str, str], dump_file: str) -> None:
     dump_cmd = (
-        f"mysql -h {db_config['db.host']} -u {db_config['db.user']} "
+        f"mariadb --ssl=0 -h {db_config['db.host']} -u {db_config['db.user']} "
         f"-p'{db_config['db.passwd']}' -P{db_config['db.port']} < {dump_file}"
     )
     logger.debug("Executing command: %s", dump_cmd)
@@ -114,17 +114,17 @@ def _add_new_db(db_config: dict[str, str], dump_file: str) -> None:
 
 def _migrate_db(parser: argparse.Namespace) -> None:
     db_host = parser.new_hostname
-    mysqldump = shutil.which("mysqldump")
+    mysqldump = shutil.which("mariadb-dump")
     if mysqldump is None:
-        logger.error("myslqdump not found, to continue isntall mysqldump")
+        logger.error("mariadb-dump not found, to continue install mariadb-dump")
         return
-    new_db_cfg = read_db_credentials(parser.cert_file, db_host)
+    new_db_cfg = read_db_credentials(db_host)
     with NamedTemporaryFile(suffix=".sql") as temp_file:
         with open(temp_file.name, "w") as f_obj:
             f_obj.write(f"USE `{new_db_cfg['db.db']}`;\n")
             f_obj.flush()
             dump_command = (
-                f"{mysqldump} -u {parser.old_user} "
+                f"{mysqldump} --ssl=0 -u {parser.old_user} "
                 f"-h {parser.old_hostname} -p'{parser.old_pw}' "
                 f"-P{parser.old_port} "
                 "--tz-utc --no-create-db "
@@ -133,9 +133,7 @@ def _migrate_db(parser: argparse.Namespace) -> None:
             try:
                 exec_command(dump_command, stdout=f_obj)
             except CalledProcessError as error:
-                if "Unknown table \\'COLUMN_STATISTICS\\'" in str(
-                    error.stderr
-                ):
+                if "Unknown table \\'COLUMN_STATISTICS\\'" in str(error.stderr):
                     dump_command = dump_command + " --column-statistics=0 "
                     exec_command(dump_command, stdout=f_obj)
                 else:
@@ -145,9 +143,7 @@ def _migrate_db(parser: argparse.Namespace) -> None:
 
 def _migrate_drs(parser: argparse.Namespace) -> None:
     python_path = parser.python_path or _get_python_path_from_env()
-    config = json.loads(
-        execute_script_and_get_config(python_path, DUMP_SCRIPT)
-    )
+    config = json.loads(execute_script_and_get_config(python_path, DUMP_SCRIPT))
     logger.debug("Writing toml file to drs_config.toml")
     this_file = (Path(".") / "drs_config.toml").absolute()
     with open(this_file, "w") as f_obj:
@@ -202,12 +198,6 @@ def create_parser(
         metavar="old_hostname",
         type=str,
         help="Hostname of the old database.",
-    )
-    db_parser.add_argument(
-        "cert_file",
-        metavar="cert-file",
-        type=Path,
-        help="Path to the public certificate file.",
     )
     db_parser.add_argument(
         "--old-port",

@@ -3,13 +3,17 @@ The freva-deployment software
 
 The `freva-deployment` software is used to deploy Freva in different computing environments.
 The general strategy is to split the deployment into different steps, these are :
-- Deploy database service
-- Deploy a HashiCorp Vault service for storing and retrieving passwords and other sensitive data via docker (this step get automatically activated once the MariaDB service is set)
-- Deploy the `DatabrowserAPI <https://github.com/FREVA-CLINT/databrowserAPI>`_ The databrowser API deployment consists of three parts:
+- Deploy a MySQL DB server
+- Deploy a HashiCorp Vault service for storing and retrieving passwords and
+other sensitive data  (this step get automatically activated once the MySQL DB service is set)
+- Deploy the `Freva-Rest Server <https://github.com/FREVA-CLINT/freva-nextgen>`_
+The Freva Rest deployment consists of three mandatory and two optional parts:
 
   - The actual databrowser rest API
   - Apache solr search backend
   - Mongodb to store search statistics
+  - Redis server acting as broker (optional)
+  - Data-Loader server that provisions data (netCDF, grb, HDF5 etc) via zarr streams over http (optional)
 
 - Deploy command line interface and python library (`freva <https://github.com/FREVA-CLINT/freva>`_)
 - Deploy web front end (`freva_web <https://github.com/FREVA-CLINT/freva-web>`_)
@@ -30,5 +34,5 @@ The general strategy is to split the deployment into different steps, these are 
    Installation
    Configure
    TuiHowto
+   webui
    Config
-   changelog
