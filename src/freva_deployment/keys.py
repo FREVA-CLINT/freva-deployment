@@ -10,7 +10,12 @@ try:
     from cryptography import x509
     from cryptography.hazmat.backends import default_backend
     from cryptography.hazmat.primitives import hashes, serialization
-    from cryptography.hazmat.primitives.asymmetric import padding, rsa
+    from cryptography.hazmat.primitives.asymmetric import (
+        ec,
+        ed25519,
+        padding,
+        rsa,
+    )
     from cryptography.x509.oid import NameOID
 except ImportError:
     _CRYPTO = False
@@ -74,6 +79,7 @@ class RandomKeys:
             private_key = serialization.load_pem_private_key(
                 key_data, password=None, backend=default_backend()
             )
+            public_key = cert.public_key()
         except Exception:
             return False
 
@@ -83,18 +89,38 @@ class RandomKeys:
         if cert.issuer == cert.subject:
             return False
 
+        message = b"test"
         try:
-            message = b"test"
-            signature = private_key.sign(
-                message, padding.PKCS1v15(), hashes.SHA256()
-            )
-            cert.public_key().verify(
-                signature, message, padding.PKCS1v15(), hashes.SHA256()
-            )
+            if isinstance(private_key, rsa.RSAPrivateKey) and isinstance(
+                public_key, rsa.RSAPublicKey
+            ):
+                signature = private_key.sign(
+                    message, padding.PKCS1v15(), hashes.SHA256()
+                )
+                public_key.verify(
+                    signature, message, padding.PKCS1v15(), hashes.SHA256()
+                )
+                return True
+
+            elif isinstance(
+                private_key, ec.EllipticCurvePrivateKey
+            ) and isinstance(public_key, ec.EllipticCurvePublicKey):
+                signature = private_key.sign(message, ec.ECDSA(hashes.SHA256()))
+                public_key.verify(signature, message, ec.ECDSA(hashes.SHA256()))
+                return True
+
+            elif isinstance(
+                private_key, ed25519.Ed25519PrivateKey
+            ) and isinstance(public_key, ed25519.Ed25519PublicKey):
+                signature = private_key.sign(message)
+                public_key.verify(signature, message)
+                return True
+
+            else:
+                return False
+
         except Exception:
             return False
-
-        return True
 
     @property
     def private_key(self) -> "rsa.RSAPrivateKey":
