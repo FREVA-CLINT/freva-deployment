@@ -17,6 +17,8 @@ import sys
 from contextlib import redirect_stderr, redirect_stdout
 from datetime import date
 
+from pathlib import Path
+
 # from recommonmark.parser import CommonMarkParser
 
 sys.path.insert(0, os.path.abspath("."))
@@ -26,7 +28,16 @@ from freva_deployment import __version__
 from freva_deployment.cli import main_cli
 from freva_deployment.utils import config_dir
 
-toml_config = (config_dir / "config" / "inventory.toml").read_text()
+toml_config_file = (
+    Path(__file__).parent.parent
+    / "assets"
+    / "share"
+    / "freva"
+    / "deployment"
+    / "config"
+    / "inventory.toml"
+)
+toml_config = toml_config_file.read_text()
 
 
 def get_cli_output(*args):

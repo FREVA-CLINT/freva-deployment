@@ -7,7 +7,7 @@ What's new
    :maxdepth: 0
    :titlesonly:
 
-v2505.0.2
+v2505.0.3
 ~~~~~~~~~
 * Move source code.
 
