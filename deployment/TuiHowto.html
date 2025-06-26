@@ -1,0 +1,898 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Usage of the text user interface &#8212; freva-deployment 2505.0.1 documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/togglebutton.css?v=13237357" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="../_static/documentation_options.js?v=04ffed07"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=f281be69"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="../_static/togglebutton.js?v=4a39c7ea"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'deployment/TuiHowto';</script>
+    <link rel="canonical" href="http://127.0.0.1:8000/deployment/TuiHowto.html" />
+    <link rel="icon" href="../_static/freva_owl.svg"/>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Web UI for Freva Deployment" href="webui.html" />
+    <link rel="prev" title="Configuring and running the deployment" href="Configure.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class=" navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../_static/freva_owl.svg" class="logo__image only-light" alt="freva-deployment 2505.0.1 documentation - Home"/>
+    <img src="../_static/freva_owl.svg" class="logo__image only-dark pst-js-only" alt="freva-deployment 2505.0.1 documentation - Home"/>
+  
+  
+</a></div>
+    
+  </div>
+  
+  <div class=" navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../architecture/index.html">
+    Freva Architecture and Configuration Guide
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="index.html">
+    The freva-deployment software
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../after-deployment/index.html">
+    After successful deployment
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../faq.html">
+    Frequently Asked Questions (FAQ)
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../whatsnew.html">
+    What’s new
+  </a>
+</li>
+
+            <li class="nav-item dropdown">
+                <button class="btn dropdown-toggle nav-item" type="button"
+                data-bs-toggle="dropdown" aria-expanded="false"
+                aria-controls="pst-nav-more-links">
+                    More
+                </button>
+                <ul id="pst-nav-more-links" class="dropdown-menu">
+                    
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../contributing.html">
+    Contributing
+  </a>
+</li>
+
+                </ul>
+            </li>
+            
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/FREVA-CLINT/freva-deployment" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://pypi.org/project/freva-deployment" title="PyPI" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-custom fa-pypi fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">PyPI</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../architecture/index.html">
+    Freva Architecture and Configuration Guide
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="index.html">
+    The freva-deployment software
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../after-deployment/index.html">
+    After successful deployment
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../faq.html">
+    Frequently Asked Questions (FAQ)
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../whatsnew.html">
+    What’s new
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../contributing.html">
+    Contributing
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/FREVA-CLINT/freva-deployment" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://pypi.org/project/freva-deployment" title="PyPI" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-custom fa-pypi fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">PyPI</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="Installation.html">Installing freva-deployment</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Configure.html">Configuring and running the deployment</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Usage of the text user interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="webui.html">Web UI for Freva Deployment</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Config.html">Example deployment configuration</a></li>
+</ul>
+</div>
+</nav></div>
+        <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="index.html" class="nav-link">The freva-deployment software</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Usage of the text user interface</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="usage-of-the-text-user-interface">
+<h1>Usage of the text user interface<a class="headerlink" href="#usage-of-the-text-user-interface" title="Link to this heading">#</a></h1>
+<p>We have created a simple text user interface (tui) that helps you setting up a
+Freva instance at your institution. At this stage the documentation assumes that
+you have familiarised yourself with the necessary server infrastructure and pre-requisites.
+Please refer to the <a class="reference internal" href="Installation.html"><span class="doc std std-doc">installation</span></a> and <a class="reference internal" href="Configure.html"><span class="doc std std-doc">configuration section</span></a>
+for more details.</p>
+<p>After <a class="reference internal" href="Installation.html"><span class="doc std std-doc">Installation</span></a> the command <code class="docutils literal notranslate"><span class="pre">deploy-freva</span></code> will open
+the tui. The tui is organised in five different screens. The first four screens
+are used to configure the services (core, database, freva-rest, web) the last screen
+(run screen) configures variables that are common amongst all services.
+The code of the tui is written using the <a class="reference external" href="https://npyscreen.readthedocs.io/index.html">npyscreen</a>
+library.</p>
+<section id="general-usage">
+<h2>General usage<a class="headerlink" href="#general-usage" title="Link to this heading">#</a></h2>
+<p>After opening the tui with the <code class="docutils literal notranslate"><span class="pre">deploy-freva</span></code> command you’ll see a small
+navigation panel on the bottom. Navigation is done by shortcuts and similar
+to those used in the <em>nano</em> text editor. All shortcuts start with
+a <code class="docutils literal notranslate"><span class="pre">^</span></code> which indicates <code class="docutils literal notranslate"><span class="pre">CTRL+</span></code>, main shortcuts are:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">CTRL+f</span></code>: Further information on each configuration item.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">CTRL+x</span></code>: Enter main menu.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">CRTL+v</span></code>: Edit/Add environment variables.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">CTRL+o</span></code>: Load a saved configuration.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">CTRL+s</span></code>: Save a configuration to a <a class="reference external" href="https://toml.io/en/"><code class="docutils literal notranslate"><span class="pre">.toml</span></code></a>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">CTRL+k</span></code>: Go to previous <em>setup</em> screen.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">CTRL+l</span></code>: Go to next <em>setup</em> screen.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">CTRL+r</span></code>: Got to the <em>run</em> screen.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">CTRL+d</span></code>: Clear the application cache.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">CTRL+e</span></code>: Exit application.</p></li>
+</ul>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>The load/save forms can be exited by pressing the <code class="docutils literal notranslate"><span class="pre">&lt;TAB&gt;</span></code> key
+which will get you to input field at the bottom of the screen. If the input
+field has text delete it an press the <code class="docutils literal notranslate"><span class="pre">&lt;ESC&gt;</span></code> key, this will bring you get to
+the screen where you started.</p>
+</div>
+<p>Some variables need to be set for the deployment setup while others don’t and
+can be configured later.</p>
+</section>
+<section id="core-setup">
+<h2>Core setup<a class="headerlink" href="#core-setup" title="Link to this heading">#</a></h2>
+<p>The first screen configures the setup of Freva client library at the HPC system.
+We refer to this step as the <em>core</em> deployment. At the top of the
+screen you’ll see a tick box, which indicates whether or not this step is
+used for deployment. If this box is <em>un</em>ticked - tick/untick using the <code class="docutils literal notranslate"><span class="pre">&lt;SPACE&gt;</span></code>
+key - the deployment will skip the core installation on the HPC system.
+The following explains the essential setup steps:</p>
+<p><img alt="" src="../_images/tui_core.png" /></p>
+<ol class="arabic simple">
+<li><p>The host name(s) where the core installation is executed. You can use all
+<a class="reference external" href="https://docs.ansible.com/ansible/latest/user_guide/intro_patterns.html#common-patterns">multi host patterns</a>
+that ansible supports.</p></li>
+<li><p>The installation directory of the conda-forge environment where the
+<code class="docutils literal notranslate"><span class="pre">freva</span></code> python library shall be installed installed.</p></li>
+<li><p>Set the directory where project specific configuration is stored. See also
+the <code class="docutils literal notranslate"><span class="pre">root_dir</span></code> description in the
+<a class="reference internal" href="../architecture/Folders.html#eval-conf"><span class="std std-ref">Basic configuration section</span></a>.</p></li>
+<li><p>Set the user plugin output directory. If you want to use a <em>local</em> output
+directory structure you can leave this variable blank. See also the
+<a class="reference internal" href="../architecture/Folders.html#eval-conf"><span class="std std-ref">Basic configuration section</span></a>.</p></li>
+<li><p>Set the preview path mentioned in the <a class="reference internal" href="../architecture/Folders.html#eval-conf"><span class="std std-ref">Basic configuration section</span></a>.</p></li>
+<li><p>Set the workload manager system from the dropdown menu.</p></li>
+<li><p>Set the output directory of the <code class="docutils literal notranslate"><span class="pre">stdout</span></code>/<code class="docutils literal notranslate"><span class="pre">stderr</span></code> of the workload manger.
+<code class="docutils literal notranslate"><span class="pre">💡</span></code> the workload manager type, like pbs, will be automatically
+appended to this directory.</p></li>
+<li><p>Set the user names (comma separated) of the Freva admins of this project.</p></li>
+<li><p>If you have a special user group for Freva admins you can set this this key
+here. This will cause the creation of folders with permissions suitable
+for multi-user write access (2775) on the target machine. This assures that
+multiple admins can adjust the Freva configuration. You can leave this
+variable blank.</p></li>
+<li><p>If you need to change to a common user (for example via <code class="docutils literal notranslate"><span class="pre">sudo</span> <span class="pre">-i</span></code>) that is
+able to install Freva on the HPC system you can set this common user name
+here. Note that this method should only be used if freva needs to be set up
+with a shared user account <em>and</em> you cannot log on to the HPC system with
+this shared user name. Most of the time it should not be necessary to use
+this option, either because you don’t need a shared user account, or you
+can instruct ansible to directly log on as the shared user.</p></li>
+<li><p>If you have an anaconda binary already installed on the target system you
+can set the path to the <code class="docutils literal notranslate"><span class="pre">conda</span></code> or <code class="docutils literal notranslate"><span class="pre">mamba</span></code> executable here. Leaving this variable
+blank (default) will cause the deployment to temporary download and create
+an anaconda install script - which will get deleted afterwards.</p></li>
+<li><p>Select a pre-defined target architecture for the anaconda environment.<br />
+<code class="docutils literal notranslate"><span class="pre">💡</span></code> The Freva installation has only been tested for MacOSX-x86_64,
+Linux-x86_64 (including Windows wsl2) and Linux-aarch64 (arm).</p></li>
+<li><p>If you want to customise the installation process you can set the path
+to a custom ansible playbook here. If this is set then the deployment
+will use this playbook instead of the default playbook that ships with
+the system. Leave blank for default behaviour.</p></li>
+<li><p>Ansible needs python to be present on the remote machine, if not present
+in the default path (such as <code class="docutils literal notranslate"><span class="pre">/usr/bin/python3</span></code>) set the path to the <code class="docutils literal notranslate"><span class="pre">python3.4+</span></code>
+binary.</p></li>
+<li><p>Set the login user name for the remote machine.</p></li>
+<li><p>Set the path to the <code class="docutils literal notranslate"><span class="pre">git</span></code> executable if not in default path
+such as <code class="docutils literal notranslate"><span class="pre">/usr/bin/git</span></code>.</p></li>
+</ol>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Press CTRL+f for <em>f</em>urther information on each configuration item.</p>
+</div>
+<section id="notes-on-the-core-setup">
+<h3>Notes on the core setup<a class="headerlink" href="#notes-on-the-core-setup" title="Link to this heading">#</a></h3>
+<p>It is good practice to use only one conda-forge environment for multiple Freva
+instances. Each Freva instance only differs in its configuration
+(<code class="docutils literal notranslate"><span class="pre">evaluation_system.conf</span></code>)</p>
+</section>
+</section>
+<section id="web-ui-setup">
+<h2>Web ui setup<a class="headerlink" href="#web-ui-setup" title="Link to this heading">#</a></h2>
+<p>The second screen configures the setup web ui. At the top of the screen
+you’ll see a tick box, that indicates whether or not this step is used for
+deployment. If this box is <em>un</em>ticked - tick/untick using the <code class="docutils literal notranslate"><span class="pre">&lt;SPACE&gt;</span></code> key -
+the deployment will skip the web ui setup entirely. The following explains the
+essential setup steps:</p>
+<p><img alt="" src="../_images/tui_web.png" /></p>
+<ol class="arabic simple">
+<li><p>The host name where the web ui should be installed. This should be a single
+host name.</p></li>
+<li><p>Set the path where the persitent data should be stored. This settings
+will only come into effect for <code class="docutils literal notranslate"><span class="pre">conda</span></code> based deployments.</p></li>
+<li><p>User name that should own the persistent data (admin-user).</p></li>
+<li><p>The url the web ui can be accessed. Users will use this url to get access
+to the url.</p></li>
+<li><p>Main html color scheme.</p></li>
+<li><p>Html color for borders.</p></li>
+<li><p>Html color for hover mode boxes.</p></li>
+<li><p>Set the path to the institution logo. This should be the path to the logo
+on the machine that runs the web.</p></li>
+<li><p>A short text about the Freva admin team/group. This text will go to the
+header of the web page.</p></li>
+<li><p>Contact email address of the admin(s).</p></li>
+<li><p>Address of the institute, will be appearing in the footer of the website.</p></li>
+<li><p>Detailed overview over the project, this text will go into the left central
+box in the Freva main page. It should describe the purpose of this project</p></li>
+<li><p>The header for the detailed overview mentioned in 9.</p></li>
+<li><p>Host name(s) - usually HPC login node(s) - the web backend code submits
+plugin jobs from. The backend will logon to this host name and submit a
+plugin job.</p></li>
+<li><p>Set the path to the <code class="docutils literal notranslate"><span class="pre">python3.4+</span></code> binary, this should be set if the python
+binary is not part of the <code class="docutils literal notranslate"><span class="pre">$PATH</span></code> variable.</p></li>
+<li><p>Set the user name that should execute the container commands, defaults
+to root. Leave blank if no special user is needed.</p></li>
+<li><p>Set the login user name for the remote machine.</p></li>
+</ol>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Press CTRL+f for <em>f</em>urther information on each configuration item.</p>
+</div>
+<section id="notes-on-the-web-ui-setup">
+<h3>Notes on the web ui setup<a class="headerlink" href="#notes-on-the-web-ui-setup" title="Link to this heading">#</a></h3>
+<p>Currently there are ties between the core running on the HPC machine and
+the web ui. These are:</p>
+<ul class="simple">
+<li><p>a common configuration <code class="docutils literal notranslate"><span class="pre">evaluation_system.conf</span></code> and</p></li>
+<li><p>a common preview folder. Plugins running on the HPC will store visual content
+like plots into the plugin folder, which can be displayed by the web ui.</p></li>
+</ul>
+<p>This interconnection is usually fulfilled creating a network mount from the
+HPC system to the machine running the web ui. The deployment routine expects
+the <em>preview</em> folder (the directory containing plots to be displayed on the web)
+and <code class="docutils literal notranslate"><span class="pre">evaluation_system.conf</span></code> to be present (mounted)
+on the host machine during deployment time. The docker container expects the
+mounts to be in the same path as on the HPC system. For example, if
+an instance of Freva has been deployed on <code class="docutils literal notranslate"><span class="pre">/work/clex/freva-clex</span></code> then
+this directory should be available via the same path on the machine running
+the web ui application. The same applies to all paths defined in the
+plugin section in the <code class="docutils literal notranslate"><span class="pre">evaluation_system.conf</span></code>. Please also refer to the
+<a class="reference internal" href="../architecture/Architecture.html#web-ui"><span class="std std-ref">Architecture section</span></a> for more information.</p>
+<p>The web ui application service needs two more services, that are
+automatically set up. Those are a redis service, which is used as a database
+query cache and an apache httpd service that is used as reverse proxy.</p>
+<p>During the deployment process of the web ui you will be ask your login
+credentials for the smtp email server. An email server is necessary because
+the web backend has a email sending functionality. This functionality makes
+it easy for users to communicate and share results with other users.
+Login credentials are needed to connect to the email server and send emails.
+Your credentials won’t be saved anywhere on disk but securely stored in the
+vault service that gets deployed when setting up the database.</p>
+</section>
+</section>
+<section id="freva-rest-setup">
+<h2>Freva rest setup<a class="headerlink" href="#freva-rest-setup" title="Link to this heading">#</a></h2>
+<p>The third screen configures the setup databrowser server. At the top of
+the screen you’ll see a tick box, which indicates whether or not this step is
+used for deployment. If this box is <em>un</em>ticked - tick/untick using the
+<code class="docutils literal notranslate"><span class="pre">&lt;SPACE&gt;</span></code> key - the deployment will skip the setup of databrowser entirely. The
+following explains the essential setup steps:</p>
+<p><img alt="" src="../_images/tui_solr.png" /></p>
+<ol class="arabic simple">
+<li><p>The host name where the freva-rest server should be installed. This should be a single
+host name.</p></li>
+<li><p>The host name where the search backend server should be set up.</p></li>
+<li><p>The host name where the mongoDB server should be set up.</p></li>
+<li><p>The host name where the redis broker should be set up (optional)</p></li>
+<li><p>Tick this box (<code class="docutils literal notranslate"><span class="pre">&lt;SPACE&gt;</span></code>) if you want to delete any pre existing databrowser data.</p></li>
+<li><p>Select how much memory you want to allocate for the search backend process.</p></li>
+<li><p>Select the port the freva-rest server is running on.</p></li>
+<li><p>The user name (admin-user) that should own persitent data and run the serivces.</p></li>
+<li><p>Set the path where persistent data should be stored. This settings will
+only have an effect for conda based deployments.</p></li>
+<li><p>The host name(s) - comma separated - where the zarr streaming server should be
+set up (optional).</p></li>
+<li><p>URL of the openid-connect service that manages the user authentication</p></li>
+<li><p>Client name of the openid-connect service, defaults to <code class="docutils literal notranslate"><span class="pre">freva</span></code>.</p></li>
+<li><p>Client secret of the open-connect service, you can leave this blank if
+the client doesn’t require any secrets.</p></li>
+<li><p>Set the user name that should execute the container commands, defaults
+to root. Leave blank if no special user is needed.</p></li>
+<li><p>Set the path to the <code class="docutils literal notranslate"><span class="pre">python3.4+</span></code> binary, this should be set if the python
+binary is not part of the <code class="docutils literal notranslate"><span class="pre">$PATH</span></code> variable.</p></li>
+<li><p>Set the login user name for the remote machine.</p></li>
+</ol>
+<section id="notes-on-the-freva-rest-setup">
+<h3>Notes on the freva-rest setup<a class="headerlink" href="#notes-on-the-freva-rest-setup" title="Link to this heading">#</a></h3>
+<p>Any existing data is <em>not</em> overridden if you deploy
+a new server and do not chose to delete any pre existing data. The
+data will be saved to <code class="docutils literal notranslate"><span class="pre">&lt;data_path&gt;/&lt;project_name&gt;/databrowser_service/</span></code>
+on the host name the databrowser server is running on.</p>
+</section>
+</section>
+<section id="database-server-setup">
+<h2>Database server setup<a class="headerlink" href="#database-server-setup" title="Link to this heading">#</a></h2>
+<p>The fourth screen configures the setup database server. At the top of
+the screen you’ll see a tick box, which indicates whether or not this step is
+used for deployment. If this box is <em>un</em>ticked - tick/untick using the
+<code class="docutils literal notranslate"><span class="pre">&lt;SPACE&gt;</span></code> key - the deployment will skip the setup of the database entirely. The
+following explains the essential setup steps:</p>
+<p><img alt="" src="../_images/tui_db.png" /></p>
+<ol class="arabic simple">
+<li><p>Tick this box (<code class="docutils literal notranslate"><span class="pre">&lt;SPACE&gt;</span></code>) if you want to delete any pre existing databases.</p></li>
+<li><p>The host name where the database server should be installed. This should be a single
+host name.</p></li>
+<li><p>The host name whre the vault server should be installed. Defaults to the DB
+host name.</p></li>
+<li><p>Delete all existing, persistent data.</p></li>
+<li><p>Set the database user name.</p></li>
+<li><p>Set the database name.</p></li>
+<li><p>Set the port the database server is running on.</p></li>
+<li><p>Set the path where the persistent data should be stored. This settings
+will only have an effect if a conda-based deployment is chosen.</p></li>
+<li><p>Set the user name that should execute the container commands, defaults
+to root. Leave blank if no special user is needed.</p></li>
+<li><p>Set the path to the <code class="docutils literal notranslate"><span class="pre">python3.4+</span></code> binary, this should be set if the python
+binary is not part of the <code class="docutils literal notranslate"><span class="pre">$PATH</span></code> variable.</p></li>
+<li><p>Set the login user name for the remote machine.</p></li>
+</ol>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Press CTRL+f for <em>f</em>urther information on each configuration item.</p>
+</div>
+<section id="notes-on-the-database-setup">
+<h3>Notes on the database setup<a class="headerlink" href="#notes-on-the-database-setup" title="Link to this heading">#</a></h3>
+<p>This step also includes the deployment of a vault service where all information
+on the database connection are stored. The <code class="docutils literal notranslate"><span class="pre">evaluation_system</span></code> core library
+will automatically make a connection to the vault in order retrieve the
+login credentials. Any existing database is <em>not</em> overridden if you deploy
+a new database and do not chose to delete any pre existing data. The database
+will be stored in <code class="docutils literal notranslate"><span class="pre">&lt;data_path&gt;/&lt;project_name&gt;/db_service</span></code> on the database server
+host.</p>
+</section>
+</section>
+<section id="the-run-screen">
+<h2>The run screen.<a class="headerlink" href="#the-run-screen" title="Link to this heading">#</a></h2>
+<p>The last of the five screen is the so called run screen. This screen sets up a
+configuration that is common among the above described steps. You can enter this
+screen by pressing the <code class="docutils literal notranslate"><span class="pre">CTRL+r</span></code> key combination. The following options are
+available:</p>
+<p><img alt="" src="../_images/tui_run.png" /></p>
+<ol class="arabic simple">
+<li><p>Set a unique project name for this specific Freva instance, for example
+<code class="docutils literal notranslate"><span class="pre">clex-ces</span></code>.</p></li>
+<li><p>The deployment method you want to choose.</p></li>
+<li><p>If desired you can save the already configured settings to a
+<a class="reference external" href="https://toml.io/en/"><code class="docutils literal notranslate"><span class="pre">toml</span></code></a> configuration file.</p></li>
+<li><p>Select the path to the public certificate files.</p></li>
+<li><p>Select the path to the private certificate file - this is only needed if you
+wish to deploy the web ui.</p></li>
+<li><p>By default ansible will make ssh connections via a ssh key. If this is not possible
+you can check this box (<code class="docutils literal notranslate"><span class="pre">&lt;SPACE&gt;</span></code>) to establish connections via ssh password.</p></li>
+<li><p>Generate a pair of self signed web certificates. You can use this option if
+you don’t have a pair and just want to try the deployment. Don’t use this
+certificates for production</p></li>
+<li><p>Tick this box if to instruct ansible to make ssh connections with help of
+a ssh password instead of a ssh public key.</p></li>
+<li><p>By default the system will perform a version check of all micro services to
+ensure that the different services fit together. Tick this box if you want
+to disable version checking - use this option with caution.</p></li>
+<li><p>Set any other port than 22 for making ssh connections.</p></li>
+<li><p>Tick this box to deploy the setup on you local machine, this can be useful
+to try out new setups first.</p></li>
+</ol>
+<section id="notes-on-the-run-screen">
+<h3>Notes on the run screen<a class="headerlink" href="#notes-on-the-run-screen" title="Link to this heading">#</a></h3>
+<p>After hitting the <code class="docutils literal notranslate"><span class="pre">&lt;OK&gt;</span></code> button on the lower right the application will
+check for any missing configuration keys. The <code class="docutils literal notranslate"><span class="pre">&lt;Cancel&gt;</span></code> button will bring you
+back to the last configuration screen. If you hit <code class="docutils literal notranslate"><span class="pre">&lt;OK&gt;</span></code> and keys are missing
+you will be notified about the missing key and be brought back to the screen that
+has missing information. If everything is fine you’ll be ask if you want to
+continue. After this, the ansible will start to play the playbook.</p>
+</section>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="Configure.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Configuring and running the deployment</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="webui.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Web UI for Freva Deployment</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#general-usage">General usage</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#core-setup">Core setup</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#notes-on-the-core-setup">Notes on the core setup</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#web-ui-setup">Web ui setup</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#notes-on-the-web-ui-setup">Notes on the web ui setup</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#freva-rest-setup">Freva rest setup</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#notes-on-the-freva-rest-setup">Notes on the freva-rest setup</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#database-server-setup">Database server setup</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#notes-on-the-database-setup">Notes on the database setup</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#the-run-screen">The run screen.</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#notes-on-the-run-screen">Notes on the run screen</a></li>
+</ul>
+</li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2025, DKRZ - CLINT.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

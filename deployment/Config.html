@@ -1,0 +1,926 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Example deployment configuration &#8212; freva-deployment 2505.0.1 documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/togglebutton.css?v=13237357" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="../_static/documentation_options.js?v=04ffed07"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=f281be69"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="../_static/togglebutton.js?v=4a39c7ea"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'deployment/Config';</script>
+    <link rel="canonical" href="http://127.0.0.1:8000/deployment/Config.html" />
+    <link rel="icon" href="../_static/freva_owl.svg"/>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="After successful deployment" href="../after-deployment/index.html" />
+    <link rel="prev" title="Web UI for Freva Deployment" href="webui.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class=" navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../_static/freva_owl.svg" class="logo__image only-light" alt="freva-deployment 2505.0.1 documentation - Home"/>
+    <img src="../_static/freva_owl.svg" class="logo__image only-dark pst-js-only" alt="freva-deployment 2505.0.1 documentation - Home"/>
+  
+  
+</a></div>
+    
+  </div>
+  
+  <div class=" navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../architecture/index.html">
+    Freva Architecture and Configuration Guide
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="index.html">
+    The freva-deployment software
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../after-deployment/index.html">
+    After successful deployment
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../faq.html">
+    Frequently Asked Questions (FAQ)
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../whatsnew.html">
+    What’s new
+  </a>
+</li>
+
+            <li class="nav-item dropdown">
+                <button class="btn dropdown-toggle nav-item" type="button"
+                data-bs-toggle="dropdown" aria-expanded="false"
+                aria-controls="pst-nav-more-links">
+                    More
+                </button>
+                <ul id="pst-nav-more-links" class="dropdown-menu">
+                    
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../contributing.html">
+    Contributing
+  </a>
+</li>
+
+                </ul>
+            </li>
+            
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/FREVA-CLINT/freva-deployment" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://pypi.org/project/freva-deployment" title="PyPI" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-custom fa-pypi fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">PyPI</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../architecture/index.html">
+    Freva Architecture and Configuration Guide
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="index.html">
+    The freva-deployment software
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../after-deployment/index.html">
+    After successful deployment
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../faq.html">
+    Frequently Asked Questions (FAQ)
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../whatsnew.html">
+    What’s new
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../contributing.html">
+    Contributing
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/FREVA-CLINT/freva-deployment" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://pypi.org/project/freva-deployment" title="PyPI" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-custom fa-pypi fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">PyPI</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="Installation.html">Installing freva-deployment</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Configure.html">Configuring and running the deployment</a></li>
+<li class="toctree-l1"><a class="reference internal" href="TuiHowto.html">Usage of the text user interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="webui.html">Web UI for Freva Deployment</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Example deployment configuration</a></li>
+</ul>
+</div>
+</nav></div>
+        <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="index.html" class="nav-link">The freva-deployment software</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Example deployment configuration</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="example-deployment-configuration">
+<h1>Example deployment configuration<a class="headerlink" href="#example-deployment-configuration" title="Link to this heading">#</a></h1>
+<p>This section contains two working versions of a full deployment configuration.
+These configuration files have also been installed along with the deployment.
+You can find them in the data files under <code class="docutils literal notranslate"><span class="pre">share/freva/deployment/config</span></code> of your
+python environment, for example:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">/usr/share/freva/deployment/config</span></code> for system wide installations.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">$CONDA_PREFIX/share/freva/deployment/config</span></code> for conda based installations.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">~/.local/share/freva/deployment/config</span></code> for user based installations.</p></li>
+</ul>
+<section id="typical-deployment">
+<h2>Typical deployment<a class="headerlink" href="#typical-deployment" title="Link to this heading">#</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">inventory.toml</span></code> file contains a typical setup for freva. The services
+are installed with root privileges on remote machines. The core is installed
+under a normal user on a login node of a HPC system.</p>
+<div class="highlight-toml notranslate"><div class="highlight"><pre><span></span><span class="c1"># NOTE: this key must be the first in the file.</span>
+<span class="n">project_name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;vaskebjorn-2&quot;</span>
+
+<span class="c1">## The `deployment_method` key sets the option of how the installation</span>
+<span class="c1">## of the service is realised. `docker`, `podman` leverages podman or docker,</span>
+<span class="c1">## `conda` uses conda-forge to install the service while `k8s` involves a</span>
+<span class="c1">### kubernetes based deployment</span>
+<span class="c1">## Chosse between: &quot;docker&quot;, &quot;podman&quot;, &quot;conda&quot;, &quot;k8s&quot;</span>
+<span class="n">deployment_method</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;conda&quot;</span>
+
+
+<span class="c1">## Specify the path to the SSL certificate files used for secure connections</span>
+<span class="c1">## to the vault server or as web certificates.</span>
+<span class="k">[certificates]</span>
+<span class="n">public_keyfile</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;&quot;</span>
+<span class="n">private_keyfile</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;&quot;</span>
+
+<span class="k">[db]</span>
+<span class="c1">## Config variables for the database service.</span>
+
+<span class="c1">## Specify the host name were the database server should be deployed</span>
+<span class="n">db_host</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;freva-deployment.cloud.dkrz.de&quot;</span>
+
+<span class="c1">## The freva infrastructure uitilises a small vault server that stores</span>
+<span class="c1">## database secrets for client connections. You can specify the host name</span>
+<span class="c1">## where this server should be running. If you don&#39;t set it (default)</span>
+<span class="c1">## the vault server will be deployed on the database host.</span>
+<span class="n">vault_host</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;freva-deployment.cloud.dkrz.de&quot;</span>
+
+<span class="c1">## The database runs in a Docker container. You can change the port</span>
+<span class="c1">## that is exposed to the external network. Every DB connection from</span>
+<span class="c1">## outside the container uses this port.</span>
+<span class="n">port</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">3306</span>
+
+<span class="c1">## Set the username of the MariaDB user.</span>
+<span class="n">user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;freva&quot;</span>
+
+<span class="c1">## Set the name of the MariaDB database.</span>
+<span class="n">db</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;frevadb&quot;</span>
+
+<span class="c1">## If the username running the deployment software and the username</span>
+<span class="c1">## that installs the services differ, instruct Ansible to use the</span>
+<span class="c1">## specified username for SSH connections to the target server.</span>
+<span class="c1">## If left blank, the current username will be used.</span>
+<span class="n">ansible_user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;k204230&quot;</span>
+
+<span class="c1">## Set the become (sudo) username to change to for installing the services.</span>
+<span class="c1">## Leave blank to utilise a non-privileged user-based installation.</span>
+<span class="c1">## Non-privileged installation means the system will be installed in the</span>
+<span class="c1">## user space of the user that logs on to the system.</span>
+<span class="n">ansible_become_user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;root&quot;</span>
+
+<span class="c1">## Ansible needs a Python 3 interpreter on the target server. This interpreter</span>
+<span class="c1">## can be set for custom Python 3 instances. By default, Ansible will try</span>
+<span class="c1">## to use the default Python interpreter path /usr/bin/python.</span>
+<span class="n">ansible_python_interpreter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;/usr/bin/python3&quot;</span>
+
+<span class="c1">## Indicate whether to empty any pre-existing folders/docker volumes.</span>
+<span class="c1">## Useful for a truly fresh start (default: false).</span>
+<span class="n">wipe</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span>
+
+<span class="c1">## Set the path where the permanent database data should be stored.</span>
+<span class="c1">## By default, this is set to /opt/freva/&lt;project_name&gt;/db_service.</span>
+<span class="n">data_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;/opt/freva&quot;</span>
+
+<span class="c1">## Set the username that will own all files created by the service such as</span>
+<span class="c1">## database files etc. This can be useful if multiple users take turn in</span>
+<span class="c1">## deploying and administering the service. The value of the username</span>
+<span class="c1">## will default to the user that deploys the service</span>
+<span class="n">admin_user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;&quot;</span>
+
+<span class="k">[freva_rest]</span>
+<span class="c1">## Specify the host name were the ferva-rest-api server should be deployed</span>
+<span class="n">freva_rest_host</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;freva-deployment.cloud.dkrz.de&quot;</span>
+
+<span class="c1">## To search for data the freva-rest-api needs a metadata index service.</span>
+<span class="c1">## Typically this services apache solr. You can set the host where this</span>
+<span class="c1">## index server should be running at. Leave empty to deploy the service</span>
+<span class="c1">## on the same host as the freva-rest-api</span>
+<span class="n">search_server_host</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;freva-deployment.cloud.dkrz.de&quot;</span>
+
+<span class="c1">## Search statistics and user data related will be stored in a mongoDB</span>
+<span class="c1"># service You can set the host where the server should be running at.</span>
+<span class="c1">## Leave empty to deploy the service on the same host as the freva-rest-api</span>
+<span class="n">mongodb_server_host</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;freva-deployment.cloud.dkrz.de&quot;</span>
+
+<span class="c1">### The the host name of the redis-cache, this cache is used for caching</span>
+<span class="c1">### different kinds of data. If not set this will fall back to the host name</span>
+<span class="c1">### of the rest-api server.</span>
+<span class="n">redis_host</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;freva-deployment.cloud.dkrz.de&quot;</span>
+
+<span class="c1">### Set the hostname(s) for the data-loading portal. The data-loading portal</span>
+<span class="c1">### is a services that provisions data via zarr. The data-loading portal is</span>
+<span class="c1">### a distributed system, meaning that you can set multiple hostnames that</span>
+<span class="c1">### form a distributed memory. The first entry will be used as the master</span>
+<span class="c1">### scheduler and the consecutive ones as workers. If you leave this blank</span>
+<span class="c1">## then the service will be disabled.</span>
+<span class="n">data_loader_portal_hosts</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;freva-deployment.cloud.dkrz.de,freva-deployment.cloud.dkrz.de&quot;</span>
+
+<span class="c1">## Set the amount of memory allocated to the search engine (Solr).</span>
+<span class="n">solr_mem</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;4g&quot;</span>
+
+<span class="c1">## Set the port for the freva_rest service.</span>
+<span class="n">freva_rest_port</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">7777</span>
+
+<span class="c1">## Set the become (sudo) username to change to for installing the services.</span>
+<span class="c1">## Leave blank to utiilise a non-privileged user-based installation.</span>
+<span class="c1">## Non-privileged installation means the system will be installed in the</span>
+<span class="c1">## user space of the user that logs on to the system.</span>
+<span class="n">ansible_become_user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;root&quot;</span>
+
+<span class="c1">## Ansible needs a Python 3 interpreter on the target server. This interpreter</span>
+<span class="c1">## can be set for custom Python 3 instances. By default, Ansible will try</span>
+<span class="c1">## to use the default Python interpreter path /usr/bin/python.</span>
+<span class="n">ansible_python_interpreter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;/usr/bin/python3&quot;</span>
+
+<span class="c1">## If the username running the deployment software and the username</span>
+<span class="c1">## that installs the services differ, instruct Ansible to use the</span>
+<span class="c1">## specified username for SSH connections to the target server.</span>
+<span class="c1">## If left blank, the current username will be used.</span>
+<span class="n">ansible_user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;k204230&quot;</span>
+
+<span class="c1">## Indicate whether to empty any pre-existing folders/docker volumes.</span>
+<span class="c1">## Useful for a truly fresh start (default: false).</span>
+<span class="n">wipe</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span>
+
+<span class="c1">## Set the path where the permanent freva-rest data should be stored.</span>
+<span class="c1">## By default, this is set to /opt/freva.</span>
+<span class="n">data_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;/opt/freva&quot;</span>
+
+<span class="c1">### Indicate whether or not the redis-caching services will be shared among</span>
+<span class="c1">### other freva instances. In this case the name of the service will simply</span>
+<span class="c1">### be called redis-cache service otherwise &lt;project_name&gt;-cache</span>
+<span class="n">shared_cache</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span>
+
+<span class="c1">### Authentication is done via open id connect. This deployment assumes that</span>
+<span class="c1">## you have set up and configured a open id connect host. Set the url</span>
+<span class="c1">## to the open id discovery. This url usually ends with</span>
+<span class="c1">## `.well-known/openid-configuration`</span>
+<span class="n">oidc_url</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;https://freva-keycloak.cloud.dkrz.de/realms/Freva/.well-known/openid-configuration&quot;</span>
+
+
+<span class="c1">### Set the client id (app name) of the open id connect service.</span>
+<span class="n">oidc_client</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;freva&quot;</span>
+
+<span class="c1">### If you have configured that your OIDC client needs a client secret</span>
+<span class="c1">### you can define it here, if not then you don&#39;t have to set it</span>
+<span class="n">oidc_client_secret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;&quot;</span>
+
+<span class="c1">## Set the username that will own all files created by the service such as</span>
+<span class="c1">## database files etc. This can be useful if multiple users take turn in</span>
+<span class="c1">## deploying and administering the service. The value of the username</span>
+<span class="c1">## will default to the user that deploys the service</span>
+<span class="n">admin_user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;b380001&quot;</span>
+
+<span class="k">[core]</span>
+<span class="c1">## Specify the host name were the client should be deployed</span>
+<span class="n">core_host</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;freva-deployment.cloud.dkrz.de&quot;</span>
+
+<span class="c1">## List of users that can alter the configuration of the freva command line interface.</span>
+<span class="c1">## If blank, the user that runs the deployment is chosen.</span>
+<span class="n">admins</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;k204230&quot;</span>
+
+<span class="c1">## The path where the core library should be installed.</span>
+<span class="c1">## Conda is used for installing the core library. Setting this</span>
+<span class="c1">## instructs Conda to install a new Conda environment into this folder.</span>
+<span class="n">install_dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;/opt/freva/core&quot;</span>
+
+<span class="c1">## The directory where the project configuration files will be stored.</span>
+<span class="c1">## This can be useful if you want to set up multiple freva instances with</span>
+<span class="c1">## the same software stack (Anaconda environment). Leave blank to use the</span>
+<span class="c1">## same directory as anaconda installation directory.</span>
+<span class="n">root_dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;&quot;</span>
+
+<span class="c1">## If you do not wish to install a new freva Conda environment but only</span>
+<span class="c1">## (re)configure an already installed system, you can set the `install`</span>
+<span class="c1">## variable to false. This can be useful if you have a central instance</span>
+<span class="c1">## of freva deployed and want to set up a project-specific configuration</span>
+<span class="c1">## that uses this central instance.</span>
+<span class="n">install</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
+
+<span class="c1">## The directory where user-specific output will be stored.</span>
+<span class="c1">## If left blank, it defaults to the folder that holds the project</span>
+<span class="c1">## specific (config) data `&lt;root_dir&gt;/work`.</span>
+<span class="n">base_dir_location</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;&quot;</span>
+
+<span class="c1">## Set the directory holding user content, like plots, for the web user</span>
+<span class="c1">## interface. Note: After a plugin application, display content of the plugin</span>
+<span class="c1">## output will be copied to this directory. The default location of this</span>
+<span class="c1">## directory (if left blank) is the user-specific output dir</span>
+<span class="c1">## `&lt;base_dir_location/share/preview`.</span>
+<span class="n">preview_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;&quot;</span>
+
+<span class="c1">## Set the workload manager system. Currently available options are:</span>
+<span class="c1">## &quot;local&quot;, &quot;slurm&quot;, &quot;pbs&quot;, &quot;lfs&quot;, &quot;moab&quot;, &quot;oar&quot;, &quot;sge&quot;.</span>
+<span class="n">scheduler_system</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;local&quot;</span>
+
+<span class="c1">## Set the path to the directory that contains the stdout of the plugins.</span>
+<span class="c1">## This directory must be accessible to the web UI. The workload manager</span>
+<span class="c1">## will write the stdout into this directory. Defaults to user-specific</span>
+<span class="c1">## output dir `&lt;base_dir_location&gt;/share`.</span>
+<span class="n">scheduler_output_dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;&quot;</span>
+
+<span class="c1">## Set the target architecture of the system where the backend will be installed.</span>
+<span class="c1">## You can choose from the following options:</span>
+<span class="c1">## linux-64 (default), linux-aarch64, linux-ppc64le, linux-s390x,</span>
+<span class="c1">## oss-64, osx-arm64</span>
+<span class="n">arch</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;linux-64&quot;</span>
+
+<span class="c1">## If you need to install the core or its configuration as a different user,</span>
+<span class="c1">## set the ansible_become_user variable. This will install the core as a</span>
+<span class="c1">## different user. Leave blank if not needed.</span>
+<span class="n">ansible_become_user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;&quot;</span>
+
+<span class="c1">## If the username running the deployment software and the username</span>
+<span class="c1">## that installs the services differ, instruct Ansible to use the</span>
+<span class="c1">## specified username for SSH connections to the target server.</span>
+<span class="c1">## If left blank, the current username will be used.</span>
+<span class="n">ansible_user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;k204230&quot;</span>
+
+<span class="c1">## Ansible needs a Python 3 interpreter on the target server. This interpreter</span>
+<span class="c1">## can be set for custom Python 3 instances. By default, Ansible will try</span>
+<span class="c1">## to use the default Python interpreter path /usr/bin/python.</span>
+<span class="n">ansible_python_interpreter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;&quot;</span>
+
+<span class="c1">## The core deployment needs git. If git is not in the default PATH variable,</span>
+<span class="c1">## you can set the path to the git executable.</span>
+<span class="n">git_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;&quot;</span>
+
+<span class="c1">## If you want to set special group rights for freva configuration files,</span>
+<span class="c1">## you can set the admin_group variable. If `admin_group` is set, then config</span>
+<span class="c1">## files and directories in the `base_dir_location` are only writable to</span>
+<span class="c1">## `admin_group`.</span>
+<span class="n">admin_group</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;ch1187&quot;</span>
+
+<span class="c1">## Indicate whether to empty any pre-existing folders/docker volumes.</span>
+<span class="c1">## Useful for a truly fresh start (default: false).</span>
+<span class="n">wipe</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span>
+
+<span class="k">[web]</span>
+<span class="c1">## Specify the host name were the web ui service should be deployed</span>
+<span class="n">web_host</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;freva-deployment.cloud.dkrz.de&quot;</span>
+
+<span class="c1">## Set the URL of the web user interface.</span>
+<span class="n">project_website</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;www.freva-delopyment.cloud.dkrz.de&quot;</span>
+
+<span class="c1">## Freva can connect to a GPT service (that has to be set up seperately)</span>
+<span class="c1">## you can set the &lt;HOSTNAME&gt;:&lt;PORT&gt; of this service - if configured.</span>
+<span class="c1">## if you leave this blank, the website will not provid the chat interface.</span>
+<span class="n">chatbot_host</span><span class="o">=</span><span class="s2">&quot;&quot;</span>
+
+<span class="c1">## Ansible needs a Python 3 interpreter on the target server. This interpreter</span>
+<span class="c1">## can be set for custom Python 3 instances. By default, Ansible will try</span>
+<span class="c1">## to use the default Python interpreter path /usr/bin/python.</span>
+<span class="n">ansible_python_interpreter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;&quot;</span>
+
+<span class="c1">## If the username running the deployment software and the username</span>
+<span class="c1">## that installs the services differ, instruct Ansible to use the</span>
+<span class="c1">## specified username for SSH connections to the target server.</span>
+<span class="c1">## If left blank, the current username will be used.</span>
+<span class="n">ansible_user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;k204230&quot;</span>
+
+<span class="c1">## Set the path where the permanent web data should be stored.</span>
+<span class="c1">## By default, this is set to /opt/freva.</span>
+<span class="n">data_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;/opt/freva&quot;</span>
+
+<span class="c1">## Set the main HTML color scheme.</span>
+<span class="n">main_color</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;#f29631&quot;</span>
+<span class="c1">## Set the HTML border colors.</span>
+<span class="n">border_color</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;#bc8000&quot;</span>
+<span class="c1">## Set the HTML hover colors.</span>
+<span class="n">hover_color</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;#d48b3d&quot;</span>
+
+<span class="c1">## The &quot;About Us&quot; text is a small blurb about freva within the project.</span>
+<span class="n">about_us_text</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;Hier koennte Ihre Werbung stehen&quot;</span>
+
+<span class="c1">## Set the path to the institution logo. This should be the path to the logo</span>
+<span class="c1">## as seen by the target system. Ensure this path exists on the target machine.</span>
+<span class="n">institution_logo</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot; &quot;</span>
+
+<span class="c1">## Set email addresses for contact points for users.</span>
+<span class="n">contacts</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;freva@dkrz.de&quot;</span>
+
+<span class="c1">## Set the postal address, which will appear in the footer of the website.</span>
+<span class="n">imprint</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;Freva&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;German Climate Computing Centre (DKRZ)&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;Bundesstr. 45a&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;20146 Hamburg&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;Germany&quot;</span><span class="p">]</span>
+
+<span class="c1">## Here you can set a lengthy project description.</span>
+<span class="c1">## You can also set a path to a file containing the information,</span>
+<span class="c1">## like an HTML file.</span>
+<span class="n">homepage_text</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;Welcome to VASKEBJORN Climate Analytics, where data meets insight to drive sustainable solutions for a greener future. Our cutting-edge analytics platform empowers you with real-time information to understand and address the challenges posed by climate change. Dive into the world of Vaskebjorn and explore the dummy text below to get a glimpse of the impactful narratives we weave.&quot;</span>
+
+<span class="c1">## Set a one-line blurb of the project.</span>
+<span class="n">homepage_heading</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;VASKEBJORN - Visionary Analytics for Sustainable Knowledge Environment - Building Just Outcomes with Resilient Networks&quot;</span>
+
+<span class="c1">## Set the name of the project/institution, such as FUB, DWD, DKZ, etc.</span>
+<span class="n">institution_name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;Freva&quot;</span>
+
+<span class="c1">## Set the workload manager scheduler host. The web app will log into this</span>
+<span class="c1">## machine via SSH to submit plugin jobs.</span>
+<span class="n">scheduler_host</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;levante.dkrz.de&quot;</span><span class="p">]</span>
+
+<span class="c1">## Set the hosts that are allowed to execute WSGI code.</span>
+<span class="n">allowed_hosts</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;localhost&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;www.freva-deployment.drkz.de&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;www.example.com&quot;</span><span class="p">]</span>
+
+<span class="c1">## Turn on/off debug mode on the website.</span>
+<span class="n">debug</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span>
+
+<span class="c1">## Specify the plugin ID to be used for the web tour.</span>
+<span class="n">guest_tour_result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">105</span>
+
+<span class="c1">## Set the menu entries.</span>
+<span class="c1"># Menu entries consist of three elements: [Label, URL, HTML ID] -&gt; e.g., [&quot;Plugins&quot;, &quot;plugins:home&quot;, &quot;plugin_menu&quot;].</span>
+<span class="n">menu_entries</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span>
+<span class="w">   </span><span class="p">[</span><span class="s2">&quot;Data-Browser&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;solr:data_browser&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;browser_menu&quot;</span><span class="p">],</span>
+<span class="w">   </span><span class="p">[</span><span class="s2">&quot;Plugins&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;plugins:home&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;plugin_menu&quot;</span><span class="p">],</span>
+<span class="w">   </span><span class="p">[</span><span class="s2">&quot;History&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;history:history&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;history_menu&quot;</span><span class="p">],</span>
+<span class="w">   </span><span class="p">[</span><span class="s2">&quot;Result-Browser&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;history:result_browser&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;result_browser_menu&quot;</span><span class="p">],</span>
+<span class="w">   </span><span class="p">[</span><span class="s2">&quot;Help&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;plugins:about&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;doc_menu&quot;</span><span class="p">]</span>
+<span class="p">]</span>
+
+<span class="c1">## Set the become (sudo) username to change to for installing the services.</span>
+<span class="c1">## Leave blank to utiilise a non-privileged user-based installation.</span>
+<span class="c1">## Non-privileged installation means the system will be installed in the</span>
+<span class="c1">## user space of the user that logs on to the system.</span>
+<span class="n">ansible_become_user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;root&quot;</span>
+
+
+<span class="c1">## Set the username that will own all files created by the service such as</span>
+<span class="c1">## database files etc. This can be useful if multiple users take turn in</span>
+<span class="c1">## deploying and administering the service. The value of the username</span>
+<span class="c1">## will default to the user that deploys the service</span>
+<span class="n">admin_user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;b380001&quot;</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="webui.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Web UI for Freva Deployment</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="../after-deployment/index.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">After successful deployment</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#typical-deployment">Typical deployment</a></li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2025, DKRZ - CLINT.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

@@ -1,0 +1,802 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Configuring and running the deployment &#8212; freva-deployment 2505.0.1 documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/togglebutton.css?v=13237357" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="../_static/documentation_options.js?v=04ffed07"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=f281be69"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="../_static/togglebutton.js?v=4a39c7ea"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'deployment/Configure';</script>
+    <link rel="canonical" href="http://127.0.0.1:8000/deployment/Configure.html" />
+    <link rel="icon" href="../_static/freva_owl.svg"/>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Usage of the text user interface" href="TuiHowto.html" />
+    <link rel="prev" title="Installing freva-deployment" href="Installation.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class=" navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../_static/freva_owl.svg" class="logo__image only-light" alt="freva-deployment 2505.0.1 documentation - Home"/>
+    <img src="../_static/freva_owl.svg" class="logo__image only-dark pst-js-only" alt="freva-deployment 2505.0.1 documentation - Home"/>
+  
+  
+</a></div>
+    
+  </div>
+  
+  <div class=" navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../architecture/index.html">
+    Freva Architecture and Configuration Guide
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="index.html">
+    The freva-deployment software
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../after-deployment/index.html">
+    After successful deployment
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../faq.html">
+    Frequently Asked Questions (FAQ)
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../whatsnew.html">
+    What’s new
+  </a>
+</li>
+
+            <li class="nav-item dropdown">
+                <button class="btn dropdown-toggle nav-item" type="button"
+                data-bs-toggle="dropdown" aria-expanded="false"
+                aria-controls="pst-nav-more-links">
+                    More
+                </button>
+                <ul id="pst-nav-more-links" class="dropdown-menu">
+                    
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../contributing.html">
+    Contributing
+  </a>
+</li>
+
+                </ul>
+            </li>
+            
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/FREVA-CLINT/freva-deployment" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://pypi.org/project/freva-deployment" title="PyPI" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-custom fa-pypi fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">PyPI</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../architecture/index.html">
+    Freva Architecture and Configuration Guide
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="index.html">
+    The freva-deployment software
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../after-deployment/index.html">
+    After successful deployment
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../faq.html">
+    Frequently Asked Questions (FAQ)
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../whatsnew.html">
+    What’s new
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../contributing.html">
+    Contributing
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/FREVA-CLINT/freva-deployment" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://pypi.org/project/freva-deployment" title="PyPI" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-custom fa-pypi fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">PyPI</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="Installation.html">Installing freva-deployment</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Configuring and running the deployment</a></li>
+<li class="toctree-l1"><a class="reference internal" href="TuiHowto.html">Usage of the text user interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="webui.html">Web UI for Freva Deployment</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Config.html">Example deployment configuration</a></li>
+</ul>
+</div>
+</nav></div>
+        <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="index.html" class="nav-link">The freva-deployment software</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Configuring and running the deployment</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="configuring-and-running-the-deployment">
+<h1>Configuring and running the deployment<a class="headerlink" href="#configuring-and-running-the-deployment" title="Link to this heading">#</a></h1>
+<p>A complete Freva instance will need the following services:</p>
+<ul class="simple">
+<li><p>freva-rest api</p></li>
+<li><p>mongoDB server</p></li>
+<li><p>MySQL server</p></li>
+<li><p>Redis server (optional)</p></li>
+<li><p>Data-loader server(s) (optional)</p></li>
+<li><p>Web ui app (optional)</p></li>
+<li><p>Nginx reverse proxy for connecting to the web ui app (optional)</p></li>
+<li><p>Freva client - core - library</p></li>
+</ul>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Please consult the <a class="reference internal" href="../faq.html#faq"><span class="std std-ref">Frequently Asked Questions</span></a> guide to see how you can fix known issues.</p>
+</div>
+<section id="container-or-conda-forge-deployment">
+<h2>Container or Conda-Forge Deployment<a class="headerlink" href="#container-or-conda-forge-deployment" title="Link to this heading">#</a></h2>
+<p>Starting with version <code class="docutils literal notranslate"><span class="pre">2505.0.0</span></code> of the deployment software, you can choose
+how the services are deployed. Two options are supported:</p>
+<ul class="simple">
+<li><p>Container-based deployment using Docker or Podman</p></li>
+<li><p>Conda-Forge-based deployment using open-source packages</p></li>
+</ul>
+<p>Unlike Anaconda, the conda-forge channel provides fully open-source packages,
+avoiding potential licensing conflicts.</p>
+<div class="admonition danger">
+<p class="admonition-title">Danger</p>
+<p>Versions prior to <code class="docutils literal notranslate"><span class="pre">2505.0.0</span></code> supported only Docker/Podman container deployments.</p>
+<p>If you’re upgrading from a version older than <code class="docutils literal notranslate"><span class="pre">2505.0.0</span></code> and wish to switch
+to a Conda-based setup, you must first run the deployment software once using
+the <code class="docutils literal notranslate"><span class="pre">deployment_method=podman</span></code> (or <code class="docutils literal notranslate"><span class="pre">docker</span></code>) option. This ensures that all
+persistent service data is migrated before  switching to the Conda environment.</p>
+</div>
+</section>
+<section id="running-the-deployment">
+<h2>Running the deployment<a class="headerlink" href="#running-the-deployment" title="Link to this heading">#</a></h2>
+<p>The command <code class="docutils literal notranslate"><span class="pre">deploy-freva</span></code> opens a text user interface (tui) that will walk
+you through the setup of the deployment.</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Navigation is similar to the one of the <em>nano</em> text editor.
+The shortcuts start with a <code class="docutils literal notranslate"><span class="pre">^</span></code> which indicates <code class="docutils literal notranslate"><span class="pre">CTRL+</span></code>.</p>
+</div>
+<p>Please refer to the <a class="reference internal" href="TuiHowto.html"><span class="doc std std-doc">usage of the text user interface section</span></a>
+on tui usage instructions.</p>
+<section id="deployment-with-existing-configuration">
+<h3>Deployment with existing configuration.<a class="headerlink" href="#deployment-with-existing-configuration" title="Link to this heading">#</a></h3>
+<p>Although we recommend you to follow the <a class="reference internal" href="TuiHowto.html"><span class="doc std std-doc">deployment tui</span></a> you can also
+directly use <a class="reference external" href="http://toml.io">toml</a> configuration files for setting up the
+deployment. Two examples of such deployment configurations can be found
+in the <a class="reference internal" href="Config.html"><span class="doc std std-doc">example deployment configuration</span></a> section.</p>
+<p>If you already have a configuration saved in a toml configuration file you can
+issue the <code class="docutils literal notranslate"><span class="pre">deploy-freva</span> <span class="pre">cmd</span></code> command:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">deploy-freva cmd --help</span>
+<span class="go">Usage: deploy-freva cmd [-h] [--config CONFIG]</span>
+<span class="go">                        [--steps {web,core,db,freva-rest,auto} [{web,core,db,freva-rest,auto} ...]]</span>
+<span class="go">                        [--ask-pass] [--ssh-port SSH_PORT] [-v] [-l] [-g]</span>
+<span class="go">                        [--skip-version-check] [-V]</span>
+<span class="go">                        [-t {core,db,cache,data-loader,freva-rest,mongodb,search-server,pre-web,web} [{core,db,cache,data-loader,freva-rest,mongodb,search-server,pre-web,web} ...]]</span>
+<span class="go">                        [--cowsay]</span>
+
+<span class="go">Run deployment in batch mode.</span>
+
+<span class="go">Options:</span>
+<span class="go">  -h, --help            show this help message and exit</span>
+<span class="go">  --config, -c CONFIG   Path to ansible inventory file. (default:</span>
+<span class="go">                        /home/runner/.config/freva/deployment/inventory.toml)</span>
+<span class="go">  --steps, -s {web,core,db,freva-rest,auto} [{web,core,db,freva-rest,auto} ...]</span>
+<span class="go">                        The services/code stack to be deployed. Use auto to</span>
+<span class="go">                        only deploy outdated services (default: [&#39;db&#39;,</span>
+<span class="go">                        &#39;freva-rest&#39;, &#39;web&#39;, &#39;core&#39;])</span>
+<span class="go">  --ask-pass            Connect to server via ssh passwd instead of public</span>
+<span class="go">                        key. (default: False)</span>
+<span class="go">  --ssh-port SSH_PORT   Set the ssh port, in 99.9% of the cases this should be</span>
+<span class="go">                        22 (default: 22)</span>
+<span class="go">  -v, --verbose         Verbosity level (default: 0)</span>
+<span class="go">  -l, --local           Deploy services on the local machine, debug purpose.</span>
+<span class="go">                        (default: False)</span>
+<span class="go">  -g, --gen-keys        Generate public and private web certs, use with</span>
+<span class="go">                        caution. (default: False)</span>
+<span class="go">  --skip-version-check  Skip the version check. Use with caution. (default:</span>
+<span class="go">                        False)</span>
+<span class="go">  -V, --version         show program&#39;s version number and exit</span>
+<span class="go">  -t, --tags {core,db,cache,data-loader,freva-rest,mongodb,search-server,pre-web,web} [{core,db,cache,data-loader,freva-rest,mongodb,search-server,pre-web,web} ...]</span>
+<span class="go">                        Fine grain deployment. Instead of using steps you can</span>
+<span class="go">                        set those ansible tasks (tags) to be deployed.</span>
+<span class="go">                        (default: None)</span>
+<span class="go">  --cowsay              Let the cow speak! (default: False)</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">--steps</span></code> flags can be used if not all services should be deployed.</p>
+</section>
+</section>
+<section id="setting-the-python">
+<h2>Setting the python<a class="headerlink" href="#setting-the-python" title="Link to this heading">#</a></h2>
+<p>Some systems do not have access to python3.4+ (/usr/bin/python3) or git by default.
+In such cases you can overwrite the <code class="docutils literal notranslate"><span class="pre">ansible_python_interpreter</span></code> in the inventory
+settings of the server section to point ansible to a custom <code class="docutils literal notranslate"><span class="pre">python3</span></code> binary. For example</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ansible_python_interpreter</span><span class="o">=/</span><span class="n">sw</span><span class="o">/</span><span class="n">spack</span><span class="o">-</span><span class="n">rhel6</span><span class="o">/</span><span class="n">miniforge3</span><span class="o">-</span><span class="mf">4.9.2</span><span class="o">-</span><span class="mi">3</span><span class="o">-</span><span class="n">Linux</span><span class="o">-</span><span class="n">x86_64</span><span class="o">-</span><span class="n">pwdbqi</span><span class="o">/</span><span class="nb">bin</span><span class="o">/</span><span class="n">python3</span>
+</pre></div>
+</div>
+</section>
+<section id="setting-up-the-deployment-without-root-privileges">
+<h2>Setting up the deployment without root-privileges<a class="headerlink" href="#setting-up-the-deployment-without-root-privileges" title="Link to this heading">#</a></h2>
+<p>Sometimes it can be necessary, either due to security concerns or user rights
+restrictions, to set up all services as a un-privileged user. Since version
+<code class="docutils literal notranslate"><span class="pre">v2402.0.0</span></code> the deployment routine supports such setup scenarios.</p>
+<p>Especially when security is a concern we recommend you to use the <code class="docutils literal notranslate"><span class="pre">conda</span></code> based
+deployment instead of <code class="docutils literal notranslate"><span class="pre">podman</span></code> or <code class="docutils literal notranslate"><span class="pre">docker</span></code> for setting up the freva
+infrastructure.</p>
+<p>Root less installation works essentially just like root based installation. You
+only have to either set the <code class="docutils literal notranslate"><span class="pre">become_user</span></code> configuration to a user name that is
+different from <code class="docutils literal notranslate"><span class="pre">root</span></code> or leave it blank. In case you leave it blank the login
+user will deploy the services. For rootless deployments we always recommend to
+use a <code class="docutils literal notranslate"><span class="pre">conda</span></code> based service setup.</p>
+<p>Although root-less installation is straight forward it comes with two caveats
+that should be kept in mind:</p>
+<p><em>User based systemd services</em>: The <a class="reference external" href="https://systemd.io/">systemd</a> units are not installed system wide but
+on user basis, which means that you can access the service using the <code class="docutils literal notranslate"><span class="pre">--user</span></code>
+flag: for example:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">systemctl status --user freva-web</span>
+</pre></div>
+</div>
+<p>instead of</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">systemctl status freva-web</span>
+</pre></div>
+</div>
+<p>This also means that in its default configuration systemd will terminate all
+running user services as soon as the user terminates a login session.
+To avoid this you have to enable ‘lingering’ states of services for that user:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">loginctl enable-linger &lt;USER&gt;</span>
+</pre></div>
+</div>
+<p>This command can only by applied by the root user. Backups are also done as
+user instead of system wide basis, you can check the backups after deployment using
+the <code class="docutils literal notranslate"><span class="pre">crontab</span> <span class="pre">-l</span></code> command.</p>
+<p><em>No direct access to ports 80 and 443</em>: The freva web user interface cannot directly be accessed by a web server
+listing on port 80 and 443 as those ports are off limits for normal users. If
+you choose to deploy the web app as an unprivileged user the apache httpd web
+server serving the web app will be running on port 9080 instead of 80 and port
+9443 instead of 443. You can either communicate the usage of those  ports to
+the users of the system, or <strong>recommended</strong>, set up a simple redirect on
+another httpd server that is running on the server where the web app is
+deployed. Although this httpd server needs a privileged user it only has to
+be configured once. A simple configuration for <em>apache</em> httpd looks the following:</p>
+<div class="highlight-apache notranslate"><div class="highlight"><pre><span></span><span class="nt">&lt;VirtualHost</span><span class="w"> </span><span class="s">*:80</span><span class="nt">&gt;</span>
+<span class="w">    </span><span class="nb">ServerName</span><span class="w"> </span>my-host
+<span class="w">     </span><span class="nb">Redirect</span><span class="w"> </span>permanent<span class="w"> </span>/<span class="w"> </span>https://www.my-host.org.au:9443
+<span class="nt">&lt;/VirtualHost&gt;</span>
+
+<span class="nt">&lt;VirtualHost</span><span class="w"> </span><span class="s">*:443</span><span class="nt">&gt;</span>
+<span class="w">    </span><span class="nb">ServerName</span><span class="w"> </span>my-host
+<span class="w">     </span><span class="nb">Redirect</span><span class="w"> </span>permanent<span class="w"> </span>/<span class="w"> </span>https://www.my-host.org.au:9443
+<span class="nt">&lt;/VirtualHost&gt;</span>
+</pre></div>
+</div>
+<p>This would redirect all traffic from http(s)://www.my-host.org to the
+apache httpd container that serves the web app without having the users to
+remember the specific ports. Similar configurations are available to other
+web server software.</p>
+</section>
+<section id="version-checking">
+<h2>Version checking<a class="headerlink" href="#version-checking" title="Link to this heading">#</a></h2>
+<p>Because the system consists of multiple micro services the software will
+perform a version check <em>before</em> the deployment to ensure that all versions
+fit together. If you for example want to deploy the rest api the system will
+also check an update of the freva cli if it finds that the cli library doesn’t
+fit with the latest version of the rest api. This ensures that all parts of the
+system will work together.</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>You can disable this version checking by using the
+<code class="docutils literal notranslate"><span class="pre">--skip-version-check</span></code> flag. Use this flag with caution.</p>
+</div>
+</section>
+<section id="using-environment-variables">
+<h2>Using environment variables<a class="headerlink" href="#using-environment-variables" title="Link to this heading">#</a></h2>
+<p>Once the deployment configuration is set up it might be useful to store the
+config and all the files that are needed to run the deployment at a central,
+yet <em>secure</em> location. This can be useful if multiple admins will have to take
+turns in (re)-deploying the system and thus the configuration has to be up to
+date for those admins. The problem that arises is that the setup might differ
+slightly for each person and computer running the deployment. For instance the
+<code class="docutils literal notranslate"><span class="pre">ansible_user</span></code> key might differ. For this purpose the deployment supports setting
+environment variables. Those environment variables can be used in the configuration
+file. Like <code class="docutils literal notranslate"><span class="pre">ansible_user</span> <span class="pre">=</span> <span class="pre">$USER</span></code>. You can then set up the <code class="docutils literal notranslate"><span class="pre">USER</span></code> variable with
+help of the deployment tui. To do so open the main menu (<code class="docutils literal notranslate"><span class="pre">CTRL+x</span></code>) and then
+choose the add set variables options (<code class="docutils literal notranslate"><span class="pre">CTRL+v</span></code>). You can then add or edit
+variables. In the figure below the <code class="docutils literal notranslate"><span class="pre">USER</span></code> variable is set to a specific user
+name. If the deployment encounters an entry using <code class="docutils literal notranslate"><span class="pre">$USER</span></code> variable it will be
+replaced by the according value that points to the <code class="docutils literal notranslate"><span class="pre">$USER</span></code> variable.</p>
+<p><img alt="Add Variable" src="../_images/Variable.png" /></p>
+<section id="relative-paths-using-the-cfd-variable">
+<h3>Relative paths using the $CFD variable<a class="headerlink" href="#relative-paths-using-the-cfd-variable" title="Link to this heading">#</a></h3>
+<p>Instead of setting the absolute paths in the configuration files
+for example the path to the public certificate files, you should give the
+paths <em>relative</em> to the configuration file. To indicate that the
+freva-deployment machinery should create paths relative to the configuration
+you should set all paths starting with the <code class="docutils literal notranslate"><span class="pre">$CFD</span></code> (current file directory)
+variable. For example if the configuration file is located in
+<code class="docutils literal notranslate"><span class="pre">/home/user/config/foo/foo.toml</span></code> and the public cert file is located in the
+same directory as the configuration file then you can set the path to the cert
+file in the configuration files via <code class="docutils literal notranslate"><span class="pre">$CFD/foo.crt</span></code>.</p>
+<p>This will assure that paths will work from any other machine.</p>
+</section>
+<section id="stuck-in-load-save-dialogue-in-the-tui">
+<h3>Stuck in load/save dialogue in the tui?<a class="headerlink" href="#stuck-in-load-save-dialogue-in-the-tui" title="Link to this heading">#</a></h3>
+<p>The load/save forms can be exited by pressing the <code class="docutils literal notranslate"><span class="pre">&lt;TAB&gt;</span></code> key
+which will get you to input field at the bottom of the screen. If the input
+field has text delete it an press the <code class="docutils literal notranslate"><span class="pre">&lt;ESC&gt;</span></code> key, this will bring you get to
+the screen where you started.</p>
+</section>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="Installation.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Installing freva-deployment</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="TuiHowto.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Usage of the text user interface</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#container-or-conda-forge-deployment">Container or Conda-Forge Deployment</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#running-the-deployment">Running the deployment</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#deployment-with-existing-configuration">Deployment with existing configuration.</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#setting-the-python">Setting the python</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#setting-up-the-deployment-without-root-privileges">Setting up the deployment without root-privileges</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#version-checking">Version checking</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#using-environment-variables">Using environment variables</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#relative-paths-using-the-cfd-variable">Relative paths using the $CFD variable</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#stuck-in-load-save-dialogue-in-the-tui">Stuck in load/save dialogue in the tui?</a></li>
+</ul>
+</li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2025, DKRZ - CLINT.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

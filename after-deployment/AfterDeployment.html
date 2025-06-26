@@ -1,0 +1,726 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Activation scripts and module files for users &#8212; freva-deployment 2505.0.1 documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/togglebutton.css?v=13237357" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="../_static/documentation_options.js?v=04ffed07"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=f281be69"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="../_static/togglebutton.js?v=4a39c7ea"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'after-deployment/AfterDeployment';</script>
+    <link rel="canonical" href="http://127.0.0.1:8000/after-deployment/AfterDeployment.html" />
+    <link rel="icon" href="../_static/freva_owl.svg"/>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Transitioning guide" href="TransitionService.html" />
+    <link rel="prev" title="After successful deployment" href="index.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class=" navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../_static/freva_owl.svg" class="logo__image only-light" alt="freva-deployment 2505.0.1 documentation - Home"/>
+    <img src="../_static/freva_owl.svg" class="logo__image only-dark pst-js-only" alt="freva-deployment 2505.0.1 documentation - Home"/>
+  
+  
+</a></div>
+    
+  </div>
+  
+  <div class=" navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../architecture/index.html">
+    Freva Architecture and Configuration Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../deployment/index.html">
+    The freva-deployment software
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="index.html">
+    After successful deployment
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../faq.html">
+    Frequently Asked Questions (FAQ)
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../whatsnew.html">
+    What’s new
+  </a>
+</li>
+
+            <li class="nav-item dropdown">
+                <button class="btn dropdown-toggle nav-item" type="button"
+                data-bs-toggle="dropdown" aria-expanded="false"
+                aria-controls="pst-nav-more-links">
+                    More
+                </button>
+                <ul id="pst-nav-more-links" class="dropdown-menu">
+                    
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../contributing.html">
+    Contributing
+  </a>
+</li>
+
+                </ul>
+            </li>
+            
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/FREVA-CLINT/freva-deployment" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://pypi.org/project/freva-deployment" title="PyPI" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-custom fa-pypi fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">PyPI</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../architecture/index.html">
+    Freva Architecture and Configuration Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../deployment/index.html">
+    The freva-deployment software
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="index.html">
+    After successful deployment
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../faq.html">
+    Frequently Asked Questions (FAQ)
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../whatsnew.html">
+    What’s new
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../contributing.html">
+    Contributing
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/FREVA-CLINT/freva-deployment" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://pypi.org/project/freva-deployment" title="PyPI" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-custom fa-pypi fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">PyPI</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Activation scripts and module files for users</a></li>
+
+<li class="toctree-l1"><a class="reference internal" href="TransitionService.html">Transitioning guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="TransitionPlugins.html">Transitioning of the Plugins</a></li>
+<li class="toctree-l1"><a class="reference internal" href="LegalNotes.html">Appendix III: Legal notes as flat-pages</a></li>
+</ul>
+</div>
+</nav></div>
+        <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="index.html" class="nav-link">After successful deployment</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Activation scripts and module files for users</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="activation-scripts-and-module-files-for-users">
+<h1>Activation scripts and module files for users<a class="headerlink" href="#activation-scripts-and-module-files-for-users" title="Link to this heading">#</a></h1>
+<p>The core deployment will create activation scripts for various shell flavours.
+The following activation scripts are located in the <code class="docutils literal notranslate"><span class="pre">&lt;root_dir&gt;/freva</span></code> folder:</p>
+<ul class="simple">
+<li><p><em>activate_sh</em>: To be sourced by shell flavours like shell, bash, zsh etc.</p></li>
+<li><p><em>activate_csh</em>: To be sourced by c-shell flavours like csh, tcsh</p></li>
+<li><p><em>activate_fish</em>: To be source by fish</p></li>
+<li><p><em>loadfreva.module</em>: Modules file
+The source scripts can either be copied where they are automatically sourced
+or users can be instructed to use the source command for their shell. If
+<code class="docutils literal notranslate"><span class="pre">modules</span></code> is available on the host system you can copy the <em>loadfreva.modules</em>
+file into the <code class="docutils literal notranslate"><span class="pre">MODULEPATH</span></code> location.</p></li>
+</ul>
+</section>
+<section id="persisent-micro-service-data">
+<h1>Persisent micro service data:<a class="headerlink" href="#persisent-micro-service-data" title="Link to this heading">#</a></h1>
+<p>If you chose podman/docker or conda based deployment of the micro-services
+you will have access to a <code class="docutils literal notranslate"><span class="pre">systemd</span></code> unit of the created
+service. In general the services can be accessed by
+<code class="docutils literal notranslate"><span class="pre">&lt;project_name&gt;-&lt;service_name&gt;.service</span></code> If for example the <code class="docutils literal notranslate"><span class="pre">project_name</span></code>
+key was set to <code class="docutils literal notranslate"><span class="pre">clex-ces</span></code> then the following services are created:</p>
+<ul class="simple">
+<li><p>database: <code class="docutils literal notranslate"><span class="pre">clex-ces-db.service</span></code>, <code class="docutils literal notranslate"><span class="pre">clex-ces-vault.serice</span></code></p></li>
+<li><p>freva-rest: <code class="docutils literal notranslate"><span class="pre">clex-ces-freva-rest.service</span></code> <code class="docutils literal notranslate"><span class="pre">clex-ces-mongo.service</span></code></p></li>
+<li><p>web ui: <code class="docutils literal notranslate"><span class="pre">clex-ces-web.service</span></code> <code class="docutils literal notranslate"><span class="pre">clex-ces-web-cache.service</span></code> <code class="docutils literal notranslate"><span class="pre">clex-ces-web-proxy.service</span></code></p></li>
+<li><p>data-loader: <code class="docutils literal notranslate"><span class="pre">freva-caching.service</span></code> <code class="docutils literal notranslate"><span class="pre">data-loader&#64;schduler.service</span></code> <code class="docutils literal notranslate"><span class="pre">data-loader&#64;worker.service</span></code></p></li>
+</ul>
+<p>The data-loader services for zarr streaming are optional. Additionally
+<code class="docutils literal notranslate"><span class="pre">clex-ces-web-cache.service</span></code> <code class="docutils literal notranslate"><span class="pre">clex-ces-web-proxy.service</span></code> will only be present
+for <em>conda-forge</em> based deployments.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If you have set up the services as an unprivileged user you need
+to access the services with help of the <code class="docutils literal notranslate"><span class="pre">--user</span></code> flag for example:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">systemclt --user restart clex-ces-web.service</span>
+</pre></div>
+</div>
+</div>
+<section id="access-of-service-data-on-the-host-machine">
+<h2>Access of service data on the host machine<a class="headerlink" href="#access-of-service-data-on-the-host-machine" title="Link to this heading">#</a></h2>
+<section id="conda-forge-base-deployments">
+<h3>Conda-forge base deployments<a class="headerlink" href="#conda-forge-base-deployments" title="Link to this heading">#</a></h3>
+<p>The data of the services, like the database or databrowser cores
+should be persistent. The default location for all the service data
+is <code class="docutils literal notranslate"><span class="pre">/opt/freva</span></code> or whatever folder was set as <code class="docutils literal notranslate"><span class="pre">data_path</span></code> variable.
+The following logic applies:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">&lt;data_path&gt;/&lt;project_name&gt;/services/&lt;project_name&gt;/&lt;service_name&gt;/</span></code></p></li>
+</ul>
+<p>for example:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">/opt/freva/clex-ces/services/db/</span></code></p></li>
+</ul>
+<p>The conda environments are stored in:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">&lt;data_path&gt;/&lt;project_name&gt;/conda</span></code></p></li>
+</ul>
+<p>for example:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">/opt/freva/clex-ces/conda</span></code></p></li>
+</ul>
+</section>
+<section id="container-based-deployment">
+<h3>Container based deployment<a class="headerlink" href="#container-based-deployment" title="Link to this heading">#</a></h3>
+<p>Persistent data for container based deployments in stored in docker/podman managed
+volumes. The volume names follow the following structure:</p>
+<p><code class="docutils literal notranslate"><span class="pre">&lt;project_name&gt;-&lt;service&gt;_&lt;name&gt;</span></code></p>
+<p>for exmaple:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">clex-ces-db_data</span></code>: Persistent database data</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">clex-ces-db_logs</span></code>: Persistent database logs</p></li>
+</ul>
+<p>You can inspect the volumes using the following commands:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">podman volume ls</span>
+<span class="go">podman volume inspect &lt;project_name&gt;-&lt;service&gt;_&lt;type&gt;</span>
+</pre></div>
+</div>
+<p>If you chose the <code class="docutils literal notranslate"><span class="pre">docker/podman</span></code> deployment option then the containers are
+orchestrated using <code class="docutils literal notranslate"><span class="pre">podman-compose</span></code> / <code class="docutils literal notranslate"><span class="pre">docker-compose</span></code>.
+The compose files are also located in the <code class="docutils literal notranslate"><span class="pre">&lt;data_path&gt;/&lt;project_name&gt;/compose_services</span></code>
+location, for example:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">/opt/freva/clex-ces/compose_services</span></code></p></li>
+</ul>
+</section>
+</section>
+<section id="simple-backup-scripts">
+<h2>Simple backup scripts:<a class="headerlink" href="#simple-backup-scripts" title="Link to this heading">#</a></h2>
+<p>Services with persistant data - <code class="docutils literal notranslate"><span class="pre">db</span></code>, <code class="docutils literal notranslate"><span class="pre">mongo</span></code> and <code class="docutils literal notranslate"><span class="pre">solr</span></code> offer a very simple
+backup script.</p>
+<p>Depending on the chosen deployment method this backup is either executed directly on the
+host machine (conda-forge based deployment) or in a container.</p>
+<p>If you have <code class="docutils literal notranslate"><span class="pre">anacron</span></code> installed on your host machine then a cron script to
+automatically backup databases and solr cores is applied nightly.
+By default the script keeps the last 7 backups.
+For conda-forge base deployments the backup data can be found in:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>&lt;data_path&gt;/&lt;project_name&gt;/services/&lt;service&gt;/backup
+</pre></div>
+</div>
+<p>Container deployments (docker/podman) utilise the following volumes:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>&lt;project_name&gt;-&lt;service&gt;_backup
+</pre></div>
+</div>
+<p>This is only a rudimentary backup solution, ideally you should transfer those
+backups regularly to a different location. You can also disable this
+rudimentary backup strategy by deleting the backup scripts in <code class="docutils literal notranslate"><span class="pre">/etc/cron.daily</span></code>
+and replace it by a more sophisticated backup mechanism.</p>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>If you have set up the services as an unprivileged user you can
+access the backup scripts using the <code class="docutils literal notranslate"><span class="pre">crontab</span></code> command.</p>
+</div>
+</section>
+<section id="the-web-ui-admin-panel">
+<span id="id1"></span><h2>The web UI admin Panel<a class="headerlink" href="#the-web-ui-admin-panel" title="Link to this heading">#</a></h2>
+<p>The web user interface is manged by django which offers a powerful admin
+panel to manage users, user history and add additional links as so called
+flat pages. More information on the django admin panel can be found
+<a class="reference external" href="https://www.tutorialspoint.com/django/django_admin_interface.htm">online</a>.
+To access the admin panel you will first have to login as user <code class="docutils literal notranslate"><span class="pre">freva-admin</span></code>
+using the <em>master</em> password you’ve created during deployment. Once logged in
+as freva-admin you should navigate to <code class="docutils literal notranslate"><span class="pre">/admin</span></code> of your homepage. For example
+<code class="docutils literal notranslate"><span class="pre">https://www.clex.nci.org.au/admin</span></code> assuming the web page url is
+<code class="docutils literal notranslate"><span class="pre">https://www.clex.nci.org.au</span></code>. Here you can transfer admin rights to other
+users, like your user name. Or create
+<a class="reference external" href="https://docs.djangoproject.com/en/4.0/ref/contrib/flatpages/">new flat-pages</a>.
+Flat-pages are useful to create additional project specific information that
+can be displayed on the website. This information can be links to plugin
+documentation or legal notes (see below).</p>
+</section>
+<section id="adding-privacy-notes-and-terms-of-conditions-to-the-web-ui">
+<h2>Adding privacy notes and terms of conditions to the Web UI<a class="headerlink" href="#adding-privacy-notes-and-terms-of-conditions-to-the-web-ui" title="Link to this heading">#</a></h2>
+<p>For some incitations it might be necessary to add legal statements on privacy
+and terms of usage. Those statements can be added as flat-pages in the django
+<em>admin</em> panel. All flat-pages starting with the url <strong>/legal</strong> for example
+<code class="docutils literal notranslate"><span class="pre">/legal/privacy/</span></code> will be added as a link to the footer of home page. Examples
+of the content of such flat-pages can be found in the <a class="reference internal" href="LegalNotes.html"><span class="doc std std-doc">Appendix</span></a>.</p>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="index.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">After successful deployment</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="TransitionService.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Transitioning guide</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#">Activation scripts and module files for users</a></li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#persisent-micro-service-data">Persisent micro service data:</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#access-of-service-data-on-the-host-machine">Access of service data on the host machine</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#conda-forge-base-deployments">Conda-forge base deployments</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#container-based-deployment">Container based deployment</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#simple-backup-scripts">Simple backup scripts:</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#the-web-ui-admin-panel">The web UI admin Panel</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#adding-privacy-notes-and-terms-of-conditions-to-the-web-ui">Adding privacy notes and terms of conditions to the Web UI</a></li>
+</ul>
+</li>
+</ul>
+
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2025, DKRZ - CLINT.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

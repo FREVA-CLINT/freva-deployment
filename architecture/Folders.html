@@ -1,0 +1,732 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Basic Freva configuration &#8212; freva-deployment 2505.0.1 documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/togglebutton.css?v=13237357" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="../_static/documentation_options.js?v=04ffed07"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=f281be69"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="../_static/togglebutton.js?v=4a39c7ea"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'architecture/Folders';</script>
+    <link rel="canonical" href="http://127.0.0.1:8000/architecture/Folders.html" />
+    <link rel="icon" href="../_static/freva_owl.svg"/>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="The freva-deployment software" href="../deployment/index.html" />
+    <link rel="prev" title="Freva Architecture" href="Architecture.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class=" navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../_static/freva_owl.svg" class="logo__image only-light" alt="freva-deployment 2505.0.1 documentation - Home"/>
+    <img src="../_static/freva_owl.svg" class="logo__image only-dark pst-js-only" alt="freva-deployment 2505.0.1 documentation - Home"/>
+  
+  
+</a></div>
+    
+  </div>
+  
+  <div class=" navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="index.html">
+    Freva Architecture and Configuration Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../deployment/index.html">
+    The freva-deployment software
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../after-deployment/index.html">
+    After successful deployment
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../faq.html">
+    Frequently Asked Questions (FAQ)
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../whatsnew.html">
+    What’s new
+  </a>
+</li>
+
+            <li class="nav-item dropdown">
+                <button class="btn dropdown-toggle nav-item" type="button"
+                data-bs-toggle="dropdown" aria-expanded="false"
+                aria-controls="pst-nav-more-links">
+                    More
+                </button>
+                <ul id="pst-nav-more-links" class="dropdown-menu">
+                    
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../contributing.html">
+    Contributing
+  </a>
+</li>
+
+                </ul>
+            </li>
+            
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/FREVA-CLINT/freva-deployment" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://pypi.org/project/freva-deployment" title="PyPI" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-custom fa-pypi fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">PyPI</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="index.html">
+    Freva Architecture and Configuration Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../deployment/index.html">
+    The freva-deployment software
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../after-deployment/index.html">
+    After successful deployment
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../faq.html">
+    Frequently Asked Questions (FAQ)
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../whatsnew.html">
+    What’s new
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../contributing.html">
+    Contributing
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/FREVA-CLINT/freva-deployment" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://pypi.org/project/freva-deployment" title="PyPI" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-custom fa-pypi fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">PyPI</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="Architecture.html">Freva Architecture</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Basic Freva configuration</a></li>
+</ul>
+</div>
+</nav></div>
+        <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="index.html" class="nav-link">Freva Architecture and Configuration Guide</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Basic Freva configuration</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="basic-freva-configuration">
+<h1>Basic Freva configuration<a class="headerlink" href="#basic-freva-configuration" title="Link to this heading">#</a></h1>
+<p>Because the framework consists of multiple parts, Freva has to be configured
+to work with those different parts. This is especially true for the web ui
+and the <code class="docutils literal notranslate"><span class="pre">evaluation_system</span></code> core running on an HPC system. The central
+building block of the freva configuration is the <code class="docutils literal notranslate"><span class="pre">evaluation_system.conf</span></code>
+configuration file. This file holds information on the server infrastructure,
+that is host names for apache solr and mariadb servers, project specific
+information like project name and the directory structure.</p>
+<p>This part of the documentation will emphasis on the directory structure, which
+is important for the interplay of the <code class="docutils literal notranslate"><span class="pre">evaluation_system</span></code> core and the web ui.</p>
+<p>The content of the initial <code class="docutils literal notranslate"><span class="pre">evaluation_system.conf</span></code> file looks like the
+following:</p>
+<div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="k">[evaluation_system]</span>
+<span class="c1"># Freva - Free Evaluation System Framework configuration file</span>
+<span class="c1"># This file contains the necessary configuration information</span>
+<span class="c1"># which is needed to run Freva</span>
+<span class="c1">#</span>
+<span class="c1"># Username(s) - comma separated - of the admins of the project</span>
+<span class="na">admins</span><span class="o">=</span>
+<span class="c1">#</span>
+<span class="c1"># An informative project name</span>
+<span class="na">project_name</span><span class="o">=</span><span class="s">freva</span>
+<span class="c1"># The url the Freva web ui can be accessed with</span>
+<span class="na">project_website</span><span class="o">=</span>
+
+<span class="c1"># Main configuration path of the Freva instance default to the etc dir</span>
+<span class="c1"># of the python environment</span>
+<span class="na">root_dir</span><span class="o">=</span>
+<span class="c1">#</span>
+<span class="c1"># The location of the work direcotry for is user specific data</span>
+<span class="na">base_dir_location</span><span class="o">=</span><span class="s">${root_dir}/freva_output</span>
+<span class="c1">#</span>
+
+<span class="c1">#: Type of directory structure that will be used to maintain state:</span>
+<span class="c1">#:</span>
+<span class="c1">#:    local   := &lt;home&gt;/&lt;base_dir&gt;...</span>
+<span class="c1">#:    central := &lt;base_dir_location&gt;/&lt;username&gt;/&lt;base_dir&gt;...</span>
+<span class="c1">#:</span>
+<span class="na">directory_structure_type</span><span class="o">=</span><span class="s">central</span>
+
+<span class="c1"># The directory name of the &lt;base_dir&gt; (only used if `directory_structure_type`</span>
+<span class="c1"># is set to central - defaults to `project_name`</span>
+<span class="na">base_dir</span><span class="o">=</span><span class="s">${project_name}</span>
+
+<span class="c1"># Workload manager configuration</span>
+<span class="c1"># Workload manager system - currently the following workload manger systems are</span>
+<span class="c1"># available: local (no workload manager), lsf, moab, oar, pbs, sge, slurm</span>
+<span class="na">scheduler_system</span><span class="o">=</span><span class="s">local</span>
+<span class="c1"># The directory where temporary job scripts are created</span>
+<span class="na">scheduler_input_dir</span><span class="o">=</span><span class="s">/tmp/${scheduler_system}_output</span>
+<span class="c1"># The output directory where stdout/stderr of the jobs are stored</span>
+<span class="na">scheduler_output_dir</span><span class="o">=</span><span class="s">${base_dir_location}/share/${scheduler_system}_output</span>
+
+<span class="c1"># The directory data where preview data (images etc) for the web ui</span>
+<span class="c1"># is stored.</span>
+<span class="na">preview_path</span><span class="o">=</span><span class="s">${base_dir_location}/share/preview</span>
+<span class="c1"># The number of processes used to convert images created by plugins</span>
+<span class="c1"># for display in the web ui.</span>
+<span class="na">number_of_processes</span><span class="o">=</span><span class="s">6</span>
+
+<span class="c1">#: Path to the directory where users can add an share project specific data</span>
+<span class="na">project_data</span><span class="o">=</span><span class="s">${base_dir_location}/data/crawl_my_data</span>
+
+
+<span class="c1">#: database path</span>
+
+<span class="c1">#: mySQL settings</span>
+<span class="na">db.host</span><span class="o">=</span>
+
+<span class="c1">#: Define access to the solr instance</span>
+<span class="na">solr.host</span><span class="o">=</span>
+<span class="na">solr.port</span><span class="o">=</span><span class="s">8989</span>
+<span class="na">solr.core</span><span class="o">=</span><span class="s">files</span>
+
+<span class="c1">#shellinabox</span>
+<span class="c1">#shellmachine=None</span>
+<span class="c1">#shellport=4200</span>
+
+<span class="c1"># Workload manager job configuration</span>
+<span class="c1"># NOTE: The options are workload manager agnostic - except of the</span>
+<span class="c1"># extra_options flag: which must be in accordance to the utilized</span>
+<span class="c1"># workload manager.</span>
+<span class="k">[scheduler_options]</span>
+<span class="c1">#partition=</span>
+<span class="c1">#memory=256GiB</span>
+<span class="c1">#queue=gpu</span>
+<span class="c1">#project=ch1187</span>
+<span class="c1">#walltime=08:00:00</span>
+<span class="c1">#cpus=12</span>
+<span class="c1">##Additional options (specific to the workload manager)</span>
+<span class="c1">#extra_options=--qos=test, --array=20</span>
+
+<span class="c1">#[plugin:animator]</span>
+<span class="c1">#python_path=${evaluation_system:root_dir}/plugins/animator</span>
+<span class="c1">#module=animator</span>
+</pre></div>
+</div>
+<p>The configuration file is written in <a class="reference external" href="https://en.wikipedia.org/wiki/INI_file"><code class="docutils literal notranslate"><span class="pre">.ini</span></code> format</a>.
+The main sections are <code class="docutils literal notranslate"><span class="pre">evaluation_system</span></code> for configuring the behaviour of the
+core and <code class="docutils literal notranslate"><span class="pre">scheduler_options</span></code> for configuring the workload manager options.
+Plugins are configured via the <code class="docutils literal notranslate"><span class="pre">plugin:&lt;plugin_name&gt;</span></code>.</p>
+<section id="configuring-the-evaluation-system-section">
+<h2>Configuring the <code class="docutils literal notranslate"><span class="pre">evaluation_system</span></code> section<a class="headerlink" href="#configuring-the-evaluation-system-section" title="Link to this heading">#</a></h2>
+<p>The following gives an overview of the most important keys to be configured
+in the <code class="docutils literal notranslate"><span class="pre">evaluation_system</span></code> section:</p>
+<ul class="simple">
+<li><p><em>admins</em>: comma separated list of username(s) that are administering the
+instance of the Freva. Admins have more rights in the framework, like
+crawling <em>all</em> user data.</p></li>
+<li><p><em>project_name</em>: Name of this specific Freva instance, for example <code class="docutils literal notranslate"><span class="pre">clex-ces</span></code>
+which would be the central evaluation system (ces) for the clex project.</p></li>
+<li><p><em>root_dir</em>: The <code class="docutils literal notranslate"><span class="pre">root_dir</span></code> is directory that holds additional Freva related
+configuration. By default this folder is the path prefix of the python
+distribution where Freva is installed to. If you’re using multiple instances that share
+a common python (anaconda) environment this directory will distinguish the instances.
+For example two projects <em>project_a</em> and <em>project_b</em> share a Freva installation
+which is installed into <code class="docutils literal notranslate"><span class="pre">$HOME/anaconda/freva</span></code> then <em>project_b</em> would get its
+configuration by setting the <code class="docutils literal notranslate"><span class="pre">root_dir</span></code> to <code class="docutils literal notranslate"><span class="pre">/path/to/project_b</span></code> where
+the <code class="docutils literal notranslate"><span class="pre">evaluation_system.conf</span></code> file would be located in
+<code class="docutils literal notranslate"><span class="pre">/path/to/project_b/freva/evaluation_system.conf</span></code> the same applies to
+<code class="docutils literal notranslate"><span class="pre">project_a</span></code></p></li>
+<li><p><em>directory_structure_type</em>: This key specifies where the user output is stored.
+<em>Two</em> different types are possible: <em>local</em> will store the plugin output in the
+home directory of the user. <em>central</em> will store the plugin
+output in a central location with each username as the first child directory.
+For example <code class="docutils literal notranslate"><span class="pre">/path/to/project/work/&lt;username&gt;</span></code>.</p></li>
+<li><p><em>base_dir_location</em>: This is the path where the user output for the plugins
+are stored. This key has only an effect if the <code class="docutils literal notranslate"><span class="pre">directory_structure_type</span></code> is
+set to central.</p></li>
+<li><p><em>scheduler_system</em>: Plugin jobs can either run interactively or in batch mode,
+for batch mode a number of different workload manager systems are available.
+The following workload managers are implemented: lsf, moab, oar, pbs, sge,
+slurm, local. If local is chosen, the plugin job is directly executed on
+the login node, similar to an interactive job. This means that load
+balancing for local jobs is not available.</p></li>
+<li><p><em>preview_path</em>: The path to the directory holding the user content,
+like plots, for display in the web ui. <code class="docutils literal notranslate"><span class="pre">💡</span></code> after plugin application, display
+content of the plugin output will be copied to this directory. The default
+location of this directory <code class="docutils literal notranslate"><span class="pre">&lt;base_dir_location&gt;/share/preview</span></code></p></li>
+<li><p><em>db.host</em>: The host name where database and vault are running.</p></li>
+<li><p><em>solr.host</em>, <em>solr.core</em>, <em>solr.port</em>: The apache solr connection information.
+<code class="docutils literal notranslate"><span class="pre">💡</span></code> The <em>solr.core</em> variable might be subject to removal in the future.
+Therefore it is recommended to set this variable to its default value: <em>files</em>.</p></li>
+</ul>
+</section>
+<section id="configuring-the-scheduler-options-section">
+<span id="eval-conf"></span><h2>Configuring the <code class="docutils literal notranslate"><span class="pre">scheduler_options</span></code> section<a class="headerlink" href="#configuring-the-scheduler-options-section" title="Link to this heading">#</a></h2>
+<p>All workload managers are configured via the <code class="docutils literal notranslate"><span class="pre">scheduler_options</span></code> section. The
+following configuration keys are available:</p>
+<ul class="simple">
+<li><p><em>queue</em>:  Destination queue for each worker job.</p></li>
+<li><p><em>project</em>: Accounting string associated with each worker job.</p></li>
+<li><p><em>walltime</em>: Walltime for each worker job.</p></li>
+<li><p><em>cpus</em>:   Number of cpus to book in each job node.</p></li>
+<li><p><em>memory</em>: Amount of memory to request in for each job.</p></li>
+<li><p><em>extra_options</em>: Additional workload manager specific options (comma separated).</p></li>
+</ul>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="Architecture.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Freva Architecture</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="../deployment/index.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">The freva-deployment software</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#configuring-the-evaluation-system-section">Configuring the <code class="docutils literal notranslate"><span class="pre">evaluation_system</span></code> section</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#configuring-the-scheduler-options-section">Configuring the <code class="docutils literal notranslate"><span class="pre">scheduler_options</span></code> section</a></li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2025, DKRZ - CLINT.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>
