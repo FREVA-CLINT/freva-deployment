@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import argparse
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 import tomlkit
 from rich.console import Console
@@ -78,6 +78,7 @@ def _set_config(parser: argparse.Namespace) -> None:
         else:
             default = default_config.get(section)
         try:
+            cfg_value: Any = ""
             if isinstance(default, bool):
                 if value.lower() == "false":
                     cfg_value = False
@@ -187,3 +188,4 @@ def config_parser(
     )
     set_parser.set_defaults(cli=_set_config)
     get_parser.set_defaults(cli=_get_config)
+    return parser
