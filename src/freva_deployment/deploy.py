@@ -52,9 +52,10 @@ LOCAL_DEBUG_MSG = (
     "You can log on with user: [b]{user}[/b], password: [b]{password}[/b]"
     "\n\nTo comepletly wipe the installation use the "
     "following commands:\n\n"
-    "\tsystemctl stop --user 'freva-* data-loader*' && \\ \n"
+    "\tsystemctl stop --user 'freva-* data-loader* {project_name}-*' && \\ \n"
     "\trm -fr ~/.config/systemd/user/freva-*.service && \\ \n"
     "\trm -fr ~/.config/systemd/user/data-loader* && \\ \n"
+    "\trm -fr ~/.config/systemd/user/{project_name}* && \\ \n"
     "\tsystemctl daemon-reload --user && \\ \n"
     "\trm -fr ~/.cache/freva-local\n\n"
     "You can omit the [i]--debug[/i] flag for a real deploymet."
@@ -601,9 +602,9 @@ class DeployFactory:
         """Prepare the system for a potential local debug."""
         self._master_pass = "secret"
         default_ports = {"db": 3306, "freva_rest": 7777}
-        cfg["project_name"] = "freva-test-deployment"
+        cfg.setdefault("project_name", "freva-test-deployment")
         cfg["deployment_method"] = "conda"
-        deploy_dir = Path(appdirs.user_cache_dir("freva-local"))
+        deploy_dir = Path(appdirs.user_data_dir("freva-local"))
         deploy_dir.mkdir(exist_ok=True, parents=True)
         host = gethostbyname(gethostname())
         cfg["deployment_dir"] = str(deploy_dir)
