@@ -260,7 +260,7 @@ jobs:
 
   docs:
     runs-on: ubuntu-latest
-    needs: [tests, build-linux, build-osx]
+    # needs: [tests, build-linux, build-osx]
     permissions:
       contents: write
       id-token: write
@@ -275,7 +275,7 @@ jobs:
           python-version: "3.X"
       - name: Install freva rest dependencies
         run: |
-          python3 -m pip install -e .
+          python3 -m pip install tox flit
       - name: Creating docs
         run: tox -e docs
       - name: Setup Pages
