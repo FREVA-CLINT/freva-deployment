@@ -55,10 +55,10 @@ doc = ["pydata-sphinx-theme",
 ]
 
 [project.urls]
-Documentation = "https://freva-deployment.readthedocs.io/en/latest/"
-Issues = "https://github.com/FREVA-CLINT/freva-deployment/issues"
-Source = "https://github.com/FREVA-CLINT/freva-deployment"
-Home = "https://freva-deployment.readthedocs.io/en/latest"
+Documentation = "https://github.com/freva-org/freva-admin"
+Issues = "https://github.com/freva-org/freva-deployment/issues"
+Source = "https://github.com/freva-org/freva-deployment"
+Home = "https://github.com/freva-org/freva-admin"
 
 [project.scripts]
 deploy-freva-cmd = "freva_deployment.cli:deploy"
