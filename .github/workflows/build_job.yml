@@ -3,6 +3,8 @@ run-name: ${{ github.actor }} building the pyinstaller binary and creating the r
 
 permissions:
   pull-requests: write
+  contents: write
+  packages: write
 
 "on":
   workflow_dispatch:
