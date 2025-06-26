@@ -56,8 +56,8 @@ doc = ["pydata-sphinx-theme",
 
 [project.urls]
 Documentation = "https://github.com/freva-org/freva-admin"
-Issues = "https://github.com/freva-org/freva-deployment/issues"
-Source = "https://github.com/freva-org/freva-deployment"
+Issues = "https://github.com/freva-org/freva-admin/issues"
+Source = "https://github.com/freva-org/freva-admin"
 Home = "https://github.com/freva-org/freva-admin"
 
 [project.scripts]
