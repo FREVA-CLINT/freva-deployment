@@ -43,6 +43,7 @@ unix = ["cryptography", "pyinstaller", "mock"]
 doc = ["pydata-sphinx-theme",
        "sphinx",
        "sphinx-copybutton",
+       "sphinxext-opengraph",
        "recommonmark",
        "linkify",
        "linkify-it-py",
