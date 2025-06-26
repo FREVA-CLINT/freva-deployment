@@ -28,7 +28,7 @@ COPY policy-file.hcl /opt/vault/
 RUN set -eux \
  && chmod +x /bin/runserver.py /bin/add-vault-secret \
  && mkdir -p /vault/file \
- && micromamba install -y -c conda-forge --override-channels vault fastapi pyopenssl uvicorn requests hvac \
+ && micromamba install -y -c conda-forge --override-channels vault>=1.19 fastapi pyopenssl uvicorn requests hvac \
  && micromamba clean -a -y \
  && chmod -R 1777 /vault && ln -s /opt/bin/python /bin/python
 
