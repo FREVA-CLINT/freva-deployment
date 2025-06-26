@@ -7,9 +7,8 @@ import sys
 from pathlib import Path
 from typing import List, Optional
 
-from rich_argparse import ArgumentDefaultsRichHelpFormatter
-
 from freva_deployment import __version__
+from rich_argparse import ArgumentDefaultsRichHelpFormatter
 
 from ..deploy import DeployFactory
 from ..error import DeploymentError
@@ -37,7 +36,7 @@ class BatchParser:
             "-c",
             type=Path,
             help="Path to ansible inventory file.",
-            default=config_dir / "inventory.toml",
+            default=config_dir / "config" / "inventory.toml",
         )
         self.parser.add_argument(
             "--steps",
