@@ -8,6 +8,7 @@ permissions:
   packages: write
 
 on:
+  workflow_dispatch:
   pull_request:
     types: [closed]
     branches:
