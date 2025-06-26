@@ -15,7 +15,7 @@ AVAILABLE_CONDA_ARCHS = [
 ]
 
 AUX_URL = (
-    "https://raw.githubusercontent.com/freva-org/freva/main/assets/"
+    "https://raw.githubusercontent.com/freva-org/freva-legacy/main/assets/"
     "evaluation_system.conf"
 )
 
