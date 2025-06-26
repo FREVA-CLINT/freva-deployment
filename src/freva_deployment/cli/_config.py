@@ -7,9 +7,10 @@ from pathlib import Path
 from typing import Optional
 
 import tomlkit
-from freva_deployment import __version__
 from rich.console import Console
 from rich_argparse import ArgumentDefaultsRichHelpFormatter
+
+from freva_deployment import __version__
 
 from ..utils import config_dir, load_config
 
