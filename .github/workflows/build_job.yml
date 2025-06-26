@@ -276,7 +276,6 @@ jobs:
       - name: Install freva rest dependencies
         run: |
           python3 -m pip install -e .
-      - name: Generate self signed keys
       - name: Creating docs
         run: tox -e docs
       - name: Setup Pages
