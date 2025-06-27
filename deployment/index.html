@@ -7,8 +7,16 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta property="og:title" content="The freva-deployment software" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://freva-org.github.io/deployment/index.html" />
+<meta property="og:site_name" content="freva-deployment" />
+<meta property="og:description" content="The freva-deployment software is used to deploy Freva in different computing environments. The general strategy is to split the deployment into different steps, these are : - Deploy a MySQL DB serv..." />
+<meta name="description" content="The freva-deployment software is used to deploy Freva in different computing environments. The general strategy is to split the deployment into different steps, these are : - Deploy a MySQL DB serv..." />
+<meta name="twitter:card" content="summary_large_image">
+<meta name="keywords" content="freva, climate, data, evaluation, science, reproducibility">
 
-    <title>The freva-deployment software &#8212; freva-deployment 2505.0.1 documentation</title>
+    <title>The freva-deployment software &#8212; freva-deployment 2505.0.3 documentation</title>
   
   
   
@@ -40,7 +48,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../_static/documentation_options.js?v=04ffed07"></script>
+    <script src="../_static/documentation_options.js?v=977fe374"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -125,8 +133,8 @@
       
     
     
-    <img src="../_static/freva_owl.svg" class="logo__image only-light" alt="freva-deployment 2505.0.1 documentation - Home"/>
-    <img src="../_static/freva_owl.svg" class="logo__image only-dark pst-js-only" alt="freva-deployment 2505.0.1 documentation - Home"/>
+    <img src="../_static/freva_owl.svg" class="logo__image only-light" alt="freva-deployment 2505.0.3 documentation - Home"/>
+    <img src="../_static/freva_owl.svg" class="logo__image only-dark pst-js-only" alt="freva-deployment 2505.0.3 documentation - Home"/>
   
   
 </a></div>
@@ -230,7 +238,7 @@
           
           
           
-          <a href="https://github.com/FREVA-CLINT/freva-deployment" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+          <a href="https://github.com/freva-org/freva-admin" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
             <span class="sr-only">GitHub</span></a>
         </li>
         <li class="nav-item">
@@ -262,6 +270,10 @@
     </div>
   
 
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
   
 </div>
 
@@ -359,7 +371,7 @@
           
           
           
-          <a href="https://github.com/FREVA-CLINT/freva-deployment" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+          <a href="https://github.com/freva-org/freva-admin" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
             <span class="sr-only">GitHub</span></a>
         </li>
         <li class="nav-item">
@@ -462,7 +474,7 @@ The general strategy is to split the deployment into different steps, these are 
 - Deploy a MySQL DB server
 - Deploy a HashiCorp Vault service for storing and retrieving passwords and
 other sensitive data  (this step get automatically activated once the MySQL DB service is set)
-- Deploy the <a class="reference external" href="https://github.com/FREVA-CLINT/freva-nextgen">Freva-Rest Server</a>
+- Deploy the <a class="reference external" href="https://github.com/freva-org/freva-nextgen">Freva-Rest Server</a>
 The Freva Rest deployment consists of three mandatory and two optional parts:</p>
 <blockquote>
 <div><ul class="simple">
@@ -474,8 +486,8 @@ The Freva Rest deployment consists of three mandatory and two optional parts:</p
 </ul>
 </div></blockquote>
 <ul class="simple">
-<li><p>Deploy command line interface and python library (<a class="reference external" href="https://github.com/FREVA-CLINT/freva">freva</a>)</p></li>
-<li><p>Deploy web front end (<a class="reference external" href="https://github.com/FREVA-CLINT/freva-web">freva_web</a>)
+<li><p>Deploy command line interface and python library (<a class="reference external" href="https://github.com/freva-org/freva">freva</a>)</p></li>
+<li><p>Deploy web front end (<a class="reference external" href="https://github.com/freva-org/freva-web">freva_web</a>)
 The web front end deployment is sub divided into three parts:</p>
 <ul>
 <li><p>Deployment of the django web application</p></li>
@@ -484,10 +496,24 @@ The web front end deployment is sub divided into three parts:</p>
 </ul>
 </li>
 </ul>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>The vault server is auto deployed once the database server is deployed.
-The vault centrally stores all passwords and other sensitive data.</p>
+<section id="tldr-quickstart-guide">
+<h2>TLDR; Quickstart Guide<a class="headerlink" href="#tldr-quickstart-guide" title="Link to this heading">#</a></h2>
+<p>If you just want to try out <strong>Freva</strong> or experiment with the <code class="docutils literal notranslate"><span class="pre">freva-deployment</span></code>
+tooling, you can install it via <code class="docutils literal notranslate"><span class="pre">pip</span></code>:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">python -m pip install freva-deployment</span>
+</pre></div>
+</div>
+<p>To deploy a self-contained version of Freva on your local machine, use the
+<code class="docutils literal notranslate"><span class="pre">deploy-freva</span> <span class="pre">cmd</span></code> command with the <code class="docutils literal notranslate"><span class="pre">--local</span></code> flag:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">deploy-freva cmd --local</span>
+</pre></div>
+</div>
+<p>To customise the configuration, generate a new config file and modify it using
+the <code class="docutils literal notranslate"><span class="pre">deploy-freva</span> <span class="pre">config</span></code> subcommands:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">deploy-freva config get -r &gt; freva.toml</span>
+<span class="go">deploy-freva config set project_name clex -c freva.toml</span>
+<span class="go">deploy-freva cmd -c freva.toml --local -g</span>
+</pre></div>
 </div>
 <div class="toctree-wrapper compound">
 <ul>
@@ -500,6 +526,7 @@ The vault centrally stores all passwords and other sensitive data.</p>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="Configure.html">Configuring and running the deployment</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="Configure.html#container-or-conda-forge-deployment">Container or Conda-Forge Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Configure.html#inspecting-and-adjusting-the-config">Inspecting and adjusting the config</a></li>
 <li class="toctree-l2"><a class="reference internal" href="Configure.html#running-the-deployment">Running the deployment</a></li>
 <li class="toctree-l2"><a class="reference internal" href="Configure.html#setting-the-python">Setting the python</a></li>
 <li class="toctree-l2"><a class="reference internal" href="Configure.html#setting-up-the-deployment-without-root-privileges">Setting up the deployment without root-privileges</a></li>
@@ -530,6 +557,7 @@ The vault centrally stores all passwords and other sensitive data.</p>
 </li>
 </ul>
 </div>
+</section>
 </section>
 
 
@@ -566,6 +594,24 @@ The vault centrally stores all passwords and other sensitive data.</p>
             </div>
             
             
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#tldr-quickstart-guide">TLDR; Quickstart Guide</a></li>
+</ul>
+  </nav></div>
+
+</div></div>
               
             
           </div>

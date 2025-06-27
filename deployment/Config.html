@@ -7,8 +7,16 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta property="og:title" content="Example deployment configuration" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://freva-org.github.io/deployment/Config.html" />
+<meta property="og:site_name" content="freva-deployment" />
+<meta property="og:description" content="This section contains two working versions of a full deployment configuration. These configuration files have also been installed along with the deployment. You can find them in the data files unde..." />
+<meta name="description" content="This section contains two working versions of a full deployment configuration. These configuration files have also been installed along with the deployment. You can find them in the data files unde..." />
+<meta name="twitter:card" content="summary_large_image">
+<meta name="keywords" content="freva, climate, data, evaluation, science, reproducibility">
 
-    <title>Example deployment configuration &#8212; freva-deployment 2505.0.1 documentation</title>
+    <title>Example deployment configuration &#8212; freva-deployment 2505.0.3 documentation</title>
   
   
   
@@ -40,7 +48,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../_static/documentation_options.js?v=04ffed07"></script>
+    <script src="../_static/documentation_options.js?v=977fe374"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -125,8 +133,8 @@
       
     
     
-    <img src="../_static/freva_owl.svg" class="logo__image only-light" alt="freva-deployment 2505.0.1 documentation - Home"/>
-    <img src="../_static/freva_owl.svg" class="logo__image only-dark pst-js-only" alt="freva-deployment 2505.0.1 documentation - Home"/>
+    <img src="../_static/freva_owl.svg" class="logo__image only-light" alt="freva-deployment 2505.0.3 documentation - Home"/>
+    <img src="../_static/freva_owl.svg" class="logo__image only-dark pst-js-only" alt="freva-deployment 2505.0.3 documentation - Home"/>
   
   
 </a></div>
@@ -230,7 +238,7 @@
           
           
           
-          <a href="https://github.com/FREVA-CLINT/freva-deployment" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+          <a href="https://github.com/freva-org/freva-admin" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
             <span class="sr-only">GitHub</span></a>
         </li>
         <li class="nav-item">
@@ -363,7 +371,7 @@
           
           
           
-          <a href="https://github.com/FREVA-CLINT/freva-deployment" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+          <a href="https://github.com/freva-org/freva-admin" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
             <span class="sr-only">GitHub</span></a>
         </li>
         <li class="nav-item">
@@ -479,33 +487,40 @@ python environment, for example:</p>
 are installed with root privileges on remote machines. The core is installed
 under a normal user on a login node of a HPC system.</p>
 <div class="highlight-toml notranslate"><div class="highlight"><pre><span></span><span class="c1"># NOTE: this key must be the first in the file.</span>
-<span class="n">project_name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;vaskebjorn-2&quot;</span>
+<span class="n">project_name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;freva&quot;</span>
 
 <span class="c1">## The `deployment_method` key sets the option of how the installation</span>
 <span class="c1">## of the service is realised. `docker`, `podman` leverages podman or docker,</span>
 <span class="c1">## `conda` uses conda-forge to install the service while `k8s` involves a</span>
 <span class="c1">### kubernetes based deployment</span>
 <span class="c1">## Chosse between: &quot;docker&quot;, &quot;podman&quot;, &quot;conda&quot;, &quot;k8s&quot;</span>
-<span class="n">deployment_method</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;conda&quot;</span>
+<span class="n">deployment_method</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;podman&quot;</span>
 
 
 <span class="c1">## Specify the path to the SSL certificate files used for secure connections</span>
 <span class="c1">## to the vault server or as web certificates.</span>
 <span class="k">[certificates]</span>
+
+<span class="c1">## Path to the public key file.</span>
 <span class="n">public_keyfile</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;&quot;</span>
+
+<span class="c1">## Path to the private key file.</span>
 <span class="n">private_keyfile</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;&quot;</span>
+
+<span class="c1">## Path to the chain file.</span>
+<span class="n">chain_keyfile</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;&quot;</span>
 
 <span class="k">[db]</span>
 <span class="c1">## Config variables for the database service.</span>
 
 <span class="c1">## Specify the host name were the database server should be deployed</span>
-<span class="n">db_host</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;freva-deployment.cloud.dkrz.de&quot;</span>
+<span class="n">db_host</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;localhost&quot;</span>
 
 <span class="c1">## The freva infrastructure uitilises a small vault server that stores</span>
 <span class="c1">## database secrets for client connections. You can specify the host name</span>
 <span class="c1">## where this server should be running. If you don&#39;t set it (default)</span>
 <span class="c1">## the vault server will be deployed on the database host.</span>
-<span class="n">vault_host</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;freva-deployment.cloud.dkrz.de&quot;</span>
+<span class="n">vault_host</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;&quot;</span>
 
 <span class="c1">## The database runs in a Docker container. You can change the port</span>
 <span class="c1">## that is exposed to the external network. Every DB connection from</span>
@@ -522,7 +537,7 @@ under a normal user on a login node of a HPC system.</p>
 <span class="c1">## that installs the services differ, instruct Ansible to use the</span>
 <span class="c1">## specified username for SSH connections to the target server.</span>
 <span class="c1">## If left blank, the current username will be used.</span>
-<span class="n">ansible_user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;k204230&quot;</span>
+<span class="n">ansible_user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;&quot;</span>
 
 <span class="c1">## Set the become (sudo) username to change to for installing the services.</span>
 <span class="c1">## Leave blank to utilise a non-privileged user-based installation.</span>
@@ -533,7 +548,7 @@ under a normal user on a login node of a HPC system.</p>
 <span class="c1">## Ansible needs a Python 3 interpreter on the target server. This interpreter</span>
 <span class="c1">## can be set for custom Python 3 instances. By default, Ansible will try</span>
 <span class="c1">## to use the default Python interpreter path /usr/bin/python.</span>
-<span class="n">ansible_python_interpreter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;/usr/bin/python3&quot;</span>
+<span class="n">ansible_python_interpreter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;&quot;</span>
 
 <span class="c1">## Indicate whether to empty any pre-existing folders/docker volumes.</span>
 <span class="c1">## Useful for a truly fresh start (default: false).</span>
@@ -551,23 +566,23 @@ under a normal user on a login node of a HPC system.</p>
 
 <span class="k">[freva_rest]</span>
 <span class="c1">## Specify the host name were the ferva-rest-api server should be deployed</span>
-<span class="n">freva_rest_host</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;freva-deployment.cloud.dkrz.de&quot;</span>
+<span class="n">freva_rest_host</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;localhost&quot;</span>
 
 <span class="c1">## To search for data the freva-rest-api needs a metadata index service.</span>
 <span class="c1">## Typically this services apache solr. You can set the host where this</span>
 <span class="c1">## index server should be running at. Leave empty to deploy the service</span>
 <span class="c1">## on the same host as the freva-rest-api</span>
-<span class="n">search_server_host</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;freva-deployment.cloud.dkrz.de&quot;</span>
+<span class="n">search_server_host</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;&quot;</span>
 
 <span class="c1">## Search statistics and user data related will be stored in a mongoDB</span>
 <span class="c1"># service You can set the host where the server should be running at.</span>
 <span class="c1">## Leave empty to deploy the service on the same host as the freva-rest-api</span>
-<span class="n">mongodb_server_host</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;freva-deployment.cloud.dkrz.de&quot;</span>
+<span class="n">mongodb_server_host</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;&quot;</span>
 
 <span class="c1">### The the host name of the redis-cache, this cache is used for caching</span>
 <span class="c1">### different kinds of data. If not set this will fall back to the host name</span>
 <span class="c1">### of the rest-api server.</span>
-<span class="n">redis_host</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;freva-deployment.cloud.dkrz.de&quot;</span>
+<span class="n">redis_host</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;&quot;</span>
 
 <span class="c1">### Set the hostname(s) for the data-loading portal. The data-loading portal</span>
 <span class="c1">### is a services that provisions data via zarr. The data-loading portal is</span>
@@ -575,7 +590,7 @@ under a normal user on a login node of a HPC system.</p>
 <span class="c1">### form a distributed memory. The first entry will be used as the master</span>
 <span class="c1">### scheduler and the consecutive ones as workers. If you leave this blank</span>
 <span class="c1">## then the service will be disabled.</span>
-<span class="n">data_loader_portal_hosts</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;freva-deployment.cloud.dkrz.de,freva-deployment.cloud.dkrz.de&quot;</span>
+<span class="n">data_loader_portal_hosts</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;&quot;</span>
 
 <span class="c1">## Set the amount of memory allocated to the search engine (Solr).</span>
 <span class="n">solr_mem</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;4g&quot;</span>
@@ -592,13 +607,13 @@ under a normal user on a login node of a HPC system.</p>
 <span class="c1">## Ansible needs a Python 3 interpreter on the target server. This interpreter</span>
 <span class="c1">## can be set for custom Python 3 instances. By default, Ansible will try</span>
 <span class="c1">## to use the default Python interpreter path /usr/bin/python.</span>
-<span class="n">ansible_python_interpreter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;/usr/bin/python3&quot;</span>
+<span class="n">ansible_python_interpreter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;&quot;</span>
 
 <span class="c1">## If the username running the deployment software and the username</span>
 <span class="c1">## that installs the services differ, instruct Ansible to use the</span>
 <span class="c1">## specified username for SSH connections to the target server.</span>
 <span class="c1">## If left blank, the current username will be used.</span>
-<span class="n">ansible_user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;k204230&quot;</span>
+<span class="n">ansible_user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;&quot;</span>
 
 <span class="c1">## Indicate whether to empty any pre-existing folders/docker volumes.</span>
 <span class="c1">## Useful for a truly fresh start (default: false).</span>
@@ -617,7 +632,7 @@ under a normal user on a login node of a HPC system.</p>
 <span class="c1">## you have set up and configured a open id connect host. Set the url</span>
 <span class="c1">## to the open id discovery. This url usually ends with</span>
 <span class="c1">## `.well-known/openid-configuration`</span>
-<span class="n">oidc_url</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;https://freva-keycloak.cloud.dkrz.de/realms/Freva/.well-known/openid-configuration&quot;</span>
+<span class="n">oidc_url</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;&quot;</span>
 
 
 <span class="c1">### Set the client id (app name) of the open id connect service.</span>
@@ -631,26 +646,34 @@ under a normal user on a login node of a HPC system.</p>
 <span class="c1">## database files etc. This can be useful if multiple users take turn in</span>
 <span class="c1">## deploying and administering the service. The value of the username</span>
 <span class="c1">## will default to the user that deploys the service</span>
-<span class="n">admin_user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;b380001&quot;</span>
+<span class="n">admin_user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;&quot;</span>
+
+<span class="c1"># A dict of claim-based filters in {&lt;key1.key2&gt; = [&lt;pattern&gt;]}. Each filter</span>
+<span class="c1"># matches if the decoded JWT contains the specified claim</span>
+<span class="c1"># (e.g., group, role) and its value includes the given pattern. Patterns can</span>
+<span class="c1"># be plain substrings or regular expressions.</span>
+<span class="c1"># Nested claims are defined by &#39;.&#39; separation.</span>
+<span class="n">oidc_token_claims</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{}</span>
+
 
 <span class="k">[core]</span>
 <span class="c1">## Specify the host name were the client should be deployed</span>
-<span class="n">core_host</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;freva-deployment.cloud.dkrz.de&quot;</span>
+<span class="n">core_host</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;localhost&quot;</span>
 
 <span class="c1">## List of users that can alter the configuration of the freva command line interface.</span>
 <span class="c1">## If blank, the user that runs the deployment is chosen.</span>
-<span class="n">admins</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;k204230&quot;</span>
+<span class="n">admins</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;&quot;</span>
 
 <span class="c1">## The path where the core library should be installed.</span>
 <span class="c1">## Conda is used for installing the core library. Setting this</span>
 <span class="c1">## instructs Conda to install a new Conda environment into this folder.</span>
-<span class="n">install_dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;/opt/freva/core&quot;</span>
+<span class="n">install_dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;/opt/freva/conda&quot;</span>
 
 <span class="c1">## The directory where the project configuration files will be stored.</span>
 <span class="c1">## This can be useful if you want to set up multiple freva instances with</span>
 <span class="c1">## the same software stack (Anaconda environment). Leave blank to use the</span>
 <span class="c1">## same directory as anaconda installation directory.</span>
-<span class="n">root_dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;&quot;</span>
+<span class="n">root_dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;/home/freva/freva-env&quot;</span>
 
 <span class="c1">## If you do not wish to install a new freva Conda environment but only</span>
 <span class="c1">## (re)configure an already installed system, you can set the `install`</span>
@@ -696,22 +719,18 @@ under a normal user on a login node of a HPC system.</p>
 <span class="c1">## that installs the services differ, instruct Ansible to use the</span>
 <span class="c1">## specified username for SSH connections to the target server.</span>
 <span class="c1">## If left blank, the current username will be used.</span>
-<span class="n">ansible_user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;k204230&quot;</span>
+<span class="n">ansible_user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;&quot;</span>
 
 <span class="c1">## Ansible needs a Python 3 interpreter on the target server. This interpreter</span>
 <span class="c1">## can be set for custom Python 3 instances. By default, Ansible will try</span>
 <span class="c1">## to use the default Python interpreter path /usr/bin/python.</span>
 <span class="n">ansible_python_interpreter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;&quot;</span>
 
-<span class="c1">## The core deployment needs git. If git is not in the default PATH variable,</span>
-<span class="c1">## you can set the path to the git executable.</span>
-<span class="n">git_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;&quot;</span>
-
 <span class="c1">## If you want to set special group rights for freva configuration files,</span>
 <span class="c1">## you can set the admin_group variable. If `admin_group` is set, then config</span>
 <span class="c1">## files and directories in the `base_dir_location` are only writable to</span>
 <span class="c1">## `admin_group`.</span>
-<span class="n">admin_group</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;ch1187&quot;</span>
+<span class="n">admin_group</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;&quot;</span>
 
 <span class="c1">## Indicate whether to empty any pre-existing folders/docker volumes.</span>
 <span class="c1">## Useful for a truly fresh start (default: false).</span>
@@ -719,10 +738,10 @@ under a normal user on a login node of a HPC system.</p>
 
 <span class="k">[web]</span>
 <span class="c1">## Specify the host name were the web ui service should be deployed</span>
-<span class="n">web_host</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;freva-deployment.cloud.dkrz.de&quot;</span>
+<span class="n">web_host</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;localhost&quot;</span>
 
 <span class="c1">## Set the URL of the web user interface.</span>
-<span class="n">project_website</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;www.freva-delopyment.cloud.dkrz.de&quot;</span>
+<span class="n">project_website</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;www.freva.dkrz.de&quot;</span>
 
 <span class="c1">## Freva can connect to a GPT service (that has to be set up seperately)</span>
 <span class="c1">## you can set the &lt;HOSTNAME&gt;:&lt;PORT&gt; of this service - if configured.</span>
@@ -738,49 +757,49 @@ under a normal user on a login node of a HPC system.</p>
 <span class="c1">## that installs the services differ, instruct Ansible to use the</span>
 <span class="c1">## specified username for SSH connections to the target server.</span>
 <span class="c1">## If left blank, the current username will be used.</span>
-<span class="n">ansible_user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;k204230&quot;</span>
+<span class="n">ansible_user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;&quot;</span>
 
 <span class="c1">## Set the path where the permanent web data should be stored.</span>
 <span class="c1">## By default, this is set to /opt/freva.</span>
 <span class="n">data_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;/opt/freva&quot;</span>
 
 <span class="c1">## Set the main HTML color scheme.</span>
-<span class="n">main_color</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;#f29631&quot;</span>
+<span class="n">main_color</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;Tomato&quot;</span>
 <span class="c1">## Set the HTML border colors.</span>
-<span class="n">border_color</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;#bc8000&quot;</span>
+<span class="n">border_color</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;#6c2e1f&quot;</span>
 <span class="c1">## Set the HTML hover colors.</span>
-<span class="n">hover_color</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;#d48b3d&quot;</span>
+<span class="n">hover_color</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;#d0513a&quot;</span>
 
 <span class="c1">## The &quot;About Us&quot; text is a small blurb about freva within the project.</span>
-<span class="n">about_us_text</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;Hier koennte Ihre Werbung stehen&quot;</span>
+<span class="n">about_us_text</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;&quot;</span>
 
 <span class="c1">## Set the path to the institution logo. This should be the path to the logo</span>
 <span class="c1">## as seen by the target system. Ensure this path exists on the target machine.</span>
-<span class="n">institution_logo</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot; &quot;</span>
+<span class="n">institution_logo</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;&quot;</span>
 
 <span class="c1">## Set email addresses for contact points for users.</span>
-<span class="n">contacts</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;freva@dkrz.de&quot;</span>
+<span class="n">contacts</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;&quot;</span>
 
 <span class="c1">## Set the postal address, which will appear in the footer of the website.</span>
-<span class="n">imprint</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;Freva&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;German Climate Computing Centre (DKRZ)&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;Bundesstr. 45a&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;20146 Hamburg&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;Germany&quot;</span><span class="p">]</span>
+<span class="n">imprint</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;Project name, German Climate Computing Centre (DKRZ), Bundesstr. 45a, 20146 Hamburg, Germany.&quot;</span>
 
 <span class="c1">## Here you can set a lengthy project description.</span>
 <span class="c1">## You can also set a path to a file containing the information,</span>
 <span class="c1">## like an HTML file.</span>
-<span class="n">homepage_text</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;Welcome to VASKEBJORN Climate Analytics, where data meets insight to drive sustainable solutions for a greener future. Our cutting-edge analytics platform empowers you with real-time information to understand and address the challenges posed by climate change. Dive into the world of Vaskebjorn and explore the dummy text below to get a glimpse of the impactful narratives we weave.&quot;</span>
+<span class="n">homepage_text</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;Bal bla bla.&quot;</span>
 
 <span class="c1">## Set a one-line blurb of the project.</span>
-<span class="n">homepage_heading</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;VASKEBJORN - Visionary Analytics for Sustainable Knowledge Environment - Building Just Outcomes with Resilient Networks&quot;</span>
+<span class="n">homepage_heading</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;Short description of the project.&quot;</span>
 
 <span class="c1">## Set the name of the project/institution, such as FUB, DWD, DKZ, etc.</span>
 <span class="n">institution_name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;Freva&quot;</span>
 
 <span class="c1">## Set the workload manager scheduler host. The web app will log into this</span>
 <span class="c1">## machine via SSH to submit plugin jobs.</span>
-<span class="n">scheduler_host</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;levante.dkrz.de&quot;</span><span class="p">]</span>
+<span class="n">scheduler_host</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;localhost&quot;</span><span class="p">]</span>
 
 <span class="c1">## Set the hosts that are allowed to execute WSGI code.</span>
-<span class="n">allowed_hosts</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;localhost&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;www.freva-deployment.drkz.de&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;www.example.com&quot;</span><span class="p">]</span>
+<span class="n">allowed_hosts</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;localhost&quot;</span><span class="p">]</span>
 
 <span class="c1">## Turn on/off debug mode on the website.</span>
 <span class="n">debug</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span>
@@ -791,11 +810,11 @@ under a normal user on a login node of a HPC system.</p>
 <span class="c1">## Set the menu entries.</span>
 <span class="c1"># Menu entries consist of three elements: [Label, URL, HTML ID] -&gt; e.g., [&quot;Plugins&quot;, &quot;plugins:home&quot;, &quot;plugin_menu&quot;].</span>
 <span class="n">menu_entries</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span>
-<span class="w">   </span><span class="p">[</span><span class="s2">&quot;Data-Browser&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;solr:data_browser&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;browser_menu&quot;</span><span class="p">],</span>
-<span class="w">   </span><span class="p">[</span><span class="s2">&quot;Plugins&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;plugins:home&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;plugin_menu&quot;</span><span class="p">],</span>
-<span class="w">   </span><span class="p">[</span><span class="s2">&quot;History&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;history:history&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;history_menu&quot;</span><span class="p">],</span>
-<span class="w">   </span><span class="p">[</span><span class="s2">&quot;Result-Browser&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;history:result_browser&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;result_browser_menu&quot;</span><span class="p">],</span>
-<span class="w">   </span><span class="p">[</span><span class="s2">&quot;Help&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;plugins:about&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;doc_menu&quot;</span><span class="p">]</span>
+<span class="w">    </span><span class="p">[</span><span class="s2">&quot;Data-Browser&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;solr:data_browser&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;browser_menu&quot;</span><span class="p">],</span>
+<span class="w">    </span><span class="p">[</span><span class="s2">&quot;Plugins&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;plugins:home&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;plugin_menu&quot;</span><span class="p">],</span>
+<span class="w">    </span><span class="p">[</span><span class="s2">&quot;History&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;history:history&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;history_menu&quot;</span><span class="p">],</span>
+<span class="w">    </span><span class="p">[</span><span class="s2">&quot;Result-Browser&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;history:result_browser&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;result_browser_menu&quot;</span><span class="p">],</span>
+<span class="w">    </span><span class="p">[</span><span class="s2">&quot;Help&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;plugins:about&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;doc_menu&quot;</span><span class="p">]</span>
 <span class="p">]</span>
 
 <span class="c1">## Set the become (sudo) username to change to for installing the services.</span>
@@ -809,7 +828,7 @@ under a normal user on a login node of a HPC system.</p>
 <span class="c1">## database files etc. This can be useful if multiple users take turn in</span>
 <span class="c1">## deploying and administering the service. The value of the username</span>
 <span class="c1">## will default to the user that deploys the service</span>
-<span class="n">admin_user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;b380001&quot;</span>
+<span class="n">admin_user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;&quot;</span>
 </pre></div>
 </div>
 </section>

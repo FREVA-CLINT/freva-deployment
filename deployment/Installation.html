@@ -7,8 +7,16 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta property="og:title" content="Installing freva-deployment" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://freva-org.github.io/deployment/Installation.html" />
+<meta property="og:site_name" content="freva-deployment" />
+<meta property="og:description" content="This section gives an overview over how to install the deployment software for freva. The main work will be done by ansible, hence some level of familiarity with ansible is advantageous but not nec..." />
+<meta name="description" content="This section gives an overview over how to install the deployment software for freva. The main work will be done by ansible, hence some level of familiarity with ansible is advantageous but not nec..." />
+<meta name="twitter:card" content="summary_large_image">
+<meta name="keywords" content="freva, climate, data, evaluation, science, reproducibility">
 
-    <title>Installing freva-deployment &#8212; freva-deployment 2505.0.1 documentation</title>
+    <title>Installing freva-deployment &#8212; freva-deployment 2505.0.3 documentation</title>
   
   
   
@@ -40,7 +48,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../_static/documentation_options.js?v=04ffed07"></script>
+    <script src="../_static/documentation_options.js?v=977fe374"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -125,8 +133,8 @@
       
     
     
-    <img src="../_static/freva_owl.svg" class="logo__image only-light" alt="freva-deployment 2505.0.1 documentation - Home"/>
-    <img src="../_static/freva_owl.svg" class="logo__image only-dark pst-js-only" alt="freva-deployment 2505.0.1 documentation - Home"/>
+    <img src="../_static/freva_owl.svg" class="logo__image only-light" alt="freva-deployment 2505.0.3 documentation - Home"/>
+    <img src="../_static/freva_owl.svg" class="logo__image only-dark pst-js-only" alt="freva-deployment 2505.0.3 documentation - Home"/>
   
   
 </a></div>
@@ -230,7 +238,7 @@
           
           
           
-          <a href="https://github.com/FREVA-CLINT/freva-deployment" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+          <a href="https://github.com/freva-org/freva-admin" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
             <span class="sr-only">GitHub</span></a>
         </li>
         <li class="nav-item">
@@ -363,7 +371,7 @@
           
           
           
-          <a href="https://github.com/FREVA-CLINT/freva-deployment" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+          <a href="https://github.com/freva-org/freva-admin" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
             <span class="sr-only">GitHub</span></a>
         </li>
         <li class="nav-item">
@@ -482,27 +490,27 @@ for setting up openSSH on windows.</p>
 <section id="using-pre-built-binaries">
 <h2>1. Using pre-built binaries.<a class="headerlink" href="#using-pre-built-binaries" title="Link to this heading">#</a></h2>
 <p>You can download the pre-built binaries for your specific OS and architecture
-from the <a class="reference external" href="https://github.com/FREVA-CLINT/freva-deployment/releases/tag/v2505.0.1">release page</a>.</p>
+from the <a class="reference external" href="https://github.com/freva-org/freva-admin/releases/tag/v2505.0.3">release page</a>.</p>
 <section id="available-binaries">
 <h3>Available Binaries<a class="headerlink" href="#available-binaries" title="Link to this heading">#</a></h3>
 <ul class="simple">
 <li><p><strong>Linux</strong></p>
 <ul>
-<li><p><a class="reference external" href="https://github.com/FREVA-CLINT/freva-deployment/releases/download/v2505.0.1/deploy-freva-v2505.0.1-linux-x64.tar.gz">amd64</a></p></li>
-<li><p><a class="reference external" href="https://github.com/FREVA-CLINT/freva-deployment/releases/download/v2505.0.1/deploy-freva-v2505.0.1-linux-arm64.tar.gz">arm64</a></p></li>
-<li><p><a class="reference external" href="https://github.com/FREVA-CLINT/freva-deployment/releases/download/v2505.0.1/deploy-freva-v2505.0.1-linux-armv7.tar.gz">armv7</a></p></li>
-<li><p><a class="reference external" href="https://github.com/FREVA-CLINT/freva-deployment/releases/download/v2505.0.1/deploy-freva-v2505.0.1-linux-ppc64le.tar.gz">ppc64le</a></p></li>
-<li><p><a class="reference external" href="https://github.com/FREVA-CLINT/freva-deployment/releases/download/v2505.0.1/deploy-freva-v2505.0.1-linux-s390x.tar.gz">s390x</a></p></li>
-<li><p><a class="reference external" href="https://github.com/FREVA-CLINT/freva-deployment/releases/download/v2505.0.1/deploy-freva-v2505.0.1-linux-i386.tar.gz">i386</a></p></li>
+<li><p><a class="reference external" href="https://github.com/freva-org/freva-admin/releases/download/v2505.0.3/deploy-freva-v2505.0.3-linux-x64.tar.gz">amd64</a></p></li>
+<li><p><a class="reference external" href="https://github.com/freva-org/freva-admin/releases/download/v2505.0.3/deploy-freva-v2505.0.3-linux-arm64.tar.gz">arm64</a></p></li>
+<li><p><a class="reference external" href="https://github.com/freva-org/freva-admin/releases/download/v2505.0.3/deploy-freva-v2505.0.3-linux-armv7.tar.gz">armv7</a></p></li>
+<li><p><a class="reference external" href="https://github.com/freva-org/freva-admin/releases/download/v2505.0.3/deploy-freva-v2505.0.3-linux-ppc64le.tar.gz">ppc64le</a></p></li>
+<li><p><a class="reference external" href="https://github.com/freva-org/freva-admin/releases/download/v2505.0.3/deploy-freva-v2505.0.3-linux-s390x.tar.gz">s390x</a></p></li>
+<li><p><a class="reference external" href="https://github.com/freva-org/freva-admin/releases/download/v2505.0.3/deploy-freva-v2505.0.3-linux-i386.tar.gz">i386</a></p></li>
 </ul>
 </li>
 <li><p><strong>macOS</strong></p>
 <ul>
-<li><p><a class="reference external" href="https://github.com/FREVA-CLINT/freva-deployment/releases/download/v2505.0.1/deploy-freva-v2505.0.1-osx-arm64.tar.gz">arm64</a></p></li>
+<li><p><a class="reference external" href="https://github.com/freva-org/freva-admin/releases/download/v2505.0.3/deploy-freva-v2505.0.3-osx-arm64.tar.gz">arm64</a></p></li>
 </ul>
 </li>
 </ul>
-<p>After downloading version 2505.0.1 file for your operating system and
+<p>After downloading version 2505.0.3 file for your operating system and
 architecture, extract the binaries to a meaningful location such as
 <code class="docutils literal notranslate"><span class="pre">~/.local/deploy-freva</span></code>:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">tar xzf deploy-freva-v{{version}}-linux-x64.tar.gz -C ~/.local</span>
@@ -533,7 +541,7 @@ You will need to install libselinux for your CentOS version.</p>
 <section id="using-docker">
 <h2>3. Using docker<a class="headerlink" href="#using-docker" title="Link to this heading">#</a></h2>
 <p>A pre-built docker image is available to run the deployment</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">docker run -it -v /path/to/config:/opt/freva-deployment:z ghcr.io/freva-clint/freva-deployment</span>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">docker run -it -v /path/to/config:/opt/freva-deployment:z ghcr.io/freva-org/freva-deployment</span>
 </pre></div>
 </div>
 <p>The <code class="docutils literal notranslate"><span class="pre">-it</span></code> flags are important in order to interact with the program. To use
@@ -552,20 +560,21 @@ old freva systems to new ones.</p></li>
 <section id="main-text-user-interface-command">
 <h3>Main text user interface command<a class="headerlink" href="#main-text-user-interface-command" title="Link to this heading">#</a></h3>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">deploy-freva  --help</span>
-<span class="go">Usage: deploy-freva [-h] [-v] [-V] [--cowsay] {cmd,migrate} ...</span>
+<span class="go">Usage: deploy-freva [-h] [-v] [-V] [--cowsay] {cmd,config,migrate} ...</span>
 
 <span class="go">Run the freva deployment</span>
 
 <span class="go">Positional Arguments:</span>
-<span class="go">  {cmd,migrate}</span>
-<span class="go">    cmd          Run deployment in batch mode.</span>
-<span class="go">    migrate      Utilities to handle migrations from old freva systems.</span>
+<span class="go">  {cmd,config,migrate}</span>
+<span class="go">    cmd                 Run deployment in batch mode.</span>
+<span class="go">    config              Create and inspect freva configuration.</span>
+<span class="go">    migrate             Utilities to handle migrations from old freva systems.</span>
 
 <span class="go">Options:</span>
-<span class="go">  -h, --help     show this help message and exit</span>
-<span class="go">  -v, --verbose  Verbosity level (default: 0)</span>
-<span class="go">  -V, --version  show program&#39;s version number and exit</span>
-<span class="go">  --cowsay       Let the cow speak! (default: False)</span>
+<span class="go">  -h, --help            show this help message and exit</span>
+<span class="go">  -v, --verbose         Verbosity level (default: 0)</span>
+<span class="go">  -V, --version         show program&#39;s version number and exit</span>
+<span class="go">  --cowsay              Let the cow speak! (default: False)</span>
 </pre></div>
 </div>
 </section>
@@ -584,7 +593,8 @@ old freva systems to new ones.</p></li>
 <span class="go">Options:</span>
 <span class="go">  -h, --help            show this help message and exit</span>
 <span class="go">  --config, -c CONFIG   Path to ansible inventory file. (default:</span>
-<span class="go">                        /home/runner/.config/freva/deployment/inventory.toml)</span>
+<span class="go">                        /home/runner/.config/freva/deployment/config/inventory</span>
+<span class="go">                        .toml)</span>
 <span class="go">  --steps, -s {web,core,db,freva-rest,auto} [{web,core,db,freva-rest,auto} ...]</span>
 <span class="go">                        The services/code stack to be deployed. Use auto to</span>
 <span class="go">                        only deploy outdated services (default: [&#39;db&#39;,</span>
