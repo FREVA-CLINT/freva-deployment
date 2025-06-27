@@ -7,6 +7,11 @@ What's new
    :maxdepth: 0
    :titlesonly:
 
+v2505.1.0
+~~~~~~~~~
+* Fix CSRF issues
+* Update docs
+
 v2505.0.3
 ~~~~~~~~~
 * Move source code.

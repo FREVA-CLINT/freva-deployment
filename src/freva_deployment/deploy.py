@@ -561,6 +561,9 @@ class DeployFactory:
                 self.cfg["web"]["csrf_trusted_origins"].append(
                     f"https://{trusted_origin.path}"
                 )
+        self.cfg["web"]["csrf_trusted_origins"] = list(
+            set(self.cfg["web"]["csrf_trusted_origins"])
+        )
         self.cfg["web"]["freva_bin"] = os.path.join(
             self.cfg["core"]["install_dir"], "bin"
         )
